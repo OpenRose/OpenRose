@@ -1,0 +1,2109 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>OpenRose.API</name>
+    </assembly>
+    <members>
+        <member name="M:ItemzApp.API.BusinessRules.Baseline.BaselineRules.HasBaselineWithNameAsync(System.Guid,System.String)">
+            <summary>
+            Use this method to check if the Baseline with given name already exists within the same Project. 
+            In General, this check shall be performed before inserting or updating Baseline.
+            </summary>
+            <param name="projectId">Project Id in Guid form in which we are checking for Baseline with a specific name</param>
+            <param name="baselineName">Name of the Baseline to be checked for uniqueness</param>
+            <returns>true if Baseline with BaselineName found otherwise false</returns>
+        </member>
+        <member name="M:ItemzApp.API.BusinessRules.Baseline.BaselineRules.UniqueBaselineNameRuleAsync(System.Guid,System.String,System.String)">
+            <summary>
+            Used for verifying if project contains baseline with the 
+            same name as the one used for inserting or updating
+            </summary>
+            <param name="projectId">Project Id in Guid form in which we are checking for Baseline with a specific name</param>
+            <param name="targetBaselineName">New or updated baseline name</param>
+            <param name="sourceBaselineName">Old baseline name. No need to pass this for checking rule against creating baseline action</param>
+            <returns>true if baseline with same name exist in the repository otherwise false</returns>
+        </member>
+        <member name="M:ItemzApp.API.BusinessRules.ItemzType.ItemzTypeRules.HasItemzTypeWithNameAsync(System.Guid,System.String)">
+            <summary>
+            Use this method to check if the ItemzType with given name already exists. In General, 
+            This check shall be performed before inserting or updating ItemzType.
+            </summary>
+            <param name="projectId">Project Id in Guid form in which we are checking for ItemzType with a specific name</param>
+            <param name="itemzTypeName">Name of the ItemzType to be checked for uniqueness</param>
+            <returns>true if ItemzType with ItemzTypeName found otherwise false</returns>
+        </member>
+        <member name="M:ItemzApp.API.BusinessRules.ItemzType.ItemzTypeRules.UniqueItemzTypeNameRuleAsync(System.Guid,System.String,System.String)">
+            <summary>
+            Used for verifying if project contains itemzType with the 
+            same name as the one used for inserting or updating
+            </summary>
+            <param name="projectId">Project Id in Guid form in which we are checking for ItemzType with a specific name</param>
+            <param name="targetItemzTypeName">New or updated itemzType name</param>
+            <param name="sourceItemzTypeName">Old itemzType name. No need to pass this for checking rule against creating itemzType action</param>
+            <returns>true if itemzType with same name exist in the repository otherwise false</returns>
+        </member>
+        <member name="M:ItemzApp.API.BusinessRules.Project.ProjectRules.HasProjectWithNameAsync(System.String)">
+            <summary>
+            Use this method to check if the project with given name already exists. In General, 
+            This check shall be performed before inserting or updating project.
+            </summary>
+            <param name="projectName">Name of the project to be checked for uniqueness</param>
+            <returns>true if project with projectName found otherwise false</returns>
+        </member>
+        <member name="M:ItemzApp.API.BusinessRules.Project.ProjectRules.UniqueProjectNameRuleAsync(System.String,System.String)">
+            <summary>
+            Used for verifying if repository contains project with the 
+            same name as the one used for inserting or updating
+            </summary>
+            <param name="targetProjectName">New or updated project name</param>
+            <param name="sourceProjectName">Old project name. No need to pass this for checking rule against creating project action</param>
+            <returns>true if project with same name exist in the repository otherwise false</returns>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselineHierarchyController.GetBaselineHierarchyRecordDetailsAsync(System.Guid)">
+            <summary>
+            Gets BaselineHierarchy Record details based on Record Id provided in GUID form.
+            </summary>
+            <param name="RecordId">GUID representing an unique ID of a BaselineHierarchy record</param>
+            <returns>BaselineHierarchy record details containing various information about given Record Id</returns>
+            <response code="200">BaselineHierarchy record details containing various information about given Record Id</response>
+            <response code="404">BaselineHierarchy record not found in the repository for the given GUID ID</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselineHierarchyController.GetImmediateChildrenOfBaselineItemzHierarchy(System.Guid)">
+            <summary>
+            Gets Baseline Hierarchy Records of immediate children under Record Id provided in GUID form.
+            </summary>
+            <param name="RecordId">GUID representing an unique ID of a baseline hierarchy record</param>
+            <returns>Collection of Immediate children Baseline Hierarchy record details </returns>
+            <response code="200">Immediate children Baseline Hierarchy record details </response>
+            <response code="400">Bad Request</response>
+            <response code="404">Immediate children Baseline Hierarchy record(s) not found in the repository for the given GUID ID</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselineHierarchyController.VerifyParentChildBreakdownStructureAsync(System.Guid,System.Guid)">
+            <summary>
+            Verify that two Baseline Hierarchy IDs are part of same Breakdown Structure within a given Baseline.
+            </summary>
+            <param name="parentId">GUID representing an unique ID of a Parent BaselineHierarchy record</param>
+            <param name="childId">GUID representing an unique ID of a Child BaselineHierarchy record</param>
+            <returns>True if ParentHierarchyId and ChildHierarchyId are part of the same Breakdown Structure within a given Baseline. Otherwise False </returns>
+            <response code="200">True or False based on outcome of verifying Breakdown Structure while looking for Parent and Child Baseline Hierarchy IDs</response>
+            <response code="404">Invalid Id provided for either Parent or Child Baseline Hierarchy record</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselineHierarchyController.GetAllChildrenOfBaselineItemzHierarchy(System.Guid)">
+            <summary>
+            Gets Baseline Hierarchy Records of all children under Record Id provided in GUID form.
+            </summary>
+            <param name="RecordId">GUID representing an unique ID of a Baseline Hierarchy record</param>
+            <returns>Collection of All children Baseline Hierarchy record details </returns>
+            <response code="200">All children Baseline Hierarchy record details </response>
+            <response code="400">Bad Request</response>
+            <response code="404">All children Baseline Hierarchy record(s) not found in the repository for the given GUID ID</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselineHierarchyController.GetAllChildrenCountOfBaselineItemzHierarchy(System.Guid)">
+            <summary>
+            Gets count of all baseline hierarchy children under Record Id provided in GUID form.
+            </summary>
+            <param name="RecordId">GUID representing an unique ID of a baseline hierarchy record</param>
+            <returns>Count of All children Baseline Hierarchy record </returns>
+            <response code="200">All children Baseline Hierarchy record count </response>
+            <response code="400">Bad Request</response>
+            <response code="404">Record ID not found in the repository for the given GUID ID</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselineHierarchyController.GetAllParentsOfBaselineItemzHierarchy(System.Guid)">
+            <summary>
+            Gets Baseline Hierarchy Records of all parents above Record Id provided in GUID form.
+            </summary>
+            <param name="RecordId">GUID representing an unique ID of a Baseline Hierarchy record</param>
+            <returns>Collection of All Parents  Baseline Hierarchy record details </returns>
+            <response code="200">All Parents Baseline Hierarchy record details </response>
+            <response code="400">Bad Request</response>
+            <response code="404">All Parents Baseline Hierarchy record(s) not found in the repository for the given GUID ID</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselineItemzCollectionController.GetBaselineItemzCollectionAsync(System.Collections.Generic.IEnumerable{System.Guid})">
+            <summary>
+            Gets collection of BaselineItemzs
+            </summary>
+            <param name="baselineItemzids">Array of BaselineItemz Id (in GUID form) for which details has to be returned to the caller</param>
+            <returns>Collection of BaselineItemz that are requested via Array of BaselineItemz Id</returns>
+            <response code="200">Collection of BaselineItemzs property details based on BaselineItemz Ids that were passed in as parameter</response>
+            <response code="500">Bad Request - BaselineItemz Ids should be passed in as parameter</response>
+            <response code="404">No BaselineItemzs were found based on provided list of BaselineItemz Ids</response>
+            <remarks>
+            Sample request (this request will get BaselineItemz by Ids) \
+            GET api/BaselineItemz/(9153a516-d69e-4364-b17e-03b87442e21c,5e76f8e8-d3e7-41db-b084-f64c107c6783) 
+            </remarks>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselineItemzCollectionController.GetBaselineItemzCollectionOptions">
+            <summary>
+            Get list of supported HTTP Options for the BaselineItemz controller.
+            </summary>
+            <returns>Custom response header with key as "Allow" and value as different HTTP options that are allowed</returns>
+            <response code="200">Custom response header with key as "Allow" and value as different HTTP options that are allowed</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselineItemzController.GetBaselineItemzAsync(System.Guid)">
+            <summary>
+            Get a BaselineItemz by ID (represented by a GUID)
+            </summary>
+            <param name="BaselineItemzId">GUID representing an unique ID of the BaselineItemz that you want to get</param>
+            <returns>A single BaselineItemz record based on provided ID (GUID) </returns>
+            <response code="200">Returns the requested BaselineItemz</response>
+            <response code="404">Requested BaselineItemz not found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselineItemzController.GetBaselineItemzsByItemzIdAsync(System.Guid)">
+            <summary>
+            Gets collection of BaselineItemzs for the given ItemzID
+            </summary>
+            <returns>Collection of BaselineItemzs based on given ItemzID</returns>
+            <response code="200">Returns collection of BaselineItemzs based on given ItemzID</response>
+            <response code="404">No BaselineItemzs were found for the given ItemzID</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselineItemzController.GetBaselineItemzCountByItemzIdAsync(System.Guid)">
+            <summary>
+            Get total number of BaselineItemz by ItemzId
+            </summary>
+            <param name="itemzId">Provide ItemzId representated in GUID form</param>
+            <returns>Number of BaselineItemz found for the given ItemzId. Zero if none found.</returns>
+            <response code="200">Returns number of BaselineItemz count that were associated with a given ItemzId</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselineItemzController.UpdateBaselineItemzsPutAsync(ItemzApp.API.Models.UpdateBaselineItemzDTO)">
+            <summary>
+            Updating existing BaseilneItemzs for inclusion or exclusion from it's Baseline
+            </summary>
+            <param name="baselineItemzsToBeUpdated">required instructions of inclusion or exclusion of BaselineItemzs from Baseline. </param>
+            <returns>No contents are returned but only Status 204 indicating that BaselineItemzs were updated successfully </returns>
+            <response code="204">No content are returned but status of 204 indicated that BaselineItemzs were successfully updated</response>
+            <response code="400">Issue encounted to include BaselineItemz. Please check log messages for more details</response>
+            <response code="404">Either Baseline not found OR BaselineItemzs were not found.</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselineItemzController.GetBaselineItemzsOptions">
+            <summary>
+            Get list of supported HTTP Options for the BaselineItemz controller.
+            </summary>
+            <returns>Custom response header with key as "Allow" and value as different HTTP options that are allowed</returns>
+            <response code="200">Custom response header with key as "Allow" and value as different HTTP options that are allowed</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselineItemzTraceController.CheckBaselineItemzTraceExistsAsync(System.Guid,System.Guid)">
+            <summary>
+            Check if specific Baseline Itemz Trace association exists
+            </summary>
+            <param name="fromTraceBaselineItemzId">Provide From Trace Baseline Itemz Id</param>
+            <param name="toTraceBaselineItemzId">Provide To Trace Baseline Itemz Id</param>
+            <returns>BaselineItemzTraceDTO for the Baseline Itemz that has specified Baseline Itemz Trace</returns>
+            <response code="200">Returns BaselineItemzTraceDTO for the From and To Baseline Itemz Trace</response>
+            <response code="404">Baseline Itemz Trace was not found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselineItemzTraceController.GetBaselineItemzTracesByBaselineItemzIDAsync(System.Guid)">
+            <summary>
+            Gets collection of Baseline Itemz Traces by Baseline Itemz ID
+            </summary>
+            <param name="baselineItemzId">Baseline Itemz ID for which Baseline Itemz Traces are queried</param>
+            <returns>Collection of Baseline Itemz Traces by Baseline Itemz ID</returns>
+            <response code="200">Returns Collection of Baseline Itemz Traces by Baseline Itemz ID</response>
+            <response code="404">Either Baseline ItemzID was not found or No Baseline Itemz Traces were found for given BaselineItemzID</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselineItemzTraceController.GetAllParentAndChildTracesByBaselineItemzIdAsync(System.Guid)">
+            <summary>
+            Gets All Parent and Child Baseline Itemz Traces by Baseline Itemz ID
+            </summary>
+            <param name="baselineItemzId">Baseline Itemz ID for which Parent and Child Baseline Itemz Traces are returned.</param>
+            <returns>Collection of all Parent and Child Baseline Itemz Traces by Baseline Itemz ID</returns>
+            <response code="200">Returns Collection of all Parent and Child Baseline Itemz Traces by Baseline Itemz ID</response>
+            <response code="404">BaselineItemzID was not found in the repository</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselineItemzTraceController.GetFromBaselineItemzTraceCountByBaselineItemzID(System.Guid)">
+            <summary>
+            Get count of FromBaselineItemz Traces associated with BaselineItemzID
+            </summary>
+            <param name="baselineItemzId">Provide BaselineItemzId in GUID form</param>
+            <returns>Integer representing total number of direct From Baseline Itemz Traces associated with BaselineItemzID</returns>
+            <response code="200">Count of From Baseline Itemz Traces associated with BaselineItemzID. ZERO means no From Baseline Itemz Traces were found for targeted BaselineItemzID</response>
+            <response code="404">Baseline Itemz for given ID could not be found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselineItemzTraceController.GetToBaselineItemzTraceCountByBaselineItemzID(System.Guid)">
+            <summary>
+            Get count of ToBaselineItemz Traces associated with BaselineItemzID
+            </summary>
+            <param name="baselineItemzId">Provide BaselineItemzId in GUID form</param>
+            <returns>Integer representing total number of direct To Baseline Itemz Traces associated with BaselineItemzID</returns>
+            <response code="200">Count of To Baseline Itemz Traces associated with BaselineItemzID. ZERO means no To Baseline Itemz Traces were found for targeted BaselineItemzID</response>
+            <response code="404">Baseline Itemz for given ID could not be found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselineItemzTraceController.GetAllFromAndToTracesCountByBaselineItemzId(System.Guid)">
+            <summary>
+            Get count of From and To Traces associated with BaselineItemzID
+            </summary>
+            <param name="baselineItemzId">Provide BaselineItemzId in GUID form</param>
+            <returns>Integer representing total number of direct From and To Baseline Itemz Traces associated with BaselineItemzID</returns>
+            <response code="200">Count of From and To Baseline Itemz Traces associated with BaselineItemzID. ZERO means no Direct Baseline Itemz Traces were found for targeted BaselineItemzID</response>
+            <response code="404">Baseline Itemz for given ID could not be found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselineItemzTypesController.GetBaselineItemzTypeAsync(System.Guid)">
+            <summary>
+            Get a BaselineItemzType by ID (represented by a GUID)
+            </summary>
+            <param name="BaselineItemzTypeId">GUID representing an unique ID of the BaselineItemzType that you want to get</param>
+            <returns>A single BaselineItemzType record based on provided ID (GUID) </returns>
+            <response code="200">Returns the requested BaselineItemzType</response>
+            <response code="404">Requested BaselineItemzType not found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselineItemzTypesController.GetBaselineItemzTypesAsync">
+            <summary>
+            Gets collection of BaselineItemzTypes
+            </summary>
+            <returns>Collection of BaselineItemzTypes based on expected sorting order.</returns>
+            <response code="200">Returns collection of BaselineItemzTypes based on sorting order</response>
+            <response code="404">No BaselineItemzTypes were found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselineItemzTypesController.GetBaselineItemzCountByBaselineItemzTypeAsync(System.Guid)">
+            <summary>
+            Get total number of BaselineItemz by BaselineItemzType
+            </summary>
+            <param name="baselineItemzTypeId">Provide BaselineItemzTypeID representated in GUID form</param>
+            <returns>Number of BaselineItemz found for the given BaselineItemzTypeID. Zero if none found.</returns>
+            <response code="200">Returns number of BaselineItemz count that were associated with a given BaselineItemzType</response>
+            <response code="404">BaselineItemzType based on baselineItemzTypeId was not found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselineItemzTypesController.GetBaselineItemzsByBaselineItemzTypeAsync(System.Guid,ItemzApp.API.ResourceParameters.ItemzResourceParameter)">
+            <summary>
+            Gets collection of BaselineItemzs by BaselineItemzType ID
+            </summary>
+            <param name="BaselineItemzTypeId">BaselineItemzType ID for which BaselineItemz are queried</param>
+            <param name="itemzResourceParameter">Pass in information related to Pagination and Sorting Order via this parameter</param>
+            <returns>Collection of BaselineItemz based on expectated pagination and sorting order.</returns>
+            <response code="200">Returns collection of BaselineItemzs based on pagination</response>
+            <response code="404">Either BaselineItemzType or BaselineItemzs were not found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselineItemzTypesController.GetBaselineItemzTypesOptions">
+            <summary>
+            Get list of supported HTTP Options for the BaselineItemzTypes controller.
+            </summary>
+            <returns>Custom response header with key as "Allow" and value as different HTTP options that are allowed</returns>
+            <response code="200">Custom response header with key as "Allow" and value as different HTTP options that are allowed</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselinesController.GetBaselineAsync(System.Guid)">
+            <summary>
+            Get a Baseline by ID (represented by a GUID)
+            </summary>
+            <param name="BaselineId">GUID representing an unique ID of the Baseline that you want to get</param>
+            <returns>A single Baseline record based on provided ID (GUID) </returns>
+            <response code="200">Returns the requested Baseline</response>
+            <response code="404">Requested Baseline not found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselinesController.GetBaselinesAsync">
+            <summary>
+            Gets collection of Baselines
+            </summary>
+            <returns>Collection of Baselines based on expectated sorting order.</returns>
+            <response code="200">Returns collection of Baselines based on sorting order</response>
+            <response code="404">No Baselines were found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselinesController.CreateBaselineAsync(ItemzApp.API.Models.CreateBaselineDTO)">
+            <summary>
+            Used for creating new Baseline record in the database
+            </summary>
+            <param name="createBaselineDTO">Used for populating information in the newly created Baseline in the database</param>
+            <returns>Newly created Baseline property details</returns>
+            <response code="201">Returns newly created Baselines property details</response>
+            <response code="404">Expected Project with ID was not found in the repository</response>
+            <response code="409">Baseline with the same name already exists in the repository</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselinesController.CloneBaselineAsync(ItemzApp.API.Models.CloneBaselineDTO)">
+            <summary>
+            Used for creating new Baseline record by cloning existing baseline
+            </summary>
+            <param name="cloneBaselineDTO">Used for cloning existing baseline by BaselineId</param>
+            <returns>Newly created Baseline property details by cloning existing baseline</returns>
+            <response code="201">Returns newly created Baseline property details</response>
+            <response code="404">Expected Baseline with ID was not found in the repository</response>
+            <response code="409">Conflicts encountered while creating new Baseline from existing Baseline</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselinesController.UpdateBaselinePutAsync(System.Guid,ItemzApp.API.Models.UpdateBaselineDTO)">
+            <summary>
+            Updating exsting Baseline based on Baseline Id (GUID)
+            </summary>
+            <param name="baselineId">GUID representing an unique ID of the Baseline that you want to update</param>
+            <param name="baselineToBeUpdated">required Baseline properties to be updated</param>
+            <returns>No content are returned but only Status 204 indicating that Baseline was updated successfully </returns>
+            <response code="204">No content are returned but status of 204 indicated that Baseline was successfully updated</response>
+            <response code="404">Baseline based on baselineId was not found</response>
+            <response code="409">Baseline with updated name already exists in the repository</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselinesController.UpdateBaselinePatchAsync(System.Guid,Microsoft.AspNetCore.JsonPatch.JsonPatchDocument{ItemzApp.API.Models.UpdateBaselineDTO})">
+            <summary>
+            Partially updating a single **Baseline**
+            </summary>
+            <param name="baselineId">Id of the Baseline representated by a GUID.</param>
+            <param name="baselinePatchDocument">The set of operations to apply to the Baseline via JsonPatchDocument</param>
+            <returns>an ActionResult of type Baseline</returns>
+            <response code="204">No content are returned but status of 204 indicated that Baseline was successfully updated</response>
+            <response code="404">Baseline based on baselineId was not found</response>
+            <response code="409">Baseline with updated name already exists in the repository</response>
+            <response code="422">Validation problems occured during analyzing validation rules for the JsonPatchDocument </response>
+            <remarks> Sample request (this request updates an **Baseline's name**)   
+            Documentation regarding JSON Patch can be found at 
+            *[ASP.NET Core - JSON Patch Operations](https://docs.microsoft.com/en-us/aspnet/core/web-api/jsonpatch?view=aspnetcore-3.1#operations)* 
+            
+                PATCH /api/Baselines/{id}  
+                [  
+                    {   
+                        "op": "replace",   
+                        "path": "/name",   
+                        "value": "PATCH Updated Name field"  
+                    }   
+                ]
+            </remarks>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselinesController.DeleteBaselineAsync(System.Guid)">
+            <summary>
+            Deleting a specific Baseline
+            </summary>
+            <param name="baselineId">GUID representing an unique ID of the Baseline that you want to get</param>
+            <returns>Status code 204 is returned without any content indicating that deletion of the specified Baseline was successful</returns>
+            <response code="404">Baseline based on baselineId was not found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselinesController.GetBaselineItemzCountByBaselineAsync(System.Guid)">
+            <summary>
+            Get total number of BaselineItemz by Baseline
+            </summary>
+            <param name="baselineId">Provide BaselineID representated in GUID form</param>
+            <returns>Number of BaselineItemz found for the given BaselineID. Zero if none found.</returns>
+            <response code="200">Returns number of BaselineItemz count that were associated with a given Baseline</response>
+            <response code="404">Baseline based on baselineId was not found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselinesController.GetBaselineItemzTraceCountByBaselineAsync(System.Guid)">
+            <summary>
+            Get total number of BaselineItemz Traces by Baseline
+            </summary>
+            <param name="BaselineId">Provide BaselineID representated in GUID form</param>
+            <returns>Number of BaselineItemz Traces found for the given BaselineID. Zero if none found.</returns>
+            <response code="200">Returns number of BaselineItemz Traces count that are associated with a given Baseline</response>
+            <response code="404">Baseline based on baselineId was not found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselinesController.GetIncludedBaselineItemzCountByBaselineAsync(System.Guid)">
+            <summary>
+            Get total number of Included BaselineItemz by Baseline
+            </summary>
+            <param name="baselineId">Provide BaselineID representated in GUID form</param>
+            <returns>Number of Included BaselineItemz found for the given BaselineID. Zero if none found.</returns>
+            <response code="200">Returns number of Included BaselineItemz count that were associated with a given Baseline</response>
+            <response code="404">Baseline based on baselineId was not found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselinesController.GetBaselineCountByProjectIDAsync(System.Guid)">
+            <summary>
+            Get total number of Baseline by Project ID
+            </summary>
+            <param name="ProjectId">Provide ProjectID representated in GUID form</param>
+            <returns>Number of Baseline found for the given ProjectID. Zero if none found.</returns>
+            <response code="200">Returns number of Baseline count that were associated with a given ProjectID</response>
+            <response code="404">Project based on projectID was not found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselinesController.GetBaselinesByProjectIDAsync(System.Guid)">
+            <summary>
+            Get Baselines that are associated with given Project ID
+            </summary>
+            <param name="ProjectId">Provide ProjectID representated in GUID form</param>
+            <returns>All Baselines associated with the given ProjectID. Zero if none found.</returns>
+            <response code="200">Returns all Baselines that are associated with a given ProjectID</response>
+            <response code="404">Project based on projectID was not found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselinesController.GetExcludedBaselineItemzCountByBaselineAsync(System.Guid)">
+            <summary>
+            Get total number of Excluded BaselineItemz by Baseline
+            </summary>
+            <param name="baselineId">Provide BaselineID representated in GUID form</param>
+            <returns>Number of Excluded BaselineItemz found for the given BaselineID. Zero if none found.</returns>
+            <response code="200">Returns number of Excluded BaselineItemz count that were associated with a given Baseline</response>
+            <response code="404">Baseline based on baselineId was not found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselinesController.GetOrphanedBaselineItemzCountInRepository">
+            <summary>
+            Get total number of Orphaned BaselineItemz in Repository
+            </summary>
+            <returns>Total Number of Orphaned BaselineItemz found in entire Repository. Zero if none found.</returns>
+            <response code="200">Returns total number of Orphaned BaselineItemz count that are present in the Repository.</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselinesController.GetTotalBaselineItemzCountInRepository">
+            <summary>
+            Get total number of BaselineItemz in Repository
+            </summary>
+            <returns>Total Number of BaselineItemz found in entire Repository. Zero if none found.</returns>
+            <response code="200">Returns total number of BaselineItemz count that are present in the Repository.</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselinesController.GetBaselineItemzTypesByBaselineIdAsync(System.Guid)">
+            <summary>
+            Gets collection of BaselineItemzTypes for the given BaselineID
+            </summary>
+            <returns>Collection of BaselineItemzTypes based on sorting order for the given BaselineID</returns>
+            <response code="200">Returns collection of BaselineItemzTypes based on sorting order for the given BaselineID</response>
+            <response code="404">No BaselineItemzTypes were found for the given BaselineID</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.BaselinesController.GetBaselinesOptions">
+            <summary>
+            Get list of supported HTTP Options for the Baselines controller.
+            </summary>
+            <returns>Custom response header with key as "Allow" and value as different HTTP options that are allowed</returns>
+            <response code="200">Custom response header with key as "Allow" and value as different HTTP options that are allowed</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.HierarchyController.GetNextSiblingHierarchyRecordDetailsAsync(System.Guid)">
+            <summary>
+            Gets Hierarchy Record details of the next Sibling of Record Id provided in GUID form.
+            </summary>
+            <param name="RecordId">GUID representing an unique ID of a hierarchy record</param>
+            <returns>Hierarchy record details containing various information about given Record Id's next Sibling</returns>
+            <response code="200">Hierarchy record details containing various information about given Record Id's next Sibling</response>
+            <response code="404">Either Sibling OR Hierarchy record not found in the repository for the given GUID ID</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.HierarchyController.GetHierarchyRecordDetailsAsync(System.Guid)">
+            <summary>
+            Gets Hierarchy Record details based on Record Id provided in GUID form.
+            </summary>
+            <param name="RecordId">GUID representing an unique ID of a hierarchy record</param>
+            <returns>Hierarchy record details containing various information about given Record Id</returns>
+            <response code="200">Hierarchy record details containing various information about given Record Id</response>
+            <response code="404">Hierarchy record not found in the repository for the given GUID ID</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.HierarchyController.GetImmediateChildrenOfItemzHierarchy(System.Guid)">
+            <summary>
+            Gets Hierarchy Records of immediate children under Record Id provided in GUID form.
+            </summary>
+            <param name="RecordId">GUID representing an unique ID of a hierarchy record</param>
+            <returns>Collection of Immediate children Hierarchy record details </returns>
+            <response code="200">Immediate children Hierarchy record details </response>
+            <response code="400">Bad Request</response>
+            <response code="404">Immediate children Hierarchy record(s) not found in the repository for the given GUID ID</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.HierarchyController.GetAllParentsOfItemzHierarchy(System.Guid)">
+            <summary>
+            Gets Hierarchy Records of all parents above Record Id provided in GUID form.
+            </summary>
+            <param name="RecordId">GUID representing an unique ID of a hierarchy record</param>
+            <returns>Collection of All Parents Hierarchy record details </returns>
+            <response code="200">All Parents Hierarchy record details </response>
+            <response code="400">Bad Request</response>
+            <response code="404">All Parents Hierarchy record(s) not found in the repository for the given GUID ID</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.HierarchyController.GetAllChildrenOfItemzHierarchy(System.Guid)">
+            <summary>
+            Gets Hierarchy Records of all children under Record Id provided in GUID form.
+            </summary>
+            <param name="RecordId">GUID representing an unique ID of a hierarchy record</param>
+            <returns>Collection of All children Hierarchy record details </returns>
+            <response code="200">All children Hierarchy record details </response>
+            <response code="400">Bad Request</response>
+            <response code="404">All children Hierarchy record(s) not found in the repository for the given GUID ID</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.HierarchyController.GetAllChildrenCountOfItemzHierarchy(System.Guid)">
+            <summary>
+            Gets count of all hierarchy children under Record Id provided in GUID form.
+            </summary>
+            <param name="RecordId">GUID representing an unique ID of a hierarchy record</param>
+            <returns>Count of All children Hierarchy record </returns>
+            <response code="200">All children Hierarchy record count </response>
+            <response code="400">Bad Request</response>
+            <response code="404">Record ID not found in the repository for the given GUID ID</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzChangeHistoryByItemzTypeController.DeleteItemzChangeHistoryByItemzTypeAsync(ItemzApp.API.Models.DeleteChangeHistoryDTO)">
+            <summary>
+            Deleting ItemzChangeHistory for all the Itemz that are associated with given ItemzType ID upto provided Date and Time.
+            </summary>
+            <param name="deleteItemzChangeHistoryByItemzTypeDTO">Provide ItemzTypeID representated in GUID form along with Upto Date Time indicating till the time associated Itemz Change History data has to be deleted.</param>
+            <returns>Status code 200 is returned without any content indicating that action to delete Itemz Change History by Itemz Type was successful. Either it found older records to be deleted or it did not find any records to be deleted.</returns>
+            <response code="200">Returns number of Itemz Change History records that were deleted by Itemz Type</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzChangeHistoryByItemzTypeController.GetNumberOfItemzChangeHistoryByItemzTypeAsync(System.Guid)">
+            <summary>
+            Number of ItemzChangeHistory records for all the Itemz that are associated with given ItemzType ID
+            </summary>
+            <param name="ItemzTypeId">Provide ItemzTypeID representated in GUID form</param>
+            <returns>Number of records found for ItemzChangeHistory indirectly associated with a given ItemzTypeID</returns>
+            <response code="200">Returns number of Itemz Change History records that were indirectly associated with a given Itemz Type</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzChangeHistoryByItemzTypeController.GetNumberOfItemzChangeHistoryByItemzTypeUptoDateTimeAsync(ItemzApp.API.Models.GetNumberOfChangeHistoryDTO)">
+            <summary>
+            Number of ItemzChangeHistory records for all the Itemz that are associated with given ItemzType ID upto provided Date and Time.
+            </summary>
+            <param name="getItemzChangeHistoryByItemzTypeDTO">Provide ItemzTypeID representated in GUID form along with cut off upto DateTime.</param>
+            <returns>Number of records found for ItemzChangeHistory indirectly associated with a given ItemzTypeID</returns>
+            <response code="200">Returns number of Itemz Change History records that were indirectly associated with a given Itemz Type upto provided Date and Time.</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzChangeHistoryByItemzTypeController.GetItemzChangeHistoryByItemzTypeOptions">
+            <summary>
+            Get list of supported HTTP Options for the ItemzChangeHistoryByItemzType controller.
+            </summary>
+            <returns>Custom response header with key as "Allow" and value as different HTTP options that are allowed</returns>
+            <response code="200">Custom response header with key as "Allow" and value as different HTTP options that are allowed</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzChangeHistoryByProjectController.DeleteItemzChangeHistoryByProjectAsync(ItemzApp.API.Models.DeleteChangeHistoryDTO)">
+            <summary>
+            Deleting ItemzChangeHistory for all the Itemz that are associated with given Project ID upto provided Date and Time.
+            </summary>
+            <param name="deleteItemzChangeHistoryByProjectDTO">Provide ProjectID representated in GUID form along with Upto Date Time indicating till the time associated Itemz Change History data has to be deleted.</param>
+            <returns>Status code 200 is returned without any content indicating that action to delete Itemz Change History by Itemz Type was successful. Either it found older records to be deleted or it did not find any records to be deleted.</returns>
+            <response code="200">Returns number of Itemz Change History records that were deleted by Itemz Type</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzChangeHistoryByProjectController.GetNumberOfItemzChangeHistoryByProjectAsync(System.Guid)">
+            <summary>
+            Number of ItemzChangeHistory records for all the Itemz that are associated with given Project ID
+            </summary>
+            <param name="ProjectId">Provide ProjectID representated in GUID form</param>
+            <returns>Number of records found for ItemzChangeHistory indirectly associated with a given ProjectID</returns>
+            <response code="200">Returns number of Itemz Change History records that were indirectly associated with a given Project</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzChangeHistoryByProjectController.GetNumberOfItemzChangeHistoryByProjectUptoDateTimeAsync(ItemzApp.API.Models.GetNumberOfChangeHistoryDTO)">
+            <summary>
+            Number of ItemzChangeHistory records for all the Itemz that are associated with given Project ID upto provided Date and Time.
+            </summary>
+            <param name="getItemzChangeHistoryByProjectDTO">Provide ProjectID representated in GUID form along with cut off upto DateTime.</param>
+            <returns>Number of records found for ItemzChangeHistory indirectly associated with a given ProjectID</returns>
+            <response code="200">Returns number of Itemz Change History records that were indirectly associated with a given Project upto provided Date and Time.</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzChangeHistoryByProjectController.GetItemzChangeHistoryByProjectOptions">
+            <summary>
+            Get list of supported HTTP Options for the ItemzChangeHistoryByProject controller.
+            </summary>
+            <returns>Custom response header with key as "Allow" and value as different HTTP options that are allowed</returns>
+            <response code="200">Custom response header with key as "Allow" and value as different HTTP options that are allowed</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzChangeHistoryByRepositoryController.GetNumberOfItemzChangeHistoryByRepositoryAsync">
+            <summary>
+            Count of number of ItemzChangeHistory records in the repository
+            </summary>
+            <returns>Number of records found for ItemzChangeHistory in the repository</returns>
+            <response code="200">Returns number of ItemzChangeHistory records in the repository</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzChangeHistoryByRepositoryController.GetNumberOfItemzChangeHistoryByRepositoryUptoDateTimeAsync(ItemzApp.API.Models.GetNumberOfChangeHistoryByRepositoryDTO)">
+            <summary>
+            Number of ItemzChangeHistory records for all the Itemz within the repository upto provided Date and Time
+            </summary>
+            <param name="getNumberOfChangeHistoryByRepositoryDTO">Provide cut off upto DateTime</param>
+            <returns>Number of records found for ItemzChangeHistory within the repository upto provided Date and Time</returns>
+            <response code="200">Returns number of ItemzChangeHistory records within the repository upto provided Date and Time</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzChangeHistoryByRepositoryController.GetItemzOptions">
+            <summary>
+            Get list of supported HTTP Options for the ItemzChangeHistoryByRepository controller.
+            </summary>
+            <returns>Custom response header with key as "Allow" and value as different HTTP options that are allowed</returns>
+            <response code="200">Custom response header with key as "Allow" and value as different HTTP options that are allowed</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzChangeHistoryController.GetItemzChangeHistoryAsync(System.Guid)">
+            <summary>
+            Get collection of Itemz Change History by Itemz ID (represented by a GUID)
+            </summary>
+            <param name="ItemzId">GUID representing an unique ID of the Itemz that you want to get change history for</param>
+            <returns>A collection of Itemz Change History records based on provided Itemz ID (GUID) </returns>
+            <response code="200">Returns the requested Itemz Change History Records</response>
+            <response code="404">Requested Itemz and/or it's change history records not found</response>
+            
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzChangeHistoryController.DeleteItemzChangeHistoryAsync(ItemzApp.API.Models.DeleteChangeHistoryDTO)">
+            <summary>
+            Deleting ItemzChangeHistory for a given ItemzID upto provided Date and Time.
+            </summary>
+            <param name="deleteItemzChangeHistoryDTO">Provide ItemzID representated in GUID form along with Upto Date Time indicating till the time Itemz Change History data has to be deleted.</param>
+            <returns>Status code 204 is returned without any content indicating that action to delete Itemz Change History was successful. Either it found older records to be deleted or it did not find any records to be deleted.</returns>
+            <response code="200">Returns number of Itemz Change History records that were deleted</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzChangeHistoryController.GetItemzOptions">
+            <summary>
+            Get list of supported HTTP Options for the ItemzChangeHistory controller.
+            </summary>
+            <returns>Custom response header with key as "Allow" and value as different HTTP options that are allowed</returns>
+            <response code="200">Custom response header with key as "Allow" and value as different HTTP options that are allowed</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzCollectionController.GetItemzCollectionAsync(System.Collections.Generic.IEnumerable{System.Guid})">
+            <summary>
+            Gets collection of Itemzs without any Pagination
+            </summary>
+            <param name="ids">Array of Itemz Id (in GUID form) for which details has to be returned to the caller</param>
+            <returns>Collection of Itemz that are requested via Array of Itemz Id</returns>
+            <response code="200">Collection of Itemzs property details based on Itemz Ids that were passed in as parameter</response>
+            <response code="500">Bad Request - Itemz Ids should be passed in as parameter</response>
+            <response code="404">No Itemzs were found based on provided list of Itemz Ids</response>
+            <remarks>
+            Sample request (this request will get itemz by Ids) \
+            GET api/ItemzCollection/(9153a516-d69e-4364-b17e-03b87442e21c,5e76f8e8-d3e7-41db-b084-f64c107c6783) 
+            </remarks>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzCollectionController.CreateItemzCollectionAsync(System.Collections.Generic.IEnumerable{ItemzApp.API.Models.CreateItemzDTO})">
+            <summary>
+            Used for creating new multiple Itemz record in the database
+            </summary>
+            <param name="itemzCollection">Array of CreateItemzDTO Used for populating information in the newly created itemzs in the database</param>
+            <returns>Collection of Newly created Itemzs property details</returns>
+            <response code="201">Collection of Newly created Itemzs property details</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzCollectionController.GetItemzCollectionOptions">
+            <summary>
+            Get list of supported HTTP Options for the ItemzCollection controller.
+            </summary>
+            <returns>Custom response header with key as "Allow" and value as different HTTP options that are allowed</returns>
+            <response code="200">Custom response header with key as "Allow" and value as different HTTP options that are allowed</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzsController.GetItemzAsync(System.Guid)">
+            <summary>
+            Get an Itemz by ID (represented by a GUID)
+            </summary>
+            <param name="ItemzId">GUID representing an unique ID of the Itemz that you want to get</param>
+            <returns>A single Itemz record based on provided ID (GUID) </returns>
+            <response code="200">Returns the requested Itemz</response>
+            <response code="404">Requested Itemz not found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzsController.GetItemzs(ItemzApp.API.ResourceParameters.ItemzResourceParameter)">
+            <summary>
+            Gets collection of Itemzs
+            </summary>
+            <param name="itemzResourceParameter">Pass in information related to Pagination and Sorting Order via this parameter</param>
+            <returns>Collection of Itemz based on expectated pagination and sorting order.</returns>
+            <response code="200">Returns collection of Itemzs based on pagination</response>
+            <response code="404">No Itemzs were found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzsController.GetOrphanItemzs(ItemzApp.API.ResourceParameters.ItemzResourceParameter)">
+            <summary>
+            Gets collection of Orphaned Itemzs
+            </summary>
+            <param name="itemzResourceParameter">Pass in information related to Pagination and Sorting Order via this parameter</param>
+            <returns>Collection of orphaned Itemz based on expectated pagination and sorting order.</returns>
+            <response code="200">Returns collection of orphaned Itemzs based on pagination</response>
+            <response code="404">No Itemzs were found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzsController.GetOrphanItemzCount">
+            <summary>
+            Gets count of Orphaned Itemzs in the repository
+            </summary>
+            <returns>Number of Orphaned itemzs found in the repository</returns>
+            <response code="200">Returns collection of orphaned Itemzs based on pagination</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzsController.CreateItemzAsync(ItemzApp.API.Models.CreateItemzDTO,System.Guid,System.Boolean)">
+            <summary>
+            Used for creating new Itemz record in the database
+            </summary>
+            <param name="createItemzDTO">Used for populating information in the newly created itemz in the database</param>
+            <param name="parentId">Used as parent for adding new Itemz as children</param>
+            <param name="AtBottomOfChildNodes">Indicates if we should add new Itemz at TOP or BOTTOM of child Itemz nodes list</param>
+            <returns>Newly created Itemz property details</returns>
+            <response code="201">Returns newly created itemzs property details</response>
+            <response code="404">Expected Parent Itemz not found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzsController.CreateItemzBetweenExistingItemzAsync(ItemzApp.API.Models.CreateItemzDTO,System.Guid,System.Guid)">
+            <summary>
+            Used for creating new Itemz record in the database
+            </summary>
+            <param name="createItemzDTO">Used for populating information in the newly created itemz in the database</param>
+            <param name="firstItemzId">Used as first Itemz for adding new Itemz between existing two Itemz</param>
+            <param name="secondItemzId">Used as second Itemz for adding new Itemz between existing two Itemz</param>
+            <returns>Newly created Itemz property details</returns>
+            <response code="201">Returns newly created itemzs property details</response>
+            <response code="404">Expected first or second from between Itemz not found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzsController.MoveItemzBetweenExistingItemzAsync(System.Guid,System.Guid,System.Guid)">
+            <summary>
+            Used for moving Itemz record between two existing Itemz records
+            </summary>
+            <param name="movingItemzId">Source moving Itemz ID that will be moved to new location</param>
+            <param name="firstItemzId">Used as first Itemz for moving Itemz between existing two Itemz</param>
+            <param name="secondItemzId">Used as second Itemz for moving Itemz between existing two Itemz</param>
+            <returns>No Content</returns>
+            <response code="204">No Content</response>
+            <response code="404">Expected moveing OR target between Itemz could not found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzsController.UpdateItemzPutAsync(System.Guid,ItemzApp.API.Models.UpdateItemzDTO)">
+            <summary>
+            Updating exsting Itemz based on Itemz Id (GUID)
+            </summary>
+            <param name="itemzId">GUID representing an unique ID of the Itemz that you want to get</param>
+            <param name="itemzToBeUpdated">required Itemz properties to be updated</param>
+            <returns>No contents are returned but only Status 204 indicating that Item was updated successfully </returns>
+            <response code="204">No content are returned but status of 204 indicated that item was successfully updated</response>
+            <response code="404">Itemz based on itemzId was not found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzsController.UpdateItemzPatchAsync(System.Guid,Microsoft.AspNetCore.JsonPatch.JsonPatchDocument{ItemzApp.API.Models.UpdateItemzDTO})">
+            <summary>
+            Partially updating a single **Itemz**
+            </summary>
+            <param name="itemzId">Id of the Itemz representated by a GUID.</param>
+            <param name="itemzPatchDocument">The set of operations to apply to the Itemz via JsonPatchDocument</param>
+            <returns>an ActionResult of type Itemz</returns>
+            <response code="204">No content are returned but status of 204 indicated that itemz was successfully updated</response>
+            <response code="404">Itemz based on itemzId was not found</response>
+            <response code="422">Validation problems occured during analyzing validation rules for the JsonPatchDocument </response>
+            <remarks> Sample request (this request updates an **Itemz's name**)   
+            Documentation regarding JSON Patch can be found at 
+            *[ASP.NET Core - JSON Patch Operations](https://docs.microsoft.com/en-us/aspnet/core/web-api/jsonpatch?view=aspnetcore-3.1#operations)* 
+            
+                PATCH /api/Itemzs/{id}  
+                [  
+                    {   
+                        "op": "replace",   
+                        "path": "/name",   
+                        "value": "PATCH Updated Name field"  
+                    }   
+                ]
+            </remarks>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzsController.MoveItemzAsync(System.Guid,System.Guid,System.Boolean)">
+            <summary>
+            Move Itemz and it's sub-Itemz to a new location in the repository
+            </summary>
+            <param name="MovingItemzId">GUID representing an unique ID of the moving Itemz</param>
+            <param name="TargetId">Details about target ID under which Itemz will be moving</param>
+            <param name="AtBottomOfChildNodes">Boolean value where by true means at the bottom of the existing nodes and false means at the top</param>
+            <returns>No contents are returned when Itemz gets moved to its new desired location</returns>
+            <response code="200">Itemz to Parent Itemz association was either found or added successfully</response>
+            <response code="204">No content are returned but status of 204 indicating that Itemz has successfully moved to its desired location</response>
+            <response code="404">Either Itemz or ItemzType was not found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzsController.DeleteItemzAsync(System.Guid)">
+            <summary>
+            Deleting a specific Itemz
+            </summary>
+            <param name="itemzId">GUID representing an unique ID of the Itemz that you want to get</param>
+            <returns>Status code 204 is returned without any content indicating that deletion of the specified Itemz was successful</returns>
+            <response code="404">Itemz based on itemzId was not found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzsController.DeleteAllOrphanItemzAsync">
+            <summary>
+            Delete All Orphan Itemz
+            </summary>
+            <response code="204">Returns status as successful</response>
+            <response code="404">Requested Itemz not found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzsController.GetItemzOptions">
+            <summary>
+            Get list of supported HTTP Options for the Itemz controller.
+            </summary>
+            <returns>Custom response header with key as "Allow" and value as different HTTP options that are allowed</returns>
+            <response code="200">Custom response header with key as "Allow" and value as different HTTP options that are allowed</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzTraceController.CheckItemzTraceExistsAsync(System.Guid,System.Guid)">
+            <summary>
+            Check if specific Itemz Trace association exists
+            </summary>
+            <param name="fromTraceItemzId">Provide From Trace Itemz Id</param>
+            <param name="toTraceItemzId">Provide To Trace Itemz Id</param>
+            <returns>ItemzTraceDTO for the Itemz that has specified Itemz Trace</returns>
+            <response code="200">Returns ItemzTraceDTO for the From and To Itemz Trace</response>
+            <response code="404">Itemz Trace was not found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzTraceController.EstablishTraceBetweenItemzAsync(ItemzApp.API.Models.ItemzTraceDTO)">
+            <summary>
+            Used for Establishing Trace link between Itemz 
+            </summary>
+            <param name="itemzTraceDTO">Used for Associating Trace between two Itemz </param>
+            <returns>ItemzTraceDTO for the Itemz Trace Association</returns>
+            <response code="200">Itemz Trace association was either found or added successfully</response>
+            <response code="404">Either FromItemz or ToItemz was not found </response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzTraceController.DeleteItemzTraceAsync(ItemzApp.API.Models.ItemzTraceDTO)">
+            <summary>
+            Used for deleting Trace link between Itemz. This will not delete Itemz from the database,
+            instead it will only remove their trace association if found. 
+            </summary>
+            <returns>Status code 204 is returned without any content indicating that deletion of the specified FromItemz and ToItemz trace association was successful</returns>
+            <response code="404">FromItemz and ToItemz Trace not found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzTraceController.DeleteAllFromItemzTracesAsync(System.Guid)">
+            <summary>
+            Used for deleting All From-Trace links from provided parent ItemzID.
+            </summary>
+            <param name="ItemzID">Itemz ID for which All From Itemz Traces are getting deleted</param>        
+            <returns>Status code 204 is returned without any content indicating that deletion of All From Trace links for provided ItemzID was successful</returns>
+            <response code="204">Returns No Content indicating success</response>
+            <response code="404">Itemz with ItemzID was not found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzTraceController.DeleteAllToItemzTracesAsync(System.Guid)">
+            <summary>
+            Used for deleting All To-Trace links from provided parent ItemzID.
+            </summary>
+            <param name="ItemzID">Itemz ID for which All To Itemz Traces are getting deleted</param>        
+            <returns>Status code 204 is returned without any content indicating that deletion of All To Trace links for provided ItemzID was successful</returns>
+            <response code="204">Returns No Content indicating success</response>
+            <response code="404">Itemz with ItemzID was not found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzTraceController.GetItemzTracesByItemzIDAsync(System.Guid)">
+            <summary>
+            Gets collection of Itemz Traces by Itemz ID
+            </summary>
+            <param name="itemzId">Itemz ID for which Itemz Traces are queried</param>
+            <returns>Collection of Itemz Traces by Itemz ID</returns>
+            <response code="200">Returns Collection of Itemz Traces by Itemz ID</response>
+            <response code="404">Either ItemzID was not found or No Itemz Traces were found for given ItemzID</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzTraceController.GetAllParentAndChildTracesByItemzIdAsync(System.Guid)">
+            <summary>
+            Gets All Parent and Child Itemz Traces byItemz ID
+            </summary>
+            <param name="itemzId">Itemz ID for which Parent and Child Itemz Traces are returned.</param>
+            <returns>Collection of all Parent and Child Itemz Traces by Itemz ID</returns>
+            <response code="200">Returns Collection of all Parent and Child Itemz Traces by Itemz ID</response>
+            <response code="404">ItemzID was not found in the repository</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzTraceController.GetFromItemzTraceCountByItemzID(System.Guid)">
+            <summary>
+            Get count of FromItemz Traces associated with ItemzID
+            </summary>
+            <param name="ItemzId">Provide ItemzId in GUID form</param>
+            <returns>Integer representing total number of direct From Itemz Traces associated with ItemzID</returns>
+            <response code="200">Count of From Itemz Traces associated with ItemzID. ZERO means no From Itemz Traces were found for targeted ItemzID</response>
+            <response code="404">Itemz for given ID could not be found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzTraceController.GetToItemzTraceCountByItemzID(System.Guid)">
+            <summary>
+            Get count of ToItemz Traces associated with ItemzID
+            </summary>
+            <param name="ItemzId">Provide ItemzId in GUID form</param>
+            <returns>Integer representing total number of direct To Itemz Traces associated with ItemzID</returns>
+            <response code="200">Count of To Itemz Traces associated with ItemzID. ZERO means no To Itemz Traces were found for targeted ItemzID</response>
+            <response code="404">Itemz for given ID could not be found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzTraceController.GetAllFromAndToTracesCountByItemzId(System.Guid)">
+            <summary>
+            Get count of FromItemz and ToItemz Traces associated with ItemzID
+            </summary>
+            <param name="ItemzId">Provide ItemzId in GUID form</param>
+            <returns>Integer representing total number of direct From and To Itemz Traces associated with ItemzID</returns>
+            <response code="200">Count of From and To Itemz Traces associated with ItemzID. ZERO means no Direct Itemz Traces were found for targeted ItemzID</response>
+            <response code="404">Itemz for given ID could not be found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzTraceController.CreateOrVerifyItemzTraceCollectionAsync(System.Collections.Generic.IEnumerable{ItemzApp.API.Models.ItemzTraceDTO})">
+            <summary>
+            Used for bulk creating or verifiying that Itemz Trace record is present in the database
+            </summary>
+            <param name="itemzTraceDTOCollection">Array of ItemzTraceDTO used bulk creation or validation of Itemz Trace record is present in the database</param>
+            <returns>Collection of created or verified ItemzTraceDTO property details</returns>
+            <response code="200">Collection of created or verified ItemzTraceDTO property details</response>
+            <response code="404">Either FromItemz or ToItemz was not found from within the itemzTraceDTOCollection </response>
+            <response code="400">Provided itemzTraceDTOCollection is an empty list. Bad Request </response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzTraceController.DeleteItemzTraceCollectionAsync(System.Collections.Generic.IEnumerable{ItemzApp.API.Models.ItemzTraceDTO})">
+            <summary>
+            Used for bulk deleting of Itemz Trace records
+            </summary>
+            <param name="itemzTraceDTOCollection">Array of ItemzTraceDTO used for bulk deletion of Itemz Trace record</param>
+            <returns>Success or Failure message for Bulk deleting of Itemz Trace request</returns>
+            <response code="204">Indicating that request to bulk delete Itemz Traces completed successfully</response>
+            <response code="404">Itemz Trace was not found for minimum of atleast one record from within the provided itemzTraceDTOCollection</response>
+            <response code="400">Provided itemzTraceDTOCollection is an empty list. Bad Request </response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzTypesController.GetItemzTypeAsync(System.Guid)">
+            <summary>
+            Get a ItemzType by ID (represented by a GUID)
+            </summary>
+            <param name="ItemzTypeId">GUID representing an unique ID of the ItemzType that you want to get</param>
+            <returns>A single ItemzType record based on provided ID (GUID) </returns>
+            <response code="200">Returns the requested ItemzType</response>
+            <response code="404">Requested ItemzType not found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzTypesController.GetItemzTypesAsync">
+            <summary>
+            Gets collection of ItemzTypes
+            </summary>
+            <returns>Collection of ItemzTypes based on expectated sorting order.</returns>
+            <response code="200">Returns collection of ItemzTypes based on sorting order</response>
+            <response code="404">No ItemzTypes were found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzTypesController.CreateItemzTypeAsync(ItemzApp.API.Models.CreateItemzTypeDTO)">
+            <summary>
+            Used for creating new ItemzType record in the database
+            </summary>
+            <param name="createItemzTypeDTO">Used for populating information in the newly created ItemzType in the database</param>
+            <returns>Newly created ItemzType property details</returns>
+            <response code="201">Returns newly created ItemzTypes property details</response>
+            <response code="404">Expected Project with ID was not found in the repository</response>
+            <response code="409">ItemzType with the same name already exists in the target Project</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzTypesController.UpdateItemzTypePutAsync(System.Guid,ItemzApp.API.Models.UpdateItemzTypeDTO)">
+            <summary>
+            Updating exsting ItemzType based on ItemzType Id (GUID)
+            </summary>
+            <param name="ItemzTypeId">GUID representing an unique ID of the ItemzType that you want to get</param>
+            <param name="ItemzTypeToBeUpdated">required ItemzType properties to be updated</param>
+            <returns>No contents are returned but only Status 204 indicating that ItemzType was updated successfully </returns>
+            <response code="204">No content are returned but status of 204 indicated that ItemzType was successfully updated</response>
+            <response code="404">ItemzType based on ItemzTypeId was not found</response>
+            <response code="405">ItemzType is not allowed to be modified. example, ItemzType is a System one.</response>
+            <response code="409">ItemzType with the same name already exists in the target Project</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzTypesController.UpdateItemzTypePatchAsync(System.Guid,Microsoft.AspNetCore.JsonPatch.JsonPatchDocument{ItemzApp.API.Models.UpdateItemzTypeDTO})">
+            <summary>
+            Partially updating a single **ItemzType**
+            </summary>
+            <param name="ItemzTypeId">Id of the ItemzType representated by a GUID.</param>
+            <param name="ItemzTypePatchDocument">The set of operations to apply to the ItemzType via JsonPatchDocument</param>
+            <returns>an ActionResult of type ItemzType</returns>
+            <response code="204">No content are returned but status of 204 indicated that ItemzType was successfully updated</response>
+            <response code="404">ItemzType based on ItemzTypeId was not found</response>
+            <response code="405">ItemzType is not allowed to be modified. example, ItemzType is a System one.</response>
+            <response code="409">ItemzType with the same name already exists in the target Project</response>
+            <response code="422">Validation problems occured during analyzing validation rules for the JsonPatchDocument </response>
+            <remarks> Sample request (this request updates an **ItemzType's name**)   
+            Documentation regarding JSON Patch can be found at 
+            *[ASP.NET Core - JSON Patch Operations](https://docs.microsoft.com/en-us/aspnet/core/web-api/jsonpatch?view=aspnetcore-3.1#operations)* 
+            
+                PATCH /api/ItemzTypes/{id}  
+                [  
+                    {   
+                        "op": "replace",   
+                        "path": "/name",   
+                        "value": "PATCH Updated Name field"  
+                    }   
+                ]
+            </remarks>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzTypesController.MoveItemzTypeAsync(System.Guid,System.Guid,System.Boolean)">
+            <summary>
+            Move ItemzType to a new project in the repository including all its sub-Itemz
+            </summary>
+            <param name="MovingItemzTypeId">GUID representing an unique ID of the moving ItemzType</param>
+            <param name="TargetProjectId">Details about target Project ID under which ItemzType will be moving</param>
+            <param name="AtBottomOfChildNodes">Boolean value where by true means at the bottom of the existing nodes and false means at the top</param>
+            <returns>No contents are returned when ItemzType gets moved to its new desired location</returns>
+            <response code="204">No content are returned but status of 204 indicating that ItemzType has successfully moved to its desired location</response>
+            <response code="404">Either moving ItemzType or target Project was not found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzTypesController.MoveItemzTypeBetweenItemzTypesAsync(System.Guid,System.Guid,System.Guid)">
+            <summary>
+            Used for moving ItemzType record between two existing ItemzType records
+            </summary>
+            <param name="movingItemzTypeId">Source moving ItemzType ID that will be moved to new location</param>
+            <param name="firstItemzTypeId">Used as first ItemzType for moving ItemzType between existing two ItemzTypes</param>
+            <param name="secondItemzTypeId">Used as second ItemzType for moving ItemzType between existing two ItemzTypes</param>
+            <returns>No Content</returns>
+            <response code="204">No Content</response>
+            <response code="404">Expected moveing OR target between ItemzTypes could not found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzTypesController.DeleteItemzTypeAsync(System.Guid)">
+            <summary>
+            Deleting a specific ItemzType
+            </summary>
+            <param name="ItemzTypeId">GUID representing an unique ID of the ItemzType that you want to get</param>
+            <returns>Status code 204 is returned without any content indicating that deletion of the specified ItemzType was successful</returns>
+            <response code="404">ItemzType based on ItemzTypeId was not found</response>
+            <response code="405">ItemzType is not allowed to be deleted. example, ItemzType is a System one.</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzTypesController.GetItemzTypesOptions">
+            <summary>
+            Get list of supported HTTP Options for the ItemzTypes controller.
+            </summary>
+            <returns>Custom response header with key as "Allow" and value as different HTTP options that are allowed</returns>
+            <response code="200">Custom response header with key as "Allow" and value as different HTTP options that are allowed</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzTypeItemzsController.GetItemzsByItemzTypeAsync(System.Guid,ItemzApp.API.ResourceParameters.ItemzResourceParameter)">
+            <summary>
+            Gets collection of Itemzs by ItemzType ID
+            </summary>
+            <param name="ItemzTypeId">ItemzType ID for which Itemz are queried</param>
+            <param name="itemzResourceParameter">Pass in information related to Pagination and Sorting Order via this parameter</param>
+            <returns>Collection of Itemz based on expectated pagination and sorting order.</returns>
+            <response code="200">Returns collection of Itemzs based on pagination</response>
+            <response code="404">No Itemzs were found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzTypeItemzsController.GetItemzCountByItemzType(System.Guid)">
+            <summary>
+            Get count of Itemzs associated with ItemzType
+            </summary>
+            <param name="ItemzTypeId">Provide ItemzType Id in GUID form</param>
+            <returns>Integer representing total number of Itemzs associated with ItemzType</returns>
+            <response code="200">Count of Itemzs associated with ItemzType. ZERO means no Itemz were found for targeted ItemzType</response>
+            <response code="404">ItemzType for given ID could not be found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzTypeItemzsController.CheckItemzTypeItemzAssociationExistsAsync(System.Guid,System.Guid)">
+            <summary>
+            Check if specific ItemzType and Itemz association exists
+            </summary>
+            <param name="ItemzTypeId">Provide ItemzType Id</param>
+            <param name="itemzId">Provide Itemz Id</param>
+            <returns>GetItemzDTO for the Itemz that has specified ItemzType association</returns>
+            <response code="200">Returns GetItemzDTO for the Itemz that has specified ItemzType association</response>
+            <response code="404">No ItemzType and Itemzs association was found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzTypeItemzsController.CreateItemzByItemzTypeAsync(ItemzApp.API.Models.CreateItemzDTO,System.Guid,System.Boolean)">
+            <summary>
+            Used for creating single new Itemz record in the repository by ItemzType ID
+            </summary>
+            <param name="createItemzDTO">Used for populating information in the newly created itemz in the repository by ItemzType ID</param>
+            <param name="ItemzTypeId">ItemzType ID in Guid Form. New Itemzs will be associated with provided ItemzType Id</param>
+            <param name="AtBottomOfChildNodes">New Itemz will be added at the bottom of existing child Itemz records under target ItemzType ID. 
+            By default new Itemz will be created at the bottom. To create new Itemz at the TOP of the existing child Itemz list then use 'false' </param>
+            <returns>Newly created Itemzs property details</returns>
+            <response code="201">Returns newly created itemzs property details</response>
+            <response code="400">Validation Issue OR Bad Request encountered while creating new Itemz under target ItemzType</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzTypeItemzsController.CreateItemzCollectionByItemzTypeAsync(System.Guid,System.Collections.Generic.IEnumerable{ItemzApp.API.Models.CreateItemzDTO})">
+            <summary>
+            Used for creating new multiple Itemz record in the repository by ItemzType ID
+            </summary>
+            <param name="ItemzTypeId">ItemzType ID in Guid Form. New Itemzs will be associated with provided ItemzType Id</param>
+            <param name="itemzCollection">Used for populating information in the newly created itemz in the repository by ItemzType ID</param>
+            <returns>Newly created Itemzs property details</returns>
+            <response code="201">Returns newly created itemzs property details</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzTypeItemzsController.AssociateItemzToItemzTypeAsync(ItemzApp.API.Models.ItemzTypeItemzDTO,System.Boolean)">
+            <summary>
+            Used for Associating Orphaned Itemz to ItemzType either at the TOP or BOTTOM of the existing child Itemz nodes
+            </summary>
+            <param name="ItemzTypeItemzDTO">Used for Associating Itemz to ItemzType through ItemzId and ItemzTypeId Respectively</param>
+            <param name="AtBottomOfChildNodes">Used to indicate if Itemz should be added at Bottom or Top of existing Child Itemz list</param>
+            <returns>GetItemzDTO for the Itemz that has specified ItemzType association</returns>
+            <response code="200">Itemz to ItemzType association was either found or added successfully</response>
+            <response code="400">Itemz is already associated with another ItemzType and it's not an Orphaned</response>
+            <response code="404">Either Itemz or ItemzType was not found </response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzTypeItemzsController.DeleteItemzTypeAndItemzAssociationAsync(ItemzApp.API.Models.ItemzTypeItemzDTO)">
+            <summary>
+            Deleting a specific Itemz and ItemzType association. This will not delete Itemz or ItemzType from the database,
+            instead it will only remove their association if found. 
+            </summary>
+            <returns>Status code 204 is returned without any content indicating that deletion of the specified ItemzType and Itemz association was successful</returns>
+            <response code="404">ItemzType and Itemz association not found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ItemzTypeItemzsController.GetItemzTypeItemzOptions">
+            <summary>
+            Get list of supported HTTP Options for the Itemz controller.
+            </summary>
+            <returns>Custom response header with key as "Allow" and value as different HTTP options that are allowed</returns>
+            <response code="200">Custom response header with key as "Allow" and value as different HTTP options that are allowed</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ProjectsController.GetProjectAsync(System.Guid)">
+            <summary>
+            Get a Project by ID (represented by a GUID)
+            </summary>
+            <param name="ProjectId">GUID representing an unique ID of the Project that you want to get</param>
+            <returns>A single Project record based on provided ID (GUID) </returns>
+            <response code="200">Returns the requested Project</response>
+            <response code="404">Requested Project not found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ProjectsController.GetProjectsAsync">
+            <summary>
+            Gets collection of Projects
+            </summary>
+            <returns>Collection of Projects based on expectated sorting order.</returns>
+            <response code="200">Returns collection of Projects based on sorting order</response>
+            <response code="404">No Projects were found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ProjectsController.CreateProjectAsync(ItemzApp.API.Models.CreateProjectDTO)">
+            <summary>
+            Used for creating new Project record in the database
+            </summary>
+            <param name="createProjectDTO">Used for populating information in the newly created Project in the database</param>
+            <returns>Newly created Project property details</returns>
+            <response code="201">Returns newly created Projects property details</response>
+            <response code="409">Project with the same name already exists in the repository</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ProjectsController.UpdateProjectPutAsync(System.Guid,ItemzApp.API.Models.UpdateProjectDTO)">
+            <summary>
+            Updating exsting Project based on Project Id (GUID)
+            </summary>
+            <param name="projectId">GUID representing an unique ID of the Project that you want to get</param>
+            <param name="projectToBeUpdated">required Project properties to be updated</param>
+            <returns>No contents are returned but only Status 204 indicating that Project was updated successfully </returns>
+            <response code="204">No content are returned but status of 204 indicated that Project was successfully updated</response>
+            <response code="404">Project based on projectId was not found</response>
+            <response code="409">Project with updated name already exists in the repository</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ProjectsController.UpdateProjectPatchAsync(System.Guid,Microsoft.AspNetCore.JsonPatch.JsonPatchDocument{ItemzApp.API.Models.UpdateProjectDTO})">
+            <summary>
+            Partially updating a single **Project**
+            </summary>
+            <param name="projectId">Id of the Project representated by a GUID.</param>
+            <param name="projectPatchDocument">The set of operations to apply to the Project via JsonPatchDocument</param>
+            <returns>an ActionResult of type Project</returns>
+            <response code="204">No content are returned but status of 204 indicated that Project was successfully updated</response>
+            <response code="404">Project based on projectId was not found</response>
+            <response code="409">Project with updated name already exists in the repository</response>
+            <response code="422">Validation problems occured during analyzing validation rules for the JsonPatchDocument </response>
+            <remarks> Sample request (this request updates an **Project's name**)   
+            Documentation regarding JSON Patch can be found at 
+            *[ASP.NET Core - JSON Patch Operations](https://docs.microsoft.com/en-us/aspnet/core/web-api/jsonpatch?view=aspnetcore-3.1#operations)* 
+            
+                PATCH /api/Projects/{id}  
+                [  
+                    {   
+                        "op": "replace",   
+                        "path": "/name",   
+                        "value": "PATCH Updated Name field"  
+                    }   
+                ]
+            </remarks>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ProjectsController.DeleteProjectAsync(System.Guid)">
+            <summary>
+            Deleting a specific Project
+            </summary>
+            <param name="projectId">GUID representing an unique ID of the Project that you want to get</param>
+            <returns>Status code 204 is returned without any content indicating that deletion of the specified Project was successful</returns>
+            <response code="404">Project based on projectId was not found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ProjectsController.GetItemzCountByProjectAsync(System.Guid)">
+            <summary>
+            Get total number of Itemz by Project
+            </summary>
+            <param name="projectId">Provide ProjectID representated in GUID form</param>
+            <returns>Number of Itemz found for the given ProjectID. Zero if none found.</returns>
+            <response code="200">Returns number of Itemz count that were associated with a given Project</response>
+            <response code="404">Project based on projectId was not found</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ProjectsController.GetItemzTypesByProjectIdAsync(System.Guid)">
+            <summary>
+            Gets collection of ItemzTypes for the given ProjectID
+            </summary>
+            <returns>Collection of ItemzTypes based on sorting order for the given ProjectID</returns>
+            <response code="200">Returns collection of ItemzTypes based on sorting order for the given ProjectID</response>
+            <response code="404">No ItemzTypes were found for the given ProjectID</response>
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ProjectsController.GetLastProjectHierarchyIDAsync">
+            <summary>
+            Gets last project hierarchy number
+            </summary>
+            <returns>string representing highest most last project hierarchy id</returns>
+            <response code="200">string representing highest most last project hierarchy id</response>
+            <response code="404">No project hierarchy records found in the system</response>
+            
+        </member>
+        <member name="M:ItemzApp.API.Controllers.ProjectsController.GetProjectsOptions">
+            <summary>
+            Get list of supported HTTP Options for the Projects controller.
+            </summary>
+            <returns>Custom response header with key as "Allow" and value as different HTTP options that are allowed</returns>
+            <response code="200">Custom response header with key as "Allow" and value as different HTTP options that are allowed</response>
+        </member>
+        <member name="T:ItemzApp.API.Entities.ProjectStatus">
+            <summary>
+            Project Status list values as ENUM
+            </summary>
+        </member>
+        <member name="T:ItemzApp.API.Entities.ItemzTypeStatus">
+            <summary>
+            ItemzType Status list values as ENUM
+            </summary>
+        </member>
+        <member name="T:ItemzApp.API.Entities.ItemzSeverity">
+            <summary>
+            Itemz Severity list values as ENUM
+            </summary>
+        </member>
+        <member name="T:ItemzApp.API.Entities.ItemzPriority">
+            <summary>
+            Itemz Priority list values as ENUM
+            </summary>
+        </member>
+        <member name="T:ItemzApp.API.Entities.ItemzStatus">
+            <summary>
+            Itemz Status list values as ENUM
+            </summary>
+        </member>
+        <member name="T:ItemzApp.API.Entities.NonEntity_CloneBaseline">
+            <summary>
+            NonEntity_CloneBaseline is used to pass in necessary properties to custom User Stored Procedure
+            via repository service that clones existing baseline to create a new Baseline from it.
+            
+            This is NOT used for mapping entities to the database via EF Core DBContext. 
+            
+            We are making sure that we follow the convention of not letting DTO be sent directly to the 
+            Database for processing user request. For now, CloneBaselineDTO and NonEntity_CloneBaseline has 
+            similar properties and we keep them seperated to make sure that we follow necessary best practices.
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Entities.NonEntity_CloneBaseline.BaselineId">
+            <summary>
+            Source Baseline's Id for creating new baseline by cloning it.
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Entities.NonEntity_CloneBaseline.Name">
+            <summary>
+            Name or Title of the Baseline
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Entities.NonEntity_CloneBaseline.Description">
+            <summary>
+            Description of the Baseline
+            </summary>
+        </member>
+        <member name="T:ItemzApp.API.Entities.UpdateBaselineItemz">
+            <summary>
+            BaselineItemz are mainly readonly objects. 
+            Purpose of this UpdateBaselineItemzDTO is to allow setting property for 
+            inclusion or exclusion of BaselineItemz from a given baseline itself.
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Entities.UpdateBaselineItemz.BaselineId">
+            <summary>
+            Id of the Baseline represented by a GUID
+            </summary>
+        </member>
+        <member name="F:ItemzApp.API.Entities.UpdateBaselineItemz.ShouldBeIncluded">
+            <summary>
+            True if action is to include BaselineItemzs otherwise False
+            </summary>
+        </member>
+        <member name="F:ItemzApp.API.Entities.UpdateBaselineItemz.SingleNodeInclusion">
+            <summary>
+            True if action is to only include single node without including it's child breakdown structure. Will be ignored when ShouldBeIncluded is false.
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Entities.UpdateBaselineItemz.BaselineItemzIds">
+            <summary>
+            Id of the BaselineItemz represented by a GUID.
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.BaselineHierarchyIdRecordDetailsDTO.RecordId">
+            <summary>
+            Parent Record ID representated by a GUID.
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.BaselineHierarchyIdRecordDetailsDTO.BaselineHierarchyId">
+            <summary>
+            Baseline Hierarchy ID in string format for RecordId e.g. "/3/2/1"
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.BaselineHierarchyIdRecordDetailsDTO.SourceHierarchyId">
+            <summary>
+            Source Itemz Hierarchy ID in string format for RecordId e.g. "/3/2/1"
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.BaselineHierarchyIdRecordDetailsDTO.Level">
+            <summary>
+            Baseline Hierarchy Level for RecordId
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.BaselineHierarchyIdRecordDetailsDTO.RecordType">
+            <summary>
+            Record Type within Baseline Hierarchy for RecordId
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.BaselineHierarchyIdRecordDetailsDTO.Name">
+            <summary>
+            Name of the Baseline Hierarchy Record
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.BaselineHierarchyIdRecordDetailsDTO.TopChildBaselineHierarchyId">
+            <summary>
+            Baseline Hierarchy Id for the TOP Baseline Hierarchy Record within a given Parent Baseline Hierarchy Record
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.BaselineHierarchyIdRecordDetailsDTO.BottomChildBaselineHierarchyId">
+            <summary>
+            Baseline Hierarchy Id for the BOTTOM Baseline Hierarchy Record within a given Parent Baseline Hierarchy Record
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.BaselineHierarchyIdRecordDetailsDTO.NumberOfChildNodes">
+            <summary>
+            Total Number of Child nodes under RecordId
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.BaselineHierarchyIdRecordDetailsDTO.IsIncluded">
+            <summary>
+            TRUE if included in the baseline and FALSE if excluded from the baseline. 
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.BaselineHierarchyIdRecordDetailsDTO.ParentRecordId">
+            <summary>
+            Parent Baseline Itemz Record ID representated by a GUID.
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.BaselineHierarchyIdRecordDetailsDTO.ParentBaselineHierarchyId">
+            <summary>
+            Hierarchy ID in string format for ParentRecordId e.g. "/3/2/1"
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.BaselineHierarchyIdRecordDetailsDTO.ParentLevel">
+            <summary>
+            Hierarchy Level for Parent Baseline Itemz RecordId
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.BaselineHierarchyIdRecordDetailsDTO.ParentRecordType">
+            <summary>
+            Record Type within Hierarchy for Parent Baseline Itemz RecordId
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.BaselineHierarchyIdRecordDetailsDTO.ParentName">
+            <summary>
+            Parent Name of the Baseline Hierarchy Record
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.BaselineHierarchyIdRecordDetailsDTO.ParentIsIncluded">
+            <summary>
+            Is Parent Baseline Hierarchy Record Included or Excluded?
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.BaselineItemzTraceDTO.FromTraceBaselineItemzId">
+            <summary>
+            Id of the From Trace Baseline Itemz representated by a GUID.
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.BaselineItemzTraceDTO.ToTraceBaselineItemzId">
+            <summary>
+            Id of the To Trace Baseline Itemz representated by a GUID.
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.BetweenControllerAndRepository.RecordCountAndEnumerable`1.RecordCount">
+            <summary>
+            Total Number of records in AllRecords
+            </summary>
+        </member>
+        <member name="F:ItemzApp.API.Models.BetweenControllerAndRepository.RecordCountAndEnumerable`1.AllRecords">
+            <summary>
+            AllRecords containing list of nested objects that has several levels of children. 
+            </summary>
+        </member>
+        <member name="T:ItemzApp.API.Models.CloneBaselineDTO">
+            <summary>
+            CloneBaselineDTO shall be used for sending in request for creating new Baseline 
+            based on existing baseline by cloning the same.
+            It will expose necessary properties to allow successful creation of the Baseline.
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.CloneBaselineDTO.BaselineId">
+            <summary>
+            Source Baseline's Id for creating new baseline by cloning it.
+            </summary>
+        </member>
+        <member name="T:ItemzApp.API.Models.CreateBaselineDTO">
+            <summary>
+            CreateBaselineDTO shall be used for sending in request for creating new Baseline.
+            It will expose necessary properties to allow successful creation of the Baseline.
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.CreateBaselineDTO.ProjectId">
+            <summary>
+            ProjectId is used to create new baseline under identified project.
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.CreateBaselineDTO.ItemzTypeId">
+            <summary>
+            ItemzTypeId is an optional property for which value shall be supplied 
+            only when Baseline has to be created for a given ItemzType within 
+            an identified Project. 
+            </summary>
+        </member>
+        <member name="T:ItemzApp.API.Models.CreateItemzDTO">
+            <summary>
+            CreateItemzDTO shall be used for sending in request for creating new Itemz. 
+            It will expose necessary properties to allow successful creation of new Itemz.
+            </summary>
+        </member>
+        <member name="T:ItemzApp.API.Models.CreateItemzTypeDTO">
+            <summary>
+            CreateItemzTypeDTO shall be used for sending in request for creating new ItemzType.
+            It will expose necessary properties to allow successful creation of the ItemzType.
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.CreateItemzTypeDTO.ProjectId">
+            <summary>
+            Project ID in the Guid form. 
+            New ItemzType shall be created this project.
+            </summary>
+        </member>
+        <member name="T:ItemzApp.API.Models.CreateProjectDTO">
+            <summary>
+            CreateProjectDTO shall be used for sending in request for creating new Project.
+            It will expose necessary properties to allow successful creation of the Project.
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.BaseChangeHistoryDTO.Id">
+            <summary>
+            itemzId of the Itemz representated by a GUID.
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.BaseChangeHistoryDTO.UptoDateTime">
+            <summary>
+            Date and Time upto which Itemz Change History data has to be deleted for given ItemzId.
+            </summary>
+        </member>
+        <member name="T:ItemzApp.API.Models.GetBaselineDTO">
+            <summary>
+            BaselineDTO is a POCO used for serving requests like GetBaselines or GetBaseline by BaselineID.
+            It will carry specified set of data that are exposed when baseline details are requested throgh "ItemzApp.API"
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetBaselineDTO.Id">
+            <summary>
+            Id of the Baseline representated by a GUID.
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetBaselineDTO.Name">
+            <summary>
+            Baseline Name 
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetBaselineDTO.Description">
+            <summary>
+            Description of the Baseline
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetBaselineDTO.CreatedBy">
+            <summary>
+            User who created the Baseline
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetBaselineDTO.CreatedDate">
+            <summary>
+            Date and Time when Baseline was created
+            </summary>
+        </member>
+        <member name="T:ItemzApp.API.Models.GetBaselineItemzDTO">
+            <summary>
+            BaselineItemz class containing several properties that represents it.
+            This BaselineItemz class is returned by the "ItemzApp.API" in most of the cases when
+            user sends request to read a BaselineItemz record.
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetBaselineItemzDTO.Id">
+            <summary>
+            Id of the BaselineItemz representated by a GUID.
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetBaselineItemzDTO.ItemzId">
+            <summary>
+            Id of the Itemz as GUID based on which BaselineItemz was created.
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetBaselineItemzDTO.Name">
+            <summary>
+            Name or Title of the BaselineItemz
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetBaselineItemzDTO.Status">
+            <summary>
+            Status of the BaselineItemz
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetBaselineItemzDTO.Priority">
+            <summary>
+            Priority of the BaselineItemz
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetBaselineItemzDTO.Description">
+            <summary>
+            Description of the BaselineItemz
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetBaselineItemzDTO.CreatedBy">
+            <summary>
+            User who created the BaselineItemz
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetBaselineItemzDTO.CreatedDate">
+            <summary>
+            Date and Time when BaselineItemz was created
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetBaselineItemzDTO.Severity">
+            <summary>
+            Severity of the BaselineItemz
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetBaselineItemzDTO.isIncluded">
+            <summary>
+            Indicates if BaselineItemz is included in the Baseline
+            </summary>
+        </member>
+        <member name="T:ItemzApp.API.Models.GetBaselineItemzTypeDTO">
+            <summary>
+            BaselineItemzTypeDTO is a POCO used for serving requests like 
+            GetBaselineItemzTypes or GetBaselineItemzType by BaselineItemzTypeID.
+            It will carry specified set of data that are exposed when 
+            BaselineItemzType details are requested throgh "ItemzApp.API"
+            
+            Remember that many of the fields are copied over from original ItemzType
+            that was used at the time when BaselineItemzType was created.
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetBaselineItemzTypeDTO.Id">
+            <summary>
+            Id of the BaselineItemzType representated by a GUID.
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetBaselineItemzTypeDTO.ItemzTypeId">
+            <summary>
+            Id of the ItemzType based on which BaselineItemzType was created
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetBaselineItemzTypeDTO.BaselineId">
+            <summary>
+            Id of the Parent Baseline underwhich BaselineItemzType is associated as child
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetBaselineItemzTypeDTO.Name">
+            <summary>
+            BaselineItemzType Name 
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetBaselineItemzTypeDTO.Status">
+            <summary>
+            Status of the BaselineItemzType
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetBaselineItemzTypeDTO.Description">
+            <summary>
+            Description of the BaselineItemzType
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetBaselineItemzTypeDTO.CreatedBy">
+            <summary>
+            User who created the original ItemzType which was used for creating BaselineItemzType
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetBaselineItemzTypeDTO.CreatedDate">
+            <summary>
+            Date and Time when original ItemzType was created from which BaselineItemzType as created
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetBaselineItemzTypeDTO.IsSystem">
+            <summary>
+            Returns true if it's system BaselineItemzType otherwise false
+            </summary>
+        </member>
+        <member name="T:ItemzApp.API.Models.GetItemzChangeHistoryDTO">
+            <summary>
+            Itemz Change History class containing details about changes loggged against Itemz.
+            This Itemz Change History class is identified by Itemz ID against which changes are registered.
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetItemzChangeHistoryDTO.ItemzId">
+            <summary>
+            itemzId of the Itemz representated by a GUID.
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetItemzChangeHistoryDTO.CreatedDate">
+            <summary>
+            Date and Time when Itemz Change History was created
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetItemzChangeHistoryDTO.OldValues">
+            <summary>
+            Old value of the Itemz Change History log
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetItemzChangeHistoryDTO.NewValues">
+            <summary>
+            New value of the Itemz Change History log
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetItemzChangeHistoryDTO.ChangeEvent">
+            <summary>
+            Actual event that triggered registration of Itemz Change History, either Added or Modified.
+            </summary>
+        </member>
+        <member name="T:ItemzApp.API.Models.GetItemzDTO">
+            <summary>
+            Itemz class containing several properties that represents it.
+            This Itemz class is returned by the "ItemzApp.API" in most of the cases when
+            user sends request to read an Itemz record.
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetItemzDTO.Id">
+            <summary>
+            Id of the Itemz representated by a GUID.
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetItemzDTO.Name">
+            <summary>
+            Name or Title of the Itemz
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetItemzDTO.Status">
+            <summary>
+            Status of the itemz
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetItemzDTO.Priority">
+            <summary>
+            Priority of the Itemz
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetItemzDTO.Description">
+            <summary>
+            Description of the Itemz
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetItemzDTO.CreatedBy">
+            <summary>
+            User who created the Itemz
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetItemzDTO.CreatedDate">
+            <summary>
+            Date and Time when Itemz was created
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetItemzDTO.Severity">
+            <summary>
+            Severity of the Itemz
+            </summary>
+        </member>
+        <member name="T:ItemzApp.API.Models.GetItemzTypeDTO">
+            <summary>
+            ItemzTypeDTO is a POCO used for serving requests like GetItemzTypes or GetItemzType by ItemzTypeID.
+            It will carry specified set of data that are exposed when ItemzType details are requested throgh "ItemzApp.API"
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetItemzTypeDTO.Id">
+            <summary>
+            Id of the ItemzType representated by a GUID.
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetItemzTypeDTO.Name">
+            <summary>
+            ItemzType Name 
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetItemzTypeDTO.Status">
+            <summary>
+            Status of the ItemzType
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetItemzTypeDTO.Description">
+            <summary>
+            Description of the ItemzType
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetItemzTypeDTO.CreatedBy">
+            <summary>
+            User who created the ItemzType
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetItemzTypeDTO.CreatedDate">
+            <summary>
+            Date and Time when ItemzType was created
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetItemzTypeDTO.IsSystem">
+            <summary>
+            Returns true if it's system ItemzType otherwise false
+            </summary>
+        </member>
+        <member name="T:ItemzApp.API.Models.GetItemzWithBasePropertiesDTO">
+            <summary>
+            Itemz class containing several properties that represents it.
+            This Itemz class is returned by the "ItemzApp.API" in most of the cases when
+            user sends request to read an Itemz record.
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetItemzWithBasePropertiesDTO.Id">
+            <summary>
+            Id of the Itemz representated by a GUID.
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetItemzWithBasePropertiesDTO.Name">
+            <summary>
+            Name or Title of the Itemz
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetItemzWithBasePropertiesDTO.Status">
+            <summary>
+            Status of the itemz
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetItemzWithBasePropertiesDTO.Priority">
+            <summary>
+            Priority of the Itemz
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetItemzWithBasePropertiesDTO.CreatedDate">
+            <summary>
+            Description of the Itemz
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetItemzWithBasePropertiesDTO.Severity">
+            <summary>
+            Severity of the Itemz
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetNumberOfChangeHistoryByRepositoryDTO.UptoDateTime">
+            <summary>
+            Date and Time upto which Itemz Change History data has to be deleted for given ItemzId.
+            </summary>
+        </member>
+        <member name="T:ItemzApp.API.Models.GetProjectDTO">
+            <summary>
+            ProjectDTO is a POCO used for serving requests like GetProjects or GetProject by ProjectID.
+            It will carry specified set of data that are exposed when project details are requested throgh "ItemzApp.API"
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetProjectDTO.Id">
+            <summary>
+            Id of the Project representated by a GUID.
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetProjectDTO.Name">
+            <summary>
+            Project Name 
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetProjectDTO.Status">
+            <summary>
+            Status of the Project
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetProjectDTO.Description">
+            <summary>
+            Description of the Project
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetProjectDTO.CreatedBy">
+            <summary>
+            User who created the Project
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.GetProjectDTO.CreatedDate">
+            <summary>
+            Date and Time when Project was created
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.HierarchyIdRecordDetailsDTO.RecordId">
+            <summary>
+            Record ID representated by a GUID.
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.HierarchyIdRecordDetailsDTO.HierarchyId">
+            <summary>
+            Hierarchy ID in string format for RecordId e.g. "/3/2/1"
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.HierarchyIdRecordDetailsDTO.Level">
+            <summary>
+            Hierarchy Level for RecordId
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.HierarchyIdRecordDetailsDTO.RecordType">
+            <summary>
+            Record Type within Hierarchy for RecordId
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.HierarchyIdRecordDetailsDTO.Name">
+            <summary>
+            Name of the Hierarchy Record
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.HierarchyIdRecordDetailsDTO.TopChildHierarchyId">
+            <summary>
+            Hierarchy Id for the TOP Hierarchy Record within a given Parent Hierarchy Record
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.HierarchyIdRecordDetailsDTO.BottomChildHierarchyId">
+            <summary>
+            Hierarchy Id for the BOTTOM Hierarchy Record within a given Parent Hierarchy Record
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.HierarchyIdRecordDetailsDTO.NumberOfChildNodes">
+            <summary>
+            Total Number of Child nodes under RecordId
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.HierarchyIdRecordDetailsDTO.ParentRecordId">
+            <summary>
+            Parent Record ID representated by a GUID.
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.HierarchyIdRecordDetailsDTO.ParentHierarchyId">
+            <summary>
+            Hierarchy ID in string format for ParentRecordId e.g. "/3/2/1"
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.HierarchyIdRecordDetailsDTO.ParentLevel">
+            <summary>
+            Hierarchy Level for ParentRecordId
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.HierarchyIdRecordDetailsDTO.ParentRecordType">
+            <summary>
+            Record Type within Hierarchy for ParentRecordId
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.HierarchyIdRecordDetailsDTO.ParentName">
+            <summary>
+            Parent Name of the Hierarchy Record
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.ItemzTraceDTO.FromTraceItemzId">
+            <summary>
+            Id of the From Trace Itemz representated by a GUID.
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.ItemzTraceDTO.ToTraceItemzId">
+            <summary>
+            Id of the To Trace Itemz representated by a GUID.
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.ItemzTypeItemzDTO.ItemzId">
+            <summary>
+            Id of the Itemz representated by a GUID.
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.ItemzTypeItemzDTO.ItemzTypeId">
+            <summary>
+            Id of the ItemzType representated by a GUID.
+            </summary>
+        </member>
+        <member name="T:ItemzApp.API.Models.ManipulateBaselineDTO">
+            <summary>
+            ManipulateBaselineDTO is used for updating Baseline
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.ManipulateBaselineDTO.Name">
+            <summary>
+            Name or Title of the Baseline
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.ManipulateBaselineDTO.Description">
+            <summary>
+            Description of the Baseline
+            </summary>
+        </member>
+        <member name="T:ItemzApp.API.Models.ManipulateItemzDTO">
+            <summary>
+            ManipulateItemzDTO is used for updating Itemz
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.ManipulateItemzDTO.Name">
+            <summary>
+            Name or Title of the Itemz
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.ManipulateItemzDTO.Status">
+            <summary>
+            Status of the itemz
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.ManipulateItemzDTO.Priority">
+            <summary>
+            Priority of the Itemz
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.ManipulateItemzDTO.Description">
+            <summary>
+            Description of the Itemz
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.ManipulateItemzDTO.Severity">
+            <summary>
+            Severity of the Itemz
+            </summary>
+        </member>
+        <member name="T:ItemzApp.API.Models.ManipulateItemzTypeDTO">
+            <summary>
+            ManipulateItemzTypeDTO is used for updating ItemzType
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.ManipulateItemzTypeDTO.Name">
+            <summary>
+            Name of the ItemzType
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.ManipulateItemzTypeDTO.Status">
+            <summary>
+            Status of the ItemzType
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.ManipulateItemzTypeDTO.Description">
+            <summary>
+            Description of the ItemzType
+            </summary>
+        </member>
+        <member name="T:ItemzApp.API.Models.ManipulateProjectDTO">
+            <summary>
+            ManipulateProjectDTO is used for updating Project
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.ManipulateProjectDTO.Name">
+            <summary>
+            Name of the Project
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.ManipulateProjectDTO.Status">
+            <summary>
+            Status of the Project
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.ManipulateProjectDTO.Description">
+            <summary>
+            Description of the Project
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.NestedBaselineHierarchyIdRecordDetailsDTO.RecordId">
+            <summary>
+            Baseline Hierarchy Record ID representated by a GUID.
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.NestedBaselineHierarchyIdRecordDetailsDTO.BaselineHierarchyId">
+            <summary>
+            Baseline Hierarchy ID in string format for RecordId e.g. "/3/2/1"
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.NestedBaselineHierarchyIdRecordDetailsDTO.Level">
+            <summary>
+            Baseline Hierarchy Level for RecordId
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.NestedBaselineHierarchyIdRecordDetailsDTO.RecordType">
+            <summary>
+            Record Type within Baseline Hierarchy for RecordId
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.NestedBaselineHierarchyIdRecordDetailsDTO.Name">
+            <summary>
+            Name of the Baseline Hierarchy Record
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.NestedBaselineHierarchyIdRecordDetailsDTO.isIncluded">
+            <summary>
+            Indicates if Baseline Hierarchy record is included or excluded
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.NestedHierarchyIdRecordDetailsDTO.RecordId">
+            <summary>
+            Record ID representated by a GUID.
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.NestedHierarchyIdRecordDetailsDTO.HierarchyId">
+            <summary>
+            Hierarchy ID in string format for RecordId e.g. "/3/2/1"
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.NestedHierarchyIdRecordDetailsDTO.Level">
+            <summary>
+            Hierarchy Level for RecordId
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.NestedHierarchyIdRecordDetailsDTO.RecordType">
+            <summary>
+            Record Type within Hierarchy for RecordId
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.NestedHierarchyIdRecordDetailsDTO.Name">
+            <summary>
+            Name of the Hierarchy Record
+            </summary>
+        </member>
+        <member name="T:ItemzApp.API.Models.UpdateBaselineDTO">
+            <summary>
+            UpdateBaselineDTO shall be used for sending in request for updating
+            existing Baseline. It will expose necessary properties to allow existing
+            Baseline to be updated with new values for those properties.
+            </summary>
+        </member>
+        <member name="T:ItemzApp.API.Models.UpdateBaselineItemzDTO">
+            <summary>
+            BaselineItemz are mainly readonly objects. 
+            Purpose of this UpdateBaselineItemzDTO is to allow setting property for 
+            inclusion or exclusion of BaselineItemz from a given baseline itself.
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.UpdateBaselineItemzDTO.BaselineId">
+            <summary>
+            Id of the Baseline represented by a GUID
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.UpdateBaselineItemzDTO.ShouldBeIncluded">
+            <summary>
+            True if action is to include BaselineItemzs otherwise False
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.UpdateBaselineItemzDTO.SingleNodeInclusion">
+            <summary>
+            True if action is to include only Single BaselineItemzs Node without its child breakdown structure nodes. This property will be ignored when ShouldBeIncluded is set to false.
+            </summary>
+        </member>
+        <member name="P:ItemzApp.API.Models.UpdateBaselineItemzDTO.BaselineItemzIds">
+            <summary>
+            Id of the BaselineItemz represented by a GUID.
+            </summary>
+        </member>
+        <member name="T:ItemzApp.API.Models.UpdateItemzDTO">
+            <summary>
+            UpdateItemzDTO shall be used for sending in request for updating
+            existing Itemz. It will expose necessary properties to allow existing Itemz 
+            to be updated with new values for those properties.
+            </summary>
+        </member>
+        <member name="T:ItemzApp.API.Models.UpdateItemzTypeDTO">
+            <summary>
+            UpdateItemzTypeDTO shall be used for sending in request for updating
+            existing ItemzType. It will expose necessary properties to allow existing
+            ItemzType to be updated with new values for those properties.
+            </summary>
+        </member>
+        <member name="T:ItemzApp.API.Models.UpdateProjectDTO">
+            <summary>
+            UpdateProjectDTO shall be used for sending in request for updating
+            existing Project. It will expose necessary properties to allow existing
+            Project to be updated with new values for those properties.
+            </summary>
+        </member>
+        <member name="M:ItemzApp.API.Services.BaselineItemzTraceRepository.BaselineItemzsTraceExistsAsync(ItemzApp.API.Models.BaselineItemzTraceDTO)">
+            <summary>
+            Purpose of this method is to check if Baseline Trace is already found 
+            between FromBaselineItemz and ToBaselineItemz
+            </summary>
+            <param name="baselineItemzTraceDTO"></param>
+            <returns></returns>
+        </member>
+        <member name="M:ItemzApp.API.Services.ItemzChangeHistoryByItemzTypeRepository.DeleteItemzChangeHistoryByItemzTypeAsync(System.Guid,System.Nullable{System.DateTimeOffset})">
+            <summary>
+            Used for deleting Itemz Change History by Itemz Type based on ItemzTypeId and provided Date and Time as Cut-off for deletion
+            
+            If no records are deleted then we return ZERO integer value. This is to make this method behave as an idempotent method.
+            </summary>
+            <param name="itemzTypeId">GUID representing ItemzTypeID for which all associated Itemz's Change History records should be deleted</param>
+            <param name="deleteUptoDateTime">Date time value which is treated as Cut-Off for identifying records that should be deleted</param>
+            <returns>Integer value indicating number of itemz change history records that are deleted within ItemzType.</returns>
+        </member>
+        <member name="M:ItemzApp.API.Services.ItemzChangeHistoryByProjectRepository.DeleteItemzChangeHistoryByProjectAsync(System.Guid,System.Nullable{System.DateTimeOffset})">
+            <summary>
+            Used for deleting Itemz Change History by Itemz Type based on ProjectId and provided Date and Time as Cut-off for deletion
+            
+            If no records are deleted then we return ZERO integer value. This is to make this method behave as an idempotent method.
+            </summary>
+            <param name="ProjectId">GUID representing ProjectID for which all associated Itemz's Change History records should be deleted</param>
+            <param name="deleteUptoDateTime">Date time value which is treated as Cut-Off for identifying records that should be deleted</param>
+            <returns>Integer value indicating number of itemz change history records that are deleted within Project.</returns>
+        </member>
+        <member name="M:ItemzApp.API.Services.ItemzChangeHistoryRepository.DeleteItemzChangeHistoryAsync(System.Guid,System.Nullable{System.DateTimeOffset})">
+            <summary>
+            Used for deleting Itemz Change History based on ItemzId and provided Date and Time as Cut-off for deletion
+            
+            If no records are deleted then we return ZERO integer value. This is to make this method behave as an idempotent method.
+            </summary>
+            <param name="ItemzId">GUID representing ItemzID for which Change History records should be deleted</param>
+            <param name="DeleteUptoDateTime">Date time value which is treated as Cut-Off for identifying records that should be deleted</param>
+            <returns>Integer value indicating number of itemz change history records that are deleted.</returns>
+        </member>
+        <member name="M:ItemzApp.API.Services.ItemzTraceRepository.ItemzsTraceExistsAsync(ItemzApp.API.Models.ItemzTraceDTO)">
+            <summary>
+            Purpose of this method is to check if Trace is already found between FromItemz and ToItemz
+            </summary>
+            <param name="itemzTraceDTO"></param>
+            <returns></returns>
+        </member>
+        <member name="M:ItemzApp.API.Services.ItemzTraceRepository.EstablishTraceBetweenItemzAsync(ItemzApp.API.Models.ItemzTraceDTO)">
+            <summary>
+            Purpose for this method is to allow creating new Itemz Trace and saving it.
+            </summary>
+            <param name="itemzTraceDTO"></param>
+        </member>
+        <member name="T:OpenRose.API.Migrations.OpenRoseVersion0001">
+            <inheritdoc />
+        </member>
+        <member name="M:OpenRose.API.Migrations.OpenRoseVersion0001.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:OpenRose.API.Migrations.OpenRoseVersion0001.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:OpenRose.API.Migrations.OpenRoseVersion0001.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="T:OpenRose.API.Migrations.OpenRoseVersion0001AddingAllStoredProcedure">
+            <inheritdoc />
+        </member>
+        <member name="M:OpenRose.API.Migrations.OpenRoseVersion0001AddingAllStoredProcedure.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:OpenRose.API.Migrations.OpenRoseVersion0001AddingAllStoredProcedure.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:OpenRose.API.Migrations.OpenRoseVersion0001AddingAllStoredProcedure.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+    </members>
+</doc>

@@ -1,0 +1,348 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+@page "/project/{ProjectId:guid}"
+@using OpenRose.WebUI.Client.Services.Hierarchy
+@using OpenRose.WebUI.Client.Services.Project
+@using OpenRose.WebUI.Client.Services.ItemzType
+@using OpenRose.WebUI.Client.SharedModels
+@using OpenRose.WebUI.Components.Pages.Common
+@using Microsoft.AspNetCore.Components.Forms
+@inject NavigationManager NavManager
+@inject IDialogService DialogService
+@inject IJSRuntime JS
+
+<MudPaper Class="pa-3 mb-3 align-start d-flex" Style="width: auto " Outlined="false">
+    <MudStack Row="true" Spacing="3">
+        <MudIcon Icon="@Icons.Material.Filled.LocalFlorist" Size="Size.Large" Color="Color.Secondary" />
+		<MudText Typo="Typo.h6" Align="Align.Left">Project </MudText>
+    </MudStack>
+</MudPaper>
+
+
+@* <MudPaper Class="pa-3 mb-5 align-start d-flex" Style="width: auto " Outlined="false">
+	<MudText Typo="Typo.h6" Align="Align.Left">Project</MudText>
+</MudPaper>
+ *@
+<MudGrid>
+	@if (initializingPage)
+	{
+		<MudPaper Height="calc(100vh - 100px);" Width="100%">
+			<MudOverlay Visible="@initializingPage" DarkBackground="true" Absolute="true">
+				<MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Inherit">Loading ...</MudText>
+				<br />
+				<MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+			</MudOverlay>
+		</MudPaper>
+	}
+	else
+	{
+ 		<MudItem xs="12" sm="12">
+			<MudCard style="background-color : #FABBBB;" >
+				<MudCardContent>
+				<MudItem Class="align-start d-flex" Style="width: auto" Outlined="false">
+					<MudGrid>
+						<MudItem xs="12" sm="12" md="7" lg="7">
+							<MudText Typo="Typo.h5" Align="Align.Left"><strong>@singleProject.Name </strong></MudText>
+						</MudItem>
+						<MudItem xs="12" sm="12" md="5" lg="5">
+							<MudStack Row="true" Spacing="2" AlignItems="AlignItems.End" Justify="Justify.FlexEnd" Class="w-100">
+								<MudButton OnClick="async _ => await editProjectDetails(ProjectId.ToString())" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Success"> Edit Project </MudButton>
+								<MudButton OnClick="async _ => await openProjectTreeView(singleProject.Id.ToString())" Variant="@Variant.Filled" Size="@Size.Medium" Color="@Color.Success" Target="_blank" style="gap: 10px; margin-left : 10px"> TreeView </MudButton>
+								<MudButton OnClick="goBackToProjects" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Warning" style="gap: 10px; margin-left : 10px"> Go Back </MudButton>
+							</MudStack>
+						</MudItem>
+					</MudGrid>
+				</MudItem>
+@* 				<MudDivider Style="color: darkgray background-color: white; border-width: 2px; border-color: black; height: 2px; " /> *@
+					</MudCardContent>
+				</MudCard>
+				<MudCard >
+					<MudCardContent>
+						<MudText><strong> </strong> </MudText>
+						<MudStack Row="true" Spacing="2">
+						<MudText><strong>ID          : </strong></MudText>
+						<CopyableText TextToCopy="@singleProject.Id.ToString()" />
+						</MudStack>
+						<MudText><strong>Status      : </strong> @singleProject.Status</MudText>
+						<MudText><strong>Description : </strong> </MudText> 
+						<br />
+						<div class="custom-markdown-editor">
+						<MudPaper Class="pa-2 fixed-height-scroll" >
+							@if (!string.IsNullOrEmpty(singleProject.Description))
+							{
+								<div class="markdown-body">@((MarkupString)convertedMarkdown)</div>
+							}
+						</MudPaper>
+						</div>
+					</MudCardContent>
+				</MudCard>
+		</MudItem>
+		<br />
+ 		<MudItem xs="12" sm="12">
+			<MudPaper Class="pa-3 mb-5 align-start d-flex" Style="width: auto" Outlined="false">
+				<MudText Typo="Typo.h6" Align="Align.Left">@((MarkupString)("Itemz Types &nbsp;&nbsp;"))</MudText>
+				<MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Primary"> @AllItemzTypesForProject.Count().ToString()</MudChip>
+				<MudSpacer />
+				<MudButton @onclick="async _ => await createNewItemzType(ProjectId.ToString())" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Primary"> Create Itemz Type </MudButton>
+			</MudPaper>
+			<MudDataGrid Items="@AllItemzTypesForProject" Filterable="true" SortMode="@SortMode.None" Groupable="false" Striped="true" FixedHeader="true" HeaderClass="background-color: red;">
+				<Columns>
+					<TemplateColumn Title="Record Id">
+						<CellTemplate>
+							<CopyableText TextToCopy="@context.Item.RecordId.ToString()" DisplayLength="8" />
+						</CellTemplate>
+					</TemplateColumn>
+					<PropertyColumn Property="x => x.Name" />
+					<PropertyColumn Property="x => x.NumberOfChildNodes" Title="Number of Child Nodes" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
+					<TemplateColumn Title="Action">
+						<CellTemplate>
+							<div style="display: flex; justify-content: left; align-items: center; gap: 10px;">
+							<MudButton Size="@Size.Medium"
+								Variant="@Variant.Filled" Color="@Color.Success"
+							    Style="border: none; box-shadow: none;"
+								OnClick="_ => editItemzTypeDetails(context.Item.RecordId.ToString())"> Open </MudButton>
+							</div>
+						</CellTemplate>
+					</TemplateColumn>
+					<TemplateColumn Title="Move Up or Down">
+						<CellTemplate >
+						<div style="display: flex; justify-content: left; align-items: center; gap: 10px;">
+							<MudButton Size="@Size.Medium"
+									Disabled="@(AllItemzTypesForProject.IndexOf(context.Item) == 0)"
+									Color="Color.Success" Variant="@Variant.Filled"
+										   OnClick="async _ => await MoveUpAsync(context.Item.RecordId.ToString())">Up</MudButton>
+								<MudButton Size="@Size.Medium"
+									Disabled="@(AllItemzTypesForProject.IndexOf(context.Item) == AllItemzTypesForProject.Count - 1)"
+									Color="Color.Success" Variant="@Variant.Filled"
+									OnClick="async _ => await MoveDownAsync(context.Item.RecordId.ToString())">Down</MudButton>
+						</div>
+						</CellTemplate>
+					</TemplateColumn>
+				</Columns>
+			</MudDataGrid>
+ 		</MudItem>
+}
+</MudGrid>
+@if (_showOverlay)
+{
+	<MudPaper Height="calc(100vh - 100px);" Width="100%">
+		<MudOverlay Visible="@_showOverlay" DarkBackground="true" Absolute="true">
+			<MudContainer Class="d-flex flex-column justify-center align-center" Style="height: 100%;">
+				@* <MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Inherit">Moving ... </MudText>
+			<br /> *@
+				<MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+			</MudContainer>
+		</MudOverlay>
+	</MudPaper>
+}
+@code {
+	[Parameter]
+	public Guid ProjectId { get; set; }
+
+	[Inject]
+	public IProjectService ProjectService { get; set; }
+
+	[Inject]
+	public IHierarchyService HierarchyService { get; set; }
+
+	[Inject]
+	public IItemzTypeService ItemzTypeService { get; set; }
+
+	public GetProjectDTO singleProject { get; set; } = new();
+	private List<HierarchyIdRecordDetailsDTO> AllItemzTypesForProject { get; set; } = new List<HierarchyIdRecordDetailsDTO>();
+	public bool initializingPage { get; set; } = true;
+	public bool _showOverlay { get; set; } = false;
+
+	private MarkupString convertedMarkdown;
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			initializingPage = true;
+			StateHasChanged();
+			Thread.Sleep(300);
+
+			singleProject = await ProjectService.__Single_Project_By_GUID_ID__Async(ProjectId);
+			if (singleProject != null && singleProject.Description != null)
+			{
+				await ConvertMarkdownToHtml(singleProject.Description);
+			}
+			//var returnedItemzTypeList = await ProjectService.__GET_ItemzTypes_By_Project__Async(ProjectId);
+			var returnedItemzTypeList = await HierarchyService.__Get_Immediate_Children_Hierarchy_By_GUID__Async(ProjectId);
+
+
+			if (returnedItemzTypeList != null)
+			{
+				AllItemzTypesForProject = returnedItemzTypeList.ToList();
+			}
+
+			initializingPage = false;
+			StateHasChanged();
+		}
+	}
+
+	public async Task editItemzTypeDetails(string Id)
+	{
+		NavManager.NavigateTo($"/itemzType/{Id}");
+	}
+
+	public void goBackToProjects()
+	{
+		NavManager.NavigateTo("/projects");
+	}
+
+	public async Task createNewItemzType(string projectId)
+	{
+		NavManager.NavigateTo($"/CreateItemzType/{projectId}");
+	}
+
+	public async Task editProjectDetails(string Id)
+	{
+		NavManager.NavigateTo($"/projectDetails/{Id}");
+	}
+
+	public async Task openProjectTreeView(string Id)
+	{
+		NavManager.NavigateTo($"/projectTreeView/{Id}");
+	}
+
+	#region MOVE_Up_and_Down
+	private async Task MoveUpAsync(string currentId)
+	{
+		var _totalRecordsInList = AllItemzTypesForProject.Count();
+
+		var currentIndex = AllItemzTypesForProject.FindIndex(x => x.RecordId.ToString() == currentId);
+
+		try
+		{
+
+			// EXPLANATION :: // 0,1,2,3,4,5 SO IF GAP HAS TWO POSSIBLE SPACES ABOVE CURRENT RECORD
+			// Here the lowest currentIndex number has to be 2 and so we can move  2 between 0 & 1, 
+			// 3 between 1 & 2, 4 in between 2 & 3, so forth.
+			_showOverlay = true;
+			StateHasChanged();
+
+			if (currentIndex > 1) 
+			{
+				await ItemzTypeService.__POST_Move_ItemzType_Between_ItemzTypes__Async(
+					movingItemzTypeId: AllItemzTypesForProject[currentIndex].RecordId
+					, firstItemzTypeId: AllItemzTypesForProject[currentIndex - 2].RecordId
+					, secondItemzTypeId: AllItemzTypesForProject[currentIndex - 1].RecordId
+				);
+			}
+
+			// EXPLANATION :: // 0,1,2,3,4,5 SO IF GAP HAS ONLY ONE ITEMZ ABOVE CURRENT LIST.
+			// Here the currentIndex number will have to be 1 and so we can move  1 at position 0,
+			// which is the top position.
+
+			else if (currentIndex == 1) 
+			{
+				await ItemzTypeService.__POST_Move_ItemzType__Async(
+							movingItemzTypeId: AllItemzTypesForProject[currentIndex].RecordId
+					, targetProjectId: ProjectId
+					, atBottomOfChildNodes: false
+				);
+			}
+		}
+		catch (Exception ex)
+		{
+			await DialogService.ShowMessageBox("ERROR", markupMessage: new
+					MarkupString($"<p style=\"color: red; \">{ex.Message}</p>"), yesText: "OK");
+			return;
+		}
+		finally
+		{
+			_showOverlay = false;
+			StateHasChanged();
+		}
+
+		var previousIndex = currentIndex - 1;
+
+		if (currentIndex > 0 && previousIndex >= 0)
+		{
+			var temp = AllItemzTypesForProject[currentIndex];
+			AllItemzTypesForProject[currentIndex] = AllItemzTypesForProject[previousIndex];
+			AllItemzTypesForProject[previousIndex] = temp;
+		}
+	}
+
+	private async Task MoveDownAsync(string currentId)
+	{
+
+		var _totalRecordsInList = AllItemzTypesForProject.Count();
+
+		var currentIndex = AllItemzTypesForProject.FindIndex(x => x.RecordId.ToString() == currentId);
+
+		try
+		{
+			_showOverlay = true;
+			StateHasChanged();
+			// EXPLANATION :: 0,1,2,3,4 - Count 5  SO IF GAP HAS TWO POSSIBLE SPACES BELOW CURRENT RECORD.
+			// Here the hieghest currentIndex number has to be 2 and so we can move  2 between 3 & 4,
+			// 1 between 2 & 3, 0 in between 1 & 2, so forth.
+			// Lets say currentIndex is 3 then (3 + 5 < 5) becomes false and so it will skip over if condition
+
+			if (currentIndex + 2 < _totalRecordsInList) 
+			{
+				await ItemzTypeService.__POST_Move_ItemzType_Between_ItemzTypes__Async(
+					movingItemzTypeId: AllItemzTypesForProject[currentIndex].RecordId
+					, firstItemzTypeId: AllItemzTypesForProject[currentIndex + 1].RecordId
+					, secondItemzTypeId: AllItemzTypesForProject[currentIndex + 2].RecordId
+				);
+			}
+			// EXPLANATION 0,1,2,3,4 - Count 5 SO 3 IS THE ONLY VALUE THAT RETURNS TRUE IN THIS CASE.
+			// 3 + 2 = 5 AND SO IF CONDITION EVALUATES TO TRUE.
+			// if currentIndex is 3 then it will move it to bottom of the list at position 4.
+
+			else if (currentIndex + 2 == _totalRecordsInList)
+			{
+				await ItemzTypeService.__POST_Move_ItemzType__Async(
+							movingItemzTypeId: AllItemzTypesForProject[currentIndex].RecordId
+					, targetProjectId: ProjectId
+					, atBottomOfChildNodes: true
+				);
+			}
+		}
+		catch (Exception ex)
+		{
+			await DialogService.ShowMessageBox("ERROR", markupMessage: new
+					MarkupString($"<p style=\"color: red; \">{ex.Message}</p>"), yesText: "OK");
+			return;
+		}
+		finally
+		{
+			_showOverlay = false;
+			StateHasChanged();
+		}
+
+		var nextIndex = currentIndex + 1;
+
+		if (currentIndex < AllItemzTypesForProject.Count - 1 && nextIndex >= 0)
+		{
+			var temp = AllItemzTypesForProject[currentIndex];
+			AllItemzTypesForProject[currentIndex] = AllItemzTypesForProject[nextIndex];
+			AllItemzTypesForProject[nextIndex] = temp;
+		}
+	}
+	#endregion
+
+	private async Task ConvertMarkdownToHtml(string markdown)
+	{
+		if (!string.IsNullOrEmpty(markdown))
+		{
+			var html = await JS.InvokeAsync<string>("markdownToHtml", markdown);
+			convertedMarkdown = (MarkupString)html;
+			StateHasChanged();
+
+			// Apply fullscreen styles
+			// await Task.Delay(1000);
+			// await JS.InvokeVoidAsync("applyMarkdownEditorFullscreenStyles");
+		}
+	}
+
+}

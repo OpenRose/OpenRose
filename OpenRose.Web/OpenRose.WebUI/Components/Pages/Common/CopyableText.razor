@@ -1,0 +1,65 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+@using MudBlazor
+@inject IJSRuntime JSRuntime
+
+<MudStack Row="true" Spacing="3">
+    <MudText>@DisplayText</MudText>
+    <div style="position: relative; display: inline-block;">
+        <MudIcon Icon="@Icons.Material.Filled.ContentCopy"
+                 Color="Color.Primary"
+                 Size="Size.Small"
+                 Class="mouse-pointer-icon"
+                 @onclick="CopyToClipboard" />
+        @if (showTooltip)
+        {
+            <MudTooltip Text="Copied" Visible="true" Class="custom-tooltip" />
+        }
+    </div>
+</MudStack>
+
+<style>
+    .custom-tooltip {
+        position: absolute;
+        top: 25px;
+        left: 50%;
+        transform: translateX(-100%);
+        z-index: 1000;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public string TextToCopy { get; set; }
+
+    private int _displayLength;
+    [Parameter]
+    public int DisplayLength
+    {
+        get => _displayLength == 0 ? TextToCopy?.Length ?? 0 : _displayLength;
+        set => _displayLength = value;
+    }
+
+    private bool showTooltip;
+
+    private string DisplayText => TextToCopy?.Substring(0, Math.Min(DisplayLength, TextToCopy.Length)) ?? string.Empty;
+
+    private async Task CopyToClipboard()
+    {
+        await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", TextToCopy);
+        await ShowTooltip();
+    }
+
+    private async Task ShowTooltip()
+    {
+        showTooltip = true;
+        await InvokeAsync(StateHasChanged);
+        await Task.Delay(2000); // Show tooltip for 2 seconds
+        showTooltip = false;
+        await InvokeAsync(StateHasChanged);
+    }
+}

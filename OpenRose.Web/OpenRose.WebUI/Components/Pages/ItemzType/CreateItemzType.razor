@@ -1,0 +1,196 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+@page "/CreateItemzType/{ProjectId:guid}"
+@using OpenRose.WebUI.Client.Services.ItemzType
+@using OpenRose.WebUI.Client.SharedModels
+@using Microsoft.AspNetCore.Components.Forms
+@using PSC.Blazor.Components.MarkdownEditor
+@using PSC.Blazor.Components.MarkdownEditor.EventsArgs
+@inject NavigationManager NavManager
+@inject IJSRuntime JS
+
+<h1>Create ItemzType</h1>
+
+<MudGrid>
+	<MudItem hidden="@hideValidationError" xs="12" sm="8">
+		<MudPaper Class="pa-4 mud-height-full">
+			<MudText Typo="Typo.subtitle2" Color="@Color.Error">@($"Validation Errors ({errors.Length})")</MudText>
+			@foreach (var error in errors)
+			{
+				<MudText Color="@Color.Error">@error</MudText>
+			}
+		</MudPaper>
+	</MudItem>
+    <MudItem xs="12" sm="12">
+        <MudPaper Class="pa-4">
+			<MudForm Model="@singleItemzType" @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
+				<MudCardActions>
+					<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Class="w-100"> 
+					<MudButton Variant="Variant.Filled" Color="Color.Primary"
+							   Size="Size.Large"
+							   style="gap: 10px; margin : 10px"
+							   OnClick="(() => HandleCreateItemzTypePostSubmission())">
+						<MudText>Create</MudText>
+					</MudButton>
+					<MudButton Variant="Variant.Filled" Color="Color.Warning"
+							   Size="Size.Large"
+							   style="gap: 10px; margin : 10px"
+							   OnClick="(() => goBackToProjectSetting())">
+						<MudText>Cancel</MudText>
+					</MudButton>
+					</MudStack>
+				</MudCardActions>
+				<MudCardContent>
+				<MudTextField T="string" Label="Name" Required="true" RequiredError="ItemzType name is required!"
+								  @bind-Value="singleItemzType.Name"
+								  For="@(() => singleItemzType.Name)" />
+				<MudSelect @bind-Value="singleItemzType.Status"
+							For="@(() => singleItemzType.Status)"
+							Required ="true"
+							RequiredError="Status is required!"
+							Label="Status">
+					@foreach (var _stringItemzTypeStatusValue in _stringItemzTypeStatusValues)
+					{
+						<MudSelectItem T="string" Value="_stringItemzTypeStatusValue">@_stringItemzTypeStatusValue</MudSelectItem>
+					}
+				</MudSelect>
+@* 				<MudTextField T="string" Label="Description" Required="true" RequiredError="Description is required!"
+								  @bind-Value="singleItemzType.Description"
+								  For="@(() => singleItemzType.Description)" /> *@
+				<!-- Ensure this div applies the custom class to the Markdown content -->
+				<MudText><strong>Description : </strong></MudText>
+				<div class="custom-markdown-editor">
+					<MarkdownEditor @bind-Value="@MyContent" HideIcons="@(["mde-tb-image"])" />
+					<MudPaper Class="pa-4 mb-5" Style="background-color: #f5f5f5;">
+						@if (!string.IsNullOrEmpty(convertedMarkdown.Value))
+						{
+							<h3>Preview</h3>
+							<div class="markdown-body">@((MarkupString)convertedMarkdown)</div>
+						}
+					</MudPaper>
+				</div>
+
+				</MudCardContent>
+
+			</MudForm>
+		</MudPaper>
+	</MudItem>
+</MudGrid>
+
+<MudOverlay Visible="@createItemzTypeButtonClicked" DarkBackground="true" Absolute="true">
+	<MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Inherit">Creating ... </MudText>
+	<br />
+	<MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+</MudOverlay>
+
+@code {
+	[Parameter]
+	public Guid ProjectId { get; set; }
+
+	[Parameter]
+	public EventCallback<string> ContentChanged { get; set; }
+
+	[Inject]
+	public IItemzTypeService ItemzTypeService { get; set; }
+
+
+	public CreateItemzTypeDTO singleItemzType { get; set; } = new();
+	public bool IsProcessing { get; set; } = false;
+
+
+
+	// private string _Content = string.Empty;
+	private string MyContent
+	{
+		get => singleItemzType.Description ?? string.Empty;
+		set
+		{
+			// _Content = value;
+			// hasFormFieldChanged = true;
+			singleItemzType.Description = value;
+			ConvertMarkdownToHtml(singleItemzType.Description);
+			ContentChanged.InvokeAsync(value);
+		}
+	}
+
+	private async Task ConvertMarkdownToHtml(string markdown)
+	{
+		if (!string.IsNullOrEmpty(markdown))
+		{
+			var html = await JS.InvokeAsync<string>("markdownToHtml", markdown);
+			convertedMarkdown = (MarkupString)html;
+			StateHasChanged();
+
+			// Apply fullscreen styles
+			// await Task.Delay(1000);
+			// await JS.InvokeVoidAsync("applyMarkdownEditorFullscreenStyles");
+		}
+	}
+
+
+
+	//MudForm related fields
+	bool success = true;
+	string[] errors = { };
+	MudForm form;
+	private bool createItemzTypeButtonClicked = false;
+	bool hideValidationError = true;
+
+	string[] _stringItemzTypeStatusValues = { };
+
+	private MarkupString convertedMarkdown;
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			// EXPLANATION :: First we create string list and then just call ToArray() for producing required string array
+			List<string> tempList = new List<string>();
+			foreach (var _itemzTypeStatusValue in Enum.GetValues<ItemzTypeStatus>())
+			{
+				tempList.Add(_itemzTypeStatusValue.ToString().Trim());
+			}
+			_stringItemzTypeStatusValues = tempList.ToArray();
+
+
+			if (singleItemzType != null && singleItemzType.Description != null)
+			{
+				await ConvertMarkdownToHtml(singleItemzType.Description);
+			}
+
+			StateHasChanged();
+		}
+	}
+
+	public async Task HandleCreateItemzTypePostSubmission()
+	{
+		if (form != null)
+		{
+			await form.Validate();
+			if (form.IsValid)  
+			{
+				hideValidationError = true;	
+				createItemzTypeButtonClicked = true;
+				singleItemzType.ProjectId = ProjectId;
+				var updatedResult = await ItemzTypeService.__POST_Create_ItemzType__Async(singleItemzType);
+				Thread.Sleep(1500);
+				goBackToProjectSetting();
+				//NavManager.NavigateTo($"/project/{ProjectId.ToString()}");
+			}
+			else
+			{
+				hideValidationError = false;
+			}
+
+		}
+	}
+
+	public void goBackToProjectSetting()
+	{
+		NavManager.NavigateTo($"/project/{ProjectId.ToString()}");
+	}
+}

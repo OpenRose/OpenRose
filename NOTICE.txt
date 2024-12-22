@@ -1,0 +1,19 @@
+# LICENSE
+
+OpenRose application is licensed under the Apache License, Version 2.0.
+
+## Third-Party Components
+
+This project includes components from other projects:
+
+- MudBlazor (MIT License)
+- MarkdownEditor (MIT License)
+- MudBlazor Extensions (MIT License)
+- AutoMapper MIT License
+- interact.js  (MIT License)
+- marked.js - a markdown parser (MIT Licensed)
+
+
+# NOTICE
+
+This project uses components licensed under both the MIT License and the Apache License 2.0. Please refer to the respective licenses included with this project for more details.

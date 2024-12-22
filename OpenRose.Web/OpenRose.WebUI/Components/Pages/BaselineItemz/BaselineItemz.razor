@@ -1,0 +1,365 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+@page "/baselineitemz/{BaselineItemzId:guid}"
+@using OpenRose.WebUI.Client.Services.BaselineHierarchy
+@using OpenRose.WebUI.Client.Services.BaselineItemz
+@using OpenRose.WebUI.Client.SharedModels
+@using OpenRose.WebUI.Client.SharedModels.BetweenPagesAndComponent
+@using OpenRose.WebUI.Components.Pages.Breadcrums
+@using OpenRose.WebUI.Components.Pages.Common
+@using OpenRose.WebUI.Components.EventServices
+@using OpenRose.WebUI.Components.FindServices
+@using Microsoft.AspNetCore.Components.Forms
+@using System.Globalization
+@inject IFindProjectAndBaselineIdsByBaselineItemzIdService FindProjectAndBaselineIdsByBaselineItemzIdService
+@inject BaselineBreadcrumsService baselineBreadcrumsService
+@inject NavigationManager NavManager
+@inject IDialogService DialogService
+@inject IJSRuntime JS
+
+@if (BreadcrumsParameter != null)
+{
+	<BaselineBreadcrums produceBreadcrums="BreadcrumsParameter" />
+}
+
+<MudPaper Class="pa-4 mb-3 align-start d-flex" Style="width: auto" Outlined="false">
+	<MudText Typo="Typo.h6" Align="Align.Left">Baseline Itemz</MudText>
+</MudPaper>
+
+<MudGrid>
+	@if (initializingPage)
+	{
+		<MudPaper Height="calc(100vh - 100px);" Width="100%">
+			<MudOverlay Visible="@initializingPage" DarkBackground="true" Absolute="true">
+				<MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Inherit">Loading ...</MudText>
+				<br />
+				<MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+			</MudOverlay>
+		</MudPaper>
+	}
+	else
+	{
+ 		<MudItem xs="12" sm="12">
+			<MudCard style="background-color : #FABBBB;" >
+				<MudCardContent>
+				<MudItem Class="align-start d-flex" Style="width: auto" Outlined="false">
+					<MudGrid>
+						<MudItem xs="12" sm="12" md="7" lg="7">
+							<MudText Typo="Typo.h5" Align="Align.Left"><strong>@singleBaselineItemz.Name </strong></MudText>
+						</MudItem>
+						<MudItem xs="12" sm="12" md="5" lg="5">
+							<MudStack Row="true" Spacing="2" AlignItems="AlignItems.End" Justify="Justify.FlexEnd" Class="w-100">
+								<MudButton OnClick="async _ => await openBaselineItemzDetails(BaselineItemzId.ToString())" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Success"> Open </MudButton>
+								<MudButton OnClick="async _ => await openBaselineTreeView(BaselineItemzId)" Variant="@Variant.Filled" Size="@Size.Medium" Color="@Color.Success" Target="_blank"> TreeView </MudButton>
+								<MudButton OnClick="goBackToParent" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Warning"> Go Back </MudButton>
+							</MudStack>
+						</MudItem>
+					</MudGrid>
+				</MudItem>
+				</MudCardContent>
+			</MudCard>
+			<MudCard>
+				<MudCardContent>
+					<MudStack Row="true" Spacing="2">
+					<MudText><strong>ID                   : </strong></MudText>
+					<CopyableText TextToCopy="@singleBaselineItemz.Id.ToString()" />
+					</MudStack>
+					<MudText><strong>Status               : </strong> @singleBaselineItemz.Status</MudText>
+					<MudText><strong>Priority             : </strong> @singleBaselineItemz.Priority</MudText>
+					<MudText><strong>Severity             : </strong> @singleBaselineItemz.Severity</MudText>
+					<MudText><strong>Created Date         : </strong> @singleBaselineItemz.CreatedDate.ToString("dd MMM yyyy HH:mm:ss", CultureInfo.CurrentCulture)</MudText>
+					<MudGrid >
+						<MudItem xs="3">
+					<MudSwitch T="bool" 
+						Value="@singleBaselineItemz.isIncluded"
+						ValueChanged="OnSingleBaselineItemzInclusionChanged"
+						Label="Is Included?"
+						Size="Size.Large"
+					    LabelPosition="LabelPosition.End"
+					    Color="@(singleBaselineItemz.isIncluded ? Color.Success : Color.Error)"
+						ThumbIconColor="@(singleBaselineItemz.isIncluded ? Color.Success : Color.Error)"
+						UncheckedColor = "Color.Error"
+						Disabled = "@(disableIncludeChildOptions)"
+						 />
+					 </MudItem>
+
+@* 						@if (singleBaselineItemz.isIncluded && AllChildBaselineItemz.Count() > 0 && anyChildBaselineItemzExcluded == true) *@
+						@if (anyChildBaselineItemzExcluded == true)
+						{
+							<MudItem xs="6">
+							<MudButton OnClick="async _ => await OnAllChildBaselineItemzInclusionChanged(true)" 
+								Variant="Variant.Filled" 
+								Size="Size.Medium" 
+								Color="Color.Success" 
+								Disabled = "@(disableIncludeChildOptions)"
+								style="gap: 10px; margin-left : 10px"> Include All Child Baseline Itemz </MudButton>
+							</MudItem>
+@* 							<MudSwitch T="bool" 
+							Value="false"
+							ValueChanged="OnAllChildBaselineItemzInclusionChanged"
+							Label="Include All Child Baseline Itemz?"
+							Size="Size.Large"
+							LabelPosition="LabelPosition.End" 
+							Color="@(singleBaselineItemz.isIncluded ? Color.Success : Color.Error)"
+							ThumbIconColor="@(singleBaselineItemz.isIncluded ? Color.Success : Color.Error)"
+							UncheckedColor="Color.Error"
+							/> *@
+						}
+					</MudGrid>
+					<MudText><strong>Description : </strong></MudText>
+					<br />
+					<div class="custom-markdown-editor">
+						<MudPaper Class="pa-2 fixed-height-scroll">
+							@if (!string.IsNullOrEmpty(singleBaselineItemz.Description))
+							{
+								<div class="markdown-body">@((MarkupString)convertedMarkdown)</div>
+							}
+						</MudPaper>
+					</div>
+				</MudCardContent>
+			</MudCard>
+		</MudItem>
+ 		<MudItem xs="12" sm="12">
+			<MudPaper Class="pa-4 mb-3 align-start d-flex" Style="width: auto" Outlined="false">
+				<MudText Typo="Typo.h6" Align="Align.Left">@((MarkupString)("Child Baseline Itemz &nbsp;&nbsp;"))</MudText>
+				<MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Primary"> @AllChildBaselineItemz.Count().ToString()</MudChip>
+			</MudPaper>
+			<MudDataGrid Items="@AllChildBaselineItemz" 
+						Filterable="true" 
+						SortMode="@SortMode.None" 
+						Groupable="false" 
+						Striped="true"
+						 Class="pa-4 mb-3"
+						FixedHeader="true" 
+						HeaderClass="background-color: red;">
+				<Columns>
+					<PropertyColumn Property="x => x.RecordId" Title="Record Id">
+						<CellTemplate>
+							<CopyableText TextToCopy="@context.Item.RecordId.ToString()" DisplayLength="8" />
+						</CellTemplate>
+					</PropertyColumn>
+					<PropertyColumn Property="x => x.IsIncluded">
+						<CellTemplate>
+							@if (context.Item.IsIncluded == true) // I don't know why true is actually false when it comes to MudIcon logic below.
+							{
+								<MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Medium"></MudIcon>
+							}
+							else
+							{
+								<MudIcon Icon="@Icons.Material.Filled.Cancel" Color="Color.Error" Size="Size.Medium"></MudIcon>
+							}
+						</CellTemplate>
+					</PropertyColumn>
+ 					<PropertyColumn Property="x => x.Name" />
+					<PropertyColumn Property="x => x.NumberOfChildNodes" Title="Number of Child Baseline Itemz" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
+ 					<TemplateColumn Title="Action" >
+						<CellTemplate>
+							<div style="display: flex; justify-content: left; align-items: center; gap: 10px;">
+							<MudButton Size="@Size.Large"
+								Variant="@Variant.Filled" Color="@Color.Success"
+									   OnClick="_ => openBaselineItemz(context.Item.RecordId.ToString())"> Open </MudButton>
+							</div>
+						</CellTemplate>
+					</TemplateColumn>
+				</Columns>
+			</MudDataGrid>
+ 		</MudItem>
+	}
+</MudGrid>
+@code {
+	[Parameter]
+	public Guid BaselineItemzId { get; set; }
+
+	[Inject]
+	public IBaselineItemzService baselineItemzService { get; set; }
+
+	[Inject]
+	public IBaselineHierarchyService baselineHierarchyService { get; set; }
+
+
+	public GetBaselineItemzDTO singleBaselineItemz { get; set; } = new();
+	private List<BaselineHierarchyIdRecordDetailsDTO> AllChildBaselineItemz { get; set; } = new List<BaselineHierarchyIdRecordDetailsDTO>();
+	private (Guid ProjectId, Guid BaselineId) foundProjectAndBaselineIds;
+	private ParameterForBaselineBreadcrums BreadcrumsParameter;
+	public bool initializingPage { get; set; } = true;
+	public bool anyChildBaselineItemzExcluded { get; set; } = false;
+
+	public bool disableIncludeChildOptions { get; set; } = true;
+
+	private MarkupString convertedMarkdown;
+
+	protected override async Task OnInitializedAsync()
+	{
+		initializingPage = true;
+		StateHasChanged();
+		//Thread.Sleep(300);
+		singleBaselineItemz = await baselineItemzService.__Single_BaselineItemz_By_GUID_ID__Async(BaselineItemzId);
+
+		if (singleBaselineItemz != null)
+		{
+			BreadcrumsParameter = new ParameterForBaselineBreadcrums();
+			BreadcrumsParameter.Id = singleBaselineItemz.Id;
+			BreadcrumsParameter.Name = singleBaselineItemz.Name;
+			BreadcrumsParameter.RecordType = "baselineitemz"; // TODO :: USE CONSTANT
+			BreadcrumsParameter.isIncluded = singleBaselineItemz.isIncluded;
+		}
+
+	}
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			initializingPage = true;
+
+			var returnedItemzList = await baselineHierarchyService.__Get_Immediate_Children_Baseline_Hierarchy_By_GUID__Async(BaselineItemzId);
+			if (returnedItemzList != null)
+			{
+				AllChildBaselineItemz = returnedItemzList.ToList();
+			}
+
+			foreach (var _childBaselineItemz in AllChildBaselineItemz)
+			{
+				if (_childBaselineItemz.IsIncluded == false)
+				{
+					anyChildBaselineItemzExcluded = true;
+				}
+			}
+
+			await Task.Delay(200);
+
+			disableIncludeChildOptions = !(baselineBreadcrumsService.RequestParentNodeIsIncluded());
+
+			initializingPage = false;
+
+			await ConvertMarkdownToHtml(singleBaselineItemz.Description);
+
+			StateHasChanged();
+
+			foundProjectAndBaselineIds = await FindProjectAndBaselineIdsByBaselineItemzIdService.GetProjectAndBaselineId(BaselineItemzId);
+
+			//StateHasChanged();
+		}
+	}
+
+	public async Task openBaselineItemzDetails(string Id)
+	{
+		NavManager.NavigateTo($"/baselineitemzdetails/{Id}", true);
+	}
+
+	public async Task openBaselineItemz(string Id)
+	{
+		NavManager.NavigateTo($"/baselineitemz/{Id}", true);
+	}
+
+	public async Task goBackToParent()
+	{
+		// TODO: IT COULD BE BASELINE ITEMZ OR BASELINE ITEMZTYPE AS PARENT OF A GIVEN BASELINE ITEMZ.
+
+		// EXPLANATION : At the start of initialization process we capture parent record ID.
+		// Now even if user decides to Delete this Itemz Record then also we can go back to it's
+		// Parent ItemzType post completing deletion operation.
+		var httpResponse = await baselineHierarchyService.__Get_BaselineHierarchy_Record_Details_By_GUID__Async(BaselineItemzId);
+
+		if (httpResponse.ParentRecordType.ToLower() == "baselineitemztype") // TODO :: USE GLOBAL CONSTANTS
+		{
+			NavManager.NavigateTo($"/baselineitemztype/{httpResponse.ParentRecordId.ToString()}",true);
+		}
+		else if (httpResponse.ParentRecordType.ToLower() == "baselineitemz") // TODO :: USE GLOBAL CONSTANTS
+		{
+			NavManager.NavigateTo($"/baselineitemz/{httpResponse.ParentRecordId.ToString()}",true);
+		}
+	}
+
+	private async Task OnSingleBaselineItemzInclusionChanged(bool newValue)
+	{
+
+		if(!(baselineBreadcrumsService.RequestParentNodeIsIncluded()))
+		{
+			// Handle the case where parent node is not included
+			await OpenExceptionDialogAsync("Parent node is marked as Excluded and so selected node can not be marked as Included.");
+			return;
+
+		}
+
+		UpdateBaselineItemzDTO tempUpdateBaselineItemzDTO = new UpdateBaselineItemzDTO();
+		// TODO :: Get Baseline ID from the server.
+		// tempUpdateBaselineItemzDTO.BaselineId = Guid.Parse("412f4a87-0b75-4631-958d-e2e92ea8e2fd"); 
+		tempUpdateBaselineItemzDTO.BaselineId = foundProjectAndBaselineIds.BaselineId; 
+		// tempUpdateBaselineItemzDTO.BaselineItemzIds = new List<Guid> { Guid.Parse(singleBaselineItemz.Id.ToString()) };
+		tempUpdateBaselineItemzDTO.BaselineItemzIds = new List<Guid> { singleBaselineItemz.Id };
+		tempUpdateBaselineItemzDTO.ShouldBeIncluded = newValue;
+		tempUpdateBaselineItemzDTO.SingleNodeInclusion = true;
+		// Send the new value to the server
+
+		// TODO :: EXCEPTION HANDLING.
+		await baselineItemzService.__PUT_Update_BaselineItemzs_By_GUID_IDs__Async(tempUpdateBaselineItemzDTO);
+		NavManager.NavigateTo($"/baselineitemz/{BaselineItemzId.ToString()}", true);
+//		singleBaselineItemz.isIncluded = newValue; // Update the previous value on success
+	}
+
+	private async Task OnAllChildBaselineItemzInclusionChanged(bool newValue)
+	{
+		if(!(baselineBreadcrumsService.RequestParentNodeIsIncluded()))
+		{
+			// Handle the case where parent node is not included
+			await OpenExceptionDialogAsync("Parent node is marked as Excluded and so selected node can not be marked as Included.");
+			return;
+
+		}
+		UpdateBaselineItemzDTO tempUpdateBaselineItemzDTO = new UpdateBaselineItemzDTO();
+		// TODO :: Get Baseline ID from the server.
+		//tempUpdateBaselineItemzDTO.BaselineId = Guid.Parse("412f4a87-0b75-4631-958d-e2e92ea8e2fd");
+		tempUpdateBaselineItemzDTO.BaselineId = foundProjectAndBaselineIds.BaselineId; 
+		// tempUpdateBaselineItemzDTO.BaselineItemzIds = new List<Guid> { Guid.Parse(singleBaselineItemz.Id.ToString()) };
+		tempUpdateBaselineItemzDTO.BaselineItemzIds = new List<Guid> { singleBaselineItemz.Id };
+		tempUpdateBaselineItemzDTO.ShouldBeIncluded = true;
+		tempUpdateBaselineItemzDTO.SingleNodeInclusion = false;
+		// Send the new value to the server
+
+		// TODO :: EXCEPTION HANDLING.
+		await baselineItemzService.__PUT_Update_BaselineItemzs_By_GUID_IDs__Async(tempUpdateBaselineItemzDTO);
+		NavManager.NavigateTo($"/baselineitemz/{BaselineItemzId.ToString()}", true);
+		//		singleBaselineItemz.isIncluded = newValue; // Update the previous value on success
+	}
+
+	private async Task OpenExceptionDialogAsync(string exceptionMessage)
+	{
+		var options = new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, Position = DialogPosition.Center };
+		var dialogPara = new DialogParameters();
+		dialogPara.Add("exceptionMessage", exceptionMessage);
+		var dialogref = await DialogService.ShowAsync<BaselineItemzExceptionDialog>("CONFIRM", dialogPara, options);
+		// var dialogresult = await dialogref.Result;
+	}
+
+	public async Task openBaselineTreeView(Guid Id)
+	{
+		// TODO :: Similar Code is there in several places in the project.
+		// We should try and come up with some common way to handle it!
+
+		var foundProjectAndBaselineIds = await FindProjectAndBaselineIdsByBaselineItemzIdService.GetProjectAndBaselineId(Id);
+		if (foundProjectAndBaselineIds.BaselineId != Guid.Empty)
+		{
+			var url = $"/BaselineTreeView/{foundProjectAndBaselineIds.BaselineId}?autoSelectedRecordId={Id}";
+			await JS.InvokeVoidAsync("openInNewTab", url);
+		}
+	}
+
+	private async Task ConvertMarkdownToHtml(string markdown)
+	{
+		if (!string.IsNullOrEmpty(markdown))
+		{
+			var html = await JS.InvokeAsync<string>("markdownToHtml", markdown);
+			convertedMarkdown = (MarkupString)html;
+			StateHasChanged();
+
+			// Apply fullscreen styles
+			// await Task.Delay(1000);
+			// await JS.InvokeVoidAsync("applyMarkdownEditorFullscreenStyles");
+		}
+	}
+}

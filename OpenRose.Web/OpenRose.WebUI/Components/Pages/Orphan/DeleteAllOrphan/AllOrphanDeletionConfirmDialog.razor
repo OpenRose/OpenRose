@@ -1,0 +1,43 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+@using OpenRose.WebUI.Client.Services.Itemz
+
+<MudDialog>
+    <TitleContent>
+        <MudText Color="Color.Error">CONFIRM</MudText>
+    </TitleContent>
+    <DialogContent>
+        <p style="color:red;">
+        <MudIcon Icon="@Icons.Material.Filled.Dangerous" Size="Size.Large" Color="Color.Error" Title="Delete All Orphan Itemz" />
+        Are you sure you want to delete All "@totalOrphanedItemzs" Orphaned Itemz ?</p>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="Submit">Yes</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="Cancel">No</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [Inject]
+    public IItemzService itemzService { get; set; }
+
+    [CascadingParameter]
+    private MudDialogInstance MudDialog { get; set; }
+    [Parameter]
+    public int totalOrphanedItemzs { get; set; }
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(true));
+
+    private void Cancel() => MudDialog.Cancel();
+
+    protected override async Task OnInitializedAsync()
+    {
+        totalOrphanedItemzs = await itemzService.__GET_Orphan_Itemzs_Count__Async();
+    }
+
+}
+

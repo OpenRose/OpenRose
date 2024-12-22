@@ -1,0 +1,90 @@
+﻿@* 
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0. 
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+@inherits LayoutComponentBase
+
+<MudThemeProvider />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+@* 
+<div class="page">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <main>
+         <article class="content px-4">
+            @Body
+        </article>
+ 
+        <MudLayout>
+            <MudMainContent>
+                @Body
+            </MudMainContent>
+        </MudLayout>
+    </main>
+</div> *@
+<MudLayout>
+	<MudAppBar Elevation="1" Bottom="false" Dense="true">
+		<MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@ToggleDrawer" />
+		@CurrentPageTitle
+		<MudSpacer />
+		<MudIconButton Icon="@Icons.Custom.Brands.GitHub" Color="Color.Inherit" Href="https://github.com/OpenRose/OpenRose" Target="_blank" />
+	</MudAppBar>
+	<MudDrawer @bind-Open="@drawerOpen" Elevation="1" Anchor="Anchor.Left" ClipMode="DrawerClipMode.Always" Variant="@DrawerVariant.Mini" >
+@*  		<MudDrawerHeader LinkToIndex="false">
+			<div>
+				<img src="tarkov-dev-logo.svg" width="100%" style="vertical-align: middle;" />  
+				<MudText Align="Align.Center" Typo="Typo.h6"></MudText>
+			</div>
+		</MudDrawerHeader>  *@
+		<MudNavMenu Color="Color.Secondary" Bordered="true">
+			<MudNavLink Href="/projects" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Apps">Projects</MudNavLink>
+			<MudNavGroup Icon="@Icons.Material.Filled.Moving" Title="Move" Expanded="true">
+				<MudNavLink Href="/moveitemz" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.ConnectingAirports">Itemz - Under </MudNavLink>
+				<MudNavLink Href="/moveitemzbetween" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Compress">Itemz - Between </MudNavLink>
+				<MudNavLink Href="/moveitemztype" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.AirlineStops">ItemzType - Under</MudNavLink>
+				<MudNavLink Href="/moveitemztypebetween" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.FormatIndentIncrease">ItemzType - Between</MudNavLink>
+			</MudNavGroup>
+			<MudNavLink Href="/orphanitemz" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.HolidayVillage">Orphan Itemz</MudNavLink>
+			<MudNavLink Href="/settings" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Settings">Settings</MudNavLink>
+			<MudNavLink Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.BarChart">Stats</MudNavLink>
+			<MudNavLink Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.RawOn">Raw Logs</MudNavLink>
+			<MudNavLink Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Security">Security</MudNavLink>
+		</MudNavMenu>
+	</MudDrawer>
+	<MudMainContent Class="mt-1">
+		<CascadingValue Name="AppLayout" Value="this">
+			<MudContainer Gutters="false" MaxWidth="MaxWidth.False" Class="pa-2">
+				@Body
+			</MudContainer>
+		</CascadingValue>
+	</MudMainContent>
+</MudLayout>
+<div id="blazor-error-ui">
+	An unhandled error has occurred.
+	<a href="" class="reload">Reload</a>
+	<a class="dismiss">🗙</a>
+</div>
+
+@code {
+
+	bool drawerOpen = true;
+
+	public string CurrentPageTitle = "OpenRose";
+
+	public void SetTitle(string value) {
+		CurrentPageTitle = value;
+		StateHasChanged();
+	}
+
+	void ToggleDrawer()
+	{
+		drawerOpen = !drawerOpen;
+	}
+}

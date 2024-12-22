@@ -1,0 +1,58 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+@using System.Globalization
+@using OpenRose.WebUI.Client.SharedModels
+@using OpenRose.WebUI.Client.Services.ItemzChangeHistory
+
+@* <h5>Change History Component</h5>
+<br />
+<MudPaper Class="pa-4 align-start d-flex" Style="width: auto" Outlined="false">
+	<MudText Typo="Typo.h5" Align="Align.Left"> Itemz Change History </MudText>
+</MudPaper> *@
+<MudDataGrid Items="@ItemzChangeHistoryRecords"
+			 Filterable="true"
+			 SortMode="@SortMode.None"
+			 Groupable="false"
+			 Striped="true"
+			 FixedHeader="false"
+			 Bordered="true"
+			 HeaderClass="background-color: red;">
+	<Columns>
+		<PropertyColumn Property="x => x.CreatedDate" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " >
+			<CellTemplate> @context.Item.CreatedDate.ToString("dd MMM yyyy HH:mm:ss", CultureInfo.CurrentCulture)</CellTemplate>
+		</PropertyColumn>
+		<PropertyColumn Property="x => x.OldValues" Filterable="true" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " Resizable="true" />
+		<PropertyColumn Property="x => x.NewValues" Filterable="true" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " Resizable="true" />
+		<PropertyColumn Property="x => x.ChangeEvent" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
+	</Columns>
+</MudDataGrid>
+
+
+@code {
+	[Parameter]
+	public Guid ItemzId { get; set; }
+
+	[Inject]
+	public IItemzChangeHistoryService itemzChangeHistoryService { get; set; }
+
+
+	private ICollection<GetItemzChangeHistoryDTO> ItemzChangeHistoryRecords { get; set; } = new List<GetItemzChangeHistoryDTO>();
+	// private List<GetItemzChangeHistoryDTO> itemzChangeHistoryList = new List<GetItemzChangeHistoryDTO>();
+
+	protected override async Task OnInitializedAsync()
+	{
+		// Console.WriteLine("Loading ItemzChangeHistoryRecords...");
+		ItemzChangeHistoryRecords = await itemzChangeHistoryService.__GET_ItemzChangeHistory_By_GUID_ItemzID__Async(ItemzId);
+		// Console.WriteLine($"Loaded {ItemzChangeHistoryRecords.Count} records.");
+		// itemzChangeHistoryList = ItemzChangeHistoryRecords.ToList();
+		StateHasChanged();
+	}
+	public async Task openItemz()
+	{
+	}
+
+}

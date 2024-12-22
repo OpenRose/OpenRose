@@ -1,0 +1,133 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+@using OpenRose.WebUI.Client.Services.BaselineHierarchy
+@using OpenRose.WebUI.Client.Services.BaselineItemzTypes
+@using OpenRose.WebUI.Client.SharedModels
+@using OpenRose.WebUI.Components.EventServices
+@using OpenRose.WebUI.Components.Pages.Common
+@using System.Globalization
+@inject NavigationManager NavManager
+@inject BaselineTreeNodeItemzSelectionService BaselineItemzSelectionService
+@inject IJSRuntime JS
+
+<MudPaper Class="pa-4 mb-3 ml-1 align-start d-flex" Style="width: auto" Outlined="false">
+	<MudText Typo="Typo.h6" Align="Align.Left">Baseline ItemzType</MudText>
+</MudPaper>
+
+<MudGrid>
+	@if (initializingPage)
+	{
+		<MudPaper Height="calc(100vh - 100px);" Width="100%">
+			<MudOverlay Visible="@initializingPage" DarkBackground="true" Absolute="true">
+				<MudText Typo="Typo.h6" Align="Align.Center" Color="Color.Inherit">Loading ...</MudText>
+				<br />
+				<MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+			</MudOverlay>
+		</MudPaper>
+	}
+	else
+	{
+ 		<MudItem xs="12" sm="12">
+			<MudCard style="background-color : #FABBBB;" >
+				<MudCardContent>
+				<MudItem Class="align-start d-flex" Style="width: auto" Outlined="false">
+					<MudGrid>
+						<MudItem xs="12" sm="12" md="7" lg="7">
+							<MudText Typo="Typo.h5" Align="Align.Left"><strong>@singleIBaselineItemzType.Name </strong></MudText>
+						</MudItem>
+						<MudItem xs="12" sm="12" md="5" lg="5">
+							<MudStack Row="true" Spacing="2" AlignItems="AlignItems.End" Justify="Justify.FlexEnd" Class="w-100">
+										<MudButton OnClick="async _ => await openBaselineItemzTypeDetailsView(BaselineItemzTypeId.ToString())" Variant="@Variant.Filled" Size="@Size.Medium" Color="@Color.Success" Target="_blank"> Details View </MudButton>
+							</MudStack>
+						</MudItem>
+					</MudGrid>
+				</MudItem>
+				</MudCardContent>
+			</MudCard>
+			<MudCard>
+				<MudCardContent>
+					<MudStack Row="true" Spacing="2">
+						<MudText><strong>ID           : </strong> </MudText>
+						<CopyableText TextToCopy="@singleIBaselineItemzType.Id.ToString()" />
+						<MudTooltip Text="Show in Tree View">
+						<MudIcon Icon="@Icons.Material.Filled.Park" Size="Size.Small" Class="mouse-pointer-icon" @onclick="findAndShowInTreeView" />
+						</MudTooltip>
+					</MudStack>
+					<MudText><strong>Status       : </strong> @singleIBaselineItemzType.Status</MudText>
+					<MudText><strong>Is System?   : </strong> @(singleIBaselineItemzType.IsSystem ? "Yes" : "No") </MudText>
+					<MudText><strong>Created Date : </strong> @singleIBaselineItemzType.CreatedDate.ToString("dd MMM yyyy HH:mm:ss", CultureInfo.CurrentCulture)</MudText>
+					<MudText><strong>Description : </strong></MudText>
+					<br />
+					<div class="custom-markdown-editor">
+						<MudPaper Class="pa-2 fixed-height-scroll">
+							@if (!string.IsNullOrEmpty(singleIBaselineItemzType.Description))
+							{
+								<div class="markdown-body">@((MarkupString)convertedMarkdown)</div>
+							}
+						</MudPaper>
+					</div>
+				</MudCardContent>
+			</MudCard>
+		</MudItem>
+	}
+</MudGrid>
+@code {
+	[Parameter]
+	public Guid BaselineItemzTypeId { get; set; }
+
+	[Inject]
+	public IBaselineItemzTypesService baselineItemzTypesService { get; set; }
+
+	public GetBaselineItemzTypeDTO singleIBaselineItemzType { get; set; } = new();
+	public bool initializingPage { get; set; } = true;
+
+	private MarkupString convertedMarkdown;
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			initializingPage = true;
+			StateHasChanged();
+			//Thread.Sleep(300);
+			singleIBaselineItemzType = await baselineItemzTypesService.__Single_BaselineItemzType_By_GUID_ID__Async(BaselineItemzTypeId);
+
+			// TODO :: THROW EXCEPTION IF BASELINE ITEMTYPE IS NOT FOUND!
+
+			initializingPage = false;
+
+			await ConvertMarkdownToHtml(singleIBaselineItemzType.Description);
+
+			StateHasChanged();
+		}
+	}
+	private void findAndShowInTreeView()
+	{
+		BaselineItemzSelectionService.ScrollToTreeViewNode(BaselineItemzTypeId);
+	}
+
+	public async Task openBaselineItemzTypeDetailsView(string Id)
+	{
+		var url = $"/baselineItemzType/{Id}";
+		await JS.InvokeVoidAsync("openInNewTab", url);
+	}
+
+	private async Task ConvertMarkdownToHtml(string markdown)
+	{
+		if (!string.IsNullOrEmpty(markdown))
+		{
+			var html = await JS.InvokeAsync<string>("markdownToHtml", markdown);
+			convertedMarkdown = (MarkupString)html;
+			StateHasChanged();
+
+			// Apply fullscreen styles
+			// await Task.Delay(1000);
+			// await JS.InvokeVoidAsync("applyMarkdownEditorFullscreenStyles");
+		}
+	}
+}
+

@@ -1,0 +1,297 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+@page "/moveitemzbetween"
+@using OpenRose.WebUI.Client.SharedModels
+@using OpenRose.WebUI.Client.Services.Itemz
+@using OpenRose.WebUI.Client.Services.Hierarchy
+@using OpenRose.WebUI.Components.Pages.Common
+
+
+@inject IDialogService DialogService
+
+<MudPaper Class="pa-3 mb-2 align-start d-flex" Style="width: auto " Outlined="false">
+	<MudStack Row="true" Spacing="3">
+	<MudIcon Icon="@Icons.Material.Filled.Compress" Size="Size.Large" />
+		<MudText Typo="Typo.h5" Align="Align.Left">Move Itemz Between </MudText>
+		<MudSpacer /> 
+		<MudText Class="mt-3" Typo="Typo.caption"> Move Itemz and it's Sub-Itemz tree structure as child between two existing Itemz </MudText>
+	</MudStack>
+</MudPaper>
+
+<MudItem xs="12" Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3">
+	<MudPaper Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3" style="padding: 16px;">
+		<div class="d-flex flex-column align-items-center justify-center w-100 h-100">
+			<MudStack Row="true" Spacing="2">
+				<MudTooltip Text="Step 1 is to select Source Itemz that should be moved">
+					<MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success"> STEP 1 </MudChip>
+				</MudTooltip>
+				<MudButton @onclick="async _ => await selectSourceItemz()" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Primary"> Select Source Itemz </MudButton>
+			</MudStack>
+			@if (sourceItemz != null && sourceItemz.Id != Guid.Empty)
+			{
+			<MudStack Row="false" Spacing="2">
+			<MudCard style="background-color : #FABBBB; margin: 16px;" Class="w-100">
+				<MudCardContent Class="d-flex flex-wrap">
+					<div>
+						<MudText Typo="Typo.h6" Align="Align.Left"> Source Itemz Details </MudText> 
+						<MudDivider></MudDivider>
+						<MudText><strong>Name        : </strong> @sourceItemz.Name </MudText>
+						<MudStack Row="true" Spacing="2">
+						<MudText><strong>ID          : </strong></MudText>
+						<CopyableText TextToCopy="@sourceItemz.Id.ToString()" />
+						</MudStack>
+						<MudText><strong>Status      : </strong> @sourceItemz.Status</MudText>
+						<MudText><strong>Priority    : </strong> @sourceItemz.Priority</MudText>
+						<MudText><strong>Severity    : </strong> @sourceItemz.Severity</MudText>
+					</div>
+				</MudCardContent>
+			</MudCard>
+			</MudStack>
+			}
+		</div>
+    </MudPaper>
+</MudItem>
+@if (sourceItemz != null && sourceItemz.Id != Guid.Empty)
+{
+	<MudItem xs="12" Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3">
+	<MudPaper Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3" style="padding: 16px;">
+		<div class="d-flex flex-column align-items-center justify-center w-100 h-100">
+			<MudStack Row="true" Spacing="2">
+				<MudTooltip Text="Step 2 is to select Target First and Second Itemz move between">
+					<MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success"> STEP 2 </MudChip>
+				</MudTooltip>
+				<MudButton @onclick="async _ => await selectTargetItemz()" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Primary"> Select Target First Itemz </MudButton>
+			</MudStack>
+			@if (targetFirstItemz != null && targetFirstItemz.Id != Guid.Empty && targetSecondItemz != null && targetSecondItemz.Id != Guid.Empty )
+			{
+				<MudStack Row="false" Spacing="2">
+				<MudCard style="background-color : #FABBBB; margin: 16px;" Class="w-100">
+				<MudCardContent>
+					<MudText Typo="Typo.h6" Align="Align.Left"> Target First Itemz Details </MudText> 
+					<MudDivider></MudDivider>
+					<MudText><strong>Name        : </strong> @targetFirstItemz.Name </MudText>
+					<MudStack Row="true" Spacing="2">
+					<MudText><strong>ID          : </strong></MudText>
+					<CopyableText TextToCopy="@targetFirstItemz.Id.ToString()" />
+					</MudStack>
+					<MudText><strong>Status      : </strong> @targetFirstItemz.Status</MudText>
+					<MudText><strong>Priority    : </strong> @targetFirstItemz.Priority</MudText>
+					<MudText><strong>Severity    : </strong> @targetFirstItemz.Severity</MudText>
+				</MudCardContent>
+				</MudCard>
+				<MudCard style="background-color : #FABBBB; margin: 16px;" Class="w-100">
+					<MudCardContent>
+						<MudText Typo="Typo.h6" Align="Align.Left"> Target Second Itemz Details </MudText>
+						<MudDivider></MudDivider>
+						<MudText><strong>Name        : </strong> @targetSecondItemz.Name </MudText>
+						<MudStack Row="true" Spacing="2">
+						<MudText><strong>ID          : </strong></MudText>
+						<CopyableText TextToCopy="@targetSecondItemz.Id.ToString()" />
+						</MudStack>
+						<MudText><strong>Status      : </strong> @targetSecondItemz.Status</MudText>
+						<MudText><strong>Priority    : </strong> @targetSecondItemz.Priority</MudText>
+						<MudText><strong>Severity    : </strong> @targetSecondItemz.Severity</MudText>
+					</MudCardContent>
+				</MudCard>
+				</MudStack>
+			}
+		</div>
+    </MudPaper>
+</MudItem>
+}
+
+@if (sourceItemz != null && sourceItemz.Id != Guid.Empty && targetFirstItemz != null && targetFirstItemz.Id != Guid.Empty && targetSecondItemz != null && targetSecondItemz.Id != Guid.Empty)
+{
+	<MudPaper Class="pa-3 mb-3 align-end d-flex" Style="width: auto " Outlined="false">
+		<div class="d-flex flex-column align-items-center justify-center w-100 h-100">
+		<MudStack Row="true" Spacing="2">
+			<MudTooltip Text="Step 3 is to Perform OR Cancel the move">
+				<MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success"> STEP 3 </MudChip>
+			</MudTooltip>
+			<MudButton @onclick="async _ => await performItemzMoveBetween()" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Primary"> Move Source Itemz between selected 1st and 2nd Target Itemz </MudButton>
+			<MudButton @onclick="async _ => await performCleanUpActivity()" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Warning"> Cancel / Restart Move </MudButton>
+		</MudStack>
+		</div>
+		</MudPaper>
+}
+@if (movingItemzOverlay)
+{
+	<MudPaper Height="calc(100vh - 100px);" Width="100%">
+		<MudOverlay Visible="@movingItemzOverlay" DarkBackground="true" Absolute="true">
+			<MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+			<MudText Typo="Typo.h6" Align="Align.End" Color="Color.Inherit">Moving Itemz and its children...</MudText>
+		</MudOverlay>
+	</MudPaper>
+}
+@code {
+
+	[Inject]
+	public IItemzService ItemzService { get; set; }
+	[Inject]
+	public IHierarchyService HierarchyService { get; set; }
+
+	public GetItemzDTO sourceItemz { get; set; } = new();
+	public GetItemzDTO targetFirstItemz { get; set; } = new();
+	public GetItemzDTO targetSecondItemz { get; set; } = new();
+	public bool movingItemzOverlay { get; set; } = false;
+
+	public async Task selectSourceItemz()
+	{
+		var parameters = new DialogParameters();
+		var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+		var dialog = DialogService.Show<SelectSourceItemzDialog>("Enter Source Itemz Record ID", parameters, options);
+		var result = await dialog.Result;
+		if (!result.Canceled && result.Data is Guid inputSourceItemzId)
+		{
+			// Verify recordId exists in your repository
+			try
+			{
+				var foundSourceItemz = await ItemzService.__Single_Itemz_By_GUID_ID__Async(inputSourceItemzId);
+				if (foundSourceItemz != null)
+				{
+					sourceItemz = foundSourceItemz;
+				}
+				else
+				{
+					await DialogService.ShowMessageBox("ERROR", markupMessage: new 
+						MarkupString($"<p style=\"color: red; \">Could not find Source Itemz with ID {inputSourceItemzId} in repository.</p>"), yesText: "OK");
+					sourceItemz = new();
+				}
+			}
+			catch
+			{
+				await DialogService.ShowMessageBox("ERROR", markupMessage: new 
+					MarkupString($"<p style=\"color: red; \">EXCEPTION :: Could not find Source Itemz with ID {inputSourceItemzId} in repository.</p>"), yesText: "OK");
+				sourceItemz = new(); // CLEAR OUT SELF.
+			}
+		}
+	}
+
+	public async Task selectTargetItemz()
+	{
+		targetFirstItemz = new(); // CLEAR OUT SELF.
+		targetSecondItemz = new(); // CLEAR OUT SELF.
+		var parameters = new DialogParameters();
+		var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+		var dialog = DialogService.Show<SelectTargetItemzDialog>("Enter Target Itemz Record ID", parameters, options);
+		var result = await dialog.Result;
+		if (!result.Canceled && result.Data is Guid inputTargetItemzId)
+		{
+
+			if (sourceItemz.Id == inputTargetItemzId)
+			{
+				await DialogService.ShowMessageBox("ERROR", markupMessage: new MarkupString($"<p style=\"color: red; \">Source and Target Itemz Id can not be same.</p>"), yesText: "OK");
+				targetFirstItemz = new();
+				return;
+			}
+
+			// Verify recordId exists in your repository
+			try
+			{
+				var foundTargetFirstItemz = await ItemzService.__Single_Itemz_By_GUID_ID__Async(inputTargetItemzId);
+				if (foundTargetFirstItemz != null)
+				{
+					targetFirstItemz = foundTargetFirstItemz;
+					var foundNextSiblingHierarchyDetails = await HierarchyService.__Get_Next_Sibling_Hierarchy_Record_Details_By_GUID__Async(targetFirstItemz.Id);
+					if (foundNextSiblingHierarchyDetails != null)
+					{
+						var foundTargetSecondItemz = await ItemzService.__Single_Itemz_By_GUID_ID__Async(foundNextSiblingHierarchyDetails.RecordId);
+						if (foundTargetSecondItemz != null)
+						{
+							targetSecondItemz = foundTargetSecondItemz;
+						}
+					}
+
+				}
+				else
+				{
+					await DialogService.ShowMessageBox("ERROR", markupMessage: new 
+							MarkupString($"<p style=\"color: red; \">Could not find Target First OR Second Itemz with ID {inputTargetItemzId} in repository.</p>"), yesText: "OK");
+					targetFirstItemz = new(); // CLEAR OUT SELF.
+					targetSecondItemz = new(); // CLEAR OUT SELF.
+				}
+
+
+			}
+			catch (Exception ex)
+			{
+				await DialogService.ShowMessageBox("ERROR", markupMessage: new 
+						MarkupString($"<p style=\"color: red; \">EXCEPTION :: Could not find Target First OR Second Itemz with ID {inputTargetItemzId} in repository.</p>"), yesText: "OK");
+				targetFirstItemz = new(); // CLEAR OUT SELF.
+				targetSecondItemz = new(); // CLEAR OUT SELF.
+			}
+		}
+	}
+
+	public async Task performItemzMoveBetween()
+	{
+		if (sourceItemz == null || sourceItemz.Id == Guid.Empty)
+		{
+			await DialogService.ShowMessageBox("ERROR", markupMessage: new
+						MarkupString($"<p style=\"color: red; \">Source Itemz should be selected first!</p>"), yesText: "OK");
+			return;
+		}
+
+		if ( targetFirstItemz == null || targetFirstItemz.Id == Guid.Empty || targetSecondItemz == null || targetSecondItemz.Id == Guid.Empty) 
+		{
+			await DialogService.ShowMessageBox("ERROR", markupMessage: new
+						MarkupString($"<p style=\"color: red; \">Both, Target Between First OR Second Itemz is empty! Please select it.</p>"), yesText: "OK");
+			return;
+		}
+
+		if (sourceItemz.Id == targetFirstItemz.Id || sourceItemz.Id == targetSecondItemz.Id)
+		{
+			await DialogService.ShowMessageBox("ERROR", markupMessage: new MarkupString($"<p style=\"color: red; \">Source and Target Itemz Id can not be same.</p>"), yesText: "OK");
+			return;
+		}
+
+		try
+		{
+			if (sourceItemz != null || sourceItemz.Id != Guid.Empty 
+				|| targetFirstItemz != null || targetFirstItemz.Id != Guid.Empty 
+				|| targetSecondItemz != null || targetSecondItemz.Id != Guid.Empty)
+			{
+				movingItemzOverlay = true;
+				Thread.Sleep(300);
+				await ItemzService.__POST_Move_Itemz_Between_Existing_Itemz__Async(sourceItemz.Id, targetFirstItemz.Id, targetSecondItemz.Id);
+				movingItemzOverlay = false;
+				await DialogService.ShowMessageBox("SUCCESS", markupMessage: new
+					MarkupString($"<p style=\"color: blue; \">Move Source Itemz between Target First and Second Itemz Completed Successfully!</p>"), yesText: "OK");
+				await performCleanUpActivity();
+				return;
+			}
+		}
+		catch (Exception ex)
+		{
+			movingItemzOverlay = false;
+			await DialogService.ShowMessageBox("ERROR", markupMessage: new
+					MarkupString($"<p style=\"color: red; \">Could not move Itemz Between selected First and Second Itemz : {ex.Message}</p>"), yesText: "OK");
+		}
+	}
+
+	public async Task performCleanUpActivity()
+	{
+		// Perform clean-up activity
+		sourceItemz = new();
+		targetFirstItemz = new();
+		targetSecondItemz = new();
+		movingItemzOverlay = false;
+	}
+
+	// private async Task<(bool isEligible, string checkEligibilityErrorMessage)> CheckTargetEligibility(GetItemzDTO checkTargetItemz)
+	// {
+	// 	string checkEligibilityErrorMessage = string.Empty;
+	// 	if (sourceItemz.Id == checkTargetItemz.Id)
+	// 	{
+	// 		checkEligibilityErrorMessage = $"<p style=\"color: red; \">Source and Target Itemz Id can not be same.</p>";
+	// 		return (false, checkEligibilityErrorMessage) ;
+	// 	}
+
+	// 	return (true, checkEligibilityErrorMessage);
+	// }
+  
+}

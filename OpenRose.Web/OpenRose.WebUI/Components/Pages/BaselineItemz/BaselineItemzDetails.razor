@@ -1,0 +1,247 @@
+﻿@* 
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0. 
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+@page "/baselineItemzDetails/{BaselineItemzId:guid}"
+@using OpenRose.WebUI.Client.Services.BaselineHierarchy
+@using OpenRose.WebUI.Client.Services.BaselineItemz
+@using OpenRose.WebUI.Components.FindServices
+@using OpenRose.WebUI.Components.Pages.Breadcrums
+@using OpenRose.WebUI.Components.Pages.BaselineItemz.BaselineTraceability
+@using OpenRose.WebUI.Components.Pages.Common
+@using OpenRose.WebUI.Client.SharedModels
+@using OpenRose.WebUI.Client.SharedModels.BetweenPagesAndComponent
+@using Microsoft.AspNetCore.Components.Forms
+@inject NavigationManager NavManager
+@inject IFindProjectAndBaselineIdsByBaselineItemzIdService FindProjectAndBaselineIdsByBaselineItemzIdService
+@inject IDialogService DialogService
+@inject IJSRuntime JS
+
+@if (BreadcrumsParameter != null)
+{
+	<BaselineBreadcrums produceBreadcrums="BreadcrumsParameter" />
+}
+
+
+<MudPaper Class="pa-4 mb-3 align-start d-flex" Style="width: auto" Outlined="false">
+	<MudText Typo="Typo.h6" Align="Align.Left">Baseline Itemz Details</MudText>
+</MudPaper>
+
+<MudGrid>
+	@if (initializingPage)
+	{
+		<MudPaper Height="calc(100vh - 100px);" Width="100%">
+			<MudOverlay Visible="@initializingPage" DarkBackground="true" Absolute="true">
+				<MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Inherit">Loading ...</MudText>
+				<br />
+				<MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+			</MudOverlay>
+		</MudPaper>
+	}
+	else
+	{
+		<MudItem xs="12" sm="12">
+		<MudPaper Class="mb-5">
+		<MudTabs Outlined="true" Position="Position.Top" Rounded="true" Border="true" 
+					 IconColor="Color.Secondary" ScrollIconColor="Color.Secondary" SliderColor = "Color.Secondary"
+					 ApplyEffectsToContainer="true" PanelClass="pa-2" MinimumTabWidth="200px" >
+			<MudTabPanel Text="Details" Icon="@Icons.Material.Filled.EditNote" >
+				@if (errors.Length > 0)
+				{
+					<MudPaper Class="pa-4 mud-height-full mud-width-full">
+						<MudText Typo="Typo.subtitle2" Color="@Color.Error">@($"Validation Errors ({errors.Length})")</MudText>
+						@foreach (var error in errors)
+						{
+							<MudText Color="@Color.Error">@error</MudText>
+						}
+					</MudPaper>
+				}
+		<MudPaper Class="pa-4 mud-height-full" Width="100%">
+		<MudForm Model="@singleBaselineItemz" @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
+			<MudCardActions>
+				<MudItem Class="align-start d-flex" Style="width: 100%;" Outlined="false">
+					<MudGrid Class="w-100">
+						<MudItem xs="12" sm="12" md="6" lg="6">
+							<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Class="w-100">
+								<MudButton Variant="Variant.Filled" Color="Color.Primary"
+											Size="Size.Large"
+											OnClick="(() => openBaselineTreeView())">
+									<MudText>Tree View</MudText>
+								</MudButton>
+								<MudButton Variant="Variant.Filled" Color="Color.Warning"
+											Size="Size.Large" 
+											OnClick="(async () => await goBackToBaselineItemz())">
+									<MudText>Close</MudText>
+								</MudButton>
+							</MudStack>
+						</MudItem>
+						<MudItem xs="12" sm="12" md="6" lg="6">
+							<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Class="w-100" Justify="Justify.FlexEnd">
+								<MudAlert Severity="Severity.Error"
+											Variant="Variant.Filled"
+											style="margin-left: 10px;">
+									NOTE: Baseline Itemz are designed to be READ ONLY records!
+								</MudAlert>
+							</MudStack>
+						</MudItem>
+					</MudGrid>
+				</MudItem>
+			</MudCardActions>
+			<MudCardContent>
+				<MudStack Row="true" Spacing="2">
+					<MudText><strong>Baseline Itemz GUID Id: </strong></MudText>
+					<CopyableText TextToCopy="@BaselineItemzId.ToString()" />
+				</MudStack>
+				<br />
+				<MudTextField T="string" Label="Name" Required="true" RequiredError="Name is required!"
+					@bind-Value="singleBaselineItemz.Name"
+					For="@(() => singleBaselineItemz.Name)" FullWidth="true" />
+				<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Start" Class="w-100">
+				<MudTextField T="string" Label="Status" Required="true" RequiredError="Status is required!"
+					@bind-Value="singleBaselineItemz.Status"
+					For="@(() => singleBaselineItemz.Status)" FullWidth="true" />
+				<MudTextField T="string" Label="Status" Required="true" RequiredError="Priority is required!"
+					@bind-Value="singleBaselineItemz.Priority"
+					For="@(() => singleBaselineItemz.Priority)" FullWidth="true" />
+				<MudTextField T="string" Label="Status" Required="true" RequiredError="Severity is required!"
+					@bind-Value="singleBaselineItemz.Severity"
+					For="@(() => singleBaselineItemz.Severity)" FullWidth="true" />
+				</MudStack>
+@* 				<MudTextField T="string" Label="Description" Required="true" RequiredError="Description is required!"
+								@bind-Value="singleBaselineItemz.Description"
+								For="@(() => singleBaselineItemz.Description)" /> *@
+
+					<MudText><strong>Description : </strong></MudText>
+					<br />
+					<div class="custom-markdown-editor">
+						<MudPaper Class="pa-2 fixed-height-scroll">
+							@if (!string.IsNullOrEmpty(singleBaselineItemz.Description))
+							{
+								<div class="markdown-body">@((MarkupString)convertedMarkdown)</div>
+							}
+						</MudPaper>
+					</div>
+				</MudCardContent>
+		</MudForm>
+	</MudPaper>
+			</MudTabPanel>
+			<MudTabPanel Icon="@Icons.Material.Filled.Hub" Text="Treaceability">
+				<BaselineTraceabilityComponent BaselineItemzId="@BaselineItemzId" />
+			</MudTabPanel>
+		</MudTabs>
+		
+		</MudPaper>
+		</MudItem>
+	}
+</MudGrid>
+@code {
+	[Parameter]
+	public Guid BaselineItemzId { get; set; }
+
+	[Inject]
+	public IBaselineItemzService BaselineItemzService { get; set; }
+	[Inject]
+	public IBaselineHierarchyService BaselineHierarchyService { get; set; }
+
+	private Guid ParentId { get; set; }
+	private string ParentRecordType { get; set; }
+
+	
+	public GetBaselineItemzDTO singleBaselineItemz { get; set; } = new();
+	private ParameterForBaselineBreadcrums BreadcrumsParameter;
+	public bool initializingPage { get; set; } = false;
+	
+	//MudForm related fields
+	bool success = true;
+	string[] errors = { };
+	MudForm form;
+
+	bool hideValidationError = true;
+
+	private MarkupString convertedMarkdown;
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			initializingPage = true;
+			StateHasChanged();
+			// TODO :: IMPLEMENT TRY AND CATCH WHILE WE CALL BASELINE ITEMZ SERVICE
+			singleBaselineItemz = await BaselineItemzService.__Single_BaselineItemz_By_GUID_ID__Async(BaselineItemzId);
+
+			if (singleBaselineItemz != null)
+			{
+				BreadcrumsParameter = new ParameterForBaselineBreadcrums();
+				BreadcrumsParameter.Id = singleBaselineItemz.Id;
+				BreadcrumsParameter.Name = singleBaselineItemz.Name;
+				BreadcrumsParameter.RecordType = "baselineitemz"; // TODO :: USE CONSTANT
+				BreadcrumsParameter.isIncluded = singleBaselineItemz.isIncluded;
+			}
+
+			if (form != null)
+			{
+				initializingPage = false;
+			}
+
+			await ConvertMarkdownToHtml(singleBaselineItemz.Description);
+			StateHasChanged();
+
+			// EXPLANATION : At the start of initialization process we capture parent record ID. 
+			// Now even if user decides to Delete this Itemz Record then also we can go back to it's 
+			// Parent ItemzType post completing deletion operation. 
+			var httpResponse = await BaselineHierarchyService.__Get_BaselineHierarchy_Record_Details_By_GUID__Async(BaselineItemzId);
+			ParentId = httpResponse.ParentRecordId;
+			ParentRecordType = httpResponse.ParentRecordType;
+
+
+		}
+	}
+
+	public async Task goBackToBaselineItemz()
+	{
+
+		NavManager.NavigateTo($"/baselineitemz/{BaselineItemzId.ToString()}");
+	}
+	public async Task goBackToParent()
+	{
+
+		if (ParentRecordType.ToLower() == "baselineitemztype")
+		{
+			NavManager.NavigateTo($"/baselineitemztype/{ParentId.ToString()}");
+		}
+		else if (ParentRecordType.ToLower() == "baselineitemz")
+		{
+			NavManager.NavigateTo($"/baselineitemz/{ParentId.ToString()}");
+		}
+	}
+
+	public async Task openBaselineTreeView()
+	{
+		// TODO :: Similar Code is there in several places in the project.
+		// We should try and come up with some common way to handle it!
+
+		var foundProjectAndBaselineIds = await FindProjectAndBaselineIdsByBaselineItemzIdService.GetProjectAndBaselineId(BaselineItemzId);
+		if (foundProjectAndBaselineIds.BaselineId != Guid.Empty)
+		{
+			var url = $"/BaselineTreeView/{foundProjectAndBaselineIds.BaselineId}?autoSelectedRecordId={BaselineItemzId}";
+			await JS.InvokeVoidAsync("openInNewTab", url);
+		}
+	}
+
+	private async Task ConvertMarkdownToHtml(string markdown)
+	{
+		if (!string.IsNullOrEmpty(markdown))
+		{
+			var html = await JS.InvokeAsync<string>("markdownToHtml", markdown);
+			convertedMarkdown = (MarkupString)html;
+			StateHasChanged();
+
+			// Apply fullscreen styles
+			// await Task.Delay(1000);
+			// await JS.InvokeVoidAsync("applyMarkdownEditorFullscreenStyles");
+		}
+	}
+
+}

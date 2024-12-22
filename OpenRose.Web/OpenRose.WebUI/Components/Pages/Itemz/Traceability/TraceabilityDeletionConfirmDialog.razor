@@ -1,0 +1,30 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+<MudDialog>
+    <TitleContent>
+        <MudText Color="Color.Error">CONFIRM</MudText>
+    </TitleContent>
+    <DialogContent>
+        <p style="color:red;">
+        <MudIcon Icon="@Icons.Material.Filled.Dangerous" Size="Size.Large" Color="Color.Error" Title="Delete Itemz" />
+        Are you sure you want to delete selected Itemz Traceability?</p>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="Submit">Yes</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="Cancel">No</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private MudDialogInstance MudDialog { get; set; }
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(true));
+
+    private void Cancel() => MudDialog.Cancel();
+}
+

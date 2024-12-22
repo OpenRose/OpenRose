@@ -1,0 +1,344 @@
+﻿@* 
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0. 
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+@using OpenRose.WebUI.Client.Services.BaselineHierarchy
+@using OpenRose.WebUI.Client.Services.BaselineItemz
+@using OpenRose.WebUI.Client.SharedModels
+@using OpenRose.WebUI.Client.SharedModels.BetweenPagesAndComponent
+@using OpenRose.WebUI.Components.EventServices
+@using OpenRose.WebUI.Components.FindServices
+@using OpenRose.WebUI.Components.Pages.BaselineItemz.BaselineTraceability
+@using OpenRose.WebUI.Components.Pages.Common
+@using Microsoft.AspNetCore.Components.Forms
+@using System.Globalization
+@* @inject NavigationManager NavManager *@
+@inject IFindProjectAndBaselineIdsByBaselineItemzIdService FindProjectAndBaselineIdsByBaselineItemzIdService
+@inject IDialogService DialogService
+@inject BaselineTreeNodeItemzSelectionService BaselineItemzSelectionService
+@inject IJSRuntime JS
+
+<MudPaper Class="pa-4 mb-3 align-start d-flex" Style="width: auto" Outlined="false">
+	<MudText Typo="Typo.h6" Align="Align.Left">Baseline Itemz</MudText>
+</MudPaper>
+
+<MudGrid>
+	@if (initializingPage)
+	{
+		<MudPaper Height="calc(100vh - 100px);" Width="100%">
+			<MudOverlay Visible="@initializingPage" DarkBackground="true" Absolute="true">
+				<MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Inherit">Loading ...</MudText>
+				<br />
+				<MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+			</MudOverlay>
+		</MudPaper>
+	}
+	else
+	{
+		<MudItem xs="12" sm="12">
+		<MudTabs Outlined="true" Position="Position.Top" Rounded="true" Border="true" 
+					 IconColor="Color.Secondary" ScrollIconColor="Color.Secondary" SliderColor = "Color.Secondary"
+					 ApplyEffectsToContainer="true" PanelClass="pa-2" MinimumTabWidth="200px" >
+			<MudTabPanel Text="Details" Icon="@Icons.Material.Filled.EditNote" >
+				<MudCard style="background-color : #FABBBB;" >
+					<MudCardContent>
+					<MudItem Class="align-start d-flex" Style="width: auto" Outlined="false">
+						<MudGrid>
+							<MudItem xs="12" sm="12" md="7" lg="7">
+								<MudText Typo="Typo.h5" Align="Align.Left"><strong>@singleBaselineItemz.Name </strong></MudText>
+							</MudItem>
+							<MudItem xs="12" sm="12" md="5" lg="5">
+								<MudStack Row="true" Spacing="2" AlignItems="AlignItems.End" Justify="Justify.FlexEnd" Class="w-100">
+									<MudButton OnClick="async _ => await openBaselineItemzDetailsView(BaselineItemzId.ToString())" Variant="@Variant.Filled" Size="@Size.Medium" Color="@Color.Success" Target="_blank"> Details View </MudButton>
+								</MudStack>
+							</MudItem>
+						</MudGrid>
+					</MudItem>
+						</MudCardContent>
+					</MudCard>
+					<MudCard>
+						<MudCardContent>
+						<MudStack Row="true" Spacing="2">
+						<MudText><strong>ID                   : </strong></MudText>
+						<CopyableText TextToCopy="@singleBaselineItemz.Id.ToString()" />
+						<MudTooltip Text="Show in Tree View">
+						<MudIcon Icon="@Icons.Material.Filled.Park" Size="Size.Small" Class="mouse-pointer-icon" @onclick="findAndShowInTreeView" />
+ 						</MudTooltip>
+						</MudStack>
+						<MudText><strong>Status               : </strong> @singleBaselineItemz.Status</MudText>
+						<MudText><strong>Priority             : </strong> @singleBaselineItemz.Priority</MudText>
+						<MudText><strong>Severity             : </strong> @singleBaselineItemz.Severity</MudText>
+						<MudText><strong>Created Date         : </strong> @singleBaselineItemz.CreatedDate.ToString("dd MMM yyyy HH:mm:ss", CultureInfo.CurrentCulture)</MudText>
+						<MudGrid >
+						<MudItem xs="3">
+						<MudSwitch T="bool" 
+							Value="@singleBaselineItemz.isIncluded"
+							ValueChanged="OnSingleBaselineItemzInclusionChanged"
+							Label="Is Included?"
+							Size="Size.Large"
+							LabelPosition="LabelPosition.End"
+							Color="@(singleBaselineItemz.isIncluded ? Color.Success : Color.Error)"
+							ThumbIconColor="@(singleBaselineItemz.isIncluded ? Color.Success : Color.Error)"
+							UncheckedColor = "Color.Error"
+							Disabled = "@(!(BaselineItemzSelectionService.RequestNodeWithParent(BaselineItemzId)))"
+						/>
+						</MudItem>
+							@if (anyChildBaselineItemzExcluded == true)
+							{
+								<MudItem xs="6">
+								<MudButton OnClick="async _ => await OnAllChildBaselineItemzInclusionChanged(true)" 
+									Variant="Variant.Filled" 
+									Size="Size.Medium" 
+									Color="Color.Success"
+									Disabled="@(!(BaselineItemzSelectionService.RequestNodeWithParent(BaselineItemzId)))"
+									style="gap: 10px; margin-left : 10px"> Include All Child Baseline Itemz </MudButton>
+								</MudItem>
+							}
+						</MudGrid>
+						<MudText><strong>Description : </strong></MudText>
+						<br />
+						<div class="custom-markdown-editor">
+							<MudPaper Class="pa-2 fixed-height-scroll">
+								@if (!string.IsNullOrEmpty(singleBaselineItemz.Description))
+								{
+									<div class="markdown-body">@((MarkupString)convertedMarkdown)</div>
+								}
+							</MudPaper>
+						</div>
+					</MudCardContent>
+				</MudCard>
+			</MudTabPanel>
+			<MudTabPanel Icon="@Icons.Material.Filled.Hub" Text="Treaceability">
+				<BaselineTraceabilityTreeViewComponent BaselineItemzId="@BaselineItemzId" />
+			</MudTabPanel>
+		</MudTabs>
+		</MudItem>
+	}
+</MudGrid>
+@code {
+	[Parameter]
+	public Guid BaselineItemzId { get; set; }
+
+	[Inject]
+	public IBaselineItemzService baselineItemzService { get; set; }
+
+	[Inject]
+	public IBaselineHierarchyService baselineHierarchyService { get; set; }
+
+	public GetBaselineItemzDTO singleBaselineItemz { get; set; } = new();
+	private List<BaselineHierarchyIdRecordDetailsDTO> AllChildBaselineItemz { get; set; } = new List<BaselineHierarchyIdRecordDetailsDTO>();
+	private (Guid ProjectId, Guid BaselineId) foundProjectAndBaselineIds;
+	public bool initializingPage { get; set; } = true;
+	public bool anyChildBaselineItemzExcluded { get; set; } = false;
+
+	private MarkupString convertedMarkdown;
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			initializingPage = true;
+			StateHasChanged();
+			//Thread.Sleep(300);
+			singleBaselineItemz = await baselineItemzService.__Single_BaselineItemz_By_GUID_ID__Async(BaselineItemzId);
+			if (singleBaselineItemz != null)
+			{
+				BaselineItemzSelectionService.LoadingOfBaselineItemzTreeViewComponent(BaselineItemzId, singleBaselineItemz.isIncluded);
+			}
+			await UpdateAllChildBaselineItemzFromServer();
+
+			initializingPage = false;
+
+			await ConvertMarkdownToHtml(singleBaselineItemz.Description);
+
+			StateHasChanged();
+
+			foundProjectAndBaselineIds = await FindProjectAndBaselineIdsByBaselineItemzIdService.GetProjectAndBaselineId(BaselineItemzId);
+
+
+
+			//StateHasChanged();
+		}
+	}
+
+	public async Task UpdateAllChildBaselineItemzFromServer()
+	{
+		var returnedItemzList = await baselineHierarchyService.__Get_Immediate_Children_Baseline_Hierarchy_By_GUID__Async(BaselineItemzId);
+		if (returnedItemzList != null)
+		{
+			AllChildBaselineItemz = returnedItemzList.ToList();
+		}
+
+		if (AllChildBaselineItemz != null && AllChildBaselineItemz.Any())
+		{
+			anyChildBaselineItemzExcluded = false;
+			foreach (var _childBaselineItemz in AllChildBaselineItemz)
+			{
+				if (_childBaselineItemz.IsIncluded == false)
+				{
+					anyChildBaselineItemzExcluded = true;
+				}
+			}
+		}
+	}
+
+	private async Task OnSingleBaselineItemzInclusionChanged(bool newValue)
+	{
+
+		try
+		{
+
+			var parentNodeIsIncluded = BaselineItemzSelectionService.RequestNodeWithParent(BaselineItemzId);
+
+			if(!(parentNodeIsIncluded))
+			{
+				// Handle the case where parent node is not included
+				await OpenExceptionDialogAsync("Parent node is marked as Excluded and so selected node can not be marked as Included.");
+				return;
+
+			}
+
+			// if (parentNodeIsIncluded)
+			// {
+				
+				UpdateBaselineItemzDTO tempUpdateBaselineItemzDTO = new UpdateBaselineItemzDTO();
+				// TODO :: Get Baseline ID from the server.
+				// tempUpdateBaselineItemzDTO.BaselineId = Guid.Parse("412f4a87-0b75-4631-958d-e2e92ea8e2fd");
+				tempUpdateBaselineItemzDTO.BaselineId = foundProjectAndBaselineIds.BaselineId;
+				// tempUpdateBaselineItemzDTO.BaselineItemzIds = new List<Guid> { Guid.Parse(singleBaselineItemz.Id.ToString()) };
+				tempUpdateBaselineItemzDTO.BaselineItemzIds = new List<Guid> { singleBaselineItemz.Id };
+				tempUpdateBaselineItemzDTO.ShouldBeIncluded = newValue;
+				tempUpdateBaselineItemzDTO.SingleNodeInclusion = true;
+				// Send the new value to the server
+
+				// TODO :: EXCEPTION HANDLING.
+				await baselineItemzService.__PUT_Update_BaselineItemzs_By_GUID_IDs__Async(tempUpdateBaselineItemzDTO);
+				singleBaselineItemz.isIncluded = newValue;
+
+
+				// SEND NOTIFICATION TO BASELINE TREE VIEW COMPONENT TO UPDATE IT'S ICONS AND IS INCLUDED INFORMATION
+
+				if (newValue == true)
+				{
+					BaselineItemzSelectionService.SingleBaselineItemzIsIncludedChanged(recordId: BaselineItemzId);
+				}
+				else
+				{
+					BaselineItemzSelectionService.ExcludeAllChildrenBaselineItemzTreeNodes(recordId: BaselineItemzId);
+				}
+
+
+				// TODO :: Find in child if any one is exlcuded then show Include All Child Button.
+
+				if (newValue == false && AllChildBaselineItemz != null && AllChildBaselineItemz.Any())
+				{
+					anyChildBaselineItemzExcluded = true;
+				}
+				else
+				{
+					await UpdateAllChildBaselineItemzFromServer();
+				}
+				StateHasChanged();
+			//	}
+			// else
+			// {
+			// 	// Handle the case where parent node is not included
+			// 	await OpenExceptionDialogAsync("Parent node is marked as Excluded and so selected node can not be marked as Included.");
+			// }
+		}
+		catch (Exception ex)
+		{
+			// updateItemzTypeButtonClicked = false;
+			await OpenExceptionDialogAsync("Problem Updating ItemzType Details : " + ex.Message);
+			return;
+		}
+		finally
+		{
+			//updateItemzTypeButtonClicked = false;
+		}
+
+	}
+
+	private async Task OnAllChildBaselineItemzInclusionChanged(bool newValue)
+	{
+		try
+		{
+			var parentNodeIsIncluded = BaselineItemzSelectionService.RequestNodeWithParent(BaselineItemzId);
+
+			if (!(parentNodeIsIncluded))
+			{
+				// Handle the case where parent node is not included
+				await OpenExceptionDialogAsync("Parent node is marked as Excluded and so selected node and its children can not be marked as Included.");
+				return;
+
+			}
+
+			UpdateBaselineItemzDTO tempUpdateBaselineItemzDTO = new UpdateBaselineItemzDTO();
+			// TODO :: Get Baseline ID from the server.
+			//tempUpdateBaselineItemzDTO.BaselineId = Guid.Parse("412f4a87-0b75-4631-958d-e2e92ea8e2fd");
+			tempUpdateBaselineItemzDTO.BaselineId = foundProjectAndBaselineIds.BaselineId;  
+			// tempUpdateBaselineItemzDTO.BaselineItemzIds = new List<Guid> { Guid.Parse(singleBaselineItemz.Id.ToString()) };
+			tempUpdateBaselineItemzDTO.BaselineItemzIds = new List<Guid> { singleBaselineItemz.Id };
+			tempUpdateBaselineItemzDTO.ShouldBeIncluded = true;
+			tempUpdateBaselineItemzDTO.SingleNodeInclusion = false;
+			// Send the new value to the server
+			
+			// TODO :: EXCEPTION HANDLING.
+			await baselineItemzService.__PUT_Update_BaselineItemzs_By_GUID_IDs__Async(tempUpdateBaselineItemzDTO);
+			singleBaselineItemz.isIncluded = newValue;
+
+			// Notify TreeView that all children has to be excluded.
+			BaselineItemzSelectionService.IncludeAllChildrenBaselineItemzTreeNodes(recordId: BaselineItemzId);
+		}
+		catch (Exception ex)
+		{
+			// updateItemzTypeButtonClicked = false;
+			await OpenExceptionDialogAsync("Problem Updating ItemzType Details : " + ex.Message);
+			return;
+		}
+		finally
+		{
+			//updateItemzTypeButtonClicked = false;
+		}
+		anyChildBaselineItemzExcluded = false;
+		StateHasChanged();
+
+	}
+
+	private async Task OpenExceptionDialogAsync(string exceptionMessage)
+	{
+		var options = new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, Position = DialogPosition.Center };
+		var dialogPara = new DialogParameters();
+		dialogPara.Add("exceptionMessage", exceptionMessage);
+		var dialogref = await DialogService.ShowAsync<BaselineItemzExceptionDialog>("CONFIRM", dialogPara, options);
+		// var dialogresult = await dialogref.Result;
+	}
+
+	private void findAndShowInTreeView()
+	{
+
+		BaselineItemzSelectionService.ScrollToTreeViewNode(BaselineItemzId);
+	}
+
+	public async Task openBaselineItemzDetailsView(string Id)
+	{
+		var url = $"/baselineItemz/{Id}";
+		await JS.InvokeVoidAsync("openInNewTab", url);
+	}
+
+	private async Task ConvertMarkdownToHtml(string markdown)
+	{
+		if (!string.IsNullOrEmpty(markdown))
+		{
+			var html = await JS.InvokeAsync<string>("markdownToHtml", markdown);
+			convertedMarkdown = (MarkupString)html;
+			StateHasChanged();
+
+			// Apply fullscreen styles
+			// await Task.Delay(1000);
+			// await JS.InvokeVoidAsync("applyMarkdownEditorFullscreenStyles");
+		}
+	}
+}

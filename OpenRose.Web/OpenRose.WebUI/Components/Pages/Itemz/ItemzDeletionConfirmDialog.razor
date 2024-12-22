@@ -1,0 +1,44 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+<MudDialog>
+    <TitleContent>
+        <MudText Color="Color.Error">CONFIRM</MudText>
+    </TitleContent>
+    <DialogContent>
+        <p style="color:red;">
+        <MudIcon Icon="@Icons.Material.Filled.Dangerous" Size="Size.Medium" Color="Color.Error" Title="Delete Itemz" />
+            @if (AllChildrenCount > 0)
+            {
+                <MudStack Row="true" Spacing="3">
+                    <MudText Typo="Typo.body1" Color="Color.Error">Total Number of Itemz getting deleted including children : </MudText>
+                    <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Error"> @(AllChildrenCount + 1) </MudChip>
+                </MudStack>
+                <MudText Typo="Typo.body1" Color="Color.Error"> Are you sure you want to delete all these Itemz? </MudText>
+            }
+            else
+            {
+                <MudText Typo="Typo.body1" Color="Color.Error"> Are you sure you want to delete selected Itemz? </MudText>
+            }
+        </p>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="Submit">Yes</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="Cancel">No</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private MudDialogInstance MudDialog { get; set; }
+    [Parameter]
+    public int AllChildrenCount { get; set; }
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(true));
+
+    private void Cancel() => MudDialog.Cancel();
+}
+

@@ -1,0 +1,322 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+@page "/moveitemztype"
+@using OpenRose.WebUI.Client.SharedModels
+@using OpenRose.WebUI.Client.Services.Itemz
+@using OpenRose.WebUI.Client.Services.ItemzType
+@using OpenRose.WebUI.Client.Services.Project
+@using OpenRose.WebUI.Client.Services.Hierarchy
+@using OpenRose.WebUI.Components.Pages.Common
+
+@inject IDialogService DialogService
+
+<MudPaper Class="pa-3 mb-3 align-start d-flex" Style="width: auto " Outlined="false">
+	<MudStack Row="true" Spacing="3">
+	<MudIcon Icon="@Icons.Material.Filled.AirlineStops" Size="Size.Large" />
+		<MudText Typo="Typo.h5" Align="Align.Left">Move ItemzType Under </MudText>
+		<MudSpacer /> 
+		<MudText Class="mt-3" Typo="Typo.caption"> Move ItemzType and it's Sub-Itemz tree structure as child under selected target Project </MudText>
+	</MudStack>
+</MudPaper>
+
+<MudItem xs="12" Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3">
+	<MudPaper Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3" style="padding: 16px;">
+		<div class="d-flex flex-column align-items-center justify-center w-100 h-100">
+			<MudStack Row="true" Spacing="2">
+				<MudTooltip Text="Step 1 is to select Source ItemzType that should be moved">
+					<MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success"> STEP 1 </MudChip>
+				</MudTooltip>
+				<MudButton @onclick="async _ => await selectSourceItemzType()" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Primary"> Select Source ItemzType </MudButton>
+			</MudStack>
+			@if (sourceItemzType != null && sourceItemzType.Id != Guid.Empty)
+			{
+			<MudStack Row="false" Spacing="2">
+			<MudCard style="background-color : #FABBBB; margin: 16px;" Class="w-100">
+				<MudCardContent Class="d-flex flex-wrap">
+					<div>
+						<MudText Typo="Typo.h6" Align="Align.Left"> Source ItemzType Details </MudText> 
+						<MudDivider></MudDivider>
+						<MudText><strong>Name        : </strong> @sourceItemzType.Name </MudText>
+						<MudStack Row="true" Spacing="2">
+						<MudText><strong>ID          : </strong></MudText>
+						<CopyableText TextToCopy="@sourceItemzType.Id.ToString()" />
+						</MudStack>
+						<MudText><strong>Status      : </strong> @sourceItemzType.Status</MudText>
+						<MudText Color="@(sourceItemzType.IsSystem ? Color.Error : Color.Inherit)" ><strong>IsSystem?   : </strong> @sourceItemzType.IsSystem</MudText>
+					</div>
+				</MudCardContent>
+			</MudCard>
+			</MudStack>
+			}
+		</div>
+    </MudPaper>
+</MudItem>
+
+@if (sourceItemzType != null && sourceItemzType.Id != Guid.Empty)
+{
+	<MudItem xs="12" Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3">
+	<MudPaper Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3" style="padding: 16px;">
+		<div class="d-flex flex-column align-items-center justify-center w-100 h-100">
+			<MudStack Row="true" Spacing="2">
+				<MudTooltip Text="Step 2 is to select Target Project to move under">
+					<MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success"> STEP 2 </MudChip>
+				</MudTooltip>
+				<MudButton @onclick="async _ => await selectTargetProject()" Disabled="_yesDisableSelectTargetProject" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Primary"> Select Target Project </MudButton>
+			</MudStack>
+			@if (targetProject != null && targetProject.Id != Guid.Empty )
+			{
+				<MudStack Row="false" Spacing="2">
+				<MudCard style="background-color : #FABBBB; margin: 16px;" Class="w-100">
+				<MudCardContent>
+					<MudText Typo="Typo.h6" Align="Align.Left"> Target Project Details </MudText> 
+					<MudDivider></MudDivider>
+					<MudText><strong>Name        : </strong> @targetProject.Name </MudText>
+					<MudStack Row="true" Spacing="2">
+					<MudText><strong>ID          : </strong></MudText>
+					<CopyableText TextToCopy="@targetProject.Id.ToString()" />
+					</MudStack>
+					<MudText><strong>Status      : </strong> @targetProject.Status</MudText>
+				</MudCardContent>
+				</MudCard>
+				</MudStack>
+			}
+			@if (targetProject != null && targetProject.Id != Guid.Empty)
+			{
+				<MudStack Row="true" Spacing="2">
+					<MudTooltip Text="Step 3 is to decide Top or Bottom place under Target Project's child ItemzType list">
+						<MudChip T="string" Class="mt-2" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success"> STEP 3 </MudChip>
+					</MudTooltip>
+				<MudRadioGroup @bind-Value="radioAtBottomOfChildList">
+					<MudRadio Value="false" Color="Color.Primary" Dense="false">At The Top of Child List</MudRadio>
+					<MudRadio Value="true" Color="Color.Primary" Dense="false">At The Bottom of Child List</MudRadio>
+				</MudRadioGroup>
+				</MudStack>
+			}
+		</div>
+    </MudPaper>
+</MudItem>
+}
+
+@if (sourceItemzType != null && sourceItemzType.Id != Guid.Empty)
+{
+	@if (targetProject != null && targetProject.Id != Guid.Empty)
+	{
+		<MudPaper Class="pa-3 mb-3 align-end d-flex" Style="width: auto " Outlined="false">
+		<div class="d-flex flex-column align-items-center justify-center w-100 h-100">
+		<MudStack Row="true" Spacing="2">
+			<MudTooltip Text="Step 4 is to Perform OR Cancel the move">
+				<MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success"> STEP 4 </MudChip>
+			</MudTooltip>
+			<MudButton @onclick="async _ => await performItemzTypeMove()" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Primary"> Move Source ItemzType under selected Target Project </MudButton>
+			<MudButton @onclick="async _ => await performCleanUpActivity()" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Warning"> Cancel / Restart Move </MudButton>
+		</MudStack>
+		</div>
+		</MudPaper>
+	}
+}
+@if (movingItemzTypeOverlay)
+{
+	<MudPaper Height="calc(100vh - 100px);" Width="100%">
+		<MudOverlay Visible="@movingItemzTypeOverlay" DarkBackground="true" Absolute="true">
+			<MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+			<MudText Typo="Typo.h6" Align="Align.End" Color="Color.Inherit">Moving ItemzType and its children...</MudText>
+		</MudOverlay>
+	</MudPaper>
+}
+@code {
+
+	[Inject]
+	public IItemzService ItemzService { get; set; }
+	[Inject]
+	public IItemzTypeService ItemzTypeService { get; set; }
+	[Inject]
+	public IProjectService ProjectService { get; set; }
+	[Inject]
+	public IHierarchyService HierarchyService { get; set; }
+
+	public GetItemzTypeDTO sourceItemzType { get; set; } = new();
+	public GetProjectDTO targetProject { get; set; } = new();
+	public bool radioAtBottomOfChildList { get; set; } = true;
+	public bool movingItemzTypeOverlay { get; set; } = false;
+	public bool _yesDisableSelectTargetProject { get; set; } = false;
+
+	public async Task selectSourceItemzType()
+	{
+		var parameters = new DialogParameters();
+		var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+		var dialog = DialogService.Show<SelectSourceItemzTypeDialog>("Enter Source ItemzType Record ID", parameters, options);
+		var result = await dialog.Result;
+		if (!result.Canceled && result.Data is Guid inputSourceItemzTypeId)
+		{
+			// Verify recordId exists in your repository
+			try
+			{
+				var foundSourceItemzType = await ItemzTypeService.__Single_ItemzType_By_GUID_ID__Async(inputSourceItemzTypeId);
+				if (foundSourceItemzType != null)
+				{
+					sourceItemzType = foundSourceItemzType;
+
+					// EXPLANATION :: Because we can move Parking Lot only within the project, 
+					// we are pre-selecting it's parent project as targetProject.
+
+					if (sourceItemzType.IsSystem)
+					{
+						_yesDisableSelectTargetProject = true;
+						try
+						{
+							var foundParkingLotHierarchyDetails = await HierarchyService.__Get_Hierarchy_Record_Details_By_GUID__Async(sourceItemzType.Id);
+							if (foundParkingLotHierarchyDetails != null)
+							{
+
+
+								var foundTargetProject = await ProjectService.__Single_Project_By_GUID_ID__Async(foundParkingLotHierarchyDetails.ParentRecordId);
+								if (foundTargetProject != null)
+								{
+									targetProject = foundTargetProject;
+									// TODO :: MUDToast to let users know that ParkingLot Project is auto selected.
+								}
+								else
+								{
+									await DialogService.ShowMessageBox("ERROR", markupMessage: new
+											MarkupString($"<p style=\"color: red; \">Could not find project details for selected Parking Lot ItemzType with ID {foundParkingLotHierarchyDetails.ParentRecordId} in repository.</p>"), yesText: "OK");
+									targetProject = new(); // CLEAR OUT SELF.
+								}
+
+							}
+							else
+							{
+								await DialogService.ShowMessageBox("ERROR", markupMessage: new
+									MarkupString($"<p style=\"color: red; \">Could not find hierarchy record details for selected Parking Lot ItemzType with ID {sourceItemzType.Id} in repository.</p>"), yesText: "OK");
+								sourceItemzType = new(); // CLEAR OUT SELF.
+							}
+						}
+						catch
+						{
+							await DialogService.ShowMessageBox("ERROR", markupMessage: new
+								MarkupString($"<p style=\"color: red; \">EXCEPTION :: Could not automatically populate Target Project Details for selected Parking Lot Itemz Type.</p>"), yesText: "OK");
+							sourceItemzType = new(); // CLEAR OUT SELF.
+						}
+					}
+					else
+					{ 
+						_yesDisableSelectTargetProject = false;
+					}
+				}
+				else
+				{
+					await DialogService.ShowMessageBox("ERROR", markupMessage: new 
+						MarkupString($"<p style=\"color: red; \">Could not find Source ItemzType with ID {inputSourceItemzTypeId} in repository.</p>"), yesText: "OK");
+					sourceItemzType = new(); // CLEAR OUT SELF.
+				}
+			}
+			catch
+			{
+				await DialogService.ShowMessageBox("ERROR", markupMessage: new 
+					MarkupString($"<p style=\"color: red; \">EXCEPTION :: Could not find Source ItemzType with ID {inputSourceItemzTypeId} in repository.</p>"), yesText: "OK");
+				sourceItemzType = new(); // CLEAR OUT SELF.
+			}
+		}
+	}
+
+	public async Task selectTargetProject()
+	{
+		var parameters = new DialogParameters();
+		var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+		var dialog = DialogService.Show<SelectTargetProjectDialog>("Select Target Project", parameters, options);
+		var result = await dialog.Result;
+		if (!result.Canceled && result.Data is Guid inputTargetProjectId)
+		{
+
+			if (sourceItemzType.Id == inputTargetProjectId)
+			{
+				await DialogService.ShowMessageBox("ERROR", markupMessage: new MarkupString($"<p style=\"color: red; \">Source and Target Id can not be same.</p>"), yesText: "OK");
+				targetProject = new();
+				return;
+			}
+
+			// Verify recordId exists in your repository
+			try
+			{
+				var foundTargetProject = await ProjectService.__Single_Project_By_GUID_ID__Async(inputTargetProjectId);
+				if (foundTargetProject != null)
+				{
+					targetProject = foundTargetProject;
+				}
+				else
+				{
+					await DialogService.ShowMessageBox("ERROR", markupMessage: new 
+							MarkupString($"<p style=\"color: red; \">Could not find Target Project with ID {inputTargetProjectId} in repository.</p>"), yesText: "OK");
+					targetProject = new(); // CLEAR OUT SELF.
+				}
+			}
+			catch (Exception ex)
+			{
+				await DialogService.ShowMessageBox("ERROR", markupMessage: new 
+						MarkupString($"<p style=\"color: red; \">EXCEPTION :: Could not find Target Project with ID {inputTargetProjectId} in repository.</p>"), yesText: "OK");
+				targetProject = new(); // CLEAR OUT SELF.
+			}
+		}
+	}
+
+	public async Task performItemzTypeMove()
+	{
+		if (sourceItemzType == null || sourceItemzType.Id == Guid.Empty)
+		{
+			await DialogService.ShowMessageBox("ERROR", markupMessage: new
+						MarkupString($"<p style=\"color: red; \">Source ItemzType should be selected first!</p>"), yesText: "OK");
+			return;
+		}
+
+		if (targetProject == null || targetProject.Id == Guid.Empty)
+		{
+			await DialogService.ShowMessageBox("ERROR", markupMessage: new
+						MarkupString($"<p style=\"color: red; \">Please select Target Project to move ItemzType under!</p>"), yesText: "OK");
+			return;
+		}
+
+		try
+		{
+			movingItemzTypeOverlay = true;
+			Thread.Sleep(300);
+			await ItemzTypeService.__POST_Move_ItemzType__Async(sourceItemzType.Id, targetProject.Id, radioAtBottomOfChildList);
+			movingItemzTypeOverlay = false;
+			await DialogService.ShowMessageBox("SUCCESS", markupMessage: new
+				MarkupString($"<p style=\"color: blue; \">Move Source ItemzType to Target Project Completed Successfully!</p>"), yesText: "OK");
+			await performCleanUpActivity();
+			return;
+		}
+		catch (Exception ex)
+		{
+			movingItemzTypeOverlay = false;
+			await DialogService.ShowMessageBox("ERROR", markupMessage: new
+					MarkupString($"<p style=\"color: red; \">{ex.Message}</p>"), yesText: "OK");
+		}
+	}
+
+	public async Task performCleanUpActivity()
+	{
+		// Perform clean-up activity
+		sourceItemzType = new();
+		targetProject = new();
+		_yesDisableSelectTargetProject = false;
+		radioAtBottomOfChildList = true;
+		movingItemzTypeOverlay = false;
+	}
+
+	// private async Task<(bool isEligible, string checkEligibilityErrorMessage)> CheckTargetEligibility(GetItemzDTO checkTargetItemz)
+	// {
+	// 	string checkEligibilityErrorMessage = string.Empty;
+	// 	if (sourceItemz.Id == checkTargetItemz.Id)
+	// 	{
+	// 		checkEligibilityErrorMessage = $"<p style=\"color: red; \">Source and Target Itemz Id can not be same.</p>";
+	// 		return (false, checkEligibilityErrorMessage) ;
+	// 	}
+
+	// 	return (true, checkEligibilityErrorMessage);
+	// }
+  
+}

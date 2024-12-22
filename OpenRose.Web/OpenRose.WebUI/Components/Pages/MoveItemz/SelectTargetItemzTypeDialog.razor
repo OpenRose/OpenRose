@@ -1,0 +1,42 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+<MudDialog>
+    <TitleContent>
+        <MudText Color="Color.Primary">Select Target ItemzType</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudTextField @bind-Value="UserInput" Label="Record ID" Variant="Variant.Text" Immediate="true" /> 
+        <MudText Color="Color.Error" Dense="true">@ErrorMessage</MudText>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="Submit">Yes</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="Cancel">No</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private MudDialogInstance MudDialog { get; set; }
+    
+    private string UserInput { get; set; } = string.Empty; 
+    private string ErrorMessage { get; set; } = string.Empty;
+    
+	private void Submit() 
+    { 
+        if (Guid.TryParse(UserInput, out Guid inputTargetItemzTypeId))
+        { 
+            MudDialog.Close(DialogResult.Ok(inputTargetItemzTypeId));
+        } 
+        else 
+        { 
+            ErrorMessage = "Please enter a valid GUID as Target Itemz Type ID.";
+        } 
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}
+

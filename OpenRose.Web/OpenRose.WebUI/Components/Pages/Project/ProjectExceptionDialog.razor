@@ -1,0 +1,32 @@
+﻿@* 
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0. 
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+<MudDialog>
+    <TitleContent>
+        <MudText Color="Color.Error">EXCEPTION</MudText>
+    </TitleContent>
+    <DialogContent>
+        <p style="color:red;">
+        <MudIcon Icon="@Icons.Material.Filled.Dangerous" Size="Size.Large" Color="Color.Error" Title="Exception encountered" />
+            Exception details : @exceptionMessage
+        </p>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="Submit">Ok</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private MudDialogInstance MudDialog { get; set; }
+
+    [Parameter]
+    public string exceptionMessage { get; set; }
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(true));
+
+}
+

@@ -1,0 +1,444 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+@using OpenRose.WebUI.Client.Services.Hierarchy
+@using OpenRose.WebUI.Client.Services.ItemzType
+@using OpenRose.WebUI.Client.SharedModels
+@using OpenRose.WebUI.Client.SharedModels.BetweenPagesAndComponent
+@using OpenRose.WebUI.Components.EventServices
+@using OpenRose.WebUI.Components.FindServices
+@using OpenRose.WebUI.Components.Pages.Breadcrums
+@using OpenRose.WebUI.Components.Pages.Common
+@using OpenRose.WebUI.Components.Pages.Project
+@using Microsoft.AspNetCore.Components.Forms
+@using PSC.Blazor.Components.MarkdownEditor
+@using PSC.Blazor.Components.MarkdownEditor.EventsArgs
+@inject NavigationManager NavManager
+@inject IDialogService DialogService
+@inject TreeNodeItemzSelectionService TreeNodeItemzSelectionService
+@inject IJSRuntime JS
+@inject IServiceProvider serviceProvider
+
+@if (CalledFrom == nameof(ItemzTypeDetails))
+{
+	@if (BreadcrumsParameter != null)
+	{
+		<ItemzBreadcrums produceBreadcrums="@BreadcrumsParameter" />
+	}
+}
+
+<MudPaper Class="pa-4 mb-5 align-start d-flex" Style="width: auto" Outlined="false">
+	<MudText Typo="Typo.h6" Align="Align.Left">ItemzType Details</MudText>
+</MudPaper>
+
+<MudGrid>
+	@if (initializingPage)
+	{
+		<MudPaper Height="calc(100vh - 100px);" Width="100%">
+			<MudOverlay Visible="@initializingPage" DarkBackground="true" Absolute="true">
+				<MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Inherit">Loading ...</MudText>
+				<br />
+				<MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+			</MudOverlay>
+		</MudPaper>
+	}
+	else
+	{
+		<MudItem hidden="@hideValidationError" xs="12" sm="12">
+			<MudPaper Class="pa-4 mb-5 mud-height-full">
+				<MudText Typo="Typo.subtitle2" Color="@Color.Error">@($"Validation Errors ({errors.Length})")</MudText>
+				@foreach (var error in errors)
+				{
+					<MudText Color="@Color.Error">@error</MudText>
+				}
+			</MudPaper>
+		</MudItem>
+		<MudItem xs="12" sm="12">
+
+		<MudTabs Outlined="true" Position="Position.Top" Rounded="true" Border="true" 
+					 IconColor="Color.Secondary" ScrollIconColor="Color.Secondary" SliderColor = "Color.Secondary"
+					 ApplyEffectsToContainer="true" PanelClass="pa-2" MinimumTabWidth="200px" >
+			<MudTabPanel Text="Details" Icon="@Icons.Material.Filled.EditNote" >
+				<MudPaper Class="pa-4 mb-5 mud-height-full mud-width-full">
+
+				<MudForm Model="@singleItemzType" @ref="form" @bind-IsValid="@success" @bind-Errors="@errors" FieldChanged="formFieldChanged" >
+					<MudCardActions>
+						<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Class="w-100"> 
+						<MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(disableUpdateItemzTypeDetailsButton)"
+								   Size="Size.Large"
+								   style="gap: 10px; margin : 10px"
+								   OnClick="(() => HandleItemzTypeDetailsPatchSubmission())">
+							<MudText>Save</MudText>
+						</MudButton>
+						@if (CalledFrom == nameof(ProjectTreeView))
+						{
+							<MudButton Variant="Variant.Filled" Color="Color.Primary"
+										Size="Size.Large"
+										style="gap: 10px; margin : 10px"
+										OnClick="(() => HandleGoToDetailsView())">
+								<MudText>Details View</MudText>
+							</MudButton>
+						}
+
+						@if (CalledFrom == nameof(ItemzTypeDetails))
+						{
+							if (ParentId != Guid.Empty) // Orphand Itemz will not have ParentId
+							{
+								<MudButton Variant="Variant.Filled" Color="Color.Primary"
+											Size="Size.Large"
+											style="gap: 10px; margin : 10px"
+											OnClick="(() => HandleGoToTreeView())">
+									<MudText>Tree View</MudText>
+								</MudButton>
+							}
+						<MudButton Variant="Variant.Filled" Color="Color.Warning" Size="Size.Large" style="gap: 10px; margin-left : 10px"
+									OnClick="(() => goBackToItemzType())">
+							<MudText>Cancel</MudText>
+						</MudButton>
+						}
+						</MudStack>
+					</MudCardActions>
+					<MudCardContent>
+						<MudStack Row="true" Spacing="2">
+							<MudText><strong>Project GUID Id: </strong></MudText>
+							<CopyableText TextToCopy="@(ParentId != Guid.Empty ? ParentId.ToString() : "")" />
+						</MudStack>
+
+						<br />
+						<MudStack Row="true" Spacing="2">
+							<MudText><strong>ItemzType GUID Id: </strong></MudText>
+							<CopyableText TextToCopy="@ItemzTypeId.ToString()" />
+						</MudStack>
+						<br />
+						<MudTextField T="string" Label="Name" Required="true" RequiredError="Name is required!"
+										@bind-Value="singleItemzType.Name"
+										For="@(() => singleItemzType.Name)" />
+						<MudSelect @bind-Value="singleItemzType.Status"
+									For="@(() => singleItemzType.Status)"
+									Required ="true"
+									RequiredError="Status is required!"
+									Label="Status">
+							@foreach (var _stringItemzTypeStatusValue in _stringItemzTypeStatusValues)
+							{
+								<MudSelectItem T="string" Value="_stringItemzTypeStatusValue">@_stringItemzTypeStatusValue</MudSelectItem>
+							}
+						</MudSelect>
+@* 						<MudTextField T="string" Label="Description" Required="true" RequiredError="Description is required!"
+							@bind-Value="singleItemzType.Description"
+							For="@(() => singleItemzType.Description)" /> *@
+						
+						<!-- Ensure this div applies the custom class to the Markdown content -->
+						<MudText><strong>Description : </strong></MudText>
+						<div class="custom-markdown-editor">
+							<MarkdownEditor @bind-Value="@MyContent" HideIcons="@(["mde-tb-image"])" />
+							<MudPaper Class="pa-4 mb-5" Style="background-color: #f5f5f5;">
+								@if (!string.IsNullOrEmpty(convertedMarkdown.Value))
+								{
+									<h3>Preview</h3>
+									<div class="markdown-body">@((MarkupString)convertedMarkdown)</div>
+								}
+							</MudPaper>
+						</div>
+					</MudCardContent>
+				</MudForm>
+				</MudPaper>
+
+			</MudTabPanel>
+
+			@if (CalledFrom == nameof(ItemzTypeDetails))
+			{
+				<MudTabPanel Icon="@Icons.Material.Filled.Cancel" Text="Delete ItemzType">
+ 				<MudItem xs="12" sm="12" md="12" lg="12">
+					<br />
+					<MudExpansionPanels Elevation="10" style="margin-left : 15px">
+						<MudExpansionPanel style="background-color : #FABBBB; color : red;"
+											Text="DANGER ZONE!" MaxHeight="150" Expanded="false">
+						<TitleContent>
+							<div class="d-flex">
+								<MudIcon Icon="@Icons.Material.Filled.Cancel" Color="Color.Error" Size="Size.Medium" class="mr-3"></MudIcon>
+								<MudText Color="Color.Error"><strong>DANGER ZONE!</strong></MudText>
+							</div>
+						</TitleContent>
+						<ChildContent>
+								<MudText Typo="Typo.body1" Color="Color.Error">Deleting itemzType means loosing all it's data. This is <STRONG>IRREVERSIBLE</STRONG> operation.</MudText>
+								<MudButton @onclick="OpenDeleteConfirmationDialogAsync" Variant="Variant.Filled"
+									Disabled="@(disableUpdateItemzTypeDetailsButton)"
+									Color="Color.Error" Size="Size.Large" style="align-items: center; margin-top : 10px">
+								Delete ItemzType
+								</MudButton>
+							</ChildContent>
+						</MudExpansionPanel>
+					</MudExpansionPanels>
+				</MudItem>
+				</MudTabPanel>
+			}
+		</MudTabs>
+	</MudItem>
+	<MudItem xs="12" sm="12">
+		<MudOverlay Visible="@updateItemzTypeButtonClicked" DarkBackground="true" Absolute="true">
+			<MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Inherit"> Updating ...  </MudText>
+			<br />
+			<MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+		</MudOverlay>
+	</MudItem>
+	<MudItem xs="12" sm="12">
+		<MudOverlay Visible="@deletingItemzType" DarkBackground="true" Absolute="true">
+			<MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Inherit">Deleting ...</MudText>
+			<br />
+			<MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+		</MudOverlay>
+	</MudItem>
+	}
+</MudGrid>
+@code {
+	[Parameter]
+	public Guid ItemzTypeId { get; set; }
+
+	[Parameter]
+	public EventCallback<string> ContentChanged { get; set; }
+
+	[Parameter]
+	[SupplyParameterFromQuery(Name = "calledFrom")]
+	public string CalledFrom { get; set; } = string.Empty;
+
+	[Inject]
+	public IItemzTypeService ItemzTypeService { get; set; }
+	[Inject]
+	public IHierarchyService hierarchyService { get; set; }
+
+	public Guid ParentId { get; set; }
+	private bool updateItemzTypeButtonClicked = false;
+
+	public GetItemzTypeDTO singleItemzType { get; set; } = new();
+	private ParameterForItemzBreadcrums BreadcrumsParameter;
+	public bool initializingPage { get; set; } = false;
+	private bool deletingItemzType { get; set; } = false;
+	private bool hasFormFieldChanged { get; set; } = false;
+
+
+	// private string _Content = string.Empty;
+	private string MyContent
+	{
+		get => singleItemzType.Description ?? string.Empty;
+		set
+		{
+			// _Content = value;
+			hasFormFieldChanged = true;
+			singleItemzType.Description = value;
+			ConvertMarkdownToHtml(singleItemzType.Description);
+			ContentChanged.InvokeAsync(value);
+		}
+	}
+
+	private async Task ConvertMarkdownToHtml(string markdown)
+	{
+		if (!string.IsNullOrEmpty(markdown))
+		{
+			var html = await JS.InvokeAsync<string>("markdownToHtml", markdown);
+			convertedMarkdown = (MarkupString)html;
+			StateHasChanged();
+
+			// Apply fullscreen styles
+			// await Task.Delay(1000);
+			// await JS.InvokeVoidAsync("applyMarkdownEditorFullscreenStyles");
+		}
+	}
+
+
+	//MudForm related fields
+	bool success = true;
+	bool disableUpdateItemzTypeDetailsButton = false;
+	string[] errors = { };
+	MudForm form;
+
+	bool hideValidationError = true;
+
+	string[] _stringItemzTypeStatusValues = { };
+
+	private MarkupString convertedMarkdown;
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			initializingPage = true;
+			StateHasChanged();
+			//Thread.Sleep(300);
+			singleItemzType = await ItemzTypeService.__Single_ItemzType_By_GUID_ID__Async(ItemzTypeId);
+			if (singleItemzType != null)
+			{
+				BreadcrumsParameter = new ParameterForItemzBreadcrums();
+				BreadcrumsParameter.Id = singleItemzType.Id;
+				BreadcrumsParameter.Name = singleItemzType.Name;
+				BreadcrumsParameter.RecordType = "itemztype"; // TODO :: USE CONSTANT
+
+				TreeNodeItemzSelectionService.UpdateTreeNodeItemzName(ItemzTypeId, singleItemzType.Name!);
+			}
+
+			if (form != null)
+			{
+				await form.Validate();
+				if (form.IsValid)
+				{
+					disableUpdateItemzTypeDetailsButton = false;
+				}
+				else
+				{
+					disableUpdateItemzTypeDetailsButton = true;
+				}
+				initializingPage = false;
+				StateHasChanged();
+
+				// EXPLANATION :: First we create string list and then just call ToArray() for producing required string array
+				List<string> tempList = new List<string>();
+				foreach (var _itemzTypeStatusValue in Enum.GetValues<ItemzTypeStatus>())
+				{
+					tempList.Add(_itemzTypeStatusValue.ToString().Trim());
+				}
+				_stringItemzTypeStatusValues = tempList.ToArray();
+
+				if (singleItemzType != null)
+				{
+					if (singleItemzType.IsSystem )
+					{
+						if (CalledFrom == nameof(ItemzTypeDetails))
+						{
+							await OpenExceptionDialogAsync("System ItemzType can not be edited!");
+						}
+						disableUpdateItemzTypeDetailsButton = true;
+						form.Disabled = true;
+					}
+				}
+			}
+
+			// EXPLANATION : At the start of initialization process we capture parent record ID.
+			// Now even if user decides to Delete this Itemz Record then also we can go back to it's
+			// Parent ItemzType post completing deletion operation.
+			var httpResponse = await hierarchyService.__Get_Hierarchy_Record_Details_By_GUID__Async(ItemzTypeId);
+			ParentId = httpResponse.ParentRecordId;
+
+			await ConvertMarkdownToHtml(singleItemzType.Description);
+
+			StateHasChanged();
+		}
+	}
+	public async Task HandleItemzTypeDetailsPatchSubmission()
+	{
+		updateItemzTypeButtonClicked = true;
+		try
+		{
+			if (hasFormFieldChanged)
+			{
+				var updateItemzTypeDTO = new UpdateItemzTypeDTO();
+				updateItemzTypeDTO.Name = singleItemzType.Name;
+				updateItemzTypeDTO.Status = singleItemzType.Status;
+				updateItemzTypeDTO.Description = singleItemzType.Description;
+				var updatedResult = await ItemzTypeService.__PUT_Update_ItemzType_By_GUID_ID__Async(ItemzTypeId, updateItemzTypeDTO);
+				TreeNodeItemzSelectionService.UpdateTreeNodeItemzName(ItemzTypeId, singleItemzType.Name!);
+				//Thread.Sleep(800);
+			}
+		}
+		catch (Exception ex)
+		{
+			updateItemzTypeButtonClicked = false;
+			await OpenExceptionDialogAsync("Problem Updating ItemzType Details : " + ex.Message);
+			return;
+		}
+		finally
+		{
+			updateItemzTypeButtonClicked = false;
+		}
+
+		// TODO :: IF IT UPDATES THE PROJECT THEN DISABLE SUBMIT BUTTON AND CONFIRM ON SCREEN THAT IT'S NOW UPDATED SUCCESSFULLY
+
+		goBackToItemzType();
+	}
+
+	private async Task formFieldChanged()
+	{
+		hasFormFieldChanged = true;
+		if (form != null)
+		{
+			await form.Validate();
+			if (form.IsValid)
+			{
+				disableUpdateItemzTypeDetailsButton = false;
+				if (singleItemzType != null)
+				{
+					if (singleItemzType.IsSystem)
+					{
+						disableUpdateItemzTypeDetailsButton = true;
+						StateHasChanged();
+					}
+				}
+			}
+			else
+			{
+				disableUpdateItemzTypeDetailsButton = true;
+			}
+		}
+	}
+
+	public async Task deleteItemzType()
+	{
+		await ItemzTypeService.__DELETE_ItemzType_By_GUID_ID__Async(ItemzTypeId);
+		NavManager.NavigateTo($"/project/{ParentId.ToString()}");
+	}
+	private async Task OpenDeleteConfirmationDialogAsync()
+	{
+		var options = new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, Position = DialogPosition.Center };
+		var dialogPara = new DialogParameters();
+		dialogPara.Add("deletingItemzTypeName", singleItemzType.Name);
+		var dialogref = await DialogService.ShowAsync<ItemzTypeDeletionConfirmDialog>("CONFIRM", parameters: dialogPara, options);
+		var dialogresult = await dialogref.Result;
+		if (!(dialogresult!.Canceled))
+		{
+			deletingItemzType = true;
+			StateHasChanged();
+			await deleteItemzType();
+			Thread.Sleep(200);
+		}
+	}
+
+	private async Task OpenExceptionDialogAsync(string exceptionMessage)
+	{
+		var options = new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, Position = DialogPosition.Center };
+		var dialogPara = new DialogParameters();
+		dialogPara.Add("exceptionMessage", exceptionMessage);
+		var dialogref = await DialogService.ShowAsync<ItemzTypeExceptionDialog>("CONFIRM", dialogPara, options);
+		// var dialogresult = await dialogref.Result;
+	}
+
+	public void goBackToItemzType()
+	{
+		if (CalledFrom == nameof(ItemzTypeDetails))
+		{
+			NavManager.NavigateTo($"/itemztype/{ItemzTypeId.ToString()}");
+		}
+	}
+
+	public async Task HandleGoToDetailsView()
+	{
+		var url = $"/itemztype/{ItemzTypeId.ToString()}";
+		await JS.InvokeVoidAsync("openInNewTab", url);
+	}
+
+	public async Task HandleGoToTreeView()
+	{
+		// TODO :: Similar Code is there in ProjectTreeView.razor file as well.
+		// We should try and come up with some common way to handle it!
+
+		var hierarchyService = serviceProvider.GetRequiredService<IHierarchyService>();
+		var findProjectOfItemzId = new FindProjectOfItemzId(hierarchyService);
+
+		var foundProjectId = await findProjectOfItemzId.getProjectIdOfItemzId(ItemzTypeId);
+		if (foundProjectId != Guid.Empty)
+		{
+			var url = $"/ProjectTreeView/{foundProjectId}?autoSelectedRecordId={ItemzTypeId}";
+			await JS.InvokeVoidAsync("openInNewTab", url);
+		}
+	}
+}

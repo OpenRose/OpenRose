@@ -1,0 +1,91 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+@using OpenRose.WebUI.Client.Services.Itemz
+@inject IDialogService DialogService
+
+<MudPaper Class="pa-3 mb-3 align-start d-flex" Style="width: auto " Outlined="false">
+    <MudStack Row="true" Spacing="3">
+        <MudIcon Icon="@Icons.Material.Filled.HolidayVillage" Size="Size.Large" />
+        <MudText Typo="Typo.h6" Align="Align.Left">Delete All Orphaned Itemz </MudText>
+    </MudStack>
+</MudPaper>
+
+<MudItem xs="12" sm="9" md="6" lg="6">
+	<br />
+		<MudExpansionPanels Elevation="10" style="margin-left : 15px">
+			<MudExpansionPanel style="background-color : #FABBBB; color : red;"
+								Text="DANGER ZONE!" MaxHeight="150" Expanded="false">
+			<TitleContent>
+				<div class="d-flex">
+					<MudIcon Icon="@Icons.Material.Filled.Cancel" Color="Color.Error" Size="Size.Medium" class="mr-3"></MudIcon>
+					<MudText Color="Color.Error"><strong>DANGER ZONE!</strong></MudText>
+				</div>
+			</TitleContent>
+			<ChildContent>
+				<MudStack Row="true" Spacing="3">
+					<MudText Typo="Typo.body1" Color="Color.Error">Total Number of Orphan Itemz Found are : </MudText>
+					<MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Primary"> @(totalOrphanedItemzs < 0 ? "0" : totalOrphanedItemzs.ToString()) </MudChip>
+				</MudStack>
+				<MudText Typo="Typo.body1" Color="Color.Error">Deleting All Orphan Itemz means loosing all it's data. This is <STRONG>IRREVERSIBLE</STRONG> operation.</MudText>
+				<MudButton @onclick="OpenDeleteConfirmationDialogAsync"
+					Disabled = "@(totalOrphanedItemzs > 0 ? false : true )"
+					Variant="Variant.Filled" Color="Color.Error" Size="Size.Large" style="align-items: center; margin-top : 10px">
+					Delete All Orphan Itemz
+				</MudButton>
+			</ChildContent>
+		</MudExpansionPanel>
+	</MudExpansionPanels>
+</MudItem>
+
+
+<MudItem xs="12" sm="12">
+	<MudOverlay Visible="@deletingAllOrphanItemz" DarkBackground="true" Absolute="true">
+		<MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Inherit">Deleting ...</MudText>
+		<br />
+		<MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+	</MudOverlay>
+</MudItem>
+
+@code {
+	[Inject]
+	public IItemzService itemzService { get; set; }
+
+	private int totalOrphanedItemzs = 0;
+	private bool deletingAllOrphanItemz { get; set; } = false;
+
+	protected override async Task OnInitializedAsync()
+	{
+		await GetCountOfOrphanItemz();
+	}
+
+	private async Task GetCountOfOrphanItemz()
+	{
+		totalOrphanedItemzs = await itemzService.__GET_Orphan_Itemzs_Count__Async();
+	}
+
+	private async Task OpenDeleteConfirmationDialogAsync()
+	{
+		var options = new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, Position = DialogPosition.Center };
+		var dialogref = await DialogService.ShowAsync<AllOrphanDeletionConfirmDialog>("CONFIRM", options);
+		var dialogresult = await dialogref.Result;
+		if (!(dialogresult!.Canceled))
+		{
+			deletingAllOrphanItemz = true;
+			StateHasChanged();
+			await deleteAllOrphanItemz();
+			Thread.Sleep(200);
+		}
+	}
+
+	public async Task deleteAllOrphanItemz()
+	{
+		Thread.Sleep(400);
+		await itemzService.__Delete_All_Orphan_Itemz__Async();
+		await GetCountOfOrphanItemz();
+		deletingAllOrphanItemz = false;
+	}
+}

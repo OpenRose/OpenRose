@@ -1,0 +1,243 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+@page "/CreateItemz/{ParentId:guid}"
+@using OpenRose.WebUI.Client.Services.Hierarchy
+@using OpenRose.WebUI.Client.Services.Itemz
+@using OpenRose.WebUI.Client.SharedModels
+@using Microsoft.AspNetCore.Components.Forms
+@using PSC.Blazor.Components.MarkdownEditor
+@using PSC.Blazor.Components.MarkdownEditor.EventsArgs
+@inject NavigationManager NavManager
+@inject IJSRuntime JS
+
+<h1>Create Itemz</h1>
+
+<MudGrid>
+	<MudItem hidden="@hideValidationError" xs="12" sm="8">
+		<MudPaper Class="pa-4 mud-height-full">
+			<MudText Typo="Typo.subtitle2" Color="@Color.Error">@($"Validation Errors ({errors.Length})")</MudText>
+			@foreach (var error in errors)
+			{
+				<MudText Color="@Color.Error">@error</MudText>
+			}
+		</MudPaper>
+	</MudItem>
+    <MudItem xs="12" sm="12">
+        <MudPaper Class="pa-4">
+			<MudForm Model="@singleItemz" @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
+				<MudCardActions>
+					<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Class="w-100"> 
+					<MudButton Variant="Variant.Filled" Color="Color.Primary"
+							   Size="Size.Large"
+							   style="gap: 10px; margin : 10px"
+							   OnClick="(() => HandleCreateItemzPostSubmission())">
+						<MudText>Create</MudText>
+					</MudButton>
+					@* <MudSpacer /> *@
+					<MudButton Variant="Variant.Filled" Color="Color.Warning"
+							   Size="Size.Large"
+							   style="gap: 10px; margin : 10px"
+							   OnClick="(() => goBackToParent())">
+						<MudText>Cancel</MudText>
+					</MudButton>
+					</MudStack>
+				</MudCardActions>
+				<MudCardContent>
+				<MudTextField T="string" Label="Name" Required="true" RequiredError="Itemz name is required!"
+								  @bind-Value="singleItemz.Name"
+								  For="@(() => singleItemz.Name)" />
+					<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Start" Class="w-100">
+					<MudSelect @bind-Value="singleItemz.Status"
+							   For="@(() => singleItemz.Status)"
+							   Required="true"
+							   RequiredError="Status is required!"
+							   Label="Status">
+						@foreach (var _stringItemzStatusValue in _stringItemzStatusValues)
+						{
+							<MudSelectItem T="string" Value="_stringItemzStatusValue">@_stringItemzStatusValue</MudSelectItem>
+						}
+					</MudSelect>
+					<MudSelect @bind-Value="singleItemz.Priority"
+							   For="@(() => singleItemz.Priority)"
+							   Required="true"
+							   RequiredError="Priority is required!"
+							   Label="Priority">
+						@foreach (var _stringItemzPriorityValue in _stringItemzPriorityValues)
+						{
+							<MudSelectItem T="string" Value="_stringItemzPriorityValue">@_stringItemzPriorityValue</MudSelectItem>
+						}
+					</MudSelect>
+					<MudSelect @bind-Value="singleItemz.Severity"
+							   For="@(() => singleItemz.Severity)"
+							   Required="true"
+							   RequiredError="Severity is required!"
+							   Label="Severity">
+						@foreach (var _stringItemzSeverityValue in _stringItemzSeverityValues)
+						{
+							<MudSelectItem T="string" Value="_stringItemzSeverityValue">@_stringItemzSeverityValue</MudSelectItem>
+						}
+					</MudSelect>
+					</MudStack>
+@* 					<MudTextField T="string" Label="Description" Required="true" RequiredError="Description is required!"
+								  @bind-Value="singleItemz.Description"
+								  For="@(() => singleItemz.Description)" /> *@
+
+				<!-- Ensure this div applies the custom class to the Markdown content -->
+				<MudText><strong>Description : </strong></MudText>
+				<div class="custom-markdown-editor">
+					<MarkdownEditor @bind-Value="@MyContent" HideIcons="@(["mde-tb-image"])" />
+					<MudPaper Class="pa-4 mb-5" Style="background-color: #f5f5f5;">
+						@if (!string.IsNullOrEmpty(convertedMarkdown.Value))
+						{
+							<h3>Preview</h3>
+							<div class="markdown-body">@((MarkupString)convertedMarkdown)</div>
+						}
+					</MudPaper>
+				</div>
+
+				</MudCardContent>
+			</MudForm>
+		</MudPaper>
+	</MudItem>
+</MudGrid>
+
+<MudOverlay Visible="@createItemzButtonClicked" DarkBackground="true" Absolute="true">
+	<MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Inherit">Creating ... </MudText>
+	<br />
+	<MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+</MudOverlay>
+
+@code {
+	[Parameter]
+	public Guid ParentId { get; set; }
+
+
+	[Parameter]
+	public EventCallback<string> ContentChanged { get; set; }
+
+	[Inject]
+	public IItemzService ItemzService { get; set; }
+	[Inject]
+	public IHierarchyService HierarchyService { get; set; }
+
+
+	public CreateItemzDTO singleItemz { get; set; } = new();
+	public bool IsProcessing { get; set; } = false;
+
+
+	// private string _Content = string.Empty;
+	private string MyContent
+	{
+		get => singleItemz.Description ?? string.Empty;
+		set
+		{
+			// _Content = value;
+			// hasFormFieldChanged = true;
+			singleItemz.Description = value;
+			ConvertMarkdownToHtml(singleItemz.Description);
+			ContentChanged.InvokeAsync(value);
+		}
+	}
+
+	private async Task ConvertMarkdownToHtml(string markdown)
+	{
+		if (!string.IsNullOrEmpty(markdown))
+		{
+			var html = await JS.InvokeAsync<string>("markdownToHtml", markdown);
+			convertedMarkdown = (MarkupString)html;
+			StateHasChanged();
+
+			// Apply fullscreen styles
+			// await Task.Delay(1000);
+			// await JS.InvokeVoidAsync("applyMarkdownEditorFullscreenStyles");
+		}
+	}
+
+
+
+
+	//MudForm related fields
+	bool success = true;
+	string[] errors = { };
+	MudForm form;
+	private bool createItemzButtonClicked = false;
+	bool hideValidationError = true;
+
+	string[] _stringItemzStatusValues = { };
+	string[] _stringItemzPriorityValues = { };
+	string[] _stringItemzSeverityValues = { };
+
+	private MarkupString convertedMarkdown;
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			// EXPLANATION :: First we create string list and then just call ToArray() for producing required string array
+			List<string> tempStatusList = new List<string>();
+			foreach (var _itemzStatusValue in Enum.GetValues<ItemzStatus>())
+			{
+				tempStatusList.Add(_itemzStatusValue.ToString().Trim());
+			}
+			_stringItemzStatusValues = tempStatusList.ToArray();
+
+			// EXPLANATION :: First we create string list and then just call ToArray() for producing required string array
+			List<string> tempPriorityList = new List<string>();
+			foreach (var _itemzPriorityValue in Enum.GetValues<ItemzPriority>())
+			{
+				tempPriorityList.Add(_itemzPriorityValue.ToString().Trim());
+			}
+			_stringItemzPriorityValues = tempPriorityList.ToArray();
+
+			// EXPLANATION :: First we create string list and then just call ToArray() for producing required string array
+			List<string> tempSeverityList = new List<string>();
+			foreach (var _itemzSeverityValue in Enum.GetValues<ItemzSeverity>())
+			{
+				tempSeverityList.Add(_itemzSeverityValue.ToString().Trim());
+			}
+			_stringItemzSeverityValues = tempSeverityList.ToArray();
+
+			if (singleItemz != null && singleItemz.Description != null)
+			{
+				await ConvertMarkdownToHtml(singleItemz.Description);
+			}
+			StateHasChanged();
+		}
+	}
+	public async Task HandleCreateItemzPostSubmission()
+	{
+		if (form != null)
+		{
+			await form.Validate();
+			if (form.IsValid)  
+			{
+				hideValidationError = true;	
+				createItemzButtonClicked = true;
+				// singleItemz.ParentId = ParentId;
+				var updatedResult = await ItemzService.__POST_Create_Itemz__Async(ParentId, true, singleItemz); 
+				goBackToParent();
+			}
+			else
+			{
+				hideValidationError = false;
+			}
+		}
+	}
+
+	public async Task goBackToParent()
+	{
+		// NavManager.NavigateTo($"/ItemzType/{ParentId.ToString()}/{ParentId.ToString()}");
+
+		// TODO:: We can't assume that parent record will be ItemzType only. It can be Itemz as well. 
+		// Better if we call for Hierarchy Record to return back Parent Itemz Type and Parent ID and then decide 
+		// where to go back to?
+		var httpResponse = await HierarchyService.__Get_Hierarchy_Record_Details_By_GUID__Async(ParentId);
+
+
+		NavManager.NavigateTo($"/{httpResponse.RecordType.ToLower()}/{httpResponse.RecordId.ToString()}",true);
+	}
+}

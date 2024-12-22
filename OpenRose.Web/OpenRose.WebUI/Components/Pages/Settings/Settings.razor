@@ -1,0 +1,31 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+@page "/settings/"
+@using OpenRose.WebUI.Components.Pages.Orphan.DeleteAllOrphan
+@using OpenRose.WebUI.Services
+@inject AssemblyInfoService AssemblyInfo
+
+<MudPaper Class="pa-3 mb-3 align-start d-flex" Style="width: auto " Outlined="false">
+    <MudStack Row="true" Spacing="3">
+        <MudIcon Icon="@Icons.Material.Filled.LocalFlorist" Size="Size.Large" />
+        <MudText Typo="Typo.h6" Align="Align.Left">About OpenRose </MudText>
+        <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success"> Version -  @version </MudChip>
+    </MudStack>
+</MudPaper>
+
+<br />
+
+<DeleteAllOrphanComponent />
+
+@code {
+    private string version;
+
+    protected override void OnInitialized()
+    {
+        version = AssemblyInfo.GetAssemblyVersion();
+    }
+}

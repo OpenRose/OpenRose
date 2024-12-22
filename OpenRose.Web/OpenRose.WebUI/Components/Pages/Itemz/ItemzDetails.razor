@@ -1,0 +1,15 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+@page "/itemzDetails/{ItemzId:guid}"
+
+<ItemzDetailsComponent ItemzId="@ItemzId" CalledFrom="@this.GetType().Name" />
+
+
+@code {
+	[Parameter]
+	public Guid ItemzId { get; set; }
+}

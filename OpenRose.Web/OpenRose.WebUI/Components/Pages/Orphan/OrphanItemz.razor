@@ -1,0 +1,173 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+@page "/orphanitemz"
+@using OpenRose.WebUI.Client.SharedModels
+@using OpenRose.WebUI.Client.Services.Itemz
+@using OpenRose.WebUI.Components.Pages.Common
+@using OpenRose.WebUI.Components.Pages.Itemz
+@using System.Text.Json
+@inject IJSRuntime JS
+@inject IDialogService DialogService
+
+<MudPaper Class="pa-3 mb-3 align-start d-flex" Style="width: auto " Outlined="false">
+    <MudStack Row="true" Spacing="3">
+        <MudIcon Icon="@Icons.Material.Filled.HolidayVillage" Size="Size.Large" />
+        <MudText Typo="Typo.h6" Align="Align.Left">Orphaned Itemz </MudText>
+        <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Primary"> @(totalItemzs < 0 ? "0" : totalItemzs.ToString()) </MudChip>
+    </MudStack>
+</MudPaper>
+
+<MudTable @ref="mudTable"
+          ServerData="LoadServerData"
+          Items="@itemzs"
+          RowsPerPage="@rowsPerPage"
+          RowsPerPageChanged="OnRowsPerPageChanged">
+    <HeaderContent>
+        <MudTh>Itemz Id</MudTh>
+        <MudTh>Name</MudTh>
+        <MudTh>Status</MudTh>
+        <MudTh>Priority</MudTh>
+        <MudTh>Severity</MudTh>
+        <MudTh>Created Date</MudTh>
+        <MudTh>Actions</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Id"><CopyableText TextToCopy="@context.Id.ToString()" DisplayLength="8" /></MudTd>
+        <MudTd DataLabel="Name">@context.Name</MudTd>
+        <MudTd DataLabel="Status">@context.Status</MudTd>
+        <MudTd DataLabel="Priority">@context.Priority</MudTd>
+        <MudTd DataLabel="Severity">@context.Severity</MudTd>
+        <MudTd DataLabel="Created Date">@context.CreatedDate.ToString("yyyy-MM-dd")</MudTd>
+        <MudTd DataLabel="Actions"> 
+			<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Class="w-100"> 		
+            <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="async () => await OpenOrphanItemzAsync(context)">Open</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="async () => await DeleteOrphanItemzAsync(context)">Delete</MudButton>
+            </MudStack>
+        </MudTd>
+    </RowTemplate>
+    <LoadingContent>
+        <MudText>Loading...</MudText>
+    </LoadingContent>
+    <PagerContent>
+        <MudTablePager />
+    </PagerContent>
+</MudTable>
+
+@code {
+    [Inject]
+    public IItemzService itemzService { get; set; }
+
+    private MudTable<GetItemzWithBasePropertiesDTO> mudTable;
+    private int totalItemzs = 0;
+    private int rowsPerPage = 10;
+    private List<GetItemzWithBasePropertiesDTO> itemzs = new();
+
+    private bool deletingItemz { get; set; } = false;
+    private string searchText = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Initialization logic here
+        await LoadInitialData();
+    }
+
+    private async Task LoadInitialData()
+    {
+        // Load initial data and set up initial state
+        await LoadServerData(new TableState { Page = 0, PageSize = rowsPerPage }, CancellationToken.None);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task<TableData<GetItemzWithBasePropertiesDTO>> LoadServerData(TableState state, CancellationToken token)
+    {
+        var pageNumber = state.Page + 1; // MudTable's page index is zero-based
+        var pageSize = state.PageSize;
+        var orderBy = state.SortLabel ?? "Name";
+
+        rowsPerPage = pageSize; // Ensure this is up-to-date
+
+        // Console.WriteLine($"Loading data: PageNumber={pageNumber}, PageSize={pageSize}");
+
+        var response = await itemzService.__GET_Orphan_Itemzs_Collection__Async(pageNumber, pageSize, orderBy);
+        // Console.WriteLine($"Records returned by service: {response.Item1?.Count()}");
+
+        if (response.Item1 != null && response.Item1.Any())
+        {
+            itemzs = response.Item1.ToList();
+        }
+
+        var paginationHeader = response.Item2;
+
+        if (paginationHeader != null)
+        {
+            var options = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+
+            var pagination = JsonSerializer.Deserialize<PaginationInfo>(paginationHeader, options);
+
+            totalItemzs = pagination.totalCount;
+        }
+
+        // Console.WriteLine($"Total Items: {totalItemzs}, RowsPerPage: {rowsPerPage}");
+
+        mudTable.TotalItems = totalItemzs;
+
+        return new TableData<GetItemzWithBasePropertiesDTO> { Items = itemzs, TotalItems = totalItemzs };
+    }
+
+    private async Task OnRowsPerPageChanged(int newRowsPerPage)
+    {
+        rowsPerPage = newRowsPerPage;
+        await mudTable.ReloadServerData();
+        await InvokeAsync(StateHasChanged);
+        // Explicitly save or update other state-related logic here if necessary
+    }
+
+    private async Task OpenOrphanItemzAsync(GetItemzWithBasePropertiesDTO itemz)
+    {
+        var url = $"/itemz/{itemz.Id.ToString()}"; 
+        await JS.InvokeVoidAsync("openInNewTab", url);
+
+        // NavManager.NavigateTo($"/itemz/{itemz.Id}");
+    }
+
+    private async Task DeleteOrphanItemzAsync(GetItemzWithBasePropertiesDTO itemz)
+    {
+
+        var options = new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, Position = DialogPosition.Center };
+        var dialogParameters = new DialogParameters { { "AllChildrenCount", 0 } };
+        var dialogref = await DialogService.ShowAsync<ItemzDeletionConfirmDialog>(title: "CONFIRM", parameters: dialogParameters, options: options);
+        var dialogresult = await dialogref.Result;
+        if (!(dialogresult!.Canceled))
+        {
+            deletingItemz = true;
+            StateHasChanged();
+            await deleteItemz(itemz.Id);
+            Thread.Sleep(200);
+            deletingItemz = false;
+        }
+    }
+
+    public async Task deleteItemz(Guid ItemzId)
+    {
+        await itemzService.__DELETE_Itemz_By_GUID_ID__Async(ItemzId);
+        itemzs.RemoveAll(item => item.Id == ItemzId);
+        StateHasChanged();
+    }
+
+    private class PaginationInfo
+    {
+        public int totalCount { get; set; }
+        public int PageSize { get; set; }
+        public int CurrentPage { get; set; }
+        public int TotalPages { get; set; }
+        public string PreviousPageLink { get; set; }
+        public string NextPageLink { get; set; }
+    }
+}

@@ -1,0 +1,172 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+@page "/projects"
+@using OpenRose.WebUI.Client.Services.Project
+@using OpenRose.WebUI.Client.SharedModels
+@using OpenRose.WebUI.Components.Pages.Common
+@rendermode InteractiveServer
+@inject NavigationManager NavManager
+
+
+@* <MudPaper Class="pa-3 mb-3 align-start d-flex" Style="width: auto " Outlined="false">
+    <MudStack Row="true" Spacing="3">
+        <MudIcon Icon="@Icons.Material.Filled.LocalFlorist" Size="Size.Large" />
+        <MudText Typo="Typo.h6" Align="Align.Left">About OpenRose </MudText>
+        <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success"> Version -  @version </MudChip>
+    </MudStack>
+</MudPaper>
+ *@
+<MudPaper Class="pa-4 mb-5 align-start d-flex" Style="width: auto" Outlined="false" >
+    <MudIcon Icon="@Icons.Material.Filled.LocalFlorist" Size="Size.Large" Color="Color.Secondary"/>
+    <MudText Typo="Typo.h5" Align="Align.Left">@((MarkupString)(" &nbsp; Projects &nbsp;&nbsp;"))</MudText>
+    <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Primary"> @AllProjects.Count().ToString()</MudChip>
+    <MudSpacer />
+    <MudButton @onclick="createNewProject" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Primary"> Create Project </MudButton>
+</MudPaper>
+
+@if (initializingPage)
+{
+    <MudPaper Class="pa-4 mb-5" Height="calc(100vh - 100px);" Width="100%">
+        <MudOverlay Visible="true" DarkBackground="true" Absolute="true">
+            <MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Inherit">Loading ... </MudText>
+            <br />
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+        </MudOverlay>
+    </MudPaper> 
+}
+ else
+{
+    <MudDataGrid Items="@GetFilteredProjects()" Filterable="true"
+        FilterMode="DataGridFilterMode.ColumnFilterRow"
+        FilterCaseSensitivity="DataGridFilterCaseSensitivity.CaseInsensitive"
+        SortMode="@SortMode.None" 
+        Groupable="false" 
+        Striped="true" 
+        FixedHeader="true" 
+        HeaderClass="background-color: red;">
+        <Columns>
+			<PropertyColumn Property="x => x.Id" Title="Record Id"> 
+                <CellTemplate> 
+                    <CopyableText TextToCopy="@context.Item.Id.ToString()" DisplayLength="8" /> 
+                </CellTemplate> 
+                <FilterTemplate> 
+                    <MudButton Size="Size.Small" Style="align-content:end" Variant="Variant.Filled" OnClick="ClearFilters">Clear All Filters</MudButton> 
+                </FilterTemplate> 
+            </PropertyColumn>
+			<PropertyColumn Property="x => x.Name">
+                <FilterTemplate>
+                    <MudTextField @bind-Value="nameFilter" Placeholder="Type to search for Name..." 
+                        Adornment="Adornment.End" 
+                        AdornmentIcon="@Icons.Material.Filled.Clear" 
+                        OnAdornmentClick="@(() => nameFilter = string.Empty)"
+                        Immediate="true" />
+                </FilterTemplate>
+            </PropertyColumn>
+            <PropertyColumn Property="x => x.Status">
+                <FilterTemplate>
+                    <MudTextField @bind-Value="statusFilter" Placeholder="Type to search for Status..." 
+                    Adornment="Adornment.End" 
+                    AdornmentIcon="@Icons.Material.Filled.Clear" 
+                    OnAdornmentClick="@(() => statusFilter = string.Empty)"
+                    Immediate="true"  />
+                </FilterTemplate>
+            </PropertyColumn>
+            <TemplateColumn Title="Action">
+                <CellTemplate>
+                    <div style="display: flex; justify-content: left; align-items: center; gap: 10px;">
+                        @* <MudButton Size="@Size.Medium" Variant="@Variant.Filled" Color="@Color.Success" OnClick="_ => editProjectDetails(context.Item.Id.ToString())"> Edit </MudButton> *@
+                        <MudButton Size="@Size.Medium" Variant="@Variant.Filled" Color="@Color.Success" Target="_blank" OnClick="_ => openProjectTreeView(context.Item.Id.ToString())"> Tree View</MudButton>
+                        <MudButton Size="@Size.Medium" Variant="@Variant.Filled" Color="@Color.Success" OnClick="_ => openProject(context.Item.Id.ToString())"> Detail View </MudButton>
+                        <MudButton Size="@Size.Medium" Variant="@Variant.Filled" Color="@Color.Success" OnClick="_ => openProjectBaseline(context.Item.Id.ToString())"> Baselines </MudButton>
+                    </div>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </MudDataGrid>
+}
+
+@code {
+
+    private List<GetProjectDTO> AllProjects { get; set; } = new List<GetProjectDTO>();
+    private bool initializingPage = true;
+
+    [Inject]
+    public IProjectService ProjectService { get; set; }
+
+    #region DataGridFilter_Project
+
+    private string nameFilter;
+    private string statusFilter;
+
+
+    private List<GetProjectDTO> GetFilteredProjects()
+    {
+        var query = AllProjects.AsQueryable();
+
+        if (!string.IsNullOrEmpty(nameFilter))
+        {
+            query = query.Where(item => item.Name.Contains(nameFilter, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (!string.IsNullOrEmpty(statusFilter))
+        {
+            query = query.Where(item => item.Status.Contains(statusFilter, StringComparison.OrdinalIgnoreCase));
+        }
+
+        return query.ToList();
+    }
+
+    private void ClearFilters()
+    {
+        nameFilter = string.Empty;
+        statusFilter = string.Empty;
+        StateHasChanged();
+    }
+
+    #endregion
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            Thread.Sleep(500);
+            var returnedProjectList = await ProjectService.__GET_Projects__Async();
+            if (returnedProjectList != null)
+            {
+                AllProjects = returnedProjectList.ToList();
+            }
+            initializingPage = false;
+            StateHasChanged();
+        }
+    }
+
+    public async Task createNewProject()
+    {
+        NavManager.NavigateTo("/CreateProject");
+    }
+
+    // public async Task editProjectDetails(string Id)
+    // {
+    //     NavManager.NavigateTo($"/projectDetails/{Id}");
+    // }
+
+    public async Task openProject(string Id)
+    {
+        NavManager.NavigateTo($"/project/{Id}");
+    }
+    public async Task openProjectBaseline(string Id)
+    {
+        NavManager.NavigateTo($"/projectdetails/{Id}?showBaselineTab=true");
+    }
+
+    public async Task openProjectTreeView(string Id)
+    {
+        NavManager.NavigateTo($"/projectTreeView/{Id}");
+    }
+
+
+}

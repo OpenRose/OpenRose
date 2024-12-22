@@ -1,0 +1,26 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+
+<MudPaper Elevation="2" Class="pa-4">
+    <MudText Typo="Typo.h6">Node Details</MudText>
+    <MudDivider Class="my-2" />
+    <MudText Typo="Typo.subtitle1"><MudIcon Icon="@NodeIcon" /> @RecordId.ToString()</MudText>
+    <MudText Typo="Typo.subtitle1"><MudIcon Icon="@NodeIcon" /> @NodeText</MudText>
+    <MudText Typo="Typo.subtitle1"><MudIcon Icon="@NodeIcon" /> @RecordType</MudText>
+</MudPaper>
+
+
+@code {
+    [Parameter]
+    public string NodeText { get; set; }
+    [Parameter]
+    public Guid RecordId { get; set; }
+    [Parameter]
+    public string NodeIcon { get; set; }
+    [Parameter]
+    public string RecordType { get; set; }
+}

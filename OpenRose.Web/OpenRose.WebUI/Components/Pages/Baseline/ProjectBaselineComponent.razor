@@ -1,0 +1,691 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+@using System.Globalization
+@using OpenRose.WebUI.Client.Services.BaselineHierarchy
+@using OpenRose.WebUI.Client.Services.Baselines
+@using OpenRose.WebUI.Client.Services.Hierarchy
+@using OpenRose.WebUI.Client.SharedModels
+@using OpenRose.WebUI.Components.Pages.Common
+@using PSC.Blazor.Components.MarkdownEditor
+@using PSC.Blazor.Components.MarkdownEditor.EventsArgs
+@inject IDialogService DialogService
+@inject NavigationManager NavManager
+@inject IJSRuntime JS
+
+@* <h5>Change History Component</h5>
+<br />
+<MudPaper Class="pa-4 align-start d-flex" Style="width: auto" Outlined="false">
+	<MudText Typo="Typo.h5" Align="Align.Left"> Itemz Change History </MudText>
+</MudPaper> *@
+
+
+<MudPaper Class="pa-4 mb-5 align-start d-flex" Style="width: auto" Outlined="false">
+	<MudText Typo="Typo.h6" Align="Align.Left">Baselines</MudText>
+	<MudSpacer />
+	<MudButton @onclick="async _ => await showFormCreateNewProjectBaseline()" 
+		Variant="Variant.Filled" 
+		Size="Size.Medium" 
+		Color="Color.Primary"
+		style="gap: 10px; margin-left : 10px">
+		Create Baseline By Project
+	</MudButton>
+	<MudButton @onclick="async _ => await showFormCreateNewItemzTypeBaseline()"
+		Variant="Variant.Filled"
+		Size="Size.Medium"
+		Color="Color.Primary"
+		style="gap: 10px; margin-left : 10px">
+		Create Baseline By ItemzType
+	</MudButton>
+	<MudButton @onclick=" async _ => await showFormCloneExistingBaseline()"
+			   Variant="Variant.Filled" 
+		Size="Size.Medium" 
+		Color="Color.Primary"
+		style="gap: 10px; margin-left : 10px"
+		Disabled = "@(ProjectBaselineRecords.Count() == 0)">
+		Clone Existing Baseline
+	</MudButton>
+</MudPaper>
+
+@if (processingBaseline)
+{
+	<MudPaper Class="pa-4 mb-5" Height="calc(100vh - 100px);" Width="100%">
+	<MudOverlay Visible="@processingBaseline" DarkBackground="true" Absolute="true">
+			<MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Inherit">Creating Baseline ... </MudText>
+			<br />
+			<MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+		</MudOverlay>
+	</MudPaper>
+}
+else
+{
+
+	@if (showCreateBaselineByProjectForm)
+	{
+	<MudPaper Class="pa-4 mb-5 align-start d-flex" Width="100%" Outlined="false">
+	<MudForm Style="width: 100%" Model="@singleCreateBaselineByProject" @ref="createByProjectForm" @bind-IsValid="@createBaselineByProjectSuccess" @bind-Errors="@createBaselineByProjectErrors">
+		<MudCardContent>
+			<MudText Typo="Typo.h6" Align="Align.Left">Create Baseline by Project</MudText>
+			<MudStack Row="true" Spacing="2">
+			<MudText><strong>Project GUID Id: </strong></MudText>
+			<CopyableText TextToCopy="@ProjectId.ToString()" />
+			</MudStack>
+			<MudTextField T="string" Label="Name" Required="true" RequiredError="Name is required!"
+						  @bind-Value="singleCreateBaselineByProject.Name"
+						  For="@(() => singleCreateBaselineByProject.Name)" />
+@* 			<MudTextField T="string" Label="Description" Required="true" RequiredError="Description is required!"
+						  @bind-Value="singleCreateBaselineByProject.Description"
+						  For="@(() => singleCreateBaselineByProject.Description)" /> *@
+
+					<!-- Ensure this div applies the custom class to the Markdown content -->
+					<MudText><strong>Description : </strong></MudText>
+					<div class="custom-markdown-editor">
+						<MarkdownEditor @bind-Value="@MyContentForCreateBaselineByProject" HideIcons="@(["mde-tb-image"])" />
+						<MudPaper Class="pa-4 mb-5" Style="background-color: #f5f5f5;">
+							@if (!string.IsNullOrEmpty(convertedMarkdownForCreateBaselineByProject.Value))
+							{
+								<h3>Preview</h3>
+								<div class="markdown-body">@((MarkupString)convertedMarkdownForCreateBaselineByProject)</div>
+							}
+						</MudPaper>
+					</div>
+		</MudCardContent>
+		<MudCardActions>
+				<MudButton Variant="Variant.Filled" Color="Color.Primary" 
+								Size="Size.Large"
+								style="gap: 10px; margin : 10px"
+					   OnClick="(() => createNewProjectBaseline(ProjectId))">
+				<MudText>Create</MudText>
+				</MudButton>
+				@* <MudSpacer /> *@
+			<MudButton Variant="Variant.Filled" Color="Color.Warning" Size="Size.Large" style="gap: 10px; margin-left : 10px"
+						   OnClick="(() => hideFormCreateNewProjectBaseline())">
+				<MudText>Cancel</MudText>
+			</MudButton>
+			<MudSpacer />
+			<MudPaper Class="pa-4 ml-10 align-items-md-end" Style="border: 2px solid black; padding: 16px;" Outlined="false" >
+			<MudAlert Severity="Severity.Error" 
+				Variant="Variant.Filled"
+				style="gap: 10px; margin-left : 10px">
+				NOTE: Baseline Creation Process may take longer time as it creates snapshot of large volumn of data!
+			</MudAlert>
+			</MudPaper>
+		</MudCardActions>
+	</MudForm>
+	</MudPaper>
+	}
+	@if (showCreateBaselineByItemzTypeForm)
+	{
+		<MudPaper Class="pa-4 mb-5 align-start d-flex" Style="width: auto" Outlined="false">
+		<MudForm Style="width: 100%" Model="@singleCreateBaselineByItemzType" @ref="createByItemzTypeForm" @bind-IsValid="@createBaselineByItemzTypeSuccess" @bind-Errors="@createBaselineByItemzTypeErrors">
+			<MudCardContent>
+				<MudText Typo="Typo.h6" Align="Align.Left">Create Baseline by ItemzType</MudText>
+				<MudStack Row="true" Spacing="2">
+				<MudText><strong>Project GUID Id: </strong></MudText>
+				<CopyableText TextToCopy="@ProjectId.ToString()" />
+				</MudStack>
+
+				<MudSelect T="@(Guid)"
+						   @bind-Value="singleCreateBaselineByItemzType.ItemzTypeId"
+						   For="@(() => singleCreateBaselineByItemzType.ItemzTypeId)"
+						   Required="true"
+						   RequiredError="ItemzType is required!"
+						   Label="ItemzType">
+					<MudSelectItem T="@(Guid)" Value="@(Guid.Empty)">Select a ItemzType...</MudSelectItem>
+					@foreach (var _projectItemzTypeRecord in ProjectItemzTypeRecords)
+					{
+						<MudSelectItem T="@(Guid)" Value="_projectItemzTypeRecord.RecordId">@_projectItemzTypeRecord.Name</MudSelectItem>
+					}
+				</MudSelect>
+				<MudTextField T="string" Label="Name" Required="true" RequiredError="Name is required!"
+							  @bind-Value="singleCreateBaselineByItemzType.Name"
+							  For="@(() => singleCreateBaselineByItemzType.Name)" />
+@* 				<MudTextField T="string" Label="Description" Required="true" RequiredError="Description is required!"
+							  @bind-Value="singleCreateBaselineByItemzType.Description"
+							  For="@(() => singleCreateBaselineByItemzType.Description)" /> *@
+
+					<!-- Ensure this div applies the custom class to the Markdown content -->
+					<MudText><strong>Description : </strong></MudText>
+					<div class="custom-markdown-editor">
+						<MarkdownEditor @bind-Value="@MyContentForCreateBaselineByItemzType" HideIcons="@(["mde-tb-image"])" />
+						<MudPaper Class="pa-4 mb-5" Style="background-color: #f5f5f5;">
+							@if (!string.IsNullOrEmpty(convertedMarkdownForCreateBaselineByItemzType.Value))
+							{
+								<h3>Preview</h3>
+								<div class="markdown-body">@((MarkupString)convertedMarkdownForCreateBaselineByItemzType)</div>
+							}
+						</MudPaper>
+					</div>
+			</MudCardContent>
+			<MudCardActions>
+				<MudButton Variant="Variant.Filled" Color="Color.Primary"
+						   Size="Size.Large"
+						   style="gap: 10px; margin : 10px"
+						   OnClick="(() => createNewItemzTypeBaseline(ProjectId))">
+					<MudText>Create</MudText>
+				</MudButton>
+				@* <MudSpacer /> *@
+				<MudButton Variant="Variant.Filled" Color="Color.Warning" Size="Size.Large" style="gap: 10px; margin-left : 10px"
+						   OnClick="(() => hideFormCreateNewItemzTypeBaseline())">
+					<MudText>Cancel</MudText>
+				</MudButton>
+				<MudSpacer />
+				<MudPaper Class="pa-4 ml-10 align-items-md-end" Style="border: 2px solid black; padding: 16px;" Outlined="false">
+					<MudAlert Severity="Severity.Error"
+							  Variant="Variant.Filled"
+							  style="gap: 10px; margin-left : 10px">
+						NOTE: Baseline Creation Process may take longer time as it creates snapshot of large volumn of data!
+					</MudAlert>
+				</MudPaper>
+			</MudCardActions>
+		</MudForm>
+		</MudPaper>
+	}
+	@if (showCloneBaselineForm)
+	{
+		<MudPaper Class="pa-4 mb-5 align-start d-flex" Style="width: auto" Outlined="false">
+		<MudForm Style="width: 100%" Model="@singleCloneBaseline" @ref="cloneForm" @bind-IsValid="@cloneBaselineSuccess" @bind-Errors="@cloneBaselineErrors">
+			<MudCardContent>
+				<MudText Typo="Typo.h6" Align="Align.Left">Clone Existing Baseline</MudText>
+				<MudStack Row="true" Spacing="2">
+				<MudText><strong>Project GUID Id: </strong></MudText>
+				<CopyableText TextToCopy="@ProjectId.ToString()" />
+				</MudStack>
+				<MudSelect T="@(Guid)"
+						   @bind-Value="singleCloneBaseline.BaselineId"
+						   For="@(() => singleCloneBaseline.BaselineId)"
+						   Required="true"
+						   RequiredError="Baseline is required!"
+						   Label="Baseline">
+					<MudSelectItem T="@(Guid)" Value="@(Guid.Empty)">Select a baseline...</MudSelectItem>
+					@foreach (var _projectBaselineRecord in ProjectBaselineRecords)
+					{
+						<MudSelectItem T="@(Guid)" Value="_projectBaselineRecord.RecordId">@_projectBaselineRecord.Name</MudSelectItem>
+					}
+				</MudSelect>
+				<MudTextField T="string" Label="Name" Required="true" RequiredError="Name is required!"
+							  @bind-Value="singleCloneBaseline.Name"
+							  For="@(() => singleCloneBaseline.Name)" />
+@* 				<MudTextField T="string" Label="Description" Required="true" RequiredError="Description is required!"
+							  @bind-Value="singleCloneBaseline.Description"
+							  For="@(() => singleCloneBaseline.Description)" /> *@
+
+					<MudText><strong>Description : </strong></MudText>
+					<div class="custom-markdown-editor">
+						<MarkdownEditor @bind-Value="@MyContentForCreateBaselineByCloneBaseline" HideIcons="@(["mde-tb-image"])" />
+						<MudPaper Class="pa-4 mb-5" Style="background-color: #f5f5f5;">
+							@if (!string.IsNullOrEmpty(convertedMarkdownForCreateBaselineByCloneBaseline.Value))
+							{
+								<h3>Preview</h3>
+								<div class="markdown-body">@((MarkupString)convertedMarkdownForCreateBaselineByCloneBaseline)</div>
+							}
+						</MudPaper>
+					</div>
+			</MudCardContent>
+			<MudCardActions>
+				<MudButton Variant="Variant.Filled" Color="Color.Primary"
+						   Size="Size.Large"
+						   style="gap: 10px; margin : 10px"
+						   OnClick="(() => cloneNewProjectBaseline())">
+					<MudText>Create</MudText>
+				</MudButton>
+				@* <MudSpacer /> *@
+				<MudButton Variant="Variant.Filled" Color="Color.Warning" Size="Size.Large" style="gap: 10px; margin-left : 10px"
+						   OnClick="(() => hideFormCloneExistingBaseline())">
+					<MudText>Cancel</MudText>
+				</MudButton>
+				<MudSpacer />
+				<MudPaper Class="pa-4 ml-10 align-items-md-end" Style="border: 2px solid black; padding: 16px;" Outlined="false">
+					<MudAlert Severity="Severity.Error"
+							  Variant="Variant.Filled"
+							  style="gap: 10px; margin-left : 10px">
+						NOTE: Baseline Creation Process may take longer time as it creates snapshot of large volumn of data!
+					</MudAlert>
+				</MudPaper>
+			</MudCardActions>
+		</MudForm>
+		</MudPaper>
+	}
+
+	if (ProjectBaselineRecords != null && ProjectBaselineRecords.Any())
+	{
+
+		<MudDataGrid Items="@ProjectBaselineRecords"
+		Filterable="true"
+				 SortMode="@SortMode.None"
+				 Groupable="false"
+				 Striped="true"
+				 FixedHeader="false"
+				 Bordered="true"
+				 HeaderClass="background-color: red;">
+		<Columns>
+			<PropertyColumn Property="x => x.RecordId" Title="Baseline Id">
+				<CellTemplate>
+					<CopyableText TextToCopy="@context.Item.RecordId.ToString()" DisplayLength="8" />
+				</CellTemplate>
+			</PropertyColumn>
+			<PropertyColumn Property="x => x.Name" Filterable="true" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " Resizable="true" />
+			<TemplateColumn Title="Action">
+				<CellTemplate>
+					<div style="display: flex; justify-content: left; align-items: center; gap: 10px;">
+							<MudButton Size="@Size.Large"
+									   Variant="@Variant.Filled" Color="@Color.Success"
+									   OnClick="_ => openBaseline(context.Item.RecordId)"> Open </MudButton>
+							<MudButton Size="@Size.Large"
+									   Variant="@Variant.Filled" Color="@Color.Success"
+									   OnClick="_ => openBaselineTreeView(context.Item.RecordId)"> TreeView </MudButton>
+							<MudButton Size="@Size.Large"
+							   Variant="@Variant.Filled" Color="@Color.Error"
+							   OnClick="_ => deleteBaseline(context.Item.RecordId, context.Item.Name!)"> Delete </MudButton>
+					</div>
+				</CellTemplate>
+			</TemplateColumn>
+		</Columns>
+	</MudDataGrid>
+	}
+	else
+	{
+		<MudPaper Class="pa-20 mt-10 align-content-md-center" Style="border: 2px solid black; padding: 16px;" Outlined="false" >
+			<MudText Typo="Typo.h4" Align="Align.Center" Style="mt-10"> No Baseline data found.</MudText>
+		</MudPaper>
+
+	}
+
+}
+
+@code {
+	[Parameter]
+	public Guid ProjectId { get; set; }
+
+	[Parameter]
+	public EventCallback<string> ContentChangedForCreateBaselineByProject { get; set; }
+
+	[Parameter]
+	public EventCallback<string> ContentChangedForCreateBaselineByItemzType { get; set; }
+
+	[Parameter]
+	public EventCallback<string> ContentChangedForCreateBaselineByCloneBaseline { get; set; }
+
+	[Inject]
+	public IBaselinesService baselinesService { get; set; }
+
+	[Inject]
+	public IBaselineHierarchyService baselineHierarchyService { get; set; }
+
+	[Inject]
+	public IHierarchyService HierarchyService { get; set; }
+
+	public bool showCreateBaselineByProjectForm = false;
+	public bool showCreateBaselineByItemzTypeForm = false;
+	public bool showCloneBaselineForm = false;
+	public bool processingBaseline { get; set; } = false;
+
+	public CreateBaselineDTO singleCreateBaselineByProject { get; set; } = new();
+	public CreateBaselineDTO singleCreateBaselineByItemzType { get; set; } = new();
+	public CloneBaselineDTO singleCloneBaseline { get; set; } = new();
+
+	private List<BaselineHierarchyIdRecordDetailsDTO> ProjectBaselineRecords { get; set; } = new List<BaselineHierarchyIdRecordDetailsDTO>();
+	private List<HierarchyIdRecordDetailsDTO> ProjectItemzTypeRecords { get; set; } = new List<HierarchyIdRecordDetailsDTO>();
+
+
+	// private string _Content = string.Empty;
+	private string MyContentForCreateBaselineByProject
+	{
+		get => singleCreateBaselineByProject.Description ?? string.Empty;
+		set
+		{
+			// _Content = value;
+			// hasFormFieldChanged = true;
+			singleCreateBaselineByProject.Description = value;
+			ConvertMarkdownToHtmlForCreateBaselineByProject(singleCreateBaselineByProject.Description);
+			ContentChangedForCreateBaselineByProject.InvokeAsync(value);
+		}
+	}
+
+	private async Task ConvertMarkdownToHtmlForCreateBaselineByProject(string markdown)
+	{
+		if (!string.IsNullOrEmpty(markdown))
+		{
+			var html = await JS.InvokeAsync<string>("markdownToHtml", markdown);
+			convertedMarkdownForCreateBaselineByProject = (MarkupString)html;
+			StateHasChanged();
+
+			// Apply fullscreen styles
+			// await Task.Delay(1000);
+			// await JS.InvokeVoidAsync("applyMarkdownEditorFullscreenStyles");
+		}
+	}
+
+
+	// private string _Content = string.Empty;
+	private string MyContentForCreateBaselineByItemzType
+	{
+		get => singleCreateBaselineByItemzType.Description ?? string.Empty;
+		set
+		{
+			// _Content = value;
+			// hasFormFieldChanged = true;
+			singleCreateBaselineByItemzType.Description = value;
+			ConvertMarkdownToHtmlForCreateBaselineByItemzType(singleCreateBaselineByItemzType.Description);
+			ContentChangedForCreateBaselineByItemzType.InvokeAsync(value);
+		}
+	}
+
+	private async Task ConvertMarkdownToHtmlForCreateBaselineByItemzType(string markdown)
+	{
+		if (!string.IsNullOrEmpty(markdown))
+		{
+			var html = await JS.InvokeAsync<string>("markdownToHtml", markdown);
+			convertedMarkdownForCreateBaselineByItemzType = (MarkupString)html;
+			StateHasChanged();
+
+			// Apply fullscreen styles
+			// await Task.Delay(1000);
+			// await JS.InvokeVoidAsync("applyMarkdownEditorFullscreenStyles");
+		}
+	}
+
+
+	// private string _Content = string.Empty;
+	private string MyContentForCreateBaselineByCloneBaseline
+	{
+		get => singleCloneBaseline.Description ?? string.Empty;
+		set
+		{
+			// _Content = value;
+			// hasFormFieldChanged = true;
+			singleCloneBaseline.Description = value;
+			ConvertMarkdownToHtmlForCreateBaselineByCloneBaseline(singleCloneBaseline.Description);
+			ContentChangedForCreateBaselineByCloneBaseline.InvokeAsync(value);
+		}
+	}
+
+	private async Task ConvertMarkdownToHtmlForCreateBaselineByCloneBaseline(string markdown)
+	{
+		if (!string.IsNullOrEmpty(markdown))
+		{
+			var html = await JS.InvokeAsync<string>("markdownToHtml", markdown);
+			convertedMarkdownForCreateBaselineByCloneBaseline = (MarkupString)html;
+			StateHasChanged();
+
+			// Apply fullscreen styles
+			// await Task.Delay(1000);
+			// await JS.InvokeVoidAsync("applyMarkdownEditorFullscreenStyles");
+		}
+	}
+
+
+
+
+	//MudForm related fields
+	bool createBaselineByProjectSuccess = true;
+	string[] createBaselineByProjectErrors = { };
+	bool createBaselineByItemzTypeSuccess = true;
+	string[] createBaselineByItemzTypeErrors = { };
+	bool cloneBaselineSuccess = true;
+	string[] cloneBaselineErrors = { };
+	MudForm createByProjectForm;
+	MudForm createByItemzTypeForm;
+	MudForm cloneForm;
+
+	private Guid selectedBaselineId { get; set; } = Guid.Parse("91b8b4ef-5f0a-4d7b-9d2a-afa8b5a5ff9f");
+
+	// private bool hasFormFieldChanged { get; set; } = false;
+
+	// protected override async Task OnInitializedAsync()
+	// {
+	// }
+
+	private MarkupString convertedMarkdownForCreateBaselineByProject;
+
+	private MarkupString convertedMarkdownForCreateBaselineByItemzType;
+
+	private MarkupString convertedMarkdownForCreateBaselineByCloneBaseline;
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			// if (ProjectId != Guid.Empty)
+			// {
+			// 	var tempProjectBaselineRecords = (await baselineHierarchyService.__Get_Immediate_Children_Baseline_Hierarchy_By_GUID__Async(ProjectId)).ToList();
+			// 	if (tempProjectBaselineRecords != null && tempProjectBaselineRecords.Any() )
+			// 	{
+			// 		ProjectBaselineRecords = tempProjectBaselineRecords;
+			// 	}
+			// 	else
+			// 	{
+			// 		ProjectBaselineRecords = new();
+			// 	}
+			// 	StateHasChanged();
+			// }
+
+			if (singleCreateBaselineByProject != null && singleCreateBaselineByProject.Description != null)
+			{
+				await ConvertMarkdownToHtmlForCreateBaselineByProject(singleCreateBaselineByProject.Description);
+			}
+			if (singleCreateBaselineByItemzType != null && singleCreateBaselineByItemzType.Description != null)
+			{
+				await ConvertMarkdownToHtmlForCreateBaselineByProject(singleCreateBaselineByItemzType.Description);
+			}
+
+			if (singleCloneBaseline != null && singleCloneBaseline.Description != null)
+			{
+				await ConvertMarkdownToHtmlForCreateBaselineByProject(singleCloneBaseline.Description);
+			}
+			StateHasChanged();
+
+			await refreshProjectDataRecords();
+		}
+	}
+
+	public async Task refreshProjectDataRecords()
+	{
+		if (ProjectId != Guid.Empty)
+		{
+			// ProjectBaselineRecords = new();
+			try
+			{
+				ProjectBaselineRecords = new();
+				var tempProjectBaselineRecords = (await baselineHierarchyService.__Get_Immediate_Children_Baseline_Hierarchy_By_GUID__Async(ProjectId)).ToList();
+				if (tempProjectBaselineRecords != null && tempProjectBaselineRecords.Any())
+				{
+					ProjectBaselineRecords = tempProjectBaselineRecords;
+				}
+
+				var returnedItemzTypeList = await HierarchyService.__Get_Immediate_Children_Hierarchy_By_GUID__Async(ProjectId);
+
+				if (returnedItemzTypeList != null)
+				{
+					ProjectItemzTypeRecords = returnedItemzTypeList.ToList();
+				}
+
+				StateHasChanged();
+			}
+			catch (Exception ex)
+			{
+				ProjectBaselineRecords = new List<BaselineHierarchyIdRecordDetailsDTO>();
+				ProjectItemzTypeRecords = new List<HierarchyIdRecordDetailsDTO>();
+			}
+
+
+		}
+	}
+	public async Task showFormCreateNewProjectBaseline()
+	{
+		if (showCreateBaselineByProjectForm == false)
+		{
+			showCreateBaselineByProjectForm = true;
+			hideFormCreateNewItemzTypeBaseline();
+			hideFormCloneExistingBaseline();
+		}
+	}
+
+	public async Task hideFormCreateNewProjectBaseline()
+	{
+		if (showCreateBaselineByProjectForm == true)
+		{
+			singleCreateBaselineByProject = new();
+			convertedMarkdownForCreateBaselineByProject = new();
+			showCreateBaselineByProjectForm = false;
+		}
+	}
+
+	public async Task showFormCreateNewItemzTypeBaseline()
+	{
+		if (showCreateBaselineByItemzTypeForm == false)
+		{
+			showCreateBaselineByItemzTypeForm = true;
+			hideFormCreateNewProjectBaseline();
+			hideFormCloneExistingBaseline();
+		}
+	}
+
+	public async Task hideFormCreateNewItemzTypeBaseline()
+	{
+		if (showCreateBaselineByItemzTypeForm == true)
+		{
+			singleCreateBaselineByItemzType = new();
+			convertedMarkdownForCreateBaselineByItemzType = new();
+			showCreateBaselineByItemzTypeForm = false;
+		}
+	}
+
+
+	public async Task showFormCloneExistingBaseline()
+	{
+		if (showCloneBaselineForm == false)
+		{
+			showCloneBaselineForm = true;
+			hideFormCreateNewProjectBaseline();
+			hideFormCreateNewItemzTypeBaseline();
+		}
+	}
+
+	public async Task hideFormCloneExistingBaseline()
+	{
+		if (showCloneBaselineForm == true)
+		{
+			singleCloneBaseline = new();
+			convertedMarkdownForCreateBaselineByCloneBaseline = new();
+			showCloneBaselineForm = false;
+		}
+	}
+
+	public async Task createNewProjectBaseline(Guid projectId)
+	{
+		if (projectId != null || projectId != Guid.Empty)
+		{
+			processingBaseline = true;
+			CreateBaselineDTO tempCreateBaselineDTO = new();
+			tempCreateBaselineDTO.ProjectId = projectId;
+			tempCreateBaselineDTO.Name = singleCreateBaselineByProject.Name;
+			tempCreateBaselineDTO.Description = singleCreateBaselineByProject.Description;
+			try
+			{
+				var _ignoreMe = await baselinesService.__POST_Create_Baseline__Async(tempCreateBaselineDTO);
+				await refreshProjectDataRecords();
+				await hideFormCreateNewProjectBaseline();
+			}
+			catch (Exception ex)
+			{
+				DialogService.ShowMessageBox("WARNING", markupMessage: new MarkupString($"<p style=\"color: red; \">{ex.Message}</p>"), yesText: "OK");
+			}
+
+			processingBaseline = false;
+		}
+	}
+
+
+	public async Task createNewItemzTypeBaseline(Guid projectId)
+	{
+		if (projectId != null || projectId != Guid.Empty)
+		{
+			if (singleCreateBaselineByItemzType.ItemzTypeId != Guid.Empty)
+			{
+				processingBaseline = true;
+				CreateBaselineDTO tempCreateBaselineDTO = new();
+				tempCreateBaselineDTO.ProjectId = projectId;
+				tempCreateBaselineDTO.ItemzTypeId = singleCreateBaselineByItemzType.ItemzTypeId;
+				tempCreateBaselineDTO.Name = singleCreateBaselineByItemzType.Name;
+				tempCreateBaselineDTO.Description = singleCreateBaselineByItemzType.Description;
+				try
+				{
+					var _ignoreMe = await baselinesService.__POST_Create_Baseline__Async(tempCreateBaselineDTO);
+					await refreshProjectDataRecords();
+					await hideFormCreateNewItemzTypeBaseline();
+				}
+				catch (Exception ex)
+				{
+					DialogService.ShowMessageBox("WARNING", markupMessage: new MarkupString($"<p style=\"color: red; \">{ex.Message}</p>"), yesText: "OK");
+				}
+			}
+			else
+			{
+				DialogService.ShowMessageBox("INFORMATION", markupMessage: new MarkupString($"<p style=\"color: blue; \"> Please select existing ItemzType from the selection list! </p>"), yesText: "OK");
+			}
+
+			processingBaseline = false;
+		}
+	}
+
+
+
+	public async Task cloneNewProjectBaseline()
+	{
+
+		if (singleCloneBaseline.BaselineId != Guid.Empty)
+		{
+			processingBaseline = true;
+			// CloneBaselineDTO tempCloneBaselineDTO = new();
+			// tempCloneBaselineDTO.BaselineId = singleCloneBaseline.BaselineId;
+			// tempCloneBaselineDTO.Name = singleCloneBaseline.Name;
+			// tempCloneBaselineDTO.Description = singleCloneBaseline.Description;
+			try
+			{
+				var _ignoreMe = await baselinesService.__POST_Clone_Baseline__Async(singleCloneBaseline);
+				await refreshProjectDataRecords();
+				await hideFormCloneExistingBaseline();
+			}
+			catch (Exception ex)
+			{
+				DialogService.ShowMessageBox("WARNING", markupMessage: new MarkupString($"<p style=\"color: red; \">{ex.Message}</p>"), yesText: "OK");
+			}
+
+			processingBaseline = false;
+		}
+		else
+		{
+			DialogService.ShowMessageBox("INFORMATION", markupMessage: new MarkupString($"<p style=\"color: blue; \"> Please select existing Baseline from the selection list! </p>"), yesText: "OK");
+		}
+	}
+
+	public async Task openBaseline(Guid baselineId)
+	{
+		NavManager.NavigateTo($"/baseline/{baselineId}");
+	}
+
+	public async Task openBaselineTreeView(Guid baselineId)
+	{
+		NavManager.NavigateTo($"/baselinetreeview/{baselineId}");
+	}
+
+	public async Task deleteBaseline(Guid baselineId, string? baselineName = "")
+	{
+		var options = new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, Position = DialogPosition.Center };
+		var dialogPara = new DialogParameters();
+		dialogPara.Add("deletingBaselineName", baselineName);
+		var dialogref = await DialogService.ShowAsync<BaselineDeletionConfirmDialog>("CONFIRM", parameters: dialogPara, options);
+		var dialogresult = await dialogref.Result;
+		if (!(dialogresult!.Canceled))
+		{
+			await baselinesService.__DELETE_Baseline_By_GUID_ID__Async(baselineId);
+
+			await refreshProjectDataRecords();
+			// TODO :: WE COULD DO AN OVERLAY IN MUDBLAZOR WHILE PROJECT IS GETTING DELETED TO GIVE FEEDBACK TO USER.
+		}
+	}
+}

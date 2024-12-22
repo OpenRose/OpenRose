@@ -1,0 +1,233 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+@page "/CreateProject"
+@using OpenRose.WebUI.Client.Services.Project
+@using OpenRose.WebUI.Client.SharedModels
+@using Microsoft.AspNetCore.Components.Forms
+@using PSC.Blazor.Components.MarkdownEditor
+@using PSC.Blazor.Components.MarkdownEditor.EventsArgs
+@inject NavigationManager NavManager
+@inject IJSRuntime JS
+
+<h1>Create Project</h1>
+
+<MudGrid>
+	<MudItem hidden="@hideValidationError" xs="12" sm="8">
+		<MudPaper Class="pa-4 mud-height-full">
+			<MudText Typo="Typo.subtitle2" Color="@Color.Error">@($"Validation Errors ({errors.Length})")</MudText>
+			@foreach (var error in errors)
+			{
+				<MudText Color="@Color.Error">@error</MudText>
+			}
+		</MudPaper>
+	</MudItem>
+    <MudItem xs="12" sm="12">
+        <MudPaper Class="pa-4">
+			<MudForm Model="@singleProject" @ref="form" @bind-IsValid="@success" @bind-Errors="@errors" >
+				<MudCardActions>
+					<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Class="w-100"> 
+					<MudButton Variant="Variant.Filled" Color="Color.Primary"
+							   Size="Size.Large"
+							   style="gap: 10px; margin : 10px"
+							   OnClick="(() => HandleCreateProjectPostSubmission())">
+						<MudText>Create</MudText>
+					</MudButton>
+					@* <MudSpacer /> *@
+					<MudButton Variant="Variant.Filled" Color="Color.Warning"
+							   Size="Size.Large"
+							   style="gap: 10px; margin : 10px"
+							   OnClick="(() => goBackToProjects())">
+						<MudText>Cancel</MudText>
+					</MudButton>
+					</MudStack>
+				</MudCardActions>
+				<MudCardContent>
+				<MudTextField T="string" Label="Name" Required="true" RequiredError="Project name is required!" 
+					@bind-Value="singleProject.Name"
+					For="@(() => singleProject.Name)" />
+				<MudSelect @bind-Value="singleProject.Status"
+							For="@(() => singleProject.Status)"
+							Required ="true"
+							RequiredError="Status is required!"
+							Label="Status">
+					@foreach (var _stringProjectStatusValue in _stringProjectStatusValues)
+					{
+						<MudSelectItem T="string" Value="_stringProjectStatusValue">@_stringProjectStatusValue</MudSelectItem>
+					}
+				</MudSelect>
+@* 				<MudTextField T="string" Label="Description" Required="true" RequiredError="Description is required!"
+							  @bind-Value="singleProject.Description"
+							  For="@(() => singleProject.Description)" /> *@
+
+					<!-- Ensure this div applies the custom class to the Markdown content -->
+					<MudText><strong>Description : </strong></MudText>
+					<div class="custom-markdown-editor">
+						<MarkdownEditor @bind-Value="@MyContent" HideIcons="@(["mde-tb-image"])" />
+						<MudPaper Class="pa-4 mb-5" Style="background-color: #f5f5f5;">
+							@if (!string.IsNullOrEmpty(convertedMarkdown.Value))
+							{
+								<h3>Preview</h3>
+								<div class="markdown-body">@((MarkupString)convertedMarkdown)</div>
+							}
+						</MudPaper>
+					</div>
+				</MudCardContent>
+			</MudForm>
+		</MudPaper>
+	</MudItem>
+</MudGrid>
+
+<MudOverlay Visible="@createProjectButtonClicked" DarkBackground="true" Absolute="true">
+	<MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Inherit">Creating ...</MudText>
+	<br />
+	<MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+</MudOverlay>
+
+
+@* <EditForm Enhance Model="@singleProject" OnValidSubmit="HandleCreateProjectPostSubmission" FormName="create-Project">
+	<DataAnnotationsValidator></DataAnnotationsValidator>
+	<ValidationSummary></ValidationSummary>
+	<div class="row">
+		<div class="col-6">
+			<label for="Name">Name:</label>
+			<InputText id="Name" class="form-control" style="width: 100%;" @bind-Value="@singleProject.Name" />
+		</div>
+	</div>
+	<br />
+	<div class="row">
+		<div class="col-6">
+			<label for="Status">Status:</label>
+			<InputText id="Status" class="form-control" style="width: 100%;" @bind-Value="@singleProject.Status"></InputText>
+		</div>
+	</div>
+	<br />
+	<div class="row">
+		<div class="col-6">
+			<label for="Description">Description:</label>
+			<InputText id="Description" class="form-control" style="width: 100%;" @bind-Value="@singleProject.Description"></InputText>
+		</div>
+	</div>
+	<br />
+	<br />
+	<div class="row">
+		<div class="col-3"> *@
+@* 			<button type="submit" class="btn btn-primary">Create New Project</button> *@
+@* 			<MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="(() => HandleCreateProjectPostSubmission())">
+				<MudText>Create New Project</MudText>
+			</MudButton>
+		</div>
+		<div class="col-3">
+			<button @onclick="goBackToProjects" type="button" class="btn btn-secondary">Cancel Creating Project</button>
+		</div>
+	</div>
+
+</EditForm> *@
+
+@code {
+	[Parameter]
+	public Guid ProjectId { get; set; }
+
+	[Parameter]
+	public EventCallback<string> ContentChanged { get; set; }
+
+	[Inject]
+	public IProjectService ProjectService { get; set; }
+
+	// public Guid displayOnlyProjectID = Guid.Empty ;
+	public GetProjectDTO singleProject { get; set; } = new();
+	public bool IsProcessing { get; set; } = false;
+
+
+	// private string _Content = string.Empty;
+	private string MyContent
+	{
+		get => singleProject.Description ?? string.Empty;
+		set
+		{
+			// _Content = value;
+			// hasFormFieldChanged = true;
+			singleProject.Description = value;
+			ConvertMarkdownToHtml(singleProject.Description);
+			ContentChanged.InvokeAsync(value);
+		}
+	}
+
+	private async Task ConvertMarkdownToHtml(string markdown)
+	{
+		if (!string.IsNullOrEmpty(markdown))
+		{
+			var html = await JS.InvokeAsync<string>("markdownToHtml", markdown);
+			convertedMarkdown = (MarkupString)html;
+			StateHasChanged();
+
+			// Apply fullscreen styles
+			// await Task.Delay(1000);
+			// await JS.InvokeVoidAsync("applyMarkdownEditorFullscreenStyles");
+		}
+	}
+
+
+
+	//MudForm related fields
+	bool success = true;
+	string[] errors = { };
+	MudForm form;
+	private bool createProjectButtonClicked = false;
+	bool hideValidationError = true;
+
+	string[] _stringProjectStatusValues = { };
+
+	private MarkupString convertedMarkdown;
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			// EXPLANATION :: First we create string list and then just call ToArray() for producing required string array
+			List<string> tempList = new List<string>();
+			foreach (var _projectStatusValue in Enum.GetValues<ProjectStatus>())
+			{
+				tempList.Add(_projectStatusValue.ToString().Trim());
+			}
+			_stringProjectStatusValues = tempList.ToArray();
+
+			if (singleProject != null && singleProject.Description != null)
+			{
+				await ConvertMarkdownToHtml(singleProject.Description);
+			}
+
+			StateHasChanged();
+		}
+	}
+
+	public async Task HandleCreateProjectPostSubmission()
+	{
+		if (form != null)
+		{
+			await form.Validate();
+			if (form.IsValid)  
+			{
+				hideValidationError = true;	
+				createProjectButtonClicked = true;
+				var updatedResult = await ProjectService.__POST_Create_Project__Async(singleProject);
+				Thread.Sleep(1500);
+				NavManager.NavigateTo("/projects");
+			}
+			else
+			{
+				hideValidationError = false;
+			}
+
+		}
+	}
+
+	public void goBackToProjects()
+	{
+		NavManager.NavigateTo("/projects");
+	}
+
+}

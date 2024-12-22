@@ -1,0 +1,192 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+@using OpenRose.WebUI.Client.Services.Hierarchy
+@using OpenRose.WebUI.Client.SharedModels
+@using OpenRose.WebUI.Client.SharedModels.BetweenPagesAndComponent
+@using OpenRose.WebUI.Components.EventServices
+@inject NavigationManager NavManager
+@inject BreadcrumsService breadcrumsService;
+
+
+<MudPaper Class="pa-1 mb-5 align-start d-flex" Style="width: auto" Outlined="false">
+	<MudBreadcrumbs Items="_localBreadcrumbs" MaxItems="5"  >
+		<SeparatorTemplate>
+			<MudIcon Icon="@Icons.Material.Filled.KeyboardDoubleArrowRight" Size="Size.Medium" />
+		</SeparatorTemplate>
+		<ItemTemplate Context="item">
+			<div style="display: flex; align-items: center;"> @* // TO SHOW MUDICON AND MUDLINK TOGETHER ON THE SAME LINE! *@
+				<MudIcon Icon=@item.Icon Color="Color.Primary" ></MudIcon> 
+				<MudTooltip Text="@item.Text">
+					<MudLink Href="@item.Href" OnClick="@(e => ForceReload(e, item.Href))" Typo="Typo.h6" Style="margin-left: 8px;">@(item.Text.Length > 20 ? item.Text.Substring(0, 20) + "..." : item.Text)</MudLink>
+				</MudTooltip>
+			</div>
+		</ItemTemplate>
+	</MudBreadcrumbs>
+</MudPaper>
+
+@code {
+	[Parameter]
+	public ParameterForItemzBreadcrums produceBreadcrums  { get; set; }
+
+	private const ICollection<NestedHierarchyIdRecordDetailsDTO> NestedHierarchyIdRecordDetailsDTOs = default;
+
+	[Inject]
+	public IHierarchyService HierarchyService { get; set; }
+
+	private List<BreadcrumbItem> _localBreadcrumbs = new List<BreadcrumbItem>();
+	private List<NestedHierarchyIdRecordDetailsDTO> AllParentHierarchy { get; set; } = new List<NestedHierarchyIdRecordDetailsDTO>();
+
+	protected override async Task OnInitializedAsync()
+	{
+		breadcrumsService.OnRequestIsOrphanStatus += HandleOnRequestIsOrphanStatus;
+	}
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if(firstRender)
+		{
+			ICollection<NestedHierarchyIdRecordDetailsDTO> returnedParentHierarchyList ;
+			// Thread.Sleep(5000);
+			try
+			{
+				returnedParentHierarchyList = await HierarchyService.__Get_All_Parents_Hierarchy_By_GUID__Async(produceBreadcrums.Id);
+			}
+			catch
+			{
+				_localBreadcrumbs.Add(new BreadcrumbItem
+
+					(text: "Orphaned Itemz"
+						, href: "orphanitemz" // TODO :: Instead use constant
+						, disabled: true
+						, icon: Icons.Material.Filled.HolidayVillage)
+					);
+				returnedParentHierarchyList = NestedHierarchyIdRecordDetailsDTOs;
+			}
+			if (returnedParentHierarchyList != null)
+			{
+				AllParentHierarchy = returnedParentHierarchyList.ToList();
+			}
+
+			foreach (var tempParentHierarchyRecord in AllParentHierarchy)
+			{
+				var _tempHref = GetHREFForBreadcrumbs(
+					breadcrumRecordType: tempParentHierarchyRecord.RecordType ?? "",
+					breadcrumRecordId: tempParentHierarchyRecord.RecordId);
+				var _tempIcon = GetIconForBreadcrumbs(tempParentHierarchyRecord.RecordType ?? "");
+
+				_localBreadcrumbs.Add(new BreadcrumbItem
+
+					(text: tempParentHierarchyRecord.Name ?? tempParentHierarchyRecord.RecordId.ToString()
+						, href: _tempHref
+						, icon: _tempIcon)
+					);
+				if (tempParentHierarchyRecord.Children.Count > 0)
+				{
+					AddChildBreadcrumbs(tempParentHierarchyRecord.Children);
+				}
+			}
+
+			// EXPLANATION :: Add self to breadcrums
+
+			_localBreadcrumbs.Add(new BreadcrumbItem
+				(
+					text: produceBreadcrums.Name
+								, href: GetHREFForBreadcrumbs(
+							breadcrumRecordType: produceBreadcrums.RecordType, 
+							breadcrumRecordId: produceBreadcrums.Id)
+					, icon: GetIconForBreadcrumbs(produceBreadcrums.RecordType)
+				)
+			);
+		}
+
+		StateHasChanged();
+	}
+
+	#region Breadcrumbs_helper
+
+	private void ForceReload(MouseEventArgs e, string uri)
+	{
+		if (!e.CtrlKey && !string.IsNullOrEmpty(uri))
+		{
+			NavManager.NavigateTo(uri, forceLoad: true);
+		}
+	}
+
+	private void AddChildBreadcrumbs(List<NestedHierarchyIdRecordDetailsDTO> tempChildHierarchyRecords)
+	{
+		foreach (var _tempChildHierarchyRecord in tempChildHierarchyRecords)
+		{
+			var _tempHref = GetHREFForBreadcrumbs(
+							breadcrumRecordType: _tempChildHierarchyRecord.RecordType,
+							breadcrumRecordId: _tempChildHierarchyRecord.RecordId);
+			var _tempIcon = GetIconForBreadcrumbs(_tempChildHierarchyRecord.RecordType);
+
+			_localBreadcrumbs.Add(new BreadcrumbItem
+
+				(text: _tempChildHierarchyRecord.Name ?? _tempChildHierarchyRecord.RecordId.ToString()
+					, href: _tempHref
+					, icon: _tempIcon)
+				);
+			if (_tempChildHierarchyRecord.Children.Count > 0)
+			{
+				AddChildBreadcrumbs(_tempChildHierarchyRecord.Children);
+			}
+		}
+	}
+
+	private string GetHREFForBreadcrumbs(string breadcrumRecordType, Guid breadcrumRecordId)
+	{
+		string _tempUrl =
+			breadcrumRecordType.ToLower() switch
+			{
+				"project" => "http://localhost:5166/project/"
+				,
+				"itemztype" => "http://localhost:5166/itemzType/"
+				,
+				"itemz" => "http://localhost:5166/itemz/"
+				,
+				_ => string.Empty
+			};
+
+		_tempUrl = _tempUrl + breadcrumRecordId.ToString();
+		return _tempUrl;
+	}
+
+	private string GetIconForBreadcrumbs(string breadcrumRecordType)
+	{
+		return
+			breadcrumRecordType.ToLower() switch
+			{
+				"project" => Icons.Material.Filled.LocalFlorist
+				,
+				"itemztype" => Icons.Material.Filled.Pix
+				,
+				"itemz" => Icons.Material.Filled.Stream
+				,
+				_ => Icons.Material.Filled.Cancel
+			};
+
+	}
+
+	#endregion
+
+	#region HandleOnRequestIsOrphanStatus
+	private bool HandleOnRequestIsOrphanStatus()
+	{
+		var allItemzCount = AllParentHierarchy?.Count ?? 0;
+		if (allItemzCount == 0)
+		{
+			return true;
+		}
+
+		// If Parent Hierarchy record is found then it's not a Orphan Itemz.
+		// Only exception is the entry for Repository ID itself. There is no parent found for Repository type of Hierarchy entry.
+		return false;
+	}
+
+	#endregion
+}

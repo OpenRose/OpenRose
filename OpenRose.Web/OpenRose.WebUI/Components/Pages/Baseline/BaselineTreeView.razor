@@ -1,0 +1,619 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+@page "/BaselineTreeView/{BaselineId:guid}"
+@using OpenRose.WebUI.Client.Services.BaselineHierarchy
+@using OpenRose.WebUI.Client.Services.Baselines
+@using OpenRose.WebUI.Client.SharedModels
+@using OpenRose.WebUI.Components.EventServices
+@using OpenRose.WebUI.Components.Pages.Common
+@using OpenRose.WebUI.Components.Pages.BaselineItemz
+@using OpenRose.WebUI.Components.Pages.BaselineItemzType
+@using OpenRose.WebUI.Components.FindServices
+@using OpenRose.WebUI.Helper.TreeViewNodes
+@using Microsoft.AspNetCore.Components.Forms
+@using System.Collections.ObjectModel
+@inject IFindProjectAndBaselineIdsByBaselineItemzIdService FindProjectAndBaselineIdsByBaselineItemzIdService
+@inject NavigationManager NavManager
+@inject IDialogService DialogService
+@inject BaselineTreeNodeItemzSelectionService BaselineItemzSelectionService
+@inject IJSRuntime JS
+
+<MudExtensions.MudSplitter @bind-Dimension="@_percentage"
+                            OnDoubleClicked="@OnDoubleClicked"
+                            EnableSlide="@_sliderEnabled" EnableMargin="@_marginEnabled" Sensitivity="_sensitivity"
+                            Height="@_height" Bordered="_borderedEnabled">
+    <StartContent>
+@* <MudGrid Spacing="6" Justify="Justify.FlexStart">
+    <MudItem xs="6"> *@
+        <MudPaper Elevation="0" Class="full-width">
+            @if (showLoadingMessage)
+            {
+                @* <MudText Typo="Typo.button" Color="Color.Secondary" HtmlTag="h3" Align="Align.Center"> Loading in Background ... </MudText> *@
+                <MudText Typo="Typo.button" Color="Color.Secondary" HtmlTag="h3" Align="Align.Center"> Loading in Background ... </MudText>
+                <MudProgressLinear Color="Color.Secondary" Indeterminate="true" Class="my-7" />
+            }
+            else
+            {
+                <MudButton OnClick="@(()=>baselineMudTreeView.ExpandAllAsync())" Variant="Variant.Filled">Expand All</MudButton>
+            }
+            <MudTreeView @ref="baselineMudTreeView" Items="@InitialTreeItems"
+                         Color="Color.Secondary"
+                         Hover="true"
+                         ExpandOnDoubleClick="true"
+                         Class="full-width"
+                         @bind-SelectedValue="SelectedValue"
+                         AutoExpand="true">
+                <ItemTemplate>
+                    @{
+                        // Casting context from TreeItemData<string> to our own derived class TreeItemPresenter
+                        // for convenient usage in the template
+                        var presenter = context as TreeItemPresenter;
+                    }
+                    <MudTreeViewItem Value="@context.Value"
+                                     Id="@($"tree-node-{context.Value}")"
+                                     Text="@context.Text"
+                                     Icon="@((((TreeItemPresenter)context).IsIncluded) ? context.Icon : Icons.Material.Filled.Close)"
+                                     IconColor=" (((TreeItemPresenter)context).IsIncluded) ? Color.Inherit : Color.Error "
+                                     ExpandButtonIconColor="(((TreeItemPresenter)context).IsIncluded) ? Color.Inherit : Color.Error"
+                                     EndIconColor="(((TreeItemPresenter)context).IsIncluded) ? Color.Inherit : Color.Error"
+                                     Expandable="@( @context.Children.Count()>0 ? true : false )" 
+                                     LoadingIconColor="Color.Info"
+                                     Items="@context.Children"
+                                     EndText="@( 
+                                        (@presenter.Children.Count() > 0 ? ("[C" + @presenter.Children.Count().ToString() + "]") : "") + 
+                                        (@presenter.Level > 0 ? ("[L" + @presenter.Level.ToString() + "]") : "")
+                                        )"
+                                     @onclick="async () => await OnItemClick(context)" />
+                                     @* CanExpand="@( @context.Children.Count()>0 ? true : false )" 
+                                     EndText="@presenter?.childNumber" /> *@
+                </ItemTemplate>
+            </MudTreeView>
+        </MudPaper>
+    </StartContent>
+    <EndContent>
+        <MudPaper Elevation="0" Class="full-width">
+            @if (selectedItem != null)
+            {
+                if (selectedItem.RecordType.ToLower() == "baseline".ToLower()) // TODO :: USE CONSTANTS
+                {
+                    <BaselineDetailsComponent BaselineId="@selectedItem.Value" @key="selectedItem.Value" CalledFrom="@this.GetType().Name" />
+                }
+                else if (selectedItem.RecordType.ToLower() == "baselineitemztype".ToLower()) // TODO :: USE CONSTANTS
+                {
+                    <BaselineItemzTypeTreeViewComponent BaselineItemzTypeId="@selectedItem.Value" @key="selectedItem.Value"/>
+                }
+                else if (selectedItem.RecordType.ToLower() == "baselineitemz".ToLower()) // TODO :: USE CONSTANTS
+                {
+                    <BaselineItemzTreeViewComponent BaselineItemzId="@selectedItem.Value" @key="selectedItem.Value" />
+                }
+                else
+                {
+                    <PlaceholderTreeViewComponent NodeText="@selectedItem.Text"
+                                                  NodeIcon="@selectedItem.Icon" 
+                                            RecordId="@selectedItem.Value" 
+                                            RecordType = "@selectedItem.RecordType" 
+                                            @key="selectedItem.Value" />
+                }
+            }
+        </MudPaper>
+    </EndContent>
+</MudExtensions.MudSplitter>
+@*     </MudItem>
+</MudGrid> *@
+
+
+@code {
+
+    [Parameter]
+    public Guid BaselineId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "autoSelectedRecordId")]
+    [Parameter]
+    public Guid? AutoSelectedRecordId { get; set; }
+
+    [Inject]
+    public IBaselinesService BaselinesService { get; set; }
+
+    [Inject]
+    public IBaselineHierarchyService BaselineHierarchyService { get; set; }
+
+    public MudTreeView<Guid> baselineMudTreeView;
+
+    private bool showLoadingMessage = true;
+
+    private List<TreeItemData<Guid>> InitialTreeItems { get; set; } = new();
+
+
+    public BaselineHierarchyIdRecordDetailsDTO singleBaseline { get; set; } = new();
+    private List<BaselineHierarchyIdRecordDetailsDTO> AllItemzTypesForBaseline { get; set; } = new List<BaselineHierarchyIdRecordDetailsDTO>();
+    public bool initializingPage { get; set; } = false;
+
+
+    // Variables related to MudSlidder
+    string _height = "calc(100vh - 80px)";
+    double _sensitivity = 0.3d;
+    double _percentage = 27;
+    bool _sliderEnabled = true;
+    bool _marginEnabled = true;
+    bool _borderedEnabled = false;
+    bool _doubleClickEnabled = true;
+
+    private Task OnDoubleClicked()
+    {
+        if (_doubleClickEnabled)
+        {
+            _percentage = 27;
+        }
+        return Task.CompletedTask;
+    }
+
+    private Guid selectedValue;
+
+    private Guid SelectedValue
+    {
+        get => selectedValue;
+        set
+        {
+            if (selectedValue != value)
+            {
+                selectedValue = value;
+                // Update selectedItem when SelectedValue changes
+                UpdateSelectedItem(value);
+                StateHasChanged();
+            }
+        }
+    }
+
+    private TreeItemPresenter selectedItem;
+
+
+    public class TreeItemPresenter : MudBlazor.TreeItemData<Guid>
+    {
+        public string RecordType { get; set; }
+        public int? Level { get; set; }
+        public bool IsIncluded { get; set; }
+
+        public TreeItemPresenter(Guid value, string text, string icon
+            , string recordType, int? level, bool expandable, bool isIncluded ) : base(value)
+        {
+            Value = value;
+            Text = text;
+            Icon = icon;
+            RecordType = recordType;
+            Level = level ?? 0 ;
+            Expandable = expandable;
+            IsIncluded = isIncluded;
+            Children = new List<TreeItemData<Guid>>();
+        }
+    }
+
+    private async Task OnItemClick(MudBlazor.TreeItemData<System.Guid> node)
+    {
+        // Handle the clicked node here
+        selectedItem = node as TreeItemPresenter;
+    }
+
+    public void AddChildrens(TreeItemData<Guid> parentTempTreeViewNode, List<NestedBaselineHierarchyIdRecordDetailsDTO> Children )
+    {
+        foreach (var child in Children)
+        {
+
+            var childTempTreeViewNode = new TreeItemPresenter
+                (
+                    value: child.RecordId
+                    , text: child.Name
+                    , icon: (child.RecordType.ToLower() == "baselineitemztype" ? @Icons.Material.Filled.Pix :
+                                                   child.RecordType!.ToLower() == "baselineitemz" ? @Icons.Material.Filled.Stream : @Icons.Material.Filled.Cancel)
+                    , recordType: child.RecordType
+                    , level: child.Level
+                    , expandable: (child.Children.Count() > 0 ? true : false)
+                    , isIncluded: child.isIncluded
+                );
+
+            if (child.Children.Count() > 0)
+            {
+                AddChildrens(childTempTreeViewNode, child.Children);
+            }
+
+            parentTempTreeViewNode.Children.Add(childTempTreeViewNode);
+        }
+    }
+
+    private async Task<List<TreeItemData<Guid>>> LoadInitialData(Guid BaselineId)
+    {
+        // Load initial set of tree nodes
+
+        singleBaseline = await BaselineHierarchyService.__Get_BaselineHierarchy_Record_Details_By_GUID__Async(BaselineId);
+
+        if (singleBaseline == null)
+        {
+            throw new ApplicationException($"No Baseline record found for GUID {BaselineId}");
+        }
+
+        var tempTreeView = new TreeItemPresenter
+             (
+                 value: singleBaseline.RecordId
+                 , text: singleBaseline.Name
+                 , icon: @Icons.Material.Filled.ContentCopy // TODO :: ICON CAN BE ELEGENTLY HANDLED BASED ON RECORD TYPE
+                 , recordType: singleBaseline.RecordType
+                 , level: singleBaseline.Level
+                 , expandable: true
+                 , isIncluded: singleBaseline.IsIncluded
+             );
+
+        List<TreeItemData<Guid>> _children = new();
+
+        var returnedBaselineItemzTypeList = await BaselineHierarchyService.__Get_Immediate_Children_Baseline_Hierarchy_By_GUID__Async(BaselineId);
+
+        if (returnedBaselineItemzTypeList!.Count() > 0)
+        {
+            foreach (var _baselineItemzType in returnedBaselineItemzTypeList!)
+            {
+                _children.Add(new TreeItemPresenter
+                                (
+                value: _baselineItemzType.RecordId
+                , text: _baselineItemzType.Name
+                , icon: _baselineItemzType.RecordType!.ToLower() == "baseline" ? @Icons.Material.Filled.ContentCopy :
+                                                     _baselineItemzType.RecordType!.ToLower() == "baselineitemztype" ? @Icons.Material.Filled.Pix :
+                                                             _baselineItemzType.RecordType!.ToLower() == "baselineitemz" ? @Icons.Material.Filled.Stream : @Icons.Material.Filled.Cancel
+                , recordType: _baselineItemzType.RecordType
+                , level: _baselineItemzType.Level
+                , expandable: true
+                , isIncluded: _baselineItemzType.IsIncluded
+                ));
+
+            }
+
+            // Update the tree items with additional data
+            foreach (var node in _children)
+            {
+                tempTreeView.Children.Add(node);
+            }
+        }
+
+        List<TreeItemData<Guid>> tempList = new();
+
+        tempList.Add(tempTreeView);
+
+        return tempList;
+    }
+
+    private async Task<List<TreeItemData<Guid>>> LoadAllBaselineHierarchyData(Guid BaselineId)
+    {
+        List<TreeItemData<Guid>> _baselineHierarchyTreeNodes = new();
+
+
+        // Load initial set of tree nodes
+
+        singleBaseline = await BaselineHierarchyService.__Get_BaselineHierarchy_Record_Details_By_GUID__Async(BaselineId);
+
+        if (singleBaseline == null)
+        {
+            throw new ApplicationException($"No baseline record found for GUID {BaselineId}");
+        }
+
+        var _tempTreeViewBaselineNode = new TreeItemPresenter
+            (
+                value: singleBaseline.RecordId
+                , text: singleBaseline.Name
+                , icon: @Icons.Material.Filled.ContentCopy
+                , recordType: singleBaseline.RecordType
+                , level: singleBaseline.Level
+                , expandable: true
+                , isIncluded: singleBaseline.IsIncluded
+            );
+
+        _baselineHierarchyTreeNodes.Add(_tempTreeViewBaselineNode);
+
+        var allHierarchyDataFromAPI = await BaselineHierarchyService.__Get_All_Children_Baseline_Hierarchy_By_GUID__Async(BaselineId);
+
+        if (allHierarchyDataFromAPI != null)
+        {
+
+            foreach (var singleHierarchyDataFromAPI in allHierarchyDataFromAPI)
+            {
+                TreeItemData<Guid> childTempTreeViewNode = new TreeItemPresenter
+                    (
+                        value: singleHierarchyDataFromAPI.RecordId
+                        , text: singleHierarchyDataFromAPI.Name
+                        , icon: (singleHierarchyDataFromAPI.RecordType.ToLower() == "baselineitemztype" ? @Icons.Material.Filled.Pix :
+                                            singleHierarchyDataFromAPI.RecordType!.ToLower() == "baselineitemz" ? @Icons.Material.Filled.Stream : @Icons.Material.Filled.Cancel)
+                        , recordType: singleHierarchyDataFromAPI.RecordType
+                        , level: singleHierarchyDataFromAPI.Level
+                        , expandable: (singleHierarchyDataFromAPI.Children.Count() > 0 ? true : false)
+                        , isIncluded: singleHierarchyDataFromAPI.isIncluded
+                    );
+
+                if (singleHierarchyDataFromAPI.Children.Count() > 0)
+                {
+                    AddChildrens(childTempTreeViewNode, singleHierarchyDataFromAPI.Children);
+                }
+
+                _baselineHierarchyTreeNodes.FirstOrDefault()!.Children!.Add(childTempTreeViewNode);
+
+            }
+
+        }
+        return _baselineHierarchyTreeNodes;
+    }
+    // protected async override void OnInitialized()
+    // {
+    //     // Load initial data
+    //     InitialTreeItems = await LoadInitialData(BaselineId);
+    //     StateHasChanged();
+
+    // }
+
+    protected override void OnInitialized()
+    {
+        BaselineItemzSelectionService.OnBaselineTreeNodeItemzSelected += HandleItemzSelected;
+        BaselineItemzSelectionService.OnBaselineTreeNodeItemzNameUpdated += NOT_IN_USE_HandleTreeNodeItemzNameUpdated;
+        BaselineItemzSelectionService.OnLoadingOfBaselineItemzTreeViewComponent += HandleLoadingOfBaselineItemzTreeViewComponent;
+        BaselineItemzSelectionService.OnSingleBaselineItemzIsIncludedChanged += HandleIncludeOnlySingleBaselineItemzNode;
+        BaselineItemzSelectionService.OnIncludeAllChildrenBaselineItemzTreeNodes += HandleIncludeAllChildrenBaselineItemzTreeNodes;
+        BaselineItemzSelectionService.OnExcludeAllChildrenBaselineItemzTreeNodes += HandleExcludeAllChildrenBaselineItemzTreeNodes;
+        BaselineItemzSelectionService.OnRequestNodeWithParent += HandleRequestNodeWithParent;
+        BaselineItemzSelectionService.OnScrollToTreeViewNode += HandleScrollToTreeViewNode;
+
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+
+            // Load initial data
+            InitialTreeItems = await LoadInitialData(BaselineId);
+            StateHasChanged();
+
+            Thread.Sleep(300);
+            // Load Entire Baseline Hierarchy data
+            InitialTreeItems = await LoadAllBaselineHierarchyData(BaselineId);
+
+            showLoadingMessage = false; 
+
+            StateHasChanged();
+
+            if (AutoSelectedRecordId.HasValue)
+            {
+                // Select the node after the first render
+
+                // This Task.Delay is important to allow full
+                // rendering which could take some time for large project.
+                // await Task.Delay(500);
+
+                HandleItemzSelected(AutoSelectedRecordId.Value);
+                AutoSelectedRecordId = null;
+            }
+
+            await JS.InvokeVoidAsync("initializeResizable");
+            StateHasChanged();
+        }
+    }
+
+
+    private void HandleItemzSelected(Guid itemzId)
+    {
+        // Update the SelectedValue to select the node
+        SelectedValue = itemzId;
+        StateHasChanged();
+    }
+
+    private void HandleScrollToTreeViewNode(Guid recordId)
+    {
+        // Task.Delay(100); // Add a slight delay to ensure DOM updates are complete
+        ScrollToSelectedNode($"tree-node-{recordId}");
+    }
+
+    // Efficient method to update selectedItem by its ID
+    private async Task UpdateSelectedItem(Guid id)
+    {
+        selectedItem = InitialTreeItems.Flatten().FirstOrDefault(i => i.Value == id) as TreeItemPresenter;
+
+        if (selectedItem == null)
+        {
+            // EXPLANATION :: Because Baselines should only contain traces to BaselineItemz within the same baseline,
+            // there is no need for this code to ever execute. 
+            // On the other hand Project will have possibility to create trace to Itemz in other Projects and so this 
+            // feature to navigate to that ItemzId would be very useful there. 
+            // Anyways, let's show a dialog box to user first before we try navigating outside of the current baseline.
+
+            await OpenExceptionDialogAsync($"ISSUE :: OOPS!! Could not find record with Id {id} in current Baseline! If you are looking for Baseline Trace then its an Issue with data.");
+            await Task.Delay(2000);
+            // get BaselineID of the recordId
+
+            // var baselineHierarchyService = serviceProvider.GetRequiredService<IBaselineHierarchyService>();
+            // var findProjectAndBaselineIdsByBaselineItemzIdService = new FindProjectAndBaselineIdsByBaselineItemzIdService(baselineHierarchyService);
+
+            var foundProjectAndBaselineIds = await FindProjectAndBaselineIdsByBaselineItemzIdService.GetProjectAndBaselineId(id);
+            if (foundProjectAndBaselineIds.BaselineId != Guid.Empty)
+            {
+                NavManager.NavigateTo($"/BaselineTreeView/{foundProjectAndBaselineIds.BaselineId}?autoSelectedRecordId={id}", true);
+            }
+
+        }
+        //await InvokeAsync(StateHasChanged);
+    }
+
+    // Handle name updates for tree items
+    private void NOT_IN_USE_HandleTreeNodeItemzNameUpdated(Guid recordId, string newName)
+    {
+        var item = InitialTreeItems.Flatten().FirstOrDefault(i => i.Value == recordId) as TreeItemPresenter;
+        if (item != null)
+        {
+            item.Text = newName; // Update the tree item name
+            StateHasChanged(); // Refresh the UI
+        }
+    }
+
+
+    private bool HandleRequestNodeWithParent(Guid recordId)
+    {
+        foreach (var treeNodeItem in InitialTreeItems)
+        {
+            var targetParentNode = FindNodeWithParent(treeNodeItem, recordId).Item1; // Item1 is refering to 2nd Item in the Tuple.
+
+            if (targetParentNode != null)
+            {
+                var _foundParentIsIncluded = ((TreeItemPresenter)targetParentNode).IsIncluded;
+                return _foundParentIsIncluded;
+            }
+        }
+
+        // If nothing found then return false;
+        return false;
+    }
+
+    private (TreeItemData<Guid>, TreeItemData<Guid>?) FindNodeWithParent(TreeItemData<Guid> treeNode, Guid recordId, TreeItemData<Guid>? parentNode = null)
+    {
+        if (treeNode.Value == recordId)
+        {
+            return (parentNode, treeNode); // retruning Tuple where Item1 is parentNode and Item2 will be treeNode for the recordId
+        }
+
+        if (treeNode.HasChildren && treeNode.Children != null)
+        {
+            foreach (var child in treeNode.Children)
+            {
+                var result = FindNodeWithParent(child, recordId, treeNode);
+                if (result.Item2 != null)
+                {
+                    return result;
+                }
+            }
+        }
+
+        return (null, null);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    #region  Handle_IsIncluded_Changes
+
+
+
+    private void HandleLoadingOfBaselineItemzTreeViewComponent(Guid recordId, bool isIncluded)
+    {
+        var item = InitialTreeItems.Flatten().FirstOrDefault(i => i.Value == recordId) as TreeItemPresenter;
+        if (item != null)
+        {
+            // Update the tree item icon by changing isIncluded
+            // This is to support multi user scenario where someone else has changed isIncluded 
+            // then we need to automaitally update it in the BaselineTreeView for current user.
+            item.IsIncluded = isIncluded; 
+
+            StateHasChanged(); // Refresh the UI
+        }
+    }
+
+    // Handle isIncluded updates for tree items
+    private void HandleIncludeOnlySingleBaselineItemzNode(Guid recordId)
+    {
+        var item = InitialTreeItems.Flatten().FirstOrDefault(i => i.Value == recordId) as TreeItemPresenter;
+        if (item != null)
+        {
+            item.IsIncluded = true; // Update the tree item name
+
+            StateHasChanged(); // Refresh the UI
+        }
+    }
+
+    private void HandleIncludeAllChildrenBaselineItemzTreeNodes(Guid recordId)
+    {
+        // Setting isIncluded to true for marking record itself as well as all it's children as included. 
+        UpdateIsIncludedForBranch(recordId, isIncluded: true);
+        StateHasChanged();
+    }
+
+    private void HandleExcludeAllChildrenBaselineItemzTreeNodes(Guid recordId)
+    {
+        // Setting isIncluded to false for marking record itself as well as all it's children as excluded.
+        UpdateIsIncludedForBranch(recordId, isIncluded: false);
+        StateHasChanged();
+    }
+
+    public void UpdateIsIncludedForBranch(Guid baselineItemzId, bool isIncluded)
+    {
+        foreach (var treeNodeItem in InitialTreeItems)
+        {
+            var targetNode = FindNodeById(treeNodeItem, baselineItemzId);
+            if (targetNode != null)
+            {
+                ((TreeItemPresenter)targetNode).IsIncluded = isIncluded;
+                UpdateChildrenIsIncluded(targetNode, isIncluded);
+                break; // Exit the loop once the node is found and updated
+            }
+        }
+    }
+
+    public TreeItemData<Guid>? FindNodeById(TreeItemData<Guid> treeNode, Guid baselineItemzId)
+    {
+        if (treeNode.Value == baselineItemzId)
+        {
+            return treeNode;
+        }
+
+        if (treeNode.HasChildren && treeNode.Children != null)
+        {
+            foreach (var child in treeNode.Children)
+            {
+                var foundNode = FindNodeById(child, baselineItemzId);
+                if (foundNode != null)
+                {
+                    return foundNode;
+                }
+            }
+        }
+        return null;
+    }
+
+    public void UpdateChildrenIsIncluded(TreeItemData<Guid> node, bool isIncluded)
+    {
+        ((TreeItemPresenter)node).IsIncluded = isIncluded;
+        // node.Icon = newIcon;
+
+        if (node.HasChildren && node.Children != null)
+        {
+            foreach (var child in node.Children)
+            {
+                UpdateChildrenIsIncluded(child, isIncluded);
+            }
+        }
+    }
+
+    #endregion
+
+
+    #region Scroll_To_TreeViewNode
+
+
+    private async Task ScrollToSelectedNode(string elementId)
+    {
+        await JS.InvokeVoidAsync("scrollToElementById", elementId);
+    }
+
+    #endregion
+    
+    private async Task OpenExceptionDialogAsync(string exceptionMessage)
+    {
+        var options = new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, Position = DialogPosition.Center };
+        var dialogPara = new DialogParameters();
+        dialogPara.Add("exceptionMessage", exceptionMessage);
+        var dialogref = await DialogService.ShowAsync<BaselineExceptionDialog>("ISSUE", dialogPara, options);
+    }
+}

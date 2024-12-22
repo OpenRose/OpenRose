@@ -1,0 +1,377 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+@using OpenRose.WebUI.Client.Services.BaselineHierarchy
+@using OpenRose.WebUI.Client.Services.Baselines
+@using OpenRose.WebUI.Client.SharedModels
+@using OpenRose.WebUI.Client.SharedModels.BetweenPagesAndComponent
+@using OpenRose.WebUI.Components.Pages.Breadcrums
+@using OpenRose.WebUI.Components.EventServices
+@using OpenRose.WebUI.Components.Pages.Common
+@using Microsoft.AspNetCore.Components.Forms
+@using PSC.Blazor.Components.MarkdownEditor
+@using PSC.Blazor.Components.MarkdownEditor.EventsArgs
+@inject NavigationManager NavManager
+@inject IDialogService DialogService
+@inject BaselineTreeNodeItemzSelectionService BaselineItemzSelectionService
+@inject IJSRuntime JS
+
+@if (CalledFrom == nameof(BaselineDetails))
+{
+	@if (BreadcrumsParameter != null)
+	{
+		<BaselineBreadcrums produceBreadcrums="BreadcrumsParameter" />
+	}
+}
+
+<MudPaper Class="pa-4 mb-5 align-start d-flex" Style="width: auto" Outlined="false">	
+	<MudText Typo="Typo.h6" Align="Align.Left">Baseline Details</MudText>
+</MudPaper>
+
+<MudGrid>
+	@if (initializingPage)
+	{
+		<MudPaper Class="pa-4 mb-5" Height="calc(100vh - 100px);" Width="100%">
+			<MudOverlay Visible="@initializingPage" DarkBackground="true" Absolute="true">
+				<MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Inherit">Loading ...</MudText>
+				<br />
+				<MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+			</MudOverlay>
+		</MudPaper>
+	}
+	else
+	{
+
+			<MudItem hidden="@hideValidationError" xs="12" sm="12">
+				<MudPaper Class="pa-4 mb-5 mud-height-full">
+					<MudText Typo="Typo.subtitle2" Color="@Color.Error">@($"Validation Errors ({errors.Length})")</MudText>
+					@foreach (var error in errors)
+					{
+						<MudText Color="@Color.Error">@error</MudText>
+					}
+				</MudPaper>
+			</MudItem>
+			<MudItem xs="12" sm="12">
+				<MudTabs Outlined="true" Position="Position.Top" Rounded="true" Border="true"
+						 IconColor="Color.Secondary" ScrollIconColor="Color.Secondary" SliderColor="Color.Secondary"
+						 ApplyEffectsToContainer="true" PanelClass="pa-2" MinimumTabWidth="200px">
+				<MudTabPanel Text="Details" Icon="@Icons.Material.Filled.EditNote">
+				<MudPaper Class="pa-4">
+					<MudForm Model="@singleBaseline" @ref="form" @bind-IsValid="@success" @bind-Errors="@errors" FieldChanged="formFieldChanged" >
+						<MudCardActions>
+							<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Class="w-100"> 		
+							<MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(disableUpdateBaselineDetailsButton)"
+										Size="Size.Large"
+										style="gap: 10px; margin : 10px"
+										OnClick="(() => HandleBaselineDetailsPatchSubmission())">
+								<MudText>Save</MudText>
+							</MudButton>
+							@if (CalledFrom == nameof(BaselineTreeView))
+							{
+								<MudButton Variant="Variant.Filled" Color="Color.Primary"
+											Size="Size.Large"
+											OnClick="(() => HandleGoToDetailsView())">
+									<MudText>Details View</MudText>
+								</MudButton>
+							}
+							@if (CalledFrom == nameof(BaselineDetails))
+							{
+								<MudButton Variant="Variant.Filled" Color="Color.Warning" Size="Size.Large" style="gap: 10px; margin-left : 10px"
+											OnClick="(() => goBackToBaseline())">
+									<MudText>Cancel</MudText>
+								</MudButton>
+							}
+							</MudStack>
+						</MudCardActions>
+				<MudCardContent>
+					<MudStack Row="true" Spacing="2">
+						<MudText><strong>Project GUID Id: </strong></MudText>
+						<CopyableText TextToCopy="@ParentId.ToString()" />
+					</MudStack>
+					<br />
+					<MudStack Row="true" Spacing="2">
+						<MudText><strong>Baseline GUID Id: </strong></MudText>
+						<CopyableText TextToCopy="@BaselineId.ToString()" />
+					</MudStack>
+					<br />
+					<MudTextField T="string" Label="Name" Required="true" RequiredError="Name is required!"
+									@bind-Value="singleBaseline.Name"
+									For="@(() => singleBaseline.Name)" />
+
+@* 					<MudTextField T="string" Label="Description" Required="true" RequiredError="Description is required!"
+						@bind-Value="singleBaseline.Description"
+						For="@(() => singleBaseline.Description)" /> *@
+
+					<!-- Ensure this div applies the custom class to the Markdown content -->
+					<MudText><strong>Description : </strong></MudText>
+					<div class="custom-markdown-editor">
+						<MarkdownEditor @bind-Value="@MyContent" HideIcons="@(["mde-tb-image"])" />
+						<MudPaper Class="pa-4 mb-5" Style="background-color: #f5f5f5;">
+							@if (!string.IsNullOrEmpty(convertedMarkdown.Value))
+							{
+								<h3>Preview</h3>
+								<div class="markdown-body">@((MarkupString)convertedMarkdown)</div>
+							}
+						</MudPaper>
+					</div>
+				</MudCardContent>
+
+			</MudForm>
+			</MudPaper>
+			</MudTabPanel>
+
+
+
+		@if (CalledFrom == nameof(BaselineDetails))
+		{
+			<MudTabPanel Icon="@Icons.Material.Filled.Cancel" Text="Delete Baseline">
+			<MudItem xs="12" sm="12" md="12" lg="12">
+				<br />
+				<MudExpansionPanels Elevation="10" style="margin-left : 15px">
+					<MudExpansionPanel style="background-color : #FABBBB; color : red;"
+										Text="DANGER ZONE!" MaxHeight="150" Expanded="false">
+					<TitleContent>
+						<div class="d-flex">
+							<MudIcon Icon="@Icons.Material.Filled.Cancel" Color="Color.Error" Size="Size.Medium" class="mr-3"></MudIcon>
+							<MudText Color="Color.Error"><strong>DANGER ZONE!</strong></MudText>
+						</div>
+					</TitleContent>
+					<ChildContent>
+						<MudText Typo="Typo.body1" Color="Color.Error">Deleting Baseline means loosing all it's data. This is <STRONG>IRREVERSIBLE</STRONG> operation.</MudText>
+						<MudButton @onclick="async _ => await OpenDeleteConfirmationDialogAsync(!string.IsNullOrEmpty(singleBaseline.Name) ? singleBaseline.Name! : string.Empty)" 
+								Variant="Variant.Filled"
+								Disabled="@(disableUpdateBaselineDetailsButton)"
+								Color="Color.Error" Size="Size.Large" style="align-items: center; margin-top : 10px">
+							Delete Baseline
+						</MudButton>
+					</ChildContent>
+					</MudExpansionPanel>
+				</MudExpansionPanels>
+			</MudItem>
+			</MudTabPanel>
+		}
+		</MudTabs>
+		</MudItem>
+
+	<MudItem xs="12" sm="8">
+		<MudOverlay Visible="@updateBaselineButtonClicked" DarkBackground="true" Absolute="true">
+			<MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Inherit"> Updating ...  </MudText>
+			<br />
+			<MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+		</MudOverlay>
+	</MudItem>
+	<MudItem xs="12" sm="8">
+		<MudOverlay Visible="@deletingBaseline" DarkBackground="true" Absolute="true">
+			<MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Inherit">Deleting ...</MudText>
+			<br />
+			<MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+		</MudOverlay>
+	</MudItem>
+	}
+</MudGrid>
+@code {
+	[Parameter]
+	public Guid BaselineId { get; set; }
+
+	[Parameter]
+	public EventCallback<string> ContentChanged { get; set; }
+
+	[Parameter]
+	[SupplyParameterFromQuery(Name = "calledFrom")]
+	public string CalledFrom { get; set; } = string.Empty;
+
+	[Inject]
+	public IBaselinesService baselinesService { get; set; }
+
+	[Inject]
+	public IBaselineHierarchyService baselineHierarchyService { get; set; }
+
+	public Guid ParentId { get; set; }
+	private bool updateBaselineButtonClicked = false;
+
+	public GetBaselineDTO singleBaseline { get; set; } = new();
+	private ParameterForBaselineBreadcrums BreadcrumsParameter;
+	public bool initializingPage { get; set; } = false;
+	private bool deletingBaseline { get; set; } = false;
+	private bool hasFormFieldChanged { get; set; } = false;
+
+	// private string _Content = string.Empty;
+	private string MyContent
+	{
+		get => singleBaseline.Description ?? string.Empty;
+		set
+		{
+			// _Content = value;
+			hasFormFieldChanged = true;
+			singleBaseline.Description = value;
+			ConvertMarkdownToHtml(singleBaseline.Description);
+			ContentChanged.InvokeAsync(value);
+		}
+	}
+
+	private async Task ConvertMarkdownToHtml(string markdown)
+	{
+		if (!string.IsNullOrEmpty(markdown))
+		{
+			var html = await JS.InvokeAsync<string>("markdownToHtml", markdown);
+			convertedMarkdown = (MarkupString)html;
+			StateHasChanged();
+
+			// Apply fullscreen styles
+			// await Task.Delay(1000);
+			// await JS.InvokeVoidAsync("applyMarkdownEditorFullscreenStyles");
+		}
+	}
+
+
+
+
+
+	//MudForm related fields
+	bool success = true;
+	bool disableUpdateBaselineDetailsButton = false;
+	string[] errors = { };
+	MudForm form;
+
+	bool hideValidationError = true;
+
+	string originalItemzName { get; set; } = string.Empty;
+
+	private MarkupString convertedMarkdown;
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			initializingPage = true;
+			StateHasChanged();
+			//Thread.Sleep(300);
+			singleBaseline = await baselinesService.__Single_Baseline_By_GUID_ID__Async(BaselineId);
+
+			if (singleBaseline != null)
+			{
+				BreadcrumsParameter = new ParameterForBaselineBreadcrums();
+				BreadcrumsParameter.Id = singleBaseline.Id;
+				BreadcrumsParameter.Name = singleBaseline.Name;
+				BreadcrumsParameter.RecordType = "baseline"; // TODO :: USE CONSTANT
+				BreadcrumsParameter.isIncluded = true; // TODO :: WE SET INCLUSION FOR BASELINEITEMZTYPE TO TRUE BUT WE CAN DO BETTER
+
+				BaselineItemzSelectionService.UpdateBaselineTreeNodeItemzName(BaselineId, singleBaseline.Name);
+
+				originalItemzName = singleBaseline.Name;
+
+			}
+
+			if (form != null)
+			{
+				await form.Validate();
+				if (form.IsValid)
+				{
+					disableUpdateBaselineDetailsButton = false;
+				}
+				else
+				{
+					disableUpdateBaselineDetailsButton = true;
+				}
+				initializingPage = false;
+				StateHasChanged();
+			}
+
+			// EXPLANATION : At the start of initialization process we capture parent record ID.
+			// Now even if user decides to Delete this Baseline Record then also we can go back to it's
+			// Parent Project post completing deletion operation.
+			var httpResponse = await baselineHierarchyService.__Get_BaselineHierarchy_Record_Details_By_GUID__Async(BaselineId);
+			ParentId = httpResponse.ParentRecordId;
+
+			await ConvertMarkdownToHtml(singleBaseline.Description);
+			StateHasChanged();
+		}
+	}
+	public async Task HandleBaselineDetailsPatchSubmission()
+	{
+		updateBaselineButtonClicked = true;
+		try
+		{
+			if (hasFormFieldChanged)
+			{
+				var updateBaselineDTO = new UpdateBaselineDTO();
+				updateBaselineDTO.Name = singleBaseline.Name;
+				updateBaselineDTO.Description = singleBaseline.Description;
+				await baselinesService.__PUT_Update_Baseline_By_GUID_ID__Async(BaselineId, updateBaselineDTO);
+				BaselineItemzSelectionService.UpdateBaselineTreeNodeItemzName(BaselineId, updateBaselineDTO.Name);
+				Thread.Sleep(800);
+			}
+		}
+		catch (Exception ex)
+		{
+			updateBaselineButtonClicked = false;
+			await OpenExceptionDialogAsync("Problem Updating Baseline Details : " + ex.Message);
+			return;
+		}
+		finally
+		{
+			updateBaselineButtonClicked = false;
+		}
+		goBackToBaseline();
+	}
+
+	private async Task formFieldChanged()
+	{
+		hasFormFieldChanged = true;
+		if (form != null)
+		{
+			await form.Validate();
+			if (form.IsValid)
+			{
+				disableUpdateBaselineDetailsButton = false;
+			}
+			else
+			{
+				disableUpdateBaselineDetailsButton = true;
+			}
+		}
+	}
+
+	private async Task OpenDeleteConfirmationDialogAsync(string baselineName)
+	{
+
+		var options = new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, Position = DialogPosition.Center };
+		var dialogPara = new DialogParameters();
+		dialogPara.Add("deletingBaselineName", baselineName);
+		var dialogref = await DialogService.ShowAsync<BaselineDeletionConfirmDialog>("CONFIRM", parameters: dialogPara, options);
+		var dialogresult = await dialogref.Result;
+		if (!(dialogresult!.Canceled))
+		{
+			await baselinesService.__DELETE_Baseline_By_GUID_ID__Async(BaselineId);
+
+			NavManager.NavigateTo($"/project/{ParentId.ToString()}");
+			// TODO :: WE COULD DO AN OVERLAY IN MUDBLAZOR WHILE BASELINE IS GETTING DELETED TO GIVE FEEDBACK TO USER.
+		}
+	}
+
+	private async Task OpenExceptionDialogAsync(string exceptionMessage)
+	{
+		var options = new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, Position = DialogPosition.Center };
+		var dialogPara = new DialogParameters();
+		dialogPara.Add("exceptionMessage", exceptionMessage);
+		var dialogref = await DialogService.ShowAsync<BaselineExceptionDialog>("CONFIRM", dialogPara, options);
+	}
+
+	public void goBackToBaseline()
+	{
+		@if (CalledFrom == nameof(BaselineDetails))
+		{
+			NavManager.NavigateTo($"/baseline/{BaselineId.ToString()}");
+		}
+	}
+
+	public async Task HandleGoToDetailsView()
+	{
+		var url = $"/baseline/{BaselineId.ToString()}";
+		await JS.InvokeVoidAsync("openInNewTab", url);
+	}
+
+}
