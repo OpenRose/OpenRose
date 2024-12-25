@@ -551,13 +551,13 @@
 	{
 		// TODO :: Create new Itemz through EndPoint API call and then Notify MudTreeView component to update itself.
 
-		var newSiblingItemz = new CreateItemzDTO();
-		newSiblingItemz.Name = "New Itemz";
-		newSiblingItemz.Status = "New";
-		newSiblingItemz.Priority = "Medium";
-		newSiblingItemz.Severity = "Medium";
-		newSiblingItemz.Description = "New Itemz Description";
-		var newlyCreatedSiblingItemz = await ItemzService.__POST_Create_Itemz__Async(ItemzId, true, newSiblingItemz);
+		var newChildItemz = new CreateItemzDTO();
+		newChildItemz.Name = "New Itemz";
+		newChildItemz.Status = "New";
+		newChildItemz.Priority = "Medium";
+		newChildItemz.Severity = "Medium";
+		newChildItemz.Description = "New Itemz Description";
+		var newlyCreatedSiblingItemz = await ItemzService.__POST_Create_Itemz__Async(ItemzId, true, newChildItemz);
 		if (newlyCreatedSiblingItemz != null)
 		{
 			TreeNodeItemzSelectionService.CreatedNewItemz(ItemzId, newlyCreatedSiblingItemz);
