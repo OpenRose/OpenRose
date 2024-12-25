@@ -5,6 +5,7 @@
 *@
 
 @using OpenRose.WebUI.Client.Services.Hierarchy
+@using OpenRose.WebUI.Client.Services.Itemz
 @using OpenRose.WebUI.Client.Services.ItemzType
 @using OpenRose.WebUI.Client.SharedModels
 @using OpenRose.WebUI.Client.SharedModels.BetweenPagesAndComponent
@@ -31,7 +32,19 @@
 }
 
 <MudPaper Class="pa-4 mb-5 align-start d-flex" Style="width: auto" Outlined="false">
+	<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Class="w-100">
 	<MudText Typo="Typo.h6" Align="Align.Left">ItemzType Details</MudText>
+		<MudSpacer />
+		@if (CalledFrom == nameof(ProjectTreeView))
+		{
+			<MudButton Variant="Variant.Filled" Color="Color.Success"
+					   Size="Size.Medium"
+					   style="margin: 10px"
+					   OnClick="(async () => await HandleCreateTreeViewChildItemzClicked())">
+				<MudText>Create Child Itemz</MudText>
+			</MudButton>
+		}
+	</MudStack>
 </MudPaper>
 
 <MudGrid>
@@ -208,6 +221,8 @@
 	public IItemzTypeService ItemzTypeService { get; set; }
 	[Inject]
 	public IHierarchyService hierarchyService { get; set; }
+	[Inject]
+	public IItemzService ItemzService { get; set; }
 
 	public Guid ParentId { get; set; }
 	private bool updateItemzTypeButtonClicked = false;
@@ -417,6 +432,23 @@
 		if (CalledFrom == nameof(ItemzTypeDetails))
 		{
 			NavManager.NavigateTo($"/itemztype/{ItemzTypeId.ToString()}");
+		}
+	}
+
+	public async Task HandleCreateTreeViewChildItemzClicked()
+	{
+		// TODO :: Create new Itemz through EndPoint API call and then Notify MudTreeView component to update itself.
+
+		var newChildItemz = new CreateItemzDTO();
+		newChildItemz.Name = "New Itemz";
+		newChildItemz.Status = "New";
+		newChildItemz.Priority = "Medium";
+		newChildItemz.Severity = "Medium";
+		newChildItemz.Description = "New Itemz Description";
+		var newlyCreatedSiblingItemz = await ItemzService.__POST_Create_Itemz__Async(ItemzTypeId, true, newChildItemz);
+		if (newlyCreatedSiblingItemz != null)
+		{
+			TreeNodeItemzSelectionService.CreatedNewItemz(ItemzTypeId, newlyCreatedSiblingItemz);
 		}
 	}
 
