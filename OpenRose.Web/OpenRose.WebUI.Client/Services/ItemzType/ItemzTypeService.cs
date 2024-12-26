@@ -89,7 +89,7 @@ namespace OpenRose.WebUI.Client.Services.ItemzType
             {
 				if (createItemzTypeDTO == null || string.IsNullOrWhiteSpace(createItemzTypeDTO.Name))
 				{
-					throw new ArgumentNullException("Project Name is a required field for which value was not provided");
+					throw new ArgumentNullException("ItemzType Name is a required field for which value was not provided");
 				}
 
 

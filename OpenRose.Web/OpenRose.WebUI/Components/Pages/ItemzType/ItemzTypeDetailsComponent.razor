@@ -445,10 +445,21 @@
 		newChildItemz.Priority = "Medium";
 		newChildItemz.Severity = "Medium";
 		newChildItemz.Description = "New Itemz Description";
-		var newlyCreatedSiblingItemz = await ItemzService.__POST_Create_Itemz__Async(ItemzTypeId, true, newChildItemz);
-		if (newlyCreatedSiblingItemz != null)
+		try
 		{
-			TreeNodeItemzSelectionService.CreatedNewItemz(ItemzTypeId, newlyCreatedSiblingItemz);
+			var newlyCreatedSiblingItemz = await ItemzService.__POST_Create_Itemz__Async(ItemzTypeId, true, newChildItemz);
+			if (newlyCreatedSiblingItemz != null)
+			{
+				TreeNodeItemzSelectionService.CreatedNewItemz(ItemzTypeId, newlyCreatedSiblingItemz);
+			}
+		}
+		catch (Exception ex)
+		{
+			await DialogService.ShowMessageBox("WARNING", markupMessage: new MarkupString($"<p style=\"color: red; \">{ex.Message}</p>"), yesText: "OK");
+		}
+		finally
+		{
+			// Add any clean-up code here.
 		}
 	}
 
