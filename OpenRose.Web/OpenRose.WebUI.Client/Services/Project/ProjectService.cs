@@ -5,6 +5,7 @@
 using OpenRose.WebUI.Client.SharedModels;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace OpenRose.WebUI.Client.Services.Project
@@ -175,17 +176,50 @@ namespace OpenRose.WebUI.Client.Services.Project
         {
             try
             {
-                var httpResponseMessage = await _httpClient.PostAsJsonAsync($"/api/Projects", updateProjectDTO, cancellationToken);
-                httpResponseMessage.EnsureSuccessStatusCode();
+				if (updateProjectDTO == null || string.IsNullOrWhiteSpace(updateProjectDTO.Name))
+				{
+					throw new ArgumentNullException("Project Name is a required field for which value was not provided");
+				}
 
-                string responseContent = httpResponseMessage.Content.ReadAsStringAsync().Result;
-                // TODO :: Send back updated content for GetProjectDTO
-                return default;
+				var httpResponseMessage = await _httpClient.PostAsJsonAsync($"/api/Projects", updateProjectDTO, cancellationToken);
+
+				if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.Conflict)
+				{
+					// Read the response content
+					var _errorContent = await httpResponseMessage.Content.ReadAsStringAsync();
+
+					// TODO :: Use MudBlazor Snackbar to show the message (assuming MudBlazor Snackbar is set up)
+                    // TODO :: Do we need to pass server error message all the way to user UI? We need to check what's included in _errorContent though!
+					throw new ApplicationException($"FAILED : {_errorContent}");
+				}
+
+				httpResponseMessage.EnsureSuccessStatusCode();
+
+                string responseContent = await httpResponseMessage.Content.ReadAsStringAsync();
+				// TODO :: Send back updated content for GetProjectDTO
+
+				// EXPLANATION :: HERE WE ARE SERIALIZING JSON RESPONSE INTO DESIRED CLASS / OBJECT FORMAT FOR RETURNING
+				var options = new JsonSerializerOptions
+				{
+					PropertyNameCaseInsensitive = true,
+				};
+				var response = JsonSerializer.Deserialize<GetProjectDTO>(responseContent, options);
+				return (response ?? default);
             }
-            catch (Exception)
-            {
-            }
-            return default;
+			catch (HttpRequestException httpEx)
+			{
+				// Handle HTTP-specific exceptions (e.g., 404, 500) 
+				// You could log this exception or display an appropriate message to the user
+				throw new Exception($"HTTP error occurred: {httpEx.Message}");
+			}
+			catch (ArgumentNullException argEx)
+			{
+				throw new Exception($"Argument Null Exception: {argEx.Message}");
+			}
+			catch (Exception ex)
+			{
+				throw;
+			}
         }
 
         #endregion

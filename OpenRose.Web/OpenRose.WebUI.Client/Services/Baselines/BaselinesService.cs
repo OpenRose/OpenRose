@@ -103,7 +103,7 @@ namespace OpenRose.WebUI.Client.Services.Baselines
 				//var urlBuilder_ = new System.Text.StringBuilder();
 				//urlBuilder_.Append("/api/Baselines");
 				//urlBuilder_.Append('?');
-				if (createBaselineDTO == null || createBaselineDTO.Name == null || createBaselineDTO.Name == string.Empty)
+				if (createBaselineDTO == null || string.IsNullOrWhiteSpace(createBaselineDTO.Name))
 				{
 					throw new ArgumentNullException("Baseline Name is a required field for which value was not provided");
 				}
@@ -148,7 +148,6 @@ namespace OpenRose.WebUI.Client.Services.Baselines
 			{
 				throw;
 			}
-			return default;
 		}
 
 		#endregion

@@ -12,6 +12,7 @@
 @using PSC.Blazor.Components.MarkdownEditor.EventsArgs
 @inject NavigationManager NavManager
 @inject IJSRuntime JS
+@inject IDialogService DialogService
 
 <h1>Create Project</h1>
 
@@ -171,7 +172,6 @@
 	}
 
 
-
 	//MudForm related fields
 	bool success = true;
 	string[] errors = { };
@@ -213,15 +213,26 @@
 			{
 				hideValidationError = true;	
 				createProjectButtonClicked = true;
-				var updatedResult = await ProjectService.__POST_Create_Project__Async(singleProject);
-				Thread.Sleep(1500);
-				NavManager.NavigateTo("/projects");
+				try
+				{
+					var updatedResult = await ProjectService.__POST_Create_Project__Async(singleProject);
+					Thread.Sleep(1500);
+					NavManager.NavigateTo("/projects");
+				}
+				catch (Exception ex)
+				{
+					await DialogService.ShowMessageBox("WARNING", markupMessage: new MarkupString($"<p style=\"color: red; \">{ex.Message}</p>"), yesText: "OK");
+				}
+				finally
+				{
+					// Hide Overlay
+					createProjectButtonClicked = false;
+				}
 			}
 			else
 			{
 				hideValidationError = false;
 			}
-
 		}
 	}
 
