@@ -174,6 +174,11 @@ namespace OpenRose.WebUI.Client.Services.Baselines
 
 				//urlBuilder_.Length--;
 
+				if (cloneBaselineDTO == null || string.IsNullOrWhiteSpace(cloneBaselineDTO.Name))
+				{
+					throw new ArgumentNullException("Baseline Name is a required field for which value was not provided");
+				}
+
 				var httpResponseMessage = await _httpClient.PostAsJsonAsync($"/api/Baselines/CloneBaseline", cloneBaselineDTO, cancellationToken);
 
 				if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.Conflict)

@@ -49,7 +49,6 @@ namespace OpenRose.WebUI.Client.Services.Hierarchy
 
 		#endregion
 
-
 		#region __Get_Next_Sibling_Hierarchy_Record_Details_By_GUID__Async
 
 		public async Task<HierarchyIdRecordDetailsDTO> __Get_Next_Sibling_Hierarchy_Record_Details_By_GUID__Async(Guid recordId)
@@ -79,8 +78,6 @@ namespace OpenRose.WebUI.Client.Services.Hierarchy
 		}
 
 		#endregion
-
-		
 
 		#region __Get_Immediate_Children_Hierarchy_By_GUID__Async
 		public async Task<ICollection<HierarchyIdRecordDetailsDTO>> __Get_Immediate_Children_Hierarchy_By_GUID__Async(Guid recordId)
@@ -177,7 +174,6 @@ namespace OpenRose.WebUI.Client.Services.Hierarchy
 
         }
         #endregion
-
 
     }
 }
