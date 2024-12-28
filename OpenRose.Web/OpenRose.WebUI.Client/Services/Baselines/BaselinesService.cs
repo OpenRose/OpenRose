@@ -175,6 +175,16 @@ namespace OpenRose.WebUI.Client.Services.Baselines
 				//urlBuilder_.Length--;
 
 				var httpResponseMessage = await _httpClient.PostAsJsonAsync($"/api/Baselines/CloneBaseline", cloneBaselineDTO, cancellationToken);
+
+				if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.Conflict)
+				{
+					// Read the response content
+					var _errorContent = await httpResponseMessage.Content.ReadAsStringAsync();
+
+					// Use MudBlazor Snackbar to show the message (assuming MudBlazor Snackbar is set up)
+					throw new ApplicationException($"FAILED : {_errorContent}");
+				}
+
 				httpResponseMessage.EnsureSuccessStatusCode();
 
 				//string responseContent = httpResponseMessage.Content.ReadAsStringAsync().Result;
@@ -188,10 +198,20 @@ namespace OpenRose.WebUI.Client.Services.Baselines
 				var response = JsonSerializer.Deserialize<GetBaselineDTO>(responseContent, options);
 				return (response ?? default);
 			}
-			catch (Exception)
+			catch (HttpRequestException httpEx)
 			{
+				// Handle HTTP-specific exceptions (e.g., 404, 500) 
+				// You could log this exception or display an appropriate message to the user
+				throw new Exception($"HTTP error occurred: {httpEx.Message}");
 			}
-			return default;
+			catch (ArgumentNullException argEx)
+			{
+				throw new Exception($"Argument Null Exception: {argEx.Message}");
+			}
+			catch (Exception ex)
+			{
+				throw;
+			}
 		}
 
 		#endregion

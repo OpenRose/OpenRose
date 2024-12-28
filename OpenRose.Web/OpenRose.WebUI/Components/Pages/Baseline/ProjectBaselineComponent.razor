@@ -592,10 +592,13 @@ else
 			}
 			catch (Exception ex)
 			{
-				DialogService.ShowMessageBox("WARNING", markupMessage: new MarkupString($"<p style=\"color: red; \">{ex.Message}</p>"), yesText: "OK");
+				await DialogService.ShowMessageBox("WARNING", markupMessage: new MarkupString($"<p style=\"color: red; \">{ex.Message}</p>"), yesText: "OK");
+			}
+			finally
+			{
+				processingBaseline = false;
 			}
 
-			processingBaseline = false;
 		}
 	}
 
@@ -636,7 +639,6 @@ else
 
 	public async Task cloneNewProjectBaseline()
 	{
-
 		if (singleCloneBaseline.BaselineId != Guid.Empty)
 		{
 			processingBaseline = true;
@@ -652,14 +654,16 @@ else
 			}
 			catch (Exception ex)
 			{
-				DialogService.ShowMessageBox("WARNING", markupMessage: new MarkupString($"<p style=\"color: red; \">{ex.Message}</p>"), yesText: "OK");
+				await DialogService.ShowMessageBox("WARNING", markupMessage: new MarkupString($"<p style=\"color: red; \">{ex.Message}</p>"), yesText: "OK");
 			}
-
-			processingBaseline = false;
+			finally
+			{
+				processingBaseline = false;
+			}
 		}
 		else
 		{
-			DialogService.ShowMessageBox("INFORMATION", markupMessage: new MarkupString($"<p style=\"color: blue; \"> Please select existing Baseline from the selection list! </p>"), yesText: "OK");
+			await DialogService.ShowMessageBox("INFORMATION", markupMessage: new MarkupString($"<p style=\"color: blue; \"> Please select existing Baseline from the selection list! </p>"), yesText: "OK");
 		}
 	}
 
