@@ -263,14 +263,18 @@
 						}
 					}
 				}
-				catch
+				catch (Exception ex)
 				{
-					throw new NotImplementedException();
+					await DialogService.ShowMessageBox("WARNING", markupMessage: new MarkupString($"<p style=\"color: red; \">{ex.Message}</p>"), yesText: "OK");
+				}
+				finally
+				{
+					// Add any clean-up code here.
 				}
 			} 
 			else
 			{
-				DialogService.ShowMessageBox("WARNING", markupMessage: new MarkupString($"<p style=\"color: red; \">Could not find Parent Itemz with ID {inputParentItemzId} in repository.</p>"), yesText: "OK");
+				await DialogService.ShowMessageBox("WARNING", markupMessage: new MarkupString($"<p style=\"color: red; \">Could not find Parent Itemz with ID {inputParentItemzId} in repository.</p>"), yesText: "OK");
 			} 
 		}
 	}
@@ -323,9 +327,13 @@
 					}
 
 				}
-				catch
+				catch (Exception ex)
 				{
-					throw new NotImplementedException();
+					await DialogService.ShowMessageBox("WARNING", markupMessage: new MarkupString($"<p style=\"color: red; \">{ex.Message}</p>"), yesText: "OK");
+				}
+				finally
+				{
+					// Add any clean-up code here.
 				}
 			}
 			else

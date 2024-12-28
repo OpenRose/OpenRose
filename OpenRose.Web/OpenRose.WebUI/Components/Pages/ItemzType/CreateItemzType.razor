@@ -12,6 +12,7 @@
 @using PSC.Blazor.Components.MarkdownEditor.EventsArgs
 @inject NavigationManager NavManager
 @inject IJSRuntime JS
+@inject IDialogService DialogService
 
 <h1>Create ItemzType</h1>
 
@@ -176,10 +177,22 @@
 				hideValidationError = true;	
 				createItemzTypeButtonClicked = true;
 				singleItemzType.ProjectId = ProjectId;
-				var updatedResult = await ItemzTypeService.__POST_Create_ItemzType__Async(singleItemzType);
-				Thread.Sleep(1500);
-				goBackToProjectSetting();
-				//NavManager.NavigateTo($"/project/{ProjectId.ToString()}");
+				try
+				{
+					var updatedResult = await ItemzTypeService.__POST_Create_ItemzType__Async(singleItemzType);
+					Thread.Sleep(1500);
+					goBackToProjectSetting();
+				}
+				catch (Exception ex)
+				{
+					await DialogService.ShowMessageBox("WARNING", markupMessage: new MarkupString($"<p style=\"color: red; \">{ex.Message}</p>"), yesText: "OK");
+				}
+				finally
+				{
+					// Hide Overlay
+					createItemzTypeButtonClicked = false;
+				}
+			//NavManager.NavigateTo($"/project/{ProjectId.ToString()}");
 			}
 			else
 			{

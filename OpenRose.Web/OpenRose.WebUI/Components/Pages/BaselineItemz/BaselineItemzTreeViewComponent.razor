@@ -250,13 +250,12 @@
 		}
 		catch (Exception ex)
 		{
-			// updateItemzTypeButtonClicked = false;
-			await OpenExceptionDialogAsync("Problem Updating ItemzType Details : " + ex.Message);
+			await OpenExceptionDialogAsync("Problem Updating Baseline Itemz Details : " + ex.Message);
 			return;
 		}
 		finally
 		{
-			//updateItemzTypeButtonClicked = false;
+
 		}
 
 	}
@@ -287,6 +286,7 @@
 			
 			// TODO :: EXCEPTION HANDLING.
 			await baselineItemzService.__PUT_Update_BaselineItemzs_By_GUID_IDs__Async(tempUpdateBaselineItemzDTO);
+
 			singleBaselineItemz.isIncluded = newValue;
 
 			// Notify TreeView that all children has to be excluded.
@@ -294,13 +294,13 @@
 		}
 		catch (Exception ex)
 		{
-			// updateItemzTypeButtonClicked = false;
-			await OpenExceptionDialogAsync("Problem Updating ItemzType Details : " + ex.Message);
+
+			await OpenExceptionDialogAsync("Problem Updating Baseline Itemz Details : " + ex.Message);
 			return;
 		}
 		finally
 		{
-			//updateItemzTypeButtonClicked = false;
+
 		}
 		anyChildBaselineItemzExcluded = false;
 		StateHasChanged();

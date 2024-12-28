@@ -277,53 +277,73 @@
 
 	private async Task OnSingleBaselineItemzInclusionChanged(bool newValue)
 	{
-
-		if(!(baselineBreadcrumsService.RequestParentNodeIsIncluded()))
+		try
 		{
-			// Handle the case where parent node is not included
-			await OpenExceptionDialogAsync("Parent node is marked as Excluded and so selected node can not be marked as Included.");
-			return;
+			if(!(baselineBreadcrumsService.RequestParentNodeIsIncluded()))
+			{
+				// Handle the case where parent node is not included
+				await OpenExceptionDialogAsync("Parent node is marked as Excluded and so selected node can not be marked as Included.");
+				return;
 
+			}
+
+			UpdateBaselineItemzDTO tempUpdateBaselineItemzDTO = new UpdateBaselineItemzDTO();
+			// TODO :: Get Baseline ID from the server.
+			// tempUpdateBaselineItemzDTO.BaselineId = Guid.Parse("412f4a87-0b75-4631-958d-e2e92ea8e2fd"); 
+			tempUpdateBaselineItemzDTO.BaselineId = foundProjectAndBaselineIds.BaselineId; 
+			// tempUpdateBaselineItemzDTO.BaselineItemzIds = new List<Guid> { Guid.Parse(singleBaselineItemz.Id.ToString()) };
+			tempUpdateBaselineItemzDTO.BaselineItemzIds = new List<Guid> { singleBaselineItemz.Id };
+			tempUpdateBaselineItemzDTO.ShouldBeIncluded = newValue;
+			tempUpdateBaselineItemzDTO.SingleNodeInclusion = true;
+			// Send the new value to the server
+
+			// TODO :: EXCEPTION HANDLING.
+			await baselineItemzService.__PUT_Update_BaselineItemzs_By_GUID_IDs__Async(tempUpdateBaselineItemzDTO);
 		}
-
-		UpdateBaselineItemzDTO tempUpdateBaselineItemzDTO = new UpdateBaselineItemzDTO();
-		// TODO :: Get Baseline ID from the server.
-		// tempUpdateBaselineItemzDTO.BaselineId = Guid.Parse("412f4a87-0b75-4631-958d-e2e92ea8e2fd"); 
-		tempUpdateBaselineItemzDTO.BaselineId = foundProjectAndBaselineIds.BaselineId; 
-		// tempUpdateBaselineItemzDTO.BaselineItemzIds = new List<Guid> { Guid.Parse(singleBaselineItemz.Id.ToString()) };
-		tempUpdateBaselineItemzDTO.BaselineItemzIds = new List<Guid> { singleBaselineItemz.Id };
-		tempUpdateBaselineItemzDTO.ShouldBeIncluded = newValue;
-		tempUpdateBaselineItemzDTO.SingleNodeInclusion = true;
-		// Send the new value to the server
-
-		// TODO :: EXCEPTION HANDLING.
-		await baselineItemzService.__PUT_Update_BaselineItemzs_By_GUID_IDs__Async(tempUpdateBaselineItemzDTO);
-		NavManager.NavigateTo($"/baselineitemz/{BaselineItemzId.ToString()}", true);
+		catch (Exception ex)
+		{
+			await OpenExceptionDialogAsync("Problem Updating Baseline Itemz Details : " + ex.Message);
+		}
+		finally
+		{
+			NavManager.NavigateTo($"/baselineitemz/{BaselineItemzId.ToString()}", true);
+		}
 //		singleBaselineItemz.isIncluded = newValue; // Update the previous value on success
 	}
 
 	private async Task OnAllChildBaselineItemzInclusionChanged(bool newValue)
 	{
-		if(!(baselineBreadcrumsService.RequestParentNodeIsIncluded()))
+		try
 		{
-			// Handle the case where parent node is not included
-			await OpenExceptionDialogAsync("Parent node is marked as Excluded and so selected node can not be marked as Included.");
-			return;
+			if(!(baselineBreadcrumsService.RequestParentNodeIsIncluded()))
+			{
+				// Handle the case where parent node is not included
+				await OpenExceptionDialogAsync("Parent node is marked as Excluded and so selected node can not be marked as Included.");
+				return;
 
+			}
+			UpdateBaselineItemzDTO tempUpdateBaselineItemzDTO = new UpdateBaselineItemzDTO();
+			// TODO :: Get Baseline ID from the server.
+			//tempUpdateBaselineItemzDTO.BaselineId = Guid.Parse("412f4a87-0b75-4631-958d-e2e92ea8e2fd");
+			tempUpdateBaselineItemzDTO.BaselineId = foundProjectAndBaselineIds.BaselineId; 
+			// tempUpdateBaselineItemzDTO.BaselineItemzIds = new List<Guid> { Guid.Parse(singleBaselineItemz.Id.ToString()) };
+			tempUpdateBaselineItemzDTO.BaselineItemzIds = new List<Guid> { singleBaselineItemz.Id };
+			tempUpdateBaselineItemzDTO.ShouldBeIncluded = true;
+			tempUpdateBaselineItemzDTO.SingleNodeInclusion = false;
+			// Send the new value to the server
+
+			// TODO :: EXCEPTION HANDLING.
+			await baselineItemzService.__PUT_Update_BaselineItemzs_By_GUID_IDs__Async(tempUpdateBaselineItemzDTO);
 		}
-		UpdateBaselineItemzDTO tempUpdateBaselineItemzDTO = new UpdateBaselineItemzDTO();
-		// TODO :: Get Baseline ID from the server.
-		//tempUpdateBaselineItemzDTO.BaselineId = Guid.Parse("412f4a87-0b75-4631-958d-e2e92ea8e2fd");
-		tempUpdateBaselineItemzDTO.BaselineId = foundProjectAndBaselineIds.BaselineId; 
-		// tempUpdateBaselineItemzDTO.BaselineItemzIds = new List<Guid> { Guid.Parse(singleBaselineItemz.Id.ToString()) };
-		tempUpdateBaselineItemzDTO.BaselineItemzIds = new List<Guid> { singleBaselineItemz.Id };
-		tempUpdateBaselineItemzDTO.ShouldBeIncluded = true;
-		tempUpdateBaselineItemzDTO.SingleNodeInclusion = false;
-		// Send the new value to the server
-
-		// TODO :: EXCEPTION HANDLING.
-		await baselineItemzService.__PUT_Update_BaselineItemzs_By_GUID_IDs__Async(tempUpdateBaselineItemzDTO);
-		NavManager.NavigateTo($"/baselineitemz/{BaselineItemzId.ToString()}", true);
+		catch (Exception ex)
+		{
+			await OpenExceptionDialogAsync("Problem Updating Baseline Itemz Details : " + ex.Message);
+		}
+		finally
+		{
+			NavManager.NavigateTo($"/baselineitemz/{BaselineItemzId.ToString()}", true);
+		}
+		
 		//		singleBaselineItemz.isIncluded = newValue; // Update the previous value on success
 	}
 

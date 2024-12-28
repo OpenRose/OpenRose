@@ -186,8 +186,31 @@ namespace OpenRose.WebUI.Client.Services.BaselineItemz
 				//urlBuilder_.Length--;
 
 				httpResponseMessage = await _httpClient.PutAsJsonAsync($"/api/BaselineItemz", updateBaselineItemzDTO, cancellationToken);
+
+				if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.Conflict)
+				{
+					// Read the response content
+					var _errorContent = await httpResponseMessage.Content.ReadAsStringAsync();
+
+					// TODO :: Use MudBlazor Snackbar to show the message (assuming MudBlazor Snackbar is set up)
+					// TODO :: Do we need to pass server error message all the way to user UI? We need to check what's included in _errorContent though!
+					throw new ApplicationException($"FAILED : {_errorContent}");
+				}
+
 				httpResponseMessage.EnsureSuccessStatusCode();
-				string responseContent = httpResponseMessage.Content.ReadAsStringAsync().Result;
+
+				// EXPLANATION :: Because we are not going to return any data from this specific method, we decided to comment out 
+				// following code that proceses httpResponseMessage.Content 
+
+				//string responseContent = await httpResponseMessage.Content.ReadAsStringAsync(cancellationToken);
+
+				//// EXPLANATION :: HERE WE ARE SERIALIZING JSON RESPONSE INTO DESIRED CLASS / OBJECT FORMAT FOR RETURNING
+				//var options = new JsonSerializerOptions
+				//{
+				//	PropertyNameCaseInsensitive = true,
+				//};
+				//var response = JsonSerializer.Deserialize<GetBaselineItemzDTO>(responseContent, options);
+				//return (response ?? default);
 
 			}
 			catch (HttpRequestException httpRequestException)
@@ -208,9 +231,6 @@ namespace OpenRose.WebUI.Client.Services.BaselineItemz
 			{
 				throw new ApplicationException("An unexpected error occurred.", ex);
 			}
-
-
-
 
 		}
 		#endregion

@@ -13,6 +13,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
+using static System.Net.WebRequestMethods;
 
 namespace OpenRose.WebUI.Client.Services.Baselines
 {
@@ -102,10 +103,10 @@ namespace OpenRose.WebUI.Client.Services.Baselines
 				//var urlBuilder_ = new System.Text.StringBuilder();
 				//urlBuilder_.Append("/api/Baselines");
 				//urlBuilder_.Append('?');
-				//if (createBaselineDTO == null)
-				//{
-				//	throw new ArgumentNullException(nameof(createBaselineDTO) + "is required for which value is not provided");
-				//}
+				if (createBaselineDTO == null || string.IsNullOrWhiteSpace(createBaselineDTO.Name))
+				{
+					throw new ArgumentNullException("Baseline Name is a required field for which value was not provided");
+				}
 
 				//urlBuilder_.Length--;
 
@@ -123,7 +124,7 @@ namespace OpenRose.WebUI.Client.Services.Baselines
 				httpResponseMessage.EnsureSuccessStatusCode();
 
 				//string responseContent = httpResponseMessage.Content.ReadAsStringAsync().Result;
-				string responseContent = httpResponseMessage.Content.ReadAsStringAsync(cancellationToken).Result;
+				string responseContent = await httpResponseMessage.Content.ReadAsStringAsync(cancellationToken);
 
 				// EXPLANATION :: HERE WE ARE SERIALIZING JSON RESPONSE INTO DESIRED CLASS / OBJECT FORMAT FOR RETURNING
 				var options = new JsonSerializerOptions
@@ -139,11 +140,14 @@ namespace OpenRose.WebUI.Client.Services.Baselines
 				// You could log this exception or display an appropriate message to the user
 				throw new Exception($"HTTP error occurred: {httpEx.Message}");
 			}
+			catch (ArgumentNullException argEx)
+			{
+				throw new Exception($"Argument Null Exception: {argEx.Message}");
+			}
 			catch (Exception ex)
 			{
 				throw;
 			}
-			return default;
 		}
 
 		#endregion
@@ -170,7 +174,22 @@ namespace OpenRose.WebUI.Client.Services.Baselines
 
 				//urlBuilder_.Length--;
 
+				if (cloneBaselineDTO == null || string.IsNullOrWhiteSpace(cloneBaselineDTO.Name))
+				{
+					throw new ArgumentNullException("Baseline Name is a required field for which value was not provided");
+				}
+
 				var httpResponseMessage = await _httpClient.PostAsJsonAsync($"/api/Baselines/CloneBaseline", cloneBaselineDTO, cancellationToken);
+
+				if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.Conflict)
+				{
+					// Read the response content
+					var _errorContent = await httpResponseMessage.Content.ReadAsStringAsync();
+
+					// Use MudBlazor Snackbar to show the message (assuming MudBlazor Snackbar is set up)
+					throw new ApplicationException($"FAILED : {_errorContent}");
+				}
+
 				httpResponseMessage.EnsureSuccessStatusCode();
 
 				//string responseContent = httpResponseMessage.Content.ReadAsStringAsync().Result;
@@ -184,10 +203,20 @@ namespace OpenRose.WebUI.Client.Services.Baselines
 				var response = JsonSerializer.Deserialize<GetBaselineDTO>(responseContent, options);
 				return (response ?? default);
 			}
-			catch (Exception)
+			catch (HttpRequestException httpEx)
 			{
+				// Handle HTTP-specific exceptions (e.g., 404, 500) 
+				// You could log this exception or display an appropriate message to the user
+				throw new Exception($"HTTP error occurred: {httpEx.Message}");
 			}
-			return default;
+			catch (ArgumentNullException argEx)
+			{
+				throw new Exception($"Argument Null Exception: {argEx.Message}");
+			}
+			catch (Exception ex)
+			{
+				throw;
+			}
 		}
 
 		#endregion

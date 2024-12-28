@@ -13,6 +13,7 @@
 @using PSC.Blazor.Components.MarkdownEditor.EventsArgs
 @inject NavigationManager NavManager
 @inject IJSRuntime JS
+@inject IDialogService DialogService
 
 <h1>Create Itemz</h1>
 
@@ -218,9 +219,22 @@
 				hideValidationError = true;	
 				createItemzButtonClicked = true;
 				// singleItemz.ParentId = ParentId;
-				var updatedResult = await ItemzService.__POST_Create_Itemz__Async(ParentId, true, singleItemz); 
-				goBackToParent();
-			}
+
+				try
+				{
+					var updatedResult = await ItemzService.__POST_Create_Itemz__Async(ParentId, true, singleItemz);
+					goBackToParent();
+				}
+				catch (Exception ex)
+				{
+					await DialogService.ShowMessageBox("WARNING", markupMessage: new MarkupString($"<p style=\"color: red; \">{ex.Message}</p>"), yesText: "OK");
+				}
+				finally
+				{
+					// Hide Overlay
+					createItemzButtonClicked = false;
+				}
+		}
 			else
 			{
 				hideValidationError = false;

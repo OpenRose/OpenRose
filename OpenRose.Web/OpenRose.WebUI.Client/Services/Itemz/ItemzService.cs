@@ -4,6 +4,7 @@
 
 using OpenRose.WebUI.Client.SharedModels;
 using System;
+using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Reflection;
@@ -79,20 +80,52 @@ namespace OpenRose.WebUI.Client.Services.Itemz
 
 				//urlBuilder_.Length--;
 
+				if (createItemzDTO == null || string.IsNullOrWhiteSpace(createItemzDTO.Name))
+				{
+					throw new ArgumentNullException("Itemz Name is a required field for which value was not provided");
+				}
+
 				var httpResponseMessage = await _httpClient.PostAsJsonAsync($"/api/Itemzs?parentId={parentId}&AtBottomOfChildNodes={atBottomOfChildNodes}", createItemzDTO, cancellationToken);
+
+				if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.Conflict)
+				{
+					// Read the response content
+					var _errorContent = await httpResponseMessage.Content.ReadAsStringAsync();
+
+					// TODO :: Use MudBlazor Snackbar to show the message (assuming MudBlazor Snackbar is set up)
+					// TODO :: Do we need to pass server error message all the way to user UI? We need to check what's included in _errorContent though!
+					throw new ApplicationException($"FAILED : {_errorContent}");
+				}
+
 				httpResponseMessage.EnsureSuccessStatusCode();
 
-                // Deserialize the response content to GetItemzDTO.
-				var responseContent = await httpResponseMessage.Content.ReadFromJsonAsync<GetItemzDTO>(cancellationToken);
-				return responseContent;
+				string responseContent = await httpResponseMessage.Content.ReadAsStringAsync(cancellationToken);
+
+				// EXPLANATION :: HERE WE ARE SERIALIZING JSON RESPONSE INTO DESIRED CLASS / OBJECT FORMAT FOR RETURNING
+				var options = new JsonSerializerOptions
+				{
+					PropertyNameCaseInsensitive = true,
+				};
+				var response = JsonSerializer.Deserialize<GetItemzDTO>(responseContent, options);
+				return (response ?? default);
+
 			}
-			catch (Exception)
+			catch (HttpRequestException httpEx)
 			{
+				// Handle HTTP-specific exceptions (e.g., 404, 500) 
+				// You could log this exception or display an appropriate message to the user
+				throw new Exception($"HTTP error occurred: {httpEx.Message}");
 			}
-			return default;
+			catch (ArgumentNullException argEx)
+			{
+				throw new Exception($"Argument Null Exception: {argEx.Message}");
+			}
+			catch (Exception ex)
+			{
+				throw;
+			}
 		}
 		#endregion
-
 
 		#region __GET_Orphan_Itemzs_Collection__Async
 
@@ -212,10 +245,28 @@ namespace OpenRose.WebUI.Client.Services.Itemz
 
 				//urlBuilder_.Length--;
 
+				if (createItemzDTO == null || string.IsNullOrWhiteSpace(createItemzDTO.Name))
+				{
+					throw new ArgumentNullException("Itemz Name is a required field for which value was not provided");
+				}
+
 				var httpResponseMessage = await _httpClient.PostAsJsonAsync($"/api/Itemzs/CreateItemzBetweenExistingItemz?firstItemzId={firstItemzId.ToString()}&secondItemzId={secondItemzId.ToString()}"
 					, createItemzDTO, cancellationToken);
+
+				if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.Conflict)
+				{
+					// Read the response content
+					var _errorContent = await httpResponseMessage.Content.ReadAsStringAsync();
+
+					// TODO :: Use MudBlazor Snackbar to show the message (assuming MudBlazor Snackbar is set up)
+					// TODO :: Do we need to pass server error message all the way to user UI? We need to check what's included in _errorContent though!
+					throw new ApplicationException($"FAILED : {_errorContent}");
+				}
+
 				httpResponseMessage.EnsureSuccessStatusCode();
-				string responseContent = httpResponseMessage.Content.ReadAsStringAsync().Result;
+
+
+				string responseContent = await httpResponseMessage.Content.ReadAsStringAsync(cancellationToken);
 
 				// EXPLANATION :: HERE WE ARE SERIALIZING JSON RESPONSE INTO DESIRED CLASS / OBJECT FORMAT FOR RETURNING
 				var options = new JsonSerializerOptions
@@ -223,14 +274,23 @@ namespace OpenRose.WebUI.Client.Services.Itemz
 					PropertyNameCaseInsensitive = true,
 				};
 				var response = JsonSerializer.Deserialize<GetItemzDTO>(responseContent, options);
-
-				return response!;
+				return (response ?? default);
 
 			}
-			catch (Exception)
+			catch (HttpRequestException httpEx)
 			{
+				// Handle HTTP-specific exceptions (e.g., 404, 500) 
+				// You could log this exception or display an appropriate message to the user
+				throw new Exception($"HTTP error occurred: {httpEx.Message}");
 			}
-			return default;
+			catch (ArgumentNullException argEx)
+			{
+				throw new Exception($"Argument Null Exception: {argEx.Message}");
+			}
+			catch (Exception ex)
+			{
+				throw;
+			}
 
 		}
 		#endregion
@@ -282,13 +342,61 @@ namespace OpenRose.WebUI.Client.Services.Itemz
 
 				//urlBuilder_.Length--;
 
+				if (movingItemzId == Guid.Empty)
+				{
+					throw new ArgumentNullException(nameof(movingItemzId) + "is required for which value is not provided");
+				}
+
+				if (firstItemzId == Guid.Empty)
+				{
+					throw new ArgumentNullException(nameof(firstItemzId) + "is required for which value is not provided");
+				}
+
+				if (secondItemzId == Guid.Empty)
+				{
+					throw new ArgumentNullException(nameof(secondItemzId) + "is required for which value is not provided");
+				}
+
 				var httpResponseMessage = await _httpClient.PostAsJsonAsync($"/api/Itemzs/MoveItemzBetweenExistingItemz?movingItemzId={movingItemzId.ToString()}&firstItemzId={firstItemzId.ToString()}&secondItemzId={secondItemzId.ToString()}", movingItemzId,cancellationToken: cancellationToken);
+
+				if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.Conflict)
+				{
+					// Read the response content
+					var _errorContent = await httpResponseMessage.Content.ReadAsStringAsync();
+
+					// TODO :: Use MudBlazor Snackbar to show the message (assuming MudBlazor Snackbar is set up)
+					// TODO :: Do we need to pass server error message all the way to user UI? We need to check what's included in _errorContent though!
+					throw new ApplicationException($"FAILED : {_errorContent}");
+				}
+
 				httpResponseMessage.EnsureSuccessStatusCode();
-				string responseContent = httpResponseMessage.Content.ReadAsStringAsync().Result;
-				// TODO :: Send back updated content for GetProjectDTO
+
+				// EXPLANATION :: Because we are not going to return any data from this specific method, we decided to comment out 
+				// following code that proceses httpResponseMessage.Content 
+
+				//string responseContent = await httpResponseMessage.Content.ReadAsStringAsync(cancellationToken);
+
+				//// EXPLANATION :: HERE WE ARE SERIALIZING JSON RESPONSE INTO DESIRED CLASS / OBJECT FORMAT FOR RETURNING
+				//var options = new JsonSerializerOptions
+				//{
+				//	PropertyNameCaseInsensitive = true,
+				//};
+				//var response = JsonSerializer.Deserialize<GetItemzDTO>(responseContent, options);
+				//return (response ?? default);	
 			}
-			catch (Exception)
+			catch (HttpRequestException httpEx)
 			{
+				// Handle HTTP-specific exceptions (e.g., 404, 500) 
+				// You could log this exception or display an appropriate message to the user
+				throw new Exception($"HTTP error occurred: {httpEx.Message}");
+			}
+			catch (ArgumentNullException argEx)
+			{
+				throw new Exception($"Argument Null Exception: {argEx.Message}");
+			}
+			catch (Exception ex)
+			{
+				throw;
 			}
 		}
 
@@ -312,13 +420,53 @@ namespace OpenRose.WebUI.Client.Services.Itemz
 
 				//urlBuilder_.Length--;
 
-				var httpResponseMessage = await _httpClient.PutAsJsonAsync($"/api/Itemzs/{itemzId.ToString()}", updateItemzDTO,  cancellationToken);
-				httpResponseMessage.EnsureSuccessStatusCode();
-				string responseContent = httpResponseMessage.Content.ReadAsStringAsync().Result;
+				if (updateItemzDTO == null || string.IsNullOrWhiteSpace(updateItemzDTO.Name))
+				{
+					throw new ArgumentNullException("Itemz Name is a required field for which value was not provided");
+				}
 
+
+				var httpResponseMessage = await _httpClient.PutAsJsonAsync($"/api/Itemzs/{itemzId.ToString()}", updateItemzDTO,  cancellationToken);
+
+				if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.Conflict)
+				{
+					// Read the response content
+					var _errorContent = await httpResponseMessage.Content.ReadAsStringAsync();
+
+					// TODO :: Use MudBlazor Snackbar to show the message (assuming MudBlazor Snackbar is set up)
+					// TODO :: Do we need to pass server error message all the way to user UI? We need to check what's included in _errorContent though!
+					throw new ApplicationException($"FAILED : {_errorContent}");
+				}
+
+				httpResponseMessage.EnsureSuccessStatusCode();
+				
+				
+				// EXPLANATION :: Because we are not going to return any data from this specific method, we decided to comment out 
+				// following code that proceses httpResponseMessage.Content 
+
+				//string responseContent = await httpResponseMessage.Content.ReadAsStringAsync(cancellationToken);
+
+				//// EXPLANATION :: HERE WE ARE SERIALIZING JSON RESPONSE INTO DESIRED CLASS / OBJECT FORMAT FOR RETURNING
+				//var options = new JsonSerializerOptions
+				//{
+				//	PropertyNameCaseInsensitive = true,
+				//};
+				//var response = JsonSerializer.Deserialize<GetItemzDTO>(responseContent, options);
+				//return (response ?? default);
 			}
-			catch (Exception)
+			catch (HttpRequestException httpEx)
 			{
+				// Handle HTTP-specific exceptions (e.g., 404, 500) 
+				// You could log this exception or display an appropriate message to the user
+				throw new Exception($"HTTP error occurred: {httpEx.Message}");
+			}
+			catch (ArgumentNullException argEx)
+			{
+				throw new Exception($"Argument Null Exception: {argEx.Message}");
+			}
+			catch (Exception ex)
+			{
+				throw;
 			}
 		}
 
@@ -446,7 +594,7 @@ namespace OpenRose.WebUI.Client.Services.Itemz
 				// This is because cancellationToken has to be 3rd or further down parameter. It can't be 2nd Parameter!
 				// I kept getting error as ... NotSupportedException: Serialization and deserialization of 'System.IntPtr' instances is not supported.
 
-				var httpResponseMessage = await _httpClient.PostAsJsonAsync(requestUri:$"{urlBuilder_}", targetId, cancellationToken: cancellationToken);
+				var httpResponseMessage = await _httpClient.PostAsJsonAsync(requestUri: $"{urlBuilder_}", targetId, cancellationToken: cancellationToken);
 
 				////MoveItemzRequest payload = new MoveItemzRequest();
 				////payload.MovingItemzId = movingItemzId;
@@ -455,11 +603,43 @@ namespace OpenRose.WebUI.Client.Services.Itemz
 
 				////var httpResponseMessage = await _httpClient.PostAsJsonAsync($"/api/Itemzs/{payload.MovingItemzId}?TargetId={payload.TargetId}&AtBottomOfChildNodes={payload.AtBottomOfChildNodes}", payload);
 
-				httpResponseMessage.EnsureSuccessStatusCode();
-				string responseContent = httpResponseMessage.Content.ReadAsStringAsync().Result;
 
+				if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.Conflict)
+				{
+					// Read the response content
+					var _errorContent = await httpResponseMessage.Content.ReadAsStringAsync();
+
+					// TODO :: Use MudBlazor Snackbar to show the message (assuming MudBlazor Snackbar is set up)
+					// TODO :: Do we need to pass server error message all the way to user UI? We need to check what's included in _errorContent though!
+					throw new ApplicationException($"FAILED : {_errorContent}");
+				}
+
+				httpResponseMessage.EnsureSuccessStatusCode();
+
+				// EXPLANATION :: Because we are not going to return any data from this specific method, we decided to comment out 
+				// following code that proceses httpResponseMessage.Content 
+
+				//string responseContent = await httpResponseMessage.Content.ReadAsStringAsync(cancellationToken);
+
+				//// EXPLANATION :: HERE WE ARE SERIALIZING JSON RESPONSE INTO DESIRED CLASS / OBJECT FORMAT FOR RETURNING
+				//var options = new JsonSerializerOptions
+				//{
+				//	PropertyNameCaseInsensitive = true,
+				//};
+				//var response = JsonSerializer.Deserialize<GetItemzDTO>(responseContent, options);
+				//return (response ?? default);					
 			}
-			catch (Exception)
+			catch (HttpRequestException httpEx)
+			{
+				// Handle HTTP-specific exceptions (e.g., 404, 500) 
+				// You could log this exception or display an appropriate message to the user
+				throw new Exception($"HTTP error occurred: {httpEx.Message}");
+			}
+			catch (ArgumentNullException argEx)
+			{
+				throw new Exception($"Argument Null Exception: {argEx.Message}");
+			}
+			catch (Exception ex)
 			{
 				throw;
 			}
