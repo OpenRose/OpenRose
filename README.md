@@ -6,6 +6,10 @@ Main purpose of this project is to help users and teams to **`do it right`** and
 
 OpenRose is developed as Open Source Application Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+## OpenRose Documentation Wiki
+
+Please refer to ![OpenRose Wiki](https://github.com/OpenRose/OpenRose/wiki) for documentation. 
+
 ## Purpose
 
 OpenRose is developed with focus on ease of defining, maintaining, sharing and reporting on different types of Requirements (also known as Itemz).
