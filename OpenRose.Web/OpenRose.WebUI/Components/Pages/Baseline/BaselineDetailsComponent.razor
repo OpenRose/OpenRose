@@ -337,7 +337,6 @@
 
 	private async Task OpenDeleteConfirmationDialogAsync(string baselineName)
 	{
-
 		var options = new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, Position = DialogPosition.Center };
 		var dialogPara = new DialogParameters();
 		dialogPara.Add("deletingBaselineName", baselineName);
@@ -345,8 +344,20 @@
 		var dialogresult = await dialogref.Result;
 		if (!(dialogresult!.Canceled))
 		{
-			await baselinesService.__DELETE_Baseline_By_GUID_ID__Async(BaselineId);
-
+			try
+			{
+				deletingBaseline = true;
+				await baselinesService.__DELETE_Baseline_By_GUID_ID__Async(BaselineId);
+			}
+            catch (Exception ex)
+            {
+                await OpenExceptionDialogAsync("Problem Deleting Baseline : " + ex.Message);
+                return;
+            }
+			finally
+			{
+                deletingBaseline = false;
+            }
 			NavManager.NavigateTo($"/project/{ParentId.ToString()}");
 			// TODO :: WE COULD DO AN OVERLAY IN MUDBLAZOR WHILE BASELINE IS GETTING DELETED TO GIVE FEEDBACK TO USER.
 		}

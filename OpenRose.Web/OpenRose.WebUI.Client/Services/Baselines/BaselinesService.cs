@@ -3,6 +3,7 @@
 // See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 
 using OpenRose.WebUI.Client.SharedModels;
+using OpenRose.WebUI.Client.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Net.Http.Headers;
@@ -280,15 +281,35 @@ namespace OpenRose.WebUI.Client.Services.Baselines
 				//urlBuilder_.Length--;
 
 				var httpResponseMessage = await _httpClient.DeleteAsync($"/api/Baselines/{baselineId.ToString()}", cancellationToken);
+
+				if (HttpStatusCodesHelper.ErrorStatusCodes.Contains(httpResponseMessage.StatusCode))
+				{
+					// Read the response content
+					var _errorContent = await httpResponseMessage.Content.ReadAsStringAsync();
+
+					// TODO :: Use MudBlazor Snackbar to show the message (assuming MudBlazor Snackbar is set up)
+					// TODO :: Do we need to pass server error message all the way to user UI? We need to check what's included in _errorContent though!
+					throw new ApplicationException($"FAILED : {_errorContent}");
+				}
+
 				httpResponseMessage.EnsureSuccessStatusCode();
-				string responseContent = httpResponseMessage.Content.ReadAsStringAsync().Result;
 
 			}
-			catch (Exception)
+			catch (HttpRequestException httpEx)
 			{
+				// Handle HTTP-specific exceptions (e.g., 404, 500) 
+				// You could log this exception or display an appropriate message to the user
+				throw new Exception($"HTTP error occurred: {httpEx.Message}");
+			}
+			catch (ArgumentNullException argEx)
+			{
+				throw new Exception($"Argument Null Exception: {argEx.Message}");
+			}
+			catch (Exception ex)
+			{
+				throw;
 			}
 		}
-
 
 		#endregion
 
