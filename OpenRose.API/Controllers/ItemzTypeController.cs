@@ -672,7 +672,7 @@ namespace ItemzApp.API.Controllers
                 _logger.LogDebug("{FormattedControllerAndActionNames}Cannot Delete ItemzType with ID {ItemzTypeId} as it could not be found",
                     ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
                     ItemzTypeId);
-                return NotFound();
+                return NotFound($"Cannot Delete ItemzType with ID {ItemzTypeId} as it could not be found");
             }
 
             var ItemzTypeFromRepo = await _ItemzTypeRepository.GetItemzTypeForUpdateAsync(ItemzTypeId);
@@ -682,7 +682,7 @@ namespace ItemzApp.API.Controllers
                 _logger.LogDebug("{FormattedControllerAndActionNames}Cannot Delete ItemzType with ID {ItemzTypeId} as it could not be found in the Repository",
                     ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
                     ItemzTypeId);
-                return NotFound();
+                return NotFound($"Cannot Delete ItemzType with ID {ItemzTypeId} as it could not be found in the Repository");
             }
 
             if(ItemzTypeFromRepo.IsSystem == true)

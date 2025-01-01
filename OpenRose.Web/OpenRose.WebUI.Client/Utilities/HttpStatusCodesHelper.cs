@@ -13,7 +13,8 @@ namespace OpenRose.WebUI.Client.Utilities
 			HttpStatusCode.Conflict,
 			HttpStatusCode.NotFound,
 			HttpStatusCode.BadRequest,
-			HttpStatusCode.Forbidden
+			HttpStatusCode.Forbidden,
+			HttpStatusCode.MethodNotAllowed
             // Add other status codes you want to handle
         };
 	}

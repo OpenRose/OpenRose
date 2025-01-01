@@ -399,7 +399,15 @@
 
 	public async Task deleteItemzType()
 	{
-		await ItemzTypeService.__DELETE_ItemzType_By_GUID_ID__Async(ItemzTypeId);
+		try
+		{
+			await ItemzTypeService.__DELETE_ItemzType_By_GUID_ID__Async(ItemzTypeId);
+		}
+        catch (Exception ex)
+        {
+            await OpenExceptionDialogAsync("Problem Deleting ItemzType : " + ex.Message);
+            return;
+        }
 		NavManager.NavigateTo($"/project/{ParentId.ToString()}");
 	}
 	private async Task OpenDeleteConfirmationDialogAsync()
@@ -413,8 +421,16 @@
 		{
 			deletingItemzType = true;
 			StateHasChanged();
-			await deleteItemzType();
-			Thread.Sleep(200);
+			try
+			{
+				await deleteItemzType();
+				Thread.Sleep(200);
+			}
+            finally
+            {
+                deletingItemzType = false;
+				StateHasChanged();
+            }
 		}
 	}
 
