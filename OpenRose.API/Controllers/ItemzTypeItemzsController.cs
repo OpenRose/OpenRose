@@ -468,7 +468,8 @@ namespace ItemzApp.API.Controllers
         [HttpDelete(Name = "__DELETE_ItemzType_and_Itemz_Association__")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesDefaultResponseType]
+		[ProducesResponseType(StatusCodes.Status409Conflict)]
+		[ProducesDefaultResponseType]
         public async Task<ActionResult> DeleteItemzTypeAndItemzAssociationAsync(ItemzTypeItemzDTO ItemzTypeItemzDTO)
         {
             if (!(await _itemzRepository.ItemzTypeItemzExistsAsync(ItemzTypeItemzDTO)))
@@ -478,13 +479,20 @@ namespace ItemzApp.API.Controllers
                     ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
                     ItemzTypeItemzDTO.ItemzTypeId,
                     ItemzTypeItemzDTO.ItemzId);
-                return NotFound();
+                return NotFound($"Cannot find ItemzType and Itemz asscoaition for ItemzType ID {ItemzTypeItemzDTO.ItemzTypeId} and Itemz ID {ItemzTypeItemzDTO.ItemzId}");
             }
 
-            _itemzRepository.RemoveItemzFromItemzType(ItemzTypeItemzDTO);
-            await _itemzRepository.SaveAsync();
+            try
+            {
+				_itemzRepository.RemoveItemzFromItemzType(ItemzTypeItemzDTO);
+                await _itemzRepository.SaveAsync();
+            }
+			catch
+			{
+				return Conflict($"Issue encountered while trying to delete ItemzType ID '{ItemzTypeItemzDTO.ItemzTypeId}' and Itemz ID '{ItemzTypeItemzDTO.ItemzId}' ");
+			}
 
-            _logger.LogDebug("{FormattedControllerAndActionNames}Delete ItemzType and Itemz asscoaition for ItemzType ID " +
+			_logger.LogDebug("{FormattedControllerAndActionNames}Delete ItemzType and Itemz asscoaition for ItemzType ID " +
                 "{ItemzTypeId} and Itemz ID {ItemzId}",
                 ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext), 
                 ItemzTypeItemzDTO.ItemzTypeId, 
