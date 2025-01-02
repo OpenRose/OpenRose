@@ -7,6 +7,7 @@ using ItemzApp.API.Models;
 using ItemzApp.API.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Threading.Tasks;
@@ -39,16 +40,35 @@ namespace ItemzApp.API.Controllers
         /// <response code="200">Returns number of Itemz Change History records that were deleted by Itemz Type</response>
         [HttpDelete(Name = "__DELETE_Itemz_Change_History_By_ItemzType_GUID_ID__")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(int))]
-        [ProducesDefaultResponseType]
+		[ProducesResponseType(StatusCodes.Status500InternalServerError)]
+		[ProducesDefaultResponseType]
         public async Task<ActionResult<int>> DeleteItemzChangeHistoryByItemzTypeAsync(DeleteChangeHistoryDTO deleteItemzChangeHistoryByItemzTypeDTO)
         {
-            var numberOfDeletedRecords = await _itemzChangeHistoryByItemzTypeRepository.DeleteItemzChangeHistoryByItemzTypeAsync(deleteItemzChangeHistoryByItemzTypeDTO.Id, deleteItemzChangeHistoryByItemzTypeDTO.UptoDateTime);
 
-            _logger.LogDebug("{FormattedControllerAndActionNames}Deleted {numberOfDeletedRecords} record(s) from Itemz Change History associated with Itemz Type ID {Id} upto Date Time {UptoDateTime}",
+			int numberOfDeletedRecords = 0;
+            try
+            {
+                numberOfDeletedRecords = await _itemzChangeHistoryByItemzTypeRepository.DeleteItemzChangeHistoryByItemzTypeAsync(deleteItemzChangeHistoryByItemzTypeDTO.Id, deleteItemzChangeHistoryByItemzTypeDTO.UptoDateTime);
+            }
+			catch (DbUpdateException dbEx)
+			{
+				_logger.LogError(dbEx, "Database update error while deleting Itemz Change History for Project ID {ProjectID} upto Date Time {UptoDateTime}",
+					deleteItemzChangeHistoryByItemzTypeDTO.Id, deleteItemzChangeHistoryByItemzTypeDTO.UptoDateTime);
+				return StatusCode(StatusCodes.Status500InternalServerError, "A database error occurred while processing Delete Itemz Change History by ItemzType.");
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, "An error occurred while deleting Itemz Change History for Project ID {ProjectID} upto Date Time {UptoDateTime}",
+					deleteItemzChangeHistoryByItemzTypeDTO.Id, deleteItemzChangeHistoryByItemzTypeDTO.UptoDateTime);
+				return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your Delete Itemz Change History by ItemzType.");
+			}
+
+			_logger.LogDebug("{FormattedControllerAndActionNames}Deleted {numberOfDeletedRecords} record(s) from Itemz Change History associated with Itemz Type ID {Id} upto Date Time {UptoDateTime}",
                 ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
                 numberOfDeletedRecords, 
                 deleteItemzChangeHistoryByItemzTypeDTO.Id,
                 deleteItemzChangeHistoryByItemzTypeDTO.UptoDateTime);
+            
             return Ok(numberOfDeletedRecords);
         }
 
