@@ -7,6 +7,7 @@ using ItemzApp.API.Models;
 using ItemzApp.API.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Threading.Tasks;
@@ -31,34 +32,54 @@ namespace ItemzApp.API.Controllers
             _logger = logger;
         }
 
-        /// <summary>
-        /// Deleting ItemzChangeHistory for all the Itemz that are associated with given Project ID upto provided Date and Time.
-        /// </summary>
-        /// <param name="deleteItemzChangeHistoryByProjectDTO">Provide ProjectID representated in GUID form along with Upto Date Time indicating till the time associated Itemz Change History data has to be deleted.</param>
-        /// <returns>Status code 200 is returned without any content indicating that action to delete Itemz Change History by Itemz Type was successful. Either it found older records to be deleted or it did not find any records to be deleted.</returns>
-        /// <response code="200">Returns number of Itemz Change History records that were deleted by Itemz Type</response>
-        [HttpDelete(Name = "__DELETE_Itemz_Change_History_By_Project_GUID_ID__")]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(int))]
-        [ProducesDefaultResponseType]
-        public async Task<ActionResult<int>> DeleteItemzChangeHistoryByProjectAsync(DeleteChangeHistoryDTO deleteItemzChangeHistoryByProjectDTO)
-        {
-            var numberOfDeletedRecords = await _itemzChangeHistoryByProjectRepository.DeleteItemzChangeHistoryByProjectAsync(deleteItemzChangeHistoryByProjectDTO.Id, deleteItemzChangeHistoryByProjectDTO.UptoDateTime);
+		/// <summary>
+		/// Deleting ItemzChangeHistory for all the Itemz that are associated with given Project ID upto provided Date and Time.
+		/// </summary>
+		/// <param name="deleteItemzChangeHistoryByProjectDTO">Provide ProjectID represented in GUID form along with Upto Date Time indicating till the time associated Itemz Change History data has to be deleted.</param>
+		/// <returns>Status code 200 is returned without any content indicating that action to delete Itemz Change History by Itemz Type was successful. Either it found older records to be deleted or it did not find any records to be deleted.</returns>
+		/// <response code="200">Returns number of Itemz Change History records that were deleted by Itemz Type</response>
+		/// <response code="500">Internal server error</response>
+		[HttpDelete(Name = "__DELETE_Itemz_Change_History_By_Project_GUID_ID__")]
+		[ProducesResponseType(StatusCodes.Status200OK, Type = typeof(int))]
+		[ProducesResponseType(StatusCodes.Status500InternalServerError)]
+		[ProducesDefaultResponseType]
+		public async Task<ActionResult<int>> DeleteItemzChangeHistoryByProjectAsync(DeleteChangeHistoryDTO deleteItemzChangeHistoryByProjectDTO)
+		{
+			int numberOfDeletedRecords = 0;
+			try
+			{
+				numberOfDeletedRecords = await _itemzChangeHistoryByProjectRepository.DeleteItemzChangeHistoryByProjectAsync(deleteItemzChangeHistoryByProjectDTO.Id, deleteItemzChangeHistoryByProjectDTO.UptoDateTime);
+			}
+			catch (DbUpdateException dbEx)
+			{
+				_logger.LogError(dbEx, "Database update error while deleting Itemz Change History for Project ID {ProjectID} upto Date Time {UptoDateTime}",
+					deleteItemzChangeHistoryByProjectDTO.Id, deleteItemzChangeHistoryByProjectDTO.UptoDateTime);
+				return StatusCode(StatusCodes.Status500InternalServerError, "A database error occurred while processing Delete Itemz Change History by Project.");
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, "An error occurred while deleting Itemz Change History for Project ID {ProjectID} upto Date Time {UptoDateTime}",
+					deleteItemzChangeHistoryByProjectDTO.Id, deleteItemzChangeHistoryByProjectDTO.UptoDateTime);
+				return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your Delete Itemz Change History by Project.");
+			}
 
-            _logger.LogDebug("{FormattedControllerAndActionNames}Deleted {numberOfDeletedRecords} record(s) from Itemz Change History associated with Project ID {Id} upto Date Time {UptoDateTime}",
-                ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                numberOfDeletedRecords, 
-                deleteItemzChangeHistoryByProjectDTO.Id,
-                deleteItemzChangeHistoryByProjectDTO.UptoDateTime);
-            return Ok(numberOfDeletedRecords);
-        }
+			_logger.LogDebug("{FormattedControllerAndActionNames}Deleted {numberOfDeletedRecords} record(s) from Itemz Change History associated with Project ID {Id} upto Date Time {UptoDateTime}",
+				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+				numberOfDeletedRecords,
+				deleteItemzChangeHistoryByProjectDTO.Id,
+				deleteItemzChangeHistoryByProjectDTO.UptoDateTime);
 
-        /// <summary>
-        /// Number of ItemzChangeHistory records for all the Itemz that are associated with given Project ID
-        /// </summary>
-        /// <param name="ProjectId">Provide ProjectID representated in GUID form</param>
-        /// <returns>Number of records found for ItemzChangeHistory indirectly associated with a given ProjectID</returns>
-        /// <response code="200">Returns number of Itemz Change History records that were indirectly associated with a given Project</response>
-        [HttpGet("{ProjectId:Guid}", Name = "__GET_Number_of_ItemzChangeHistory_By_Project__")]
+			return Ok(numberOfDeletedRecords);
+		}
+
+
+		/// <summary>
+		/// Number of ItemzChangeHistory records for all the Itemz that are associated with given Project ID
+		/// </summary>
+		/// <param name="ProjectId">Provide ProjectID representated in GUID form</param>
+		/// <returns>Number of records found for ItemzChangeHistory indirectly associated with a given ProjectID</returns>
+		/// <response code="200">Returns number of Itemz Change History records that were indirectly associated with a given Project</response>
+		[HttpGet("{ProjectId:Guid}", Name = "__GET_Number_of_ItemzChangeHistory_By_Project__")]
         [HttpHead("{ProjectId:Guid}", Name = "__HEAD_Number_of_ItemzChangeHistory_By_Project__")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(int))]
         public async Task<ActionResult<int>> GetNumberOfItemzChangeHistoryByProjectAsync(Guid ProjectId)

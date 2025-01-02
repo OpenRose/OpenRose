@@ -14,7 +14,8 @@ namespace OpenRose.WebUI.Client.Utilities
 			HttpStatusCode.NotFound,
 			HttpStatusCode.Conflict,
 			HttpStatusCode.Forbidden,
-			HttpStatusCode.MethodNotAllowed
+			HttpStatusCode.MethodNotAllowed,
+			HttpStatusCode.InternalServerError	
             // Add other status codes you want to handle
         };
 	}
