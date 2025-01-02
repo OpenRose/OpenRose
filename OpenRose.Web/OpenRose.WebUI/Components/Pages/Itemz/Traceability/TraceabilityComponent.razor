@@ -178,9 +178,10 @@
 				AllParentItemzTraces.Remove(itemToRemove);
 			}
 		}
-		catch
+		catch (Exception ex)
 		{
-			throw new NotImplementedException();
+			await DialogService.ShowMessageBox("WARNING", markupMessage: new MarkupString($"<p style=\"color: red; \">{ex.Message}</p>"), yesText: "OK");
+			return;
 		}
 	}
 
@@ -210,9 +211,10 @@
 				AllChildItemzTraces.Remove(itemToRemove);
 			}
 		}
-		catch
+		catch (Exception ex)
 		{
-			throw new NotImplementedException();
+			await DialogService.ShowMessageBox("WARNING", markupMessage: new MarkupString($"<p style=\"color: red; \">{ex.Message}</p>"), yesText: "OK");
+			return;
 		}
 	}
 

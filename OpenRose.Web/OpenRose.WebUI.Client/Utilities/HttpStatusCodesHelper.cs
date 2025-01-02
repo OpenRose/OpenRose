@@ -10,9 +10,9 @@ namespace OpenRose.WebUI.Client.Utilities
 	{
 		public static readonly List<HttpStatusCode> ErrorStatusCodes = new List<HttpStatusCode>
 		{
-			HttpStatusCode.Conflict,
-			HttpStatusCode.NotFound,
 			HttpStatusCode.BadRequest,
+			HttpStatusCode.NotFound,
+			HttpStatusCode.Conflict,
 			HttpStatusCode.Forbidden,
 			HttpStatusCode.MethodNotAllowed
             // Add other status codes you want to handle
