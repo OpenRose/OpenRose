@@ -148,17 +148,41 @@
         {
             deletingItemz = true;
             StateHasChanged();
-            await deleteItemz(itemz.Id);
-            Thread.Sleep(200);
-            deletingItemz = false;
+            try
+            {
+                await deleteItemz(itemz.Id);
+                Thread.Sleep(200);
+            }
+            finally
+            {
+                deletingItemz = false;
+                StateHasChanged();
+            }
         }
     }
 
     public async Task deleteItemz(Guid ItemzId)
     {
-        await itemzService.__DELETE_Itemz_By_GUID_ID__Async(ItemzId);
-        itemzs.RemoveAll(item => item.Id == ItemzId);
-        StateHasChanged();
+        try
+        {
+            await itemzService.__DELETE_Itemz_By_GUID_ID__Async(ItemzId);
+            itemzs.RemoveAll(item => item.Id == ItemzId);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await OpenExceptionDialogAsync("Problem Deleting Itemz : " + ex.Message);
+            return;
+        }
+    }
+
+    private async Task OpenExceptionDialogAsync(string exceptionMessage)
+    {
+        var options = new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, Position = DialogPosition.Center };
+        var dialogPara = new DialogParameters();
+        dialogPara.Add("exceptionMessage", exceptionMessage);
+        var dialogref = await DialogService.ShowAsync<OrpahnItemzExceptionDialog>("CONFIRM", dialogPara, options);
+        // var dialogresult = await dialogref.Result;
     }
 
     private class PaginationInfo

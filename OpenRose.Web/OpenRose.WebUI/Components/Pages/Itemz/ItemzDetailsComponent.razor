@@ -449,9 +449,18 @@
 
 	public async Task deleteItemz()
 	{
-		await ItemzService.__DELETE_Itemz_By_GUID_ID__Async(ItemzId);
-		await goBackToParent();
+		try
+		{
+			await ItemzService.__DELETE_Itemz_By_GUID_ID__Async(ItemzId);
+		}
+        catch (Exception ex)
+        {
+            await OpenExceptionDialogAsync("Problem Deleting Itemz : " + ex.Message);
+            return;
+        }
+	await goBackToParent();
 	}
+
 	private async Task OpenDeleteConfirmationDialogAsync()
 	{
 		int allChildrenCount = 0;
@@ -472,9 +481,16 @@
 		{
 			deletingItemz = true;
 			StateHasChanged();
-			await deleteItemz();
-			Thread.Sleep(200);
-			deletingItemz = false;
+			try
+			{
+				await deleteItemz();
+				Thread.Sleep(200);
+			}
+			finally
+			{
+				deletingItemz = false;
+				StateHasChanged();
+			}
 		}
 	}
 

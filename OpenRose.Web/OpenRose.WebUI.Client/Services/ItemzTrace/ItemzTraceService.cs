@@ -3,6 +3,7 @@
 // See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 
 using OpenRose.WebUI.Client.SharedModels;
+using OpenRose.WebUI.Client.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Net.Http.Headers;
@@ -165,6 +166,11 @@ namespace OpenRose.WebUI.Client.Services.ItemzTrace
 
 				//urlBuilder_.Length--;
 
+				if (itemzTraceDTO == null || itemzTraceDTO.FromTraceItemzId == Guid.Empty || itemzTraceDTO.ToTraceItemzId == Guid.Empty)
+				{
+					throw new ArgumentNullException(nameof(itemzTraceDTO) + "is required for which value is not provided");
+				}
+
 				// EXPLANATION :: Because .NET does not provide option to send Delete request with json body included 
 				// we are manually creating request to send JSON body. We found this information at ... 
 				// https://stackoverflow.com/questions/28054515/how-to-send-delete-with-json-to-the-rest-api-using-httpclient
@@ -181,13 +187,32 @@ namespace OpenRose.WebUI.Client.Services.ItemzTrace
 
 				//var httpResponseMessage = await _httpClient.DeleteAsync($"/api/ItemzTrace", itemzTraceDTO, cancellationToken);
 
-				httpResponseMessage.EnsureSuccessStatusCode();
-				string responseContent = httpResponseMessage.Content.ReadAsStringAsync().Result;
+				if (HttpStatusCodesHelper.ErrorStatusCodes.Contains(httpResponseMessage.StatusCode))
+				{
+					// Read the response content
+					var _errorContent = await httpResponseMessage.Content.ReadAsStringAsync();
 
+					// TODO :: Use MudBlazor Snackbar to show the message (assuming MudBlazor Snackbar is set up)
+					// TODO :: Do we need to pass server error message all the way to user UI? We need to check what's included in _errorContent though!
+					throw new ApplicationException($"FAILED : {_errorContent}");
+				}
+
+				httpResponseMessage.EnsureSuccessStatusCode();
+
+			}
+			catch (HttpRequestException httpEx)
+			{
+				// Handle HTTP-specific exceptions (e.g., 404, 500) 
+				// You could log this exception or display an appropriate message to the user
+				throw new Exception($"HTTP error occurred: {httpEx.Message}");
+			}
+			catch (ArgumentNullException argEx)
+			{
+				throw new Exception($"Argument Null Exception: {argEx.Message}");
 			}
 			catch (Exception ex)
 			{
-				Console.WriteLine(ex.ToString());
+				throw;
 			}
 		}
 
@@ -216,12 +241,33 @@ namespace OpenRose.WebUI.Client.Services.ItemzTrace
 				//urlBuilder_.Length--;
 
 				var httpResponseMessage = await _httpClient.DeleteAsync($"/api/ItemzTrace/DeleteAllFromItemzTraces/{itemzID.ToString()}", cancellationToken);
+				
+				if (HttpStatusCodesHelper.ErrorStatusCodes.Contains(httpResponseMessage.StatusCode))
+				{
+					// Read the response content
+					var _errorContent = await httpResponseMessage.Content.ReadAsStringAsync();
+
+					// TODO :: Use MudBlazor Snackbar to show the message (assuming MudBlazor Snackbar is set up)
+					// TODO :: Do we need to pass server error message all the way to user UI? We need to check what's included in _errorContent though!
+					throw new ApplicationException($"FAILED : {_errorContent}");
+				}
+				
 				httpResponseMessage.EnsureSuccessStatusCode();
-				string responseContent = httpResponseMessage.Content.ReadAsStringAsync().Result;
 
 			}
-			catch (Exception)
+			catch (HttpRequestException httpEx)
 			{
+				// Handle HTTP-specific exceptions (e.g., 404, 500) 
+				// You could log this exception or display an appropriate message to the user
+				throw new Exception($"HTTP error occurred: {httpEx.Message}");
+			}
+			catch (ArgumentNullException argEx)
+			{
+				throw new Exception($"Argument Null Exception: {argEx.Message}");
+			}
+			catch (Exception ex)
+			{
+				throw;
 			}
 		}
 		#endregion
@@ -249,12 +295,33 @@ namespace OpenRose.WebUI.Client.Services.ItemzTrace
 				//urlBuilder_.Length--;
 
 				var httpResponseMessage = await _httpClient.DeleteAsync($"/api/ItemzTrace/DeleteAllToItemzTraces/{itemzID.ToString()}", cancellationToken);
+
+				if (HttpStatusCodesHelper.ErrorStatusCodes.Contains(httpResponseMessage.StatusCode))
+				{
+					// Read the response content
+					var _errorContent = await httpResponseMessage.Content.ReadAsStringAsync();
+
+					// TODO :: Use MudBlazor Snackbar to show the message (assuming MudBlazor Snackbar is set up)
+					// TODO :: Do we need to pass server error message all the way to user UI? We need to check what's included in _errorContent though!
+					throw new ApplicationException($"FAILED : {_errorContent}");
+				}
+
 				httpResponseMessage.EnsureSuccessStatusCode();
-				string responseContent = httpResponseMessage.Content.ReadAsStringAsync().Result;
 
 			}
-			catch (Exception)
+			catch (HttpRequestException httpEx)
 			{
+				// Handle HTTP-specific exceptions (e.g., 404, 500) 
+				// You could log this exception or display an appropriate message to the user
+				throw new Exception($"HTTP error occurred: {httpEx.Message}");
+			}
+			catch (ArgumentNullException argEx)
+			{
+				throw new Exception($"Argument Null Exception: {argEx.Message}");
+			}
+			catch (Exception ex)
+			{
+				throw;
 			}
 		}
 
@@ -534,12 +601,32 @@ namespace OpenRose.WebUI.Client.Services.ItemzTrace
 
 				//var httpResponseMessage = await _httpClient.DeleteAsync($"/api/ItemzTrace/DeleteItemzTraceCollection", body, cancellationToken);
 
+				if (HttpStatusCodesHelper.ErrorStatusCodes.Contains(httpResponseMessage.StatusCode))
+				{
+					// Read the response content
+					var _errorContent = await httpResponseMessage.Content.ReadAsStringAsync();
+
+					// TODO :: Use MudBlazor Snackbar to show the message (assuming MudBlazor Snackbar is set up)
+					// TODO :: Do we need to pass server error message all the way to user UI? We need to check what's included in _errorContent though!
+					throw new ApplicationException($"FAILED : {_errorContent}");
+				}
+
 				httpResponseMessage.EnsureSuccessStatusCode();
-				string responseContent = httpResponseMessage.Content.ReadAsStringAsync().Result;
 
 			}
-			catch (Exception)
+			catch (HttpRequestException httpEx)
 			{
+				// Handle HTTP-specific exceptions (e.g., 404, 500) 
+				// You could log this exception or display an appropriate message to the user
+				throw new Exception($"HTTP error occurred: {httpEx.Message}");
+			}
+			catch (ArgumentNullException argEx)
+			{
+				throw new Exception($"Argument Null Exception: {argEx.Message}");
+			}
+			catch (Exception ex)
+			{
+				throw;
 			}
 		}
 		#endregion

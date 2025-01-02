@@ -522,7 +522,7 @@ namespace ItemzApp.API.Controllers
                 _logger.LogDebug("{FormattedControllerAndActionNames}Cannot Delete Baseline with ID {BaselineId} as it could not be found",
                     ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext), 
                     baselineId);
-                return NotFound();
+                return NotFound($"Cannot Delete Baseline with ID {baselineId} as it could not be found");
             }
 
             var baselineFromRepo = await _baselineRepository.GetBaselineForUpdateAsync(baselineId);
@@ -532,7 +532,7 @@ namespace ItemzApp.API.Controllers
                 _logger.LogDebug("{FormattedControllerAndActionNames}Cannot Delete Baseline with ID {BaselineId} as it could not be found in the Repository",
                     ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext), 
                     baselineId);
-                return NotFound();
+                return NotFound($"Cannot Delete Baseline with ID {baselineId} as it could not be found in the Repository");
             }
 
             _baselineRepository.DeleteBaseline(baselineFromRepo);

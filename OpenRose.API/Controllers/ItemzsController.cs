@@ -825,7 +825,7 @@ namespace ItemzApp.API.Controllers
                 _logger.LogDebug("{FormattedControllerAndActionNames}Cannot Delete Itemz with ID {ItemzId} as it could not be found",
                     ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
                     itemzId);
-                return NotFound();
+                return NotFound($"Cannot Delete Itemz with ID {itemzId} as it could not be found");
             }
 
             //var itemzFromRepo = await _itemzRepository.ItemzExistsAsync(itemzId);

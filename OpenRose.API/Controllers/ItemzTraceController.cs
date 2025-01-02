@@ -125,7 +125,6 @@ namespace ItemzApp.API.Controllers
             return itemzTraceDTO;
         }
 
-
         /// <summary>
         /// Used for deleting Trace link between Itemz. This will not delete Itemz from the database,
         /// instead it will only remove their trace association if found. 
@@ -135,6 +134,7 @@ namespace ItemzApp.API.Controllers
         [HttpDelete(Name = "__DELETE_Itemz_Trace__")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
         [ProducesDefaultResponseType]
         public async Task<ActionResult> DeleteItemzTraceAsync(ItemzTraceDTO itemzTraceDTO)
         {
@@ -145,13 +145,23 @@ namespace ItemzApp.API.Controllers
                     ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
                     itemzTraceDTO.FromTraceItemzId,
                     itemzTraceDTO.ToTraceItemzId);
-                return NotFound();
+                return NotFound($"Cannot find trace asscoaition between Itemz ID {itemzTraceDTO.FromTraceItemzId} and Itemz ID {itemzTraceDTO.ToTraceItemzId}");
             }
+            try
+            {
+                var successResult = await _itemzTraceRepository.RemoveItemzTraceAsync(itemzTraceDTO);
+                if (successResult == false)
+                {
+					return Conflict($"Issue encountered while trying to delete Trace between {itemzTraceDTO.FromTraceItemzId} and Itemz ID {itemzTraceDTO.ToTraceItemzId}");
+				}
+				await _itemzTraceRepository.SaveAsync();
+            }
+            catch
+            {
+				return Conflict($"Issue encountered while trying to delete Trace between {itemzTraceDTO.FromTraceItemzId} and Itemz ID {itemzTraceDTO.ToTraceItemzId}");
+			}
 
-            await _itemzTraceRepository.RemoveItemzTraceAsync(itemzTraceDTO);
-            await _itemzTraceRepository.SaveAsync();
-
-            _logger.LogDebug("{FormattedControllerAndActionNames}Deleted Itemz Trace between " +
+			_logger.LogDebug("{FormattedControllerAndActionNames}Deleted Itemz Trace between " +
                 "Itemz ID {FromItemz} and Itemz ID {ToItemz}",
                 ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
                 itemzTraceDTO.FromTraceItemzId,
@@ -169,6 +179,7 @@ namespace ItemzApp.API.Controllers
         [HttpDelete("DeleteAllFromItemzTraces/{ItemzID:Guid}", Name = "__DELETE_AllFromItemz_Trace__")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
         [ProducesDefaultResponseType]
         public async Task<ActionResult> DeleteAllFromItemzTracesAsync(Guid ItemzID)
         {
@@ -177,13 +188,21 @@ namespace ItemzApp.API.Controllers
                 _logger.LogDebug("{FormattedControllerAndActionNames}Cannot find Itemz with Itemz ID {ItemzID}",
                     ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
                     ItemzID);
-                return NotFound();
+                return NotFound($"Cannot find Itemz with Itemz ID {ItemzID}");
             }
+            int deletedFromItemzTraceCount = 0;
 
-            var deletedFromItemzTraceCount = await _itemzTraceRepository.RemoveAllFromItemzTraceAsync(ItemzID);
-            await _itemzTraceRepository.SaveAsync();
+			try
+            {
+                deletedFromItemzTraceCount = await _itemzTraceRepository.RemoveAllFromItemzTraceAsync(ItemzID);
+                await _itemzTraceRepository.SaveAsync();
+			}
+			catch
+			{
+				return Conflict($"Issue encountered while trying to delete All From Itemz Traces for Itemz ID {ItemzID}");
+			}
 
-            _logger.LogDebug("{FormattedControllerAndActionNames}In Total, deleted all {deletedFromItemzTraceCount} From ItemzTrace from " +
+			_logger.LogDebug("{FormattedControllerAndActionNames}In Total, deleted all {deletedFromItemzTraceCount} From ItemzTrace from " +
                 "Itemz ID {FromItemz}",
                 ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
                 deletedFromItemzTraceCount,
@@ -203,7 +222,8 @@ namespace ItemzApp.API.Controllers
         [HttpDelete("DeleteAllToItemzTraces/{ItemzID:Guid}",  Name = "__DELETE_AllToItemz_Trace__")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesDefaultResponseType]
+		[ProducesResponseType(StatusCodes.Status409Conflict)]
+		[ProducesDefaultResponseType]
         public async Task<ActionResult> DeleteAllToItemzTracesAsync(Guid ItemzID)
         {
             if (!(await _itemzTraceRepository.ItemzExistsAsync(ItemzID)))
@@ -211,13 +231,21 @@ namespace ItemzApp.API.Controllers
                 _logger.LogDebug("{FormattedControllerAndActionNames}Cannot find Itemz with Itemz ID {ItemzID}",
                     ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
                     ItemzID);
-                return NotFound();
+                return NotFound($"Cannot find Itemz with Itemz ID {ItemzID}");
             }
 
-            var deletedToItemzTraceCount = await _itemzTraceRepository.RemoveAllToItemzTraceAsync(ItemzID);
-            await _itemzTraceRepository.SaveAsync();
+            int deletedToItemzTraceCount = 0;
+			try
+            {
+                deletedToItemzTraceCount = await _itemzTraceRepository.RemoveAllToItemzTraceAsync(ItemzID);
+                await _itemzTraceRepository.SaveAsync();
+			}
+			catch
+			{
+				return Conflict($"Issue encountered while trying to delete All To Itemz Traces for Itemz ID {ItemzID}");
+			}
 
-            _logger.LogDebug("{FormattedControllerAndActionNames}In Total, deleted all {deletedToItemzTraceCount} To ItemzTrace from " +
+			_logger.LogDebug("{FormattedControllerAndActionNames}In Total, deleted all {deletedToItemzTraceCount} To ItemzTrace from " +
                 "Itemz ID {FromItemz}",
                 ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
                 deletedToItemzTraceCount,
@@ -466,9 +494,10 @@ namespace ItemzApp.API.Controllers
         /// <response code="400">Provided itemzTraceDTOCollection is an empty list. Bad Request </response>
         [HttpDelete("DeleteItemzTraceCollection/", Name = "__DELETE_Itemz_Trace_Collection__")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesDefaultResponseType]
+		[ProducesResponseType(StatusCodes.Status400BadRequest)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		[ProducesResponseType(StatusCodes.Status409Conflict)]
+		[ProducesDefaultResponseType]
         public async Task<ActionResult> DeleteItemzTraceCollectionAsync(
             IEnumerable<ItemzTraceDTO> itemzTraceDTOCollection)
         {
@@ -488,14 +517,26 @@ namespace ItemzApp.API.Controllers
                         ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
                         itemzTraceDTO.FromTraceItemzId,
                         itemzTraceDTO.ToTraceItemzId);
-                    return NotFound();
+                    return NotFound($"Itemz Trace between From Itemz ID {itemzTraceDTO.FromTraceItemzId} and To Itemz ID {itemzTraceDTO.ToTraceItemzId} was not found in the repository");
                 }
+                
+				var successResult = await _itemzTraceRepository.RemoveItemzTraceAsync(itemzTraceDTO);
+				if (successResult == false)
+				{
+					return Conflict($"Issue encountered while trying to delete Trace between {itemzTraceDTO.FromTraceItemzId} and Itemz ID {itemzTraceDTO.ToTraceItemzId}");
+				}
+			}
 
-                await _itemzTraceRepository.RemoveItemzTraceAsync(itemzTraceDTO);
-            }
-            await _itemzTraceRepository.SaveAsync();
+            try
+            {
+                await _itemzTraceRepository.SaveAsync();
+			}
+			catch
+			{
+				return Conflict("Issue encountered while trying to delete Itemz Trace Collection");
+			}
 
-            _logger.LogDebug("{FormattedControllerAndActionNames}Deleted {NumberOfItemzTraceDeleted} ItemzTraces",
+			_logger.LogDebug("{FormattedControllerAndActionNames}Deleted {NumberOfItemzTraceDeleted} ItemzTraces",
               ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
               itemzTraceDTOCollection.Count());
             return NoContent();

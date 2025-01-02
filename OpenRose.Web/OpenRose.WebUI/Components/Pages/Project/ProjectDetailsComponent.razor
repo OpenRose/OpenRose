@@ -302,7 +302,7 @@
 			{
 				activeIndex = 1;
 			}
-			
+
 			await ConvertMarkdownToHtml(singleProject.Description);
 
 			// Apply fullscreen styles
@@ -358,7 +358,15 @@
 
 	public async Task deleteProject()
 	{
-		await ProjectService.__DELETE_Project_By_GUID_ID__Async(ProjectId);
+		try
+		{
+			await ProjectService.__DELETE_Project_By_GUID_ID__Async(ProjectId);
+		}
+		catch (Exception ex)
+		{
+			await OpenExceptionDialogAsync("Problem Deleting Project : " + ex.Message);
+			return;
+		}
 		NavManager.NavigateTo("/projects");
 	}
 	private async Task OpenDeleteConfirmationDialogAsync()
@@ -373,8 +381,16 @@
 		{
 			deletingProject = true;
 			StateHasChanged();
-			await deleteProject();
-			Thread.Sleep(200);
+			try
+			{
+				await deleteProject();
+				Thread.Sleep(200);
+			}
+			finally
+            {
+                deletingProject = false;
+                StateHasChanged();
+            }	
 		}
 	}
 

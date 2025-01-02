@@ -53,7 +53,7 @@
 @if (processingBaseline)
 {
 	<MudPaper Class="pa-4 mb-5" Height="calc(100vh - 100px);" Width="100%">
-	<MudOverlay Visible="@processingBaseline" DarkBackground="true" Absolute="true">
+		<MudOverlay Visible="@processingBaseline" DarkBackground="true" Absolute="true">
 			<MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Inherit">Creating Baseline ... </MudText>
 			<br />
 			<MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
@@ -686,7 +686,15 @@ else
 		var dialogresult = await dialogref.Result;
 		if (!(dialogresult!.Canceled))
 		{
-			await baselinesService.__DELETE_Baseline_By_GUID_ID__Async(baselineId);
+			try
+			{
+				await baselinesService.__DELETE_Baseline_By_GUID_ID__Async(baselineId);
+			}
+			catch (Exception ex)
+			{
+				await DialogService.ShowMessageBox("WARNING", markupMessage: new MarkupString($"<p style=\"color: red; \">{ex.Message}</p>"), yesText: "OK");
+				return;
+			}
 
 			await refreshProjectDataRecords();
 			// TODO :: WE COULD DO AN OVERLAY IN MUDBLAZOR WHILE PROJECT IS GETTING DELETED TO GIVE FEEDBACK TO USER.

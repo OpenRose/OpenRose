@@ -453,7 +453,7 @@ namespace ItemzApp.API.Controllers
                 _logger.LogDebug("{FormattedControllerAndActionNames}Cannot Delete Project with ID {ProjectId} as it could not be found",
                     ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext), 
                     projectId);
-                return NotFound();
+                return NotFound($"Cannot Delete Project with ID {projectId} as it could not be found");
             }
 
             var projectFromRepo = await _projectRepository.GetProjectForUpdateAsync(projectId);
@@ -463,7 +463,7 @@ namespace ItemzApp.API.Controllers
                 _logger.LogDebug("{FormattedControllerAndActionNames}Cannot Delete Project with ID {ProjectId} as it could not be found in the Repository",
                     ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext), 
                     projectId);
-                return NotFound();
+                return NotFound($"Cannot Delete Project with ID {projectId} as it could not be found in the Repository");
             }
 
             _projectRepository.DeleteProject(projectFromRepo);
