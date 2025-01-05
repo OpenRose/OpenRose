@@ -127,6 +127,12 @@ namespace OpenRose.WebUI.Client.Services.ItemzTypeItemzsService
 
 				string responseContent = await httpResponseMessage.Content.ReadAsStringAsync(cancellationToken);
 
+
+				if (string.IsNullOrWhiteSpace(responseContent))
+				{
+					return default;
+				}
+
 				// EXPLANATION :: HERE WE ARE SERIALIZING JSON RESPONSE INTO DESIRED CLASS / OBJECT FORMAT FOR RETURNING
 				var options = new JsonSerializerOptions
 				{
@@ -285,6 +291,11 @@ namespace OpenRose.WebUI.Client.Services.ItemzTypeItemzsService
 				httpResponseMessage.EnsureSuccessStatusCode();
 				string responseContent = httpResponseMessage.Content.ReadAsStringAsync().Result;
 
+				if (string.IsNullOrWhiteSpace(responseContent))
+				{
+					return default;
+				}
+
 				// EXPLANATION :: HERE WE ARE SERIALIZING JSON RESPONSE INTO DESIRED CLASS / OBJECT FORMAT FOR RETURNING
 				var options = new JsonSerializerOptions
 				{
@@ -337,6 +348,11 @@ namespace OpenRose.WebUI.Client.Services.ItemzTypeItemzsService
 					, body, cancellationToken);
 				httpResponseMessage.EnsureSuccessStatusCode();
 				string responseContent = httpResponseMessage.Content.ReadAsStringAsync().Result;
+
+				if (string.IsNullOrWhiteSpace(responseContent))
+				{
+					return default;
+				}
 
 				// EXPLANATION :: HERE WE ARE SERIALIZING JSON RESPONSE INTO DESIRED CLASS / OBJECT FORMAT FOR RETURNING
 				var options = new JsonSerializerOptions

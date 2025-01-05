@@ -173,6 +173,11 @@ namespace OpenRose.WebUI.Client.Services.Project
 
 				string responseContent = await httpResponseMessage.Content.ReadAsStringAsync();
 
+                if (string.IsNullOrWhiteSpace(responseContent))
+                {
+                    return default;
+                }
+
 				// EXPLANATION :: HERE WE ARE SERIALIZING JSON RESPONSE INTO DESIRED CLASS / OBJECT FORMAT FOR RETURNING
 				var options = new JsonSerializerOptions
 				{
@@ -230,6 +235,11 @@ namespace OpenRose.WebUI.Client.Services.Project
 				httpResponseMessage.EnsureSuccessStatusCode();
 
                 string responseContent = await httpResponseMessage.Content.ReadAsStringAsync();
+
+				if (string.IsNullOrWhiteSpace(responseContent))
+				{
+					return default;
+				}
 
 				// EXPLANATION :: HERE WE ARE SERIALIZING JSON RESPONSE INTO DESIRED CLASS / OBJECT FORMAT FOR RETURNING
 				var options = new JsonSerializerOptions

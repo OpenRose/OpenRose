@@ -536,9 +536,10 @@
             <summary>
             Deleting ItemzChangeHistory for all the Itemz that are associated with given Project ID upto provided Date and Time.
             </summary>
-            <param name="deleteItemzChangeHistoryByProjectDTO">Provide ProjectID representated in GUID form along with Upto Date Time indicating till the time associated Itemz Change History data has to be deleted.</param>
+            <param name="deleteItemzChangeHistoryByProjectDTO">Provide ProjectID represented in GUID form along with Upto Date Time indicating till the time associated Itemz Change History data has to be deleted.</param>
             <returns>Status code 200 is returned without any content indicating that action to delete Itemz Change History by Itemz Type was successful. Either it found older records to be deleted or it did not find any records to be deleted.</returns>
             <response code="200">Returns number of Itemz Change History records that were deleted by Itemz Type</response>
+            <response code="500">Internal server error</response>
         </member>
         <member name="M:ItemzApp.API.Controllers.ItemzChangeHistoryByProjectController.GetNumberOfItemzChangeHistoryByProjectAsync(System.Guid)">
             <summary>

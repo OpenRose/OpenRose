@@ -170,7 +170,7 @@ namespace ItemzApp.API.Services
                 new SqlParameter
                 {
                     ParameterName = "Description",
-                    Size = 1028,
+                    Size = 10280,
                     Value = baseline.Description ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.NVarChar,
                 }).ToArray();
@@ -243,7 +243,7 @@ namespace ItemzApp.API.Services
                 new SqlParameter
                 {
                     ParameterName = "Description",
-                    Size = 1028,
+                    Size = 10280,
                     Value = cloneBaseline.Description ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.NVarChar,
                 }).ToArray();
