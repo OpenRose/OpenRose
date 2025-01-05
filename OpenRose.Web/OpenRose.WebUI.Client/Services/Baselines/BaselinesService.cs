@@ -127,6 +127,12 @@ namespace OpenRose.WebUI.Client.Services.Baselines
 				//string responseContent = httpResponseMessage.Content.ReadAsStringAsync().Result;
 				string responseContent = await httpResponseMessage.Content.ReadAsStringAsync(cancellationToken);
 
+
+				if (string.IsNullOrWhiteSpace(responseContent))
+				{
+					return default;
+				}
+
 				// EXPLANATION :: HERE WE ARE SERIALIZING JSON RESPONSE INTO DESIRED CLASS / OBJECT FORMAT FOR RETURNING
 				var options = new JsonSerializerOptions
 				{
@@ -134,6 +140,7 @@ namespace OpenRose.WebUI.Client.Services.Baselines
 				};
 				var response = JsonSerializer.Deserialize<GetBaselineDTO>(responseContent, options);
 				return (response ?? default);
+
 			}
 			catch (HttpRequestException httpEx)
 			{
@@ -195,6 +202,11 @@ namespace OpenRose.WebUI.Client.Services.Baselines
 
 				//string responseContent = httpResponseMessage.Content.ReadAsStringAsync().Result;
 				string responseContent = httpResponseMessage.Content.ReadAsStringAsync(cancellationToken).Result;
+
+				if (string.IsNullOrWhiteSpace(responseContent))
+				{
+					return default;
+				}
 
 				// EXPLANATION :: HERE WE ARE SERIALIZING JSON RESPONSE INTO DESIRED CLASS / OBJECT FORMAT FOR RETURNING
 				var options = new JsonSerializerOptions

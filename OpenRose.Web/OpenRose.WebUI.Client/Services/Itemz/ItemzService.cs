@@ -102,6 +102,12 @@ namespace OpenRose.WebUI.Client.Services.Itemz
 
 				string responseContent = await httpResponseMessage.Content.ReadAsStringAsync(cancellationToken);
 
+
+				if (string.IsNullOrWhiteSpace(responseContent))
+				{
+					return default;
+				}
+
 				// EXPLANATION :: HERE WE ARE SERIALIZING JSON RESPONSE INTO DESIRED CLASS / OBJECT FORMAT FOR RETURNING
 				var options = new JsonSerializerOptions
 				{
@@ -269,6 +275,12 @@ namespace OpenRose.WebUI.Client.Services.Itemz
 
 				string responseContent = await httpResponseMessage.Content.ReadAsStringAsync(cancellationToken);
 
+
+				if (string.IsNullOrWhiteSpace(responseContent))
+				{
+					return default;
+				}
+
 				// EXPLANATION :: HERE WE ARE SERIALIZING JSON RESPONSE INTO DESIRED CLASS / OBJECT FORMAT FOR RETURNING
 				var options = new JsonSerializerOptions
 				{
@@ -377,6 +389,12 @@ namespace OpenRose.WebUI.Client.Services.Itemz
 
 				//string responseContent = await httpResponseMessage.Content.ReadAsStringAsync(cancellationToken);
 
+
+				//if (string.IsNullOrWhiteSpace(responseContent))
+				//{
+				//	return default;
+				//}
+
 				//// EXPLANATION :: HERE WE ARE SERIALIZING JSON RESPONSE INTO DESIRED CLASS / OBJECT FORMAT FOR RETURNING
 				//var options = new JsonSerializerOptions
 				//{
@@ -440,12 +458,18 @@ namespace OpenRose.WebUI.Client.Services.Itemz
 				}
 
 				httpResponseMessage.EnsureSuccessStatusCode();
-				
-				
+
+
 				// EXPLANATION :: Because we are not going to return any data from this specific method, we decided to comment out 
 				// following code that proceses httpResponseMessage.Content 
 
 				//string responseContent = await httpResponseMessage.Content.ReadAsStringAsync(cancellationToken);
+
+
+				//if (string.IsNullOrWhiteSpace(responseContent))
+				//{
+				//	return default;
+				//}
 
 				//// EXPLANATION :: HERE WE ARE SERIALIZING JSON RESPONSE INTO DESIRED CLASS / OBJECT FORMAT FOR RETURNING
 				//var options = new JsonSerializerOptions
@@ -641,6 +665,12 @@ namespace OpenRose.WebUI.Client.Services.Itemz
 				// following code that proceses httpResponseMessage.Content 
 
 				//string responseContent = await httpResponseMessage.Content.ReadAsStringAsync(cancellationToken);
+
+
+				//if (string.IsNullOrWhiteSpace(responseContent))
+				//{
+				//	return default;
+				//}
 
 				//// EXPLANATION :: HERE WE ARE SERIALIZING JSON RESPONSE INTO DESIRED CLASS / OBJECT FORMAT FOR RETURNING
 				//var options = new JsonSerializerOptions

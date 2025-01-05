@@ -9,7 +9,7 @@ GO
 CREATE PROCEDURE userProcCreateBaselineByExistingBaselineID
 @BaselineId [uniqueidentifier],
 @Name [nvarchar](128),
-@Description [nvarchar](1028),
+@Description [varchar](max),
 @CreatedBy [nvarchar](128) = N'Some User',
 @OUTPUT_Id [uniqueidentifier] out
 

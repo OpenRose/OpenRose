@@ -40,7 +40,7 @@ namespace OpenRose.WebUI.Client.SharedModels
         /// <summary>
         /// Description of the Itemz
         /// </summary>
-        [MaxLength(1028)]
+        [MaxLength(10280)]
         public string? Description { get; set; }
         /// <summary>
         /// Severity of the Itemz

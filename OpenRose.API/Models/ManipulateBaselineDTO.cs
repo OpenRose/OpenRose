@@ -21,7 +21,7 @@ namespace ItemzApp.API.Models
         /// <summary>
         /// Description of the Baseline
         /// </summary>
-        [MaxLength(1028)]
+        [MaxLength(10280)]
         public string? Description { get; set; }
     }
 }
