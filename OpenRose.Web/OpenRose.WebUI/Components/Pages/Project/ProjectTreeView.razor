@@ -432,7 +432,7 @@
         ItemzSelectionService.OnCreatedNewItemz += HandleCreatedNewItemz;
         ItemzSelectionService.OnScrollToTreeViewNode += HandleScrollToTreeViewNode;
         ItemzSelectionService.OnTreeNodeItemzDeleted += HandleItemzDeleted;
-
+        ItemzSelectionService.OnCreatedNewItemzType += HandleCreatedNewItemzType;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -579,6 +579,30 @@
         await JS.InvokeVoidAsync("scrollToElementById", elementId);
     }
 
+
+    private void HandleCreatedNewItemzType(Guid recordId, GetItemzTypeDTO newlyCreatedSiblingItemzType)
+    {
+        var item = InitialTreeItems.Flatten().FirstOrDefault(i => i.Value == recordId) as TreeItemPresenter;
+        if (item != null)
+        {
+            var childTempTreeViewNode = new TreeItemPresenter
+                (
+                    value: newlyCreatedSiblingItemzType.Id
+                    , text: newlyCreatedSiblingItemzType.Name ?? ""
+                    , icon: @Icons.Material.Filled.Pix
+                    , recordType: "ItemzType" // TODO :: Use Constants
+                    , level: item.Level + 1
+                    , expandable: true
+                );
+
+            item.Children.Add(childTempTreeViewNode);
+            item.Expandable = true;
+            item.Expanded = true;
+            projectMudTreeView.SelectedValue = newlyCreatedSiblingItemzType.Id;
+            StateHasChanged();
+            HandleItemzSelected(newlyCreatedSiblingItemzType.Id);
+        }
+    }
     // protected override async Task OnAfterRenderAsync(bool firstRender)
     // {
     //     if (firstRender)

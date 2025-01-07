@@ -13,6 +13,7 @@ namespace OpenRose.WebUI.Components.EventServices
 		public event Action<Guid> OnScrollToTreeViewNode;
         public event Action<Guid, GetItemzDTO> OnCreatedNewItemz;
         public event Action<Guid> OnTreeNodeItemzDeleted;
+		public event Action<Guid, GetItemzTypeDTO> OnCreatedNewItemzType;
 
 		public void SelectTreeNodeItemz(Guid recordId)
         {
@@ -36,6 +37,11 @@ namespace OpenRose.WebUI.Components.EventServices
 		public void DeletedTreeNodeItemz(Guid recordId)
 		{
 			OnTreeNodeItemzDeleted?.Invoke(recordId);
+		}
+
+		public void CreatedNewItemzType(Guid recordId, GetItemzTypeDTO newlyCreatedSiblingItemzType)
+		{
+			OnCreatedNewItemzType(recordId, newlyCreatedSiblingItemzType);
 		}
 
 	}
