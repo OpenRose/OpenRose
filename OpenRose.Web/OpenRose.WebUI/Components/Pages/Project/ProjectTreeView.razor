@@ -14,13 +14,15 @@
 @using OpenRose.WebUI.Components.Pages.Common
 @using OpenRose.WebUI.Helper.TreeViewNodes
 @using OpenRose.WebUI.Components.FindServices
+@using OpenRose.WebUI.Services
 @using Microsoft.AspNetCore.Components.Forms
 @using System.Collections.ObjectModel
 @inject IServiceProvider serviceProvider
 @inject NavigationManager NavManager
 @inject IDialogService DialogService
-@inject TreeNodeItemzSelectionService ItemzSelectionService
 @inject IJSRuntime JS
+@inject TreeNodeItemzSelectionService ItemzSelectionService
+@inject ConfigurationService ConfigurationService
 
 <MudExtensions.MudSplitter @bind-Dimension="@_percentage"
                             OnDoubleClicked="@OnDoubleClicked"
@@ -425,8 +427,14 @@
 
     // }
 
-    protected override void OnInitialized()
+
+    protected override async Task OnInitializedAsync()
     {
+        if (!ConfigurationService.IsOpenRoseAPIConfigured)
+        {
+            NavManager.NavigateTo("/");
+            return;
+        }
         ItemzSelectionService.OnTreeNodeItemzSelected += HandleItemzSelected;
         ItemzSelectionService.OnTreeNodeItemzNameUpdated += HandleTreeNodeItemzNameUpdated;
         ItemzSelectionService.OnCreatedNewItemz += HandleCreatedNewItemz;
@@ -434,6 +442,16 @@
         ItemzSelectionService.OnTreeNodeItemzDeleted += HandleItemzDeleted;
         ItemzSelectionService.OnCreatedNewItemzType += HandleCreatedNewItemzType;
     }
+
+    // protected override void OnInitialized()
+    // {
+    //     ItemzSelectionService.OnTreeNodeItemzSelected += HandleItemzSelected;
+    //     ItemzSelectionService.OnTreeNodeItemzNameUpdated += HandleTreeNodeItemzNameUpdated;
+    //     ItemzSelectionService.OnCreatedNewItemz += HandleCreatedNewItemz;
+    //     ItemzSelectionService.OnScrollToTreeViewNode += HandleScrollToTreeViewNode;
+    //     ItemzSelectionService.OnTreeNodeItemzDeleted += HandleItemzDeleted;
+    //     ItemzSelectionService.OnCreatedNewItemzType += HandleCreatedNewItemzType;
+    // }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {

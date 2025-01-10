@@ -8,12 +8,15 @@
 @using OpenRose.WebUI.Client.Services.Hierarchy
 @using OpenRose.WebUI.Client.Services.Itemz
 @using OpenRose.WebUI.Client.SharedModels
+@using OpenRose.WebUI.Services
 @using Microsoft.AspNetCore.Components.Forms
 @using PSC.Blazor.Components.MarkdownEditor
 @using PSC.Blazor.Components.MarkdownEditor.EventsArgs
 @inject NavigationManager NavManager
 @inject IJSRuntime JS
 @inject IDialogService DialogService
+@inject ConfigurationService ConfigurationService
+
 
 <h1>Create Itemz</h1>
 
@@ -173,6 +176,15 @@
 	string[] _stringItemzSeverityValues = { };
 
 	private MarkupString convertedMarkdown;
+
+	protected override async Task OnInitializedAsync()
+	{
+		if (!ConfigurationService.IsOpenRoseAPIConfigured)
+		{
+			NavManager.NavigateTo("/");
+			return;
+		}
+	}
 
 	protected override async Task OnAfterRenderAsync(bool firstRender)
 	{

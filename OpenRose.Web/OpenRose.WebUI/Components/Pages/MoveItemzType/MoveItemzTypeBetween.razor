@@ -9,8 +9,10 @@
 @using OpenRose.WebUI.Client.Services.ItemzType
 @using OpenRose.WebUI.Client.Services.Hierarchy
 @using OpenRose.WebUI.Components.Pages.Common
-
+@using OpenRose.WebUI.Services
 @inject IDialogService DialogService
+@inject NavigationManager NavManager
+@inject ConfigurationService ConfigurationService
 
 <MudPaper Class="pa-3 mb-2 align-start d-flex" Style="width: auto " Outlined="false">
 	<MudStack Row="true" Spacing="3">
@@ -134,6 +136,16 @@
 	public GetItemzTypeDTO targetFirstItemzType { get; set; } = new();
 	public GetItemzTypeDTO targetSecondItemzType { get; set; } = new();
 	public bool movingItemzTypeOverlay { get; set; } = false;
+
+
+	protected override async Task OnInitializedAsync()
+	{
+		if (!ConfigurationService.IsOpenRoseAPIConfigured)
+		{
+			NavManager.NavigateTo("/");
+			return;
+		}
+	}
 
 	public async Task selectSourceItemzType()
 	{

@@ -5,11 +5,50 @@
 *@
 
 @page "/"
+@using OpenRose.WebUI.Configuration
+@using OpenRose.WebUI.Services
+
+@inject IConfiguration Configuration
+@inject IWebHostEnvironment Env
+@inject AssemblyInfoService AssemblyInfo
 
 <PageTitle>OpenRose</PageTitle>
 
 <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+    
     <MudImage Src="icons/OpenRose_01.png" Width="72" Height="72" />
-    <MudText Typo="Typo.h2" Align="Align.Left">	Welcome to <b>OpenRose</b> </MudText>
+    <MudText Typo="Typo.h2" Align="Align.Left">
+        Welcome to <b>OpenRose</b>
+    </MudText>
+
 </MudStack>
 
+@if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <br />
+    <MudText Typo="Typo.h5" Align="Align.Left" Color="Color.Error">
+        @_errorMessage
+    </MudText>
+    <MudText Typo="Typo.inherit" Align="Align.Left" Color="Color.Error">
+        Environment Name: @Env.EnvironmentName
+    </MudText>
+    <br />
+    <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success"> Version -  @version </MudChip>
+}
+
+@code {
+    private string _errorMessage;
+
+    private string version;
+
+    protected override void OnInitialized()
+    {
+        var apiSettings = Configuration.GetSection("APISettings").Get<APISettings>();
+        if (string.IsNullOrEmpty(apiSettings?.BaseUrl))
+        {
+            var configFile = string.IsNullOrEmpty(Env.EnvironmentName) ? "appsettings.json" : $"appsettings.{Env.EnvironmentName}.json";
+            _errorMessage = $"OpenRose API connection via base URL is not configured. Please contact your System Administrator.";
+        }
+        version = AssemblyInfo.GetAssemblyVersion();
+    }
+}

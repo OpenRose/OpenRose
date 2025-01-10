@@ -4,6 +4,11 @@
  * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 *@
 
+@using OpenRose.WebUI.Services
+@inject NavigationManager NavManager
+@inject ConfigurationService ConfigurationService
+
+
 @page "/projectDetails/{ProjectId:guid}"
 
 <ProjectDetailsComponent ProjectId="@ProjectId" ShowBaselineTab="@ShowBaselineTab" CalledFrom="@this.GetType().Name" />
@@ -16,5 +21,14 @@
 	[Parameter]
 	[SupplyParameterFromQuery(Name = "showBaselineTab")]
 	public bool ShowBaselineTab { get; set; } = false;
+
+	protected override async Task OnInitializedAsync()
+	{
+		if (!ConfigurationService.IsOpenRoseAPIConfigured)
+		{
+			NavManager.NavigateTo("/");
+			return;
+		}
+	}
 
 }

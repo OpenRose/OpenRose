@@ -14,6 +14,7 @@
 @using OpenRose.WebUI.Components.Pages.BaselineItemzType
 @using OpenRose.WebUI.Components.FindServices
 @using OpenRose.WebUI.Helper.TreeViewNodes
+@using OpenRose.WebUI.Services
 @using Microsoft.AspNetCore.Components.Forms
 @using System.Collections.ObjectModel
 @inject IFindProjectAndBaselineIdsByBaselineItemzIdService FindProjectAndBaselineIdsByBaselineItemzIdService
@@ -21,6 +22,7 @@
 @inject IDialogService DialogService
 @inject BaselineTreeNodeItemzSelectionService BaselineItemzSelectionService
 @inject IJSRuntime JS
+@inject ConfigurationService ConfigurationService
 
 <MudExtensions.MudSplitter @bind-Dimension="@_percentage"
                             OnDoubleClicked="@OnDoubleClicked"
@@ -348,8 +350,14 @@
 
     // }
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
+        if (!ConfigurationService.IsOpenRoseAPIConfigured)
+        {
+            NavManager.NavigateTo("/");
+            return;
+        }
+
         BaselineItemzSelectionService.OnBaselineTreeNodeItemzSelected += HandleItemzSelected;
         BaselineItemzSelectionService.OnBaselineTreeNodeItemzNameUpdated += NOT_IN_USE_HandleTreeNodeItemzNameUpdated;
         BaselineItemzSelectionService.OnLoadingOfBaselineItemzTreeViewComponent += HandleLoadingOfBaselineItemzTreeViewComponent;

@@ -7,9 +7,11 @@
 @page "/CreateProject"
 @using OpenRose.WebUI.Client.Services.Project
 @using OpenRose.WebUI.Client.SharedModels
+@using OpenRose.WebUI.Services
 @using Microsoft.AspNetCore.Components.Forms
 @using PSC.Blazor.Components.MarkdownEditor
 @using PSC.Blazor.Components.MarkdownEditor.EventsArgs
+@inject ConfigurationService ConfigurationService
 @inject NavigationManager NavManager
 @inject IJSRuntime JS
 @inject IDialogService DialogService
@@ -182,6 +184,15 @@
 	string[] _stringProjectStatusValues = { };
 
 	private MarkupString convertedMarkdown;
+
+	protected override async Task OnInitializedAsync()
+	{
+		if (!ConfigurationService.IsOpenRoseAPIConfigured)
+		{
+			NavManager.NavigateTo("/");
+			return;
+		}
+	}
 
 	protected override async Task OnAfterRenderAsync(bool firstRender)
 	{
