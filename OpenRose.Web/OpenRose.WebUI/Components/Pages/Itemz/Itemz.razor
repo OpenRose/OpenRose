@@ -14,12 +14,14 @@
 @using OpenRose.WebUI.Components.FindServices
 @using OpenRose.WebUI.Components.Pages.Breadcrums
 @using OpenRose.WebUI.Components.Pages.Common
+@using OpenRose.WebUI.Services
 @using Microsoft.AspNetCore.Components.Forms
 @inject NavigationManager NavManager
 @inject IDialogService DialogService
 @inject BreadcrumsService breadcrumsService
 @inject IJSRuntime JS
 @inject IServiceProvider serviceProvider
+@inject ConfigurationService ConfigurationService
 
 @if (BreadcrumsParameter != null)
 {
@@ -198,6 +200,12 @@
 
 	protected override async Task OnInitializedAsync()
 	{
+		if (!ConfigurationService.IsOpenRoseAPIConfigured)
+		{
+			NavManager.NavigateTo("/");
+			return;
+		}
+
 		initializingPage = true;
 		StateHasChanged();
 		//Thread.Sleep(300);

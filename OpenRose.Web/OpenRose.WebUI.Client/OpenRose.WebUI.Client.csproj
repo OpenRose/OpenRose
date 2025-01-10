@@ -22,21 +22,6 @@
   <ItemGroup>
     <Folder Include="Pages\" />
     <Folder Include="SharedEntities\" />
-    <Folder Include="Services\ItemzType\" />
-    <Folder Include="Services\Itemz\" />
-    <Folder Include="Services\ItemzTypeItemzs\" />
-    <Folder Include="Services\Hierarchy\" />
-    <Folder Include="Services\ItemzTrace\" />
-    <Folder Include="Services\ItemzCollection\" />
-    <Folder Include="Services\ItemzChangeHistory\" />
-    <Folder Include="Services\ItemzChangeHistoryByItemzType\" />
-    <Folder Include="Services\ItemzChangeHistoryByProject\" />
-    <Folder Include="Services\ItemzChangeHistoryByRepository\" />
-    <Folder Include="Services\Baselines\" />
-    <Folder Include="Services\BaselineItemzTypes\" />
-    <Folder Include="Services\BaselineItemzTrace\" />
-    <Folder Include="Services\BaselineItemz\" />
-    <Folder Include="Services\BaselineHierarchy\" />
   </ItemGroup>
 
 </Project>

@@ -13,12 +13,15 @@
 @using OpenRose.WebUI.Components.FindServices
 @using OpenRose.WebUI.Components.Pages.Breadcrums
 @using OpenRose.WebUI.Components.Pages.Common
+@using OpenRose.WebUI.Services
 @using Microsoft.AspNetCore.Components.Forms
 @using System.Globalization
 @inject NavigationManager NavManager
 @inject IDialogService DialogService
 @inject IFindProjectAndBaselineIdsByBaselineItemzIdService FindProjectAndBaselineIdsByBaselineItemzIdService
 @inject IJSRuntime JS
+@inject ConfigurationService ConfigurationService
+
 
 @if (BreadcrumsParameter != null)
 {
@@ -151,6 +154,15 @@
 	public bool initializingPage { get; set; } = true;
 
 	private MarkupString convertedMarkdown;
+
+	protected override async Task OnInitializedAsync()
+	{
+		if (!ConfigurationService.IsOpenRoseAPIConfigured)
+		{
+			NavManager.NavigateTo("/");
+			return;
+		}
+	}
 
 	protected override async Task OnAfterRenderAsync(bool firstRender)
 	{

@@ -19,6 +19,7 @@ using OpenRose.WebUI.Client.Services.BaselineItemzTrace;
 using OpenRose.WebUI.Components;
 using OpenRose.WebUI.Components.EventServices;
 using OpenRose.WebUI.Components.FindServices;
+using OpenRose.WebUI.Configuration;
 using OpenRose.WebUI.Services;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using MudBlazor.Services;
@@ -32,75 +33,120 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()
     .AddInteractiveWebAssemblyComponents();
 
-builder.Services.AddHttpClient<IProjectService, ProjectService>(client =>
-{
-    client.BaseAddress = new Uri("http://localhost:51087");
-});
+// Configure API settings
+builder.Services.Configure<APISettings>(builder.Configuration.GetSection("ApiSettings"));
 
-builder.Services.AddHttpClient<IItemzTypeService, ItemzTypeService>(client =>
-{
-	client.BaseAddress = new Uri("http://localhost:51087");
-});
+// Retrieve API settings
+var apiSettings = builder.Configuration.GetSection("APISettings").Get<APISettings>();
 
-builder.Services.AddHttpClient<IItemzTypeItemzsService, ItemzTypeItemzsService>(client =>
-{
-	client.BaseAddress = new Uri("http://localhost:51087");
-});
 
-builder.Services.AddHttpClient<IItemzService, ItemzService>(client =>
+var configurationService = new ConfigurationService
 {
-	client.BaseAddress = new Uri("http://localhost:51087");
-});
+    IsOpenRoseAPIConfigured = !string.IsNullOrEmpty(apiSettings?.BaseUrl)
+};
 
-builder.Services.AddHttpClient<IHierarchyService, HierarchyService>(client =>
-{
-	client.BaseAddress = new Uri("http://localhost:51087");
-});
+builder.Services.AddSingleton(configurationService);
 
-builder.Services.AddHttpClient<IItemzTraceService, ItemzTraceService>(client =>
+if (!configurationService.IsOpenRoseAPIConfigured)
 {
-	client.BaseAddress = new Uri("http://localhost:51087");
-});
+    var configFile = string.IsNullOrEmpty(builder.Environment.EnvironmentName) ? "appsettings.json" : $"appsettings.{builder.Environment.EnvironmentName}.json";
+    builder.Logging.AddConsole();
+    var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
+    logger.LogError($"OpenRose API connection via base URL is not configured. Please contact your System Administrator.");
 
-builder.Services.AddHttpClient<IItemzCollectionService, ItemzCollectionService>(client =>
+    // Register dummy implementations that return errors or mock data
+    builder.Services.AddSingleton<IProjectService, DummyProjectService>();
+    builder.Services.AddSingleton<IItemzTypeService, DummyItemzTypeService>();
+    builder.Services.AddSingleton<IItemzTypeItemzsService, DummyItemzTypeItemzsService>();
+    builder.Services.AddSingleton<IItemzService, DummyItemzService>();
+    builder.Services.AddSingleton<IHierarchyService, DummyHierarchyService>();
+    builder.Services.AddSingleton<IItemzTraceService, DummyItemzTraceService>();
+    builder.Services.AddSingleton<IItemzCollectionService, DummyItemzCollectionService>();
+    builder.Services.AddSingleton<IItemzChangeHistoryService, DummyItemzChangeHistoryService>();
+    builder.Services.AddSingleton<IBaselinesService, DummyBaselinesService>();
+    builder.Services.AddSingleton<IBaselineHierarchyService, DummyBaselineHierarchyService>();
+    builder.Services.AddSingleton<IBaselineItemzTypesService, DummyBaselineItemzTypesService>();
+    builder.Services.AddSingleton<IBaselineItemzService, DummyBaselineItemzService>();
+    builder.Services.AddSingleton<IBaselineItemzTraceService, DummyBaselineItemzTraceService>();
+    builder.Services.AddSingleton<IBaselineItemzCollectionService, DummyBaselineItemzCollectionService>();
+}
+else
 {
-	client.BaseAddress = new Uri("http://localhost:51087");
-});
 
-builder.Services.AddHttpClient<IItemzChangeHistoryService, ItemzChangeHistoryService>(client =>
-{
-client.BaseAddress = new Uri("http://localhost:51087");
-});
+    builder.Services.AddHttpClient<IProjectService, ProjectService>(client =>
+    {
+        client.BaseAddress = new Uri(apiSettings!.BaseUrl);
+    });
 
-builder.Services.AddHttpClient<IBaselinesService, BaselinesService>(client =>
-{
-	client.BaseAddress = new Uri("http://localhost:51087");
-});
+    builder.Services.AddHttpClient<IItemzTypeService, ItemzTypeService>(client =>
+    {
+        client.BaseAddress = new Uri(apiSettings!.BaseUrl);
+    });
 
-builder.Services.AddHttpClient<IBaselineHierarchyService, BaselineHierarchyService>(client =>
-{
-	client.BaseAddress = new Uri("http://localhost:51087");
-});
+    builder.Services.AddHttpClient<IItemzTypeItemzsService, ItemzTypeItemzsService>(client =>
+    {
+        client.BaseAddress = new Uri(apiSettings!.BaseUrl);
+    });
 
-builder.Services.AddHttpClient<IBaselineItemzTypesService, BaselineItemzTypesService>(client =>
-{
-	client.BaseAddress = new Uri("http://localhost:51087");
-});
+    builder.Services.AddHttpClient<IItemzService, ItemzService>(client =>
+    {
+        client.BaseAddress = new Uri(apiSettings!.BaseUrl);
+    });
 
-builder.Services.AddHttpClient<IBaselineItemzService, BaselineItemzService>(client =>
-{
-client.BaseAddress = new Uri("http://localhost:51087");
-});
+    builder.Services.AddHttpClient<IHierarchyService, HierarchyService>(client =>
+    {
+        client.BaseAddress = new Uri(apiSettings!.BaseUrl);
+    });
 
-builder.Services.AddHttpClient<IBaselineItemzTraceService, BaselineItemzTraceService>(client =>
-{
-	client.BaseAddress = new Uri("http://localhost:51087");
-});
+    builder.Services.AddHttpClient<IItemzTraceService, ItemzTraceService>(client =>
+    {
+        client.BaseAddress = new Uri(apiSettings!.BaseUrl);
+    });
 
-builder.Services.AddHttpClient<IBaselineItemzCollectionService, BaselineItemzCollectionService>(client =>
-{
-client.BaseAddress = new Uri("http://localhost:51087");
-});
+    builder.Services.AddHttpClient<IItemzCollectionService, ItemzCollectionService>(client =>
+    {
+        client.BaseAddress = new Uri(apiSettings!.BaseUrl);
+    });
+
+    builder.Services.AddHttpClient<IItemzChangeHistoryService, ItemzChangeHistoryService>(client =>
+    {
+        client.BaseAddress = new Uri(apiSettings!.BaseUrl);
+    });
+
+    builder.Services.AddHttpClient<IBaselinesService, BaselinesService>(client =>
+    {
+        client.BaseAddress = new Uri(apiSettings!.BaseUrl);
+    });
+
+    builder.Services.AddHttpClient<IBaselineHierarchyService, BaselineHierarchyService>(client =>
+    {
+        client.BaseAddress = new Uri(apiSettings!.BaseUrl);
+    });
+
+    builder.Services.AddHttpClient<IBaselineItemzTypesService, BaselineItemzTypesService>(client =>
+    {
+        client.BaseAddress = new Uri(apiSettings!.BaseUrl);
+    });
+
+    builder.Services.AddHttpClient<IBaselineItemzService, BaselineItemzService>(client =>
+    {
+        client.BaseAddress = new Uri(apiSettings!.BaseUrl);
+    });
+
+    builder.Services.AddHttpClient<IBaselineItemzTraceService, BaselineItemzTraceService>(client =>
+    {
+        client.BaseAddress = new Uri(apiSettings!.BaseUrl);
+    });
+
+    builder.Services.AddHttpClient<IBaselineItemzCollectionService, BaselineItemzCollectionService>(client =>
+    {
+        client.BaseAddress = new Uri(apiSettings!.BaseUrl);
+    });
+
+    // EXPLAINATION :: "FindProjectAndBaselineIdsByBaselineItemzIdService" depens on "IBaselineHierarchyService" and so 
+    // we need to register it here within the else block where we know that OpenRose API settings are available.
+    builder.Services.AddScoped<IFindProjectAndBaselineIdsByBaselineItemzIdService, FindProjectAndBaselineIdsByBaselineItemzIdService>();
+}
 
 builder.Services.AddMudServices();
 builder.Services.AddMudExtensions();
@@ -109,7 +155,6 @@ builder.Services.AddScoped<TreeNodeItemzSelectionService>(); // Register the ser
 builder.Services.AddScoped<BaselineTreeNodeItemzSelectionService>(); // Register the service
 builder.Services.AddScoped<BaselineBreadcrumsService>(); // Register the service
 builder.Services.AddScoped<BreadcrumsService>(); // Register the service
-builder.Services.AddScoped<IFindProjectAndBaselineIdsByBaselineItemzIdService, FindProjectAndBaselineIdsByBaselineItemzIdService>();
 
 builder.Services.AddSingleton<AssemblyInfoService>(); // Register the service
 

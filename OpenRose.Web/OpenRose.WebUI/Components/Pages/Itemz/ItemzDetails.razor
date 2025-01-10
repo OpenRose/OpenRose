@@ -4,6 +4,14 @@
  * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 *@
 
+
+@using OpenRose.WebUI.Services
+
+@inject NavigationManager NavManager
+@inject ConfigurationService ConfigurationService
+
+
+
 @page "/itemzDetails/{ItemzId:guid}"
 
 <ItemzDetailsComponent ItemzId="@ItemzId" CalledFrom="@this.GetType().Name" />
@@ -12,4 +20,14 @@
 @code {
 	[Parameter]
 	public Guid ItemzId { get; set; }
+
+	protected override async Task OnInitializedAsync()
+	{
+		if (!ConfigurationService.IsOpenRoseAPIConfigured)
+		{
+			NavManager.NavigateTo("/");
+			return;
+		}
+	}
+
 }
