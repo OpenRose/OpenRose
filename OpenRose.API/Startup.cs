@@ -286,26 +286,31 @@ namespace ItemzApp.API
                     });
                 });
             }
-
+            app.UseStaticFiles();
+            
             app.UseRouting();
 
             app.UseAuthorization();
+
+            app.UseSwagger();
+
+            app.UseSwaggerUI(setupAction =>
+            {
+                string swaggerJsonBasePath = string.IsNullOrWhiteSpace(setupAction.RoutePrefix) ? "." : "..";
+                setupAction.SwaggerEndpoint($"{swaggerJsonBasePath}/swagger/ItemzApp.OpenAPI.Specification/swagger.json",
+                    "ItemzApp OpenAPI");
+                setupAction.RoutePrefix = string.Empty; // RoutePrefix will set the root of the application to be SwaggerUI
+                setupAction.EnableDeepLinking(); // Allows URL to contain path to Tags and Operations
+                setupAction.DisplayOperationId(); // Shows Opeartion ID against each Operation.
+            });
+
 
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
             });
 
-            app.UseSwagger();
 
-            app.UseSwaggerUI(setupAction =>
-            {
-                setupAction.SwaggerEndpoint("/swagger/ItemzApp.OpenAPI.Specification/swagger.json",
-                    "ItemzApp OpenAPI");
-                setupAction.RoutePrefix = ""; // RoutePrefix will set the root of the application to be SwaggerUI
-                setupAction.EnableDeepLinking(); // Allows URL to contain path to Tags and Operations
-                setupAction.DisplayOperationId(); // Shows Opeartion ID against each Operation.
-            });
 
             // EXPLANATION :: At the starting point of the application, we are going to check if
             // Repository entry is there in the DB for ItemzHierarchy table. If it's not there
