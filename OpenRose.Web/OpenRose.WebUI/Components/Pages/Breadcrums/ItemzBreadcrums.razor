@@ -40,9 +40,15 @@
 	private List<BreadcrumbItem> _localBreadcrumbs = new List<BreadcrumbItem>();
 	private List<NestedHierarchyIdRecordDetailsDTO> AllParentHierarchy { get; set; } = new List<NestedHierarchyIdRecordDetailsDTO>();
 
+	private string BreadcrumsBaseUrl;
+
 	protected override async Task OnInitializedAsync()
 	{
 		breadcrumsService.OnRequestIsOrphanStatus += HandleOnRequestIsOrphanStatus;
+
+
+		var tempUri = new Uri(NavManager.Uri);
+		BreadcrumsBaseUrl = $"{tempUri.Scheme}://{tempUri.Host}:{tempUri.Port}";
 	}
 
 	protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -143,11 +149,11 @@
 		string _tempUrl =
 			breadcrumRecordType.ToLower() switch
 			{
-				"project" => "http://localhost:5166/project/"
+				"project" => $"{BreadcrumsBaseUrl}/project/"
 				,
-				"itemztype" => "http://localhost:5166/itemzType/"
+				"itemztype" => $"{BreadcrumsBaseUrl}/itemzType/"
 				,
-				"itemz" => "http://localhost:5166/itemz/"
+				"itemz" => $"{BreadcrumsBaseUrl}/itemz/"
 				,
 				_ => string.Empty
 			};

@@ -43,9 +43,15 @@
 	private List<ExtendedBreadcrumbItem> _localBreadcrumbs = new List<ExtendedBreadcrumbItem>();
 	private List<NestedBaselineHierarchyIdRecordDetailsDTO> AllParentHierarchy { get; set; } = new List<NestedBaselineHierarchyIdRecordDetailsDTO>();
 
+	private string BreadcrumsBaseUrl;
+
 	protected override async Task OnInitializedAsync()
 	{
 		baselineBreadcrumsService.OnRequestParentNodeIsIncluded += HandleRequestParentNodeIsIncluded;
+
+
+		var tempUri = new Uri(NavManager.Uri);
+		BreadcrumsBaseUrl = $"{tempUri.Scheme}://{tempUri.Host}:{tempUri.Port}";
 
 		ICollection<NestedBaselineHierarchyIdRecordDetailsDTO> returnedParentHierarchyList;
 		// Thread.Sleep(5000);
@@ -140,13 +146,13 @@
 		string _tempUrl =
 			breadcrumRecordType.ToLower() switch
 			{
-				"project" => "http://localhost:5166/project/"
+				"project" => $"{BreadcrumsBaseUrl}/project/"
 				,
-				"baseline" => "http://localhost:5166/baseline/"
+				"baseline" => $"{BreadcrumsBaseUrl}/baseline/"
 				,
-				"baselineitemztype" => "http://localhost:5166/baselineitemzType/"
+				"baselineitemztype" => $"{BreadcrumsBaseUrl}/baselineitemzType/"
 				,
-				"baselineitemz" => "http://localhost:5166/baselineitemz/"
+				"baselineitemz" => $"{BreadcrumsBaseUrl}/baselineitemz/"
 				,
 				_ => string.Empty
 			};
