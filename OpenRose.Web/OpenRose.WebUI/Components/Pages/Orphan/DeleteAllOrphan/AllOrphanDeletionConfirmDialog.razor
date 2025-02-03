@@ -26,7 +26,7 @@
     public IItemzService itemzService { get; set; }
 
     [CascadingParameter]
-    private MudDialogInstance MudDialog { get; set; }
+    private IMudDialogInstance MudDialog { get; set; }
     [Parameter]
     public int totalOrphanedItemzs { get; set; }
 

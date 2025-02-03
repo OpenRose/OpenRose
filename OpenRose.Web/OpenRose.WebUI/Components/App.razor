@@ -13,36 +13,36 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
-    <link rel="stylesheet" href="bootstrap/bootstrap.min.css" />
-    <link rel="stylesheet" href="app.css" />
-    <link rel="stylesheet" href="ItemzApp.WebUI.styles.css" />
-    <link href="/_content/PSC.Blazor.Components.MarkdownEditor/css/markdowneditor.css" rel="stylesheet" />
-    <link href="/_content/PSC.Blazor.Components.MarkdownEditor/css/easymde.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="@Assets["bootstrap/bootstrap.min.css"]" />
+    <link rel="stylesheet" href="@Assets["app.css"]" />
+    <link rel="stylesheet" href="@Assets["ItemzApp.WebUI.styles.css"]" />
+    <link rel="stylesheet" href="@Assets["/_content/PSC.Blazor.Components.MarkdownEditor/css/markdowneditor.css"]" />
+    <link rel="stylesheet" href="@Assets["/_content/PSC.Blazor.Components.MarkdownEditor/css/easymde.min.css"]" />
 
-@*     <link href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/4.0.0/github-markdown.min.css" rel="stylesheet"> *@
+@*          <link href="@Assets["https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/4.0.0/github-markdown.min.css"]" rel="stylesheet">  *@
 
     <link rel="icon" type="image/png" href="favicon.png" />
 @*     <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" rel="stylesheet" /> *@
-    <link href="css/github-markdown.min.css" rel="stylesheet" /> @* version 5.8.1. was downloaded in Dec 2024 *@
-    <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
-    <link href="_content/CodeBeam.MudBlazor.Extensions/MudExtensions.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="@Assets["css/github-markdown.min.css"]" /> @* version 5.8.1. was downloaded in Dec 2024 *@
+    <link rel="stylesheet" href="@Assets["_content/MudBlazor/MudBlazor.min.css"]" />
+    <link rel="stylesheet" href="@Assets["_content/CodeBeam.MudBlazor.Extensions/MudExtensions.min.css"]" />
 @*     <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script> *@
-    <script src="js/interact.min.js"></script>
-    <script src="js/site.js"></script>
+    <script src="@Assets["js/interact.min.js"]"></script>
+    <script src="@Assets["js/site.js"]"></script>
     <HeadOutlet />
 </head>
 
 <body>
     <Routes @rendermode="InteractiveServer" />
-    <script src="_framework/blazor.web.js"></script>
+    <script src="_framework/blazor.web.js"></script> @* DO NOT APPLY THE @Assets[] to this line *@
 
 @*     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/2.0.0/marked.min.js"></script> *@
 
-    <script src="js/marked.min.js"></script> @* version 15.0.4 was downloaded in Dec 2024 *@
-    <script src="/_content/PSC.Blazor.Components.MarkdownEditor/js/easymde.min.js"></script>
-    <script src="/_content/PSC.Blazor.Components.MarkdownEditor/js/markdownEditor.js"></script>
-    <script src="_content/MudBlazor/MudBlazor.min.js"></script>
-    <script src="_content/CodeBeam.MudBlazor.Extensions/MudExtensions.min.js"></script>
+    <script src="@Assets["js/marked.min.js"]"></script> @* version 15.0.4 was downloaded in Dec 2024 *@
+    <script src="@Assets["/_content/PSC.Blazor.Components.MarkdownEditor/js/easymde.min.js"]"></script>
+    <script src="@Assets["/_content/PSC.Blazor.Components.MarkdownEditor/js/markdownEditor.js"]"></script>
+    <script src="@Assets["_content/MudBlazor/MudBlazor.min.js"]"></script>
+    <script src="@Assets["_content/CodeBeam.MudBlazor.Extensions/MudExtensions.min.js"]"></script>
 
 </body>
 
