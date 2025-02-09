@@ -27,6 +27,7 @@ using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using Serilog;
 using Serilog.Events;
+using System.Configuration;
 
 namespace ItemzApp.API
 {
@@ -42,7 +43,28 @@ namespace ItemzApp.API
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllers()
+
+
+
+            //// Serilog configuration
+            //Log.Logger = new LoggerConfiguration()
+            //    .MinimumLevel.Debug()
+            //    .WriteTo.Console()
+            //    .CreateLogger();
+
+            var configuration = new ConfigurationBuilder()
+               .SetBasePath(Directory.GetCurrentDirectory())
+               .AddJsonFile(path: "appsettings.json", optional: false, reloadOnChange: true)
+               .Build();
+
+            Log.Logger = new LoggerConfiguration()
+                .ReadFrom.Configuration(configuration)
+                .Enrich.FromLogContext()
+                .CreateLogger();
+
+            services.AddSingleton<ILoggerFactory>(serviceProvider => new Serilog.Extensions.Logging.SerilogLoggerFactory(Log.Logger));
+
+			services.AddControllers()
                 .AddNewtonsoftJson(setupAction =>
                 {
                     setupAction.SerializerSettings.ContractResolver =
@@ -173,11 +195,14 @@ namespace ItemzApp.API
 
 			services.AddDbContext<ItemzContext>((serviceProvider, options) =>
             {
+				var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
 				options.UseSqlServer(
                     connectionString: connectionString,
                                         builder => builder.UseHierarchyId())
-                    .AddInterceptors(serviceProvider.GetRequiredService<ItemzContexInterceptor>()); 
-            });
+                    .AddInterceptors(serviceProvider.GetRequiredService<ItemzContexInterceptor>())
+				    .UseLoggerFactory(loggerFactory) // Enable Serilog
+				   .EnableSensitiveDataLogging();    // Optional: Include sensitive data in logs; 
+			});
 
             services.AddDbContext<ItemzChangeHistoryContext>((serviceProvider, options) =>
             {
