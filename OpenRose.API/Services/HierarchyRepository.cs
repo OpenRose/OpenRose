@@ -17,6 +17,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion.Internal;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using ItemzApp.API.Models.BetweenControllerAndRepository;
 using Microsoft.SqlServer.Types;
+using Microsoft.IdentityModel.Tokens;
 
 namespace ItemzApp.API.Services
 {
@@ -626,11 +627,16 @@ namespace ItemzApp.API.Services
 		////	return lastRecord;
 		////}
 
-		public async Task<bool> UpdateHierarchyRecordNameByID(Guid recordId, string name)
+		public async Task<bool> UpdateHierarchyRecordNameByID(Guid recordId, string newItemzName)
 		{
 			if (recordId == Guid.Empty)
 			{
 				throw new ArgumentNullException(nameof(recordId));
+			}
+
+			if(newItemzName.IsNullOrEmpty())
+			{
+				throw new ArgumentNullException(nameof(newItemzName));
 			}
 
 			var foundHierarchyRecord = _context.ItemzHierarchy!
@@ -643,16 +649,16 @@ namespace ItemzApp.API.Services
 					"Please contact your System Administrator.");
 			}
 
-			if (foundHierarchyRecord.FirstOrDefault()!.RecordType.ToLower() == "repository") // TODO :: Use Constants instead of Text
-			{
-				throw new ApplicationException($"Can not update name of the Repository Root Hierarchy Record with ID {recordId}");
-			}
-			if (foundHierarchyRecord.FirstOrDefault()!.ItemzHierarchyId!.GetLevel() == 0) // TODO :: Use Constants instead of Text
-			{
-				throw new ApplicationException($"Can not update name of the Repository Root Hierarchy Record with ID {recordId}");
-			}
+			//if (foundHierarchyRecord.FirstOrDefault()!.RecordType.ToLower() == "repository") // TODO :: Use Constants instead of Text
+			//{
+			//	throw new ApplicationException($"Can not update name of the Repository Root Hierarchy Record with ID {recordId}");
+			//}
+			//if (foundHierarchyRecord.FirstOrDefault()!.ItemzHierarchyId!.GetLevel() == 0) // TODO :: Use Constants instead of Text
+			//{
+			//	throw new ApplicationException($"Can not update name of the Repository Root Hierarchy Record with ID {recordId}");
+			//}
 
-			foundHierarchyRecord.FirstOrDefault()!.Name = name; // TODO :: Remove special characters from name variable before saving it to DB. Security Reason.
+			foundHierarchyRecord.FirstOrDefault()!.Name = newItemzName; // TODO :: Remove special characters from name variable before saving it to DB. Security Reason.
 
 			return (await _context.SaveChangesAsync() >= 0);
 		}

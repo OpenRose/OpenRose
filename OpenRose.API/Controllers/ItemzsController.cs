@@ -605,7 +605,7 @@ namespace ItemzApp.API.Controllers
             }
 
             _itemzRepository.UpdateItemz(itemzFromRepo);
-            await _itemzRepository.SaveAsync();
+			await _itemzRepository.SaveAsync();
 
 
 
@@ -626,6 +626,14 @@ namespace ItemzApp.API.Controllers
 					);
 				return Conflict($"Name of ItemzHierarchy record for Itemz with ID {itemzFromRepo.Id} could not be updated.");
 			}
+			catch (Exception)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to update Itemz name in ItemzHierarchy :",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
+					);
+				return Conflict($"Name of ItemzHierarchy record for Itemz with ID {itemzFromRepo.Id} could not be updated.");
+			}
+
 
 			_logger.LogDebug("{FormattedControllerAndActionNames}Update request for Itemz for ID {ItemzId} processed successfully",
                     ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
@@ -726,6 +734,13 @@ namespace ItemzApp.API.Controllers
 			catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
 			{
 				_logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to update Itemz name in ItemzHierarchy :" + dbUpdateException.InnerException,
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
+					);
+				return Conflict($"Name of ItemzHierarchy record for Itemz with ID {itemzFromRepo.Id} could not be updated.");
+			}
+			catch (Exception)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to update Itemz name in ItemzHierarchy :",
 					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
 					);
 				return Conflict($"Name of ItemzHierarchy record for Itemz with ID {itemzFromRepo.Id} could not be updated.");
