@@ -18,10 +18,11 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         fetch-depth: 0  # Fetch the entire history
         token: ${{ secrets.GITHUB_TOKEN }}
+        persist-credentials: false  # This is important to ensure the token is used for pushes as well
 
     - name: Set up .NET
       uses: actions/setup-dotnet@v3
@@ -55,7 +56,7 @@ jobs:
         dotnet-gitversion /updateprojectfiles
         git add .
         git commit -m "Increment version number [skip ci]"
-        git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git HEAD:${{ github.ref }}
+        git push https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git HEAD:${{ github.ref }}
 
     - name: Restore dependencies
       run: dotnet restore
