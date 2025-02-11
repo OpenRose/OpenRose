@@ -56,7 +56,8 @@ jobs:
         dotnet-gitversion /updateprojectfiles
         git add .
         git commit -m "Increment version number [skip ci]"
-        git push https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git HEAD:${{ github.ref }}
+        git remote set-url origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+        git push origin HEAD:${{ github.ref }}
 
     - name: Restore dependencies
       run: dotnet restore
