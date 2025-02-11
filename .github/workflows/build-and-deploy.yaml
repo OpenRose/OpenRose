@@ -43,6 +43,8 @@ jobs:
         git config --global user.name "OpenRose Requirements Management"
 
     - name: Increment version numbers
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         if [[ "$(git log -1 --pretty=%B)" == *"[skip ci]"* ]]; then
           echo "Skipping version increment"
@@ -52,9 +54,7 @@ jobs:
         dotnet-gitversion /updateprojectfiles
         git add .
         git commit -m "Increment version number [skip ci]"
-        git push
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git HEAD:${{ github.ref }}
 
     - name: Restore dependencies
       run: dotnet restore
