@@ -43,9 +43,9 @@ jobs:
           echo "Skipping version increment"
           exit 0
         fi
-        dotnet-gitversion /updateassemblyinfo OpenRose.API/OpenRose.API.csproj
-        dotnet-gitversion /updateassemblyinfo OpenRose.Web/OpenRose.WebUI.Client/OpenRose.WebUI.Client.csproj
-        dotnet-gitversion /updateassemblyinfo OpenRose.Web/OpenRose.WebUI/OpenRose.WebUI.csproj
+        dotnet-gitversion /updateproject OpenRose.API/OpenRose.API.csproj
+        dotnet-gitversion /updateproject OpenRose.Web/OpenRose.WebUI.Client/OpenRose.WebUI.Client.csproj
+        dotnet-gitversion /updateproject OpenRose.Web/OpenRose.WebUI/OpenRose.WebUI.csproj
         git add .
         git commit -m "Increment version number [skip ci]"
         git push
