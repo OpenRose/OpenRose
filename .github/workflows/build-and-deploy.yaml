@@ -37,6 +37,11 @@ jobs:
       id: gitversion
       run: dotnet-gitversion /showvariable FullSemVer
 
+    - name: Set up Git user
+      run: |
+        git config --global user.email "openroserm@outlook.com"
+        git config --global user.name "OpenRose Requirements Management"
+
     - name: Increment version numbers
       run: |
         if [[ "$(git log -1 --pretty=%B)" == *"[skip ci]"* ]]; then
