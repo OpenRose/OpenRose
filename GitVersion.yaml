@@ -5,18 +5,20 @@ ignore:
   sha: []
 branches:
   main:
-    tag: ''
-    increment: Minor
+    regex: '^(main)$'
     is-release-branch: true
+    increment: Minor
   Alpha:
-    tag: alpha
+    regex: '^(Alpha/.*)$'
+    is-release-branch: false
     increment: Patch
   Beta:
-    tag: beta
+    regex: '^(Beta/.*)$'
+    is-release-branch: false
     increment: Patch
   pull-request:
-    tag: pr
+    regex: '^(pull/.*)$'
     increment: Inherit
   hotfix:
-    tag: hotfix
+    regex: '^(hotfix/.*)$'
     increment: Patch
