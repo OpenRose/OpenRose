@@ -43,6 +43,13 @@ jobs:
         git config --global user.email "openroserm@outlook.com"
         git config --global user.name "OpenRose Requirements Management"
 
+    - name: Replace BranchName placeholder
+      run: |
+        VERSION=$(dotnet-gitversion /showvariable FullSemVer)
+        BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
+        find . -type f -name "*.csproj" -exec sed -i "s/{BranchName}/$BRANCH_NAME/g" {} \;
+        find . -type f -name "*.csproj" -exec sed -i "s/{BranchName}/$VERSION/g" {} \;
+
     - name: Increment version numbers
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
