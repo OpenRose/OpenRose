@@ -36,7 +36,9 @@ jobs:
 
     - name: Calculate Version
       id: gitversion
-      run: dotnet-gitversion /showvariable FullSemVer
+      run: |
+        echo "FullSemVer=$(dotnet-gitversion /showvariable FullSemVer)" >> $GITHUB_ENV
+        echo "BranchName=$(git rev-parse --abbrev-ref HEAD)" >> $GITHUB_ENV
 
     - name: Set up Git user
       run: |
@@ -45,10 +47,10 @@ jobs:
 
     - name: Replace BranchName placeholder
       run: |
-        VERSION=$(dotnet-gitversion /showvariable FullSemVer)
-        BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
+        VERSION=${{ env.FullSemVer }}
+        BRANCH_NAME=${{ env.BranchName }}
         find . -type f -name "*.csproj" -exec sed -i "s/{BranchName}/$BRANCH_NAME/g" {} \;
-        find . -type f -name "*.csproj" -exec sed -i "s/{BranchName}/$VERSION/g" {} \;
+        find . -type f -name "*.csproj" -exec sed -i "s/{FullSemVer}/$VERSION/g" {} \;
 
     - name: Increment version numbers
       env:
@@ -72,7 +74,7 @@ jobs:
 
     - name: Create WebDeployment Packages
       run: |
-        VERSION=$(dotnet-gitversion /showvariable FullSemVer)
+        VERSION=${{ env.FullSemVer }}
         dotnet publish OpenRose.API/OpenRose.API.csproj -c Release -o ./package/OpenRose.API
         dotnet publish OpenRose.Web/OpenRose.WebUI.Client/OpenRose.WebUI.Client.csproj -c Release -o ./package/OpenRose.WebUI.Client
         dotnet publish OpenRose.Web/OpenRose.WebUI/OpenRose.WebUI.csproj -c Release -o ./package/OpenRose.WebUI
@@ -83,7 +85,7 @@ jobs:
     - name: Create Tag
       if: github.ref == 'refs/heads/main'
       run: |
-        VERSION=$(dotnet-gitversion /showvariable FullSemVer)
+        VERSION=${{ env.FullSemVer }}
         git tag -a v$VERSION -m "Release $VERSION"
         git push origin v$VERSION
       env:
