@@ -3,12 +3,12 @@
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <InformationalVersion>0.0.1-{BranchName}.57+Branch.Alpha-Test1.Sha.5b4fe3970877714dbf63606a97cffd06b32a5744</InformationalVersion>
+    <InformationalVersion>0.0.1-{BranchName}.60+Branch.Alpha-Test1.Sha.2c4832989e3576f17ff5f221f865e7058d7c8f57</InformationalVersion>
   </PropertyGroup>
   <PropertyGroup>
     <AssemblyVersion>0.0.1.0</AssemblyVersion>
     <FileVersion>0.0.1.0</FileVersion>
-    <Version>0.0.1-{BranchName}.57</Version>
+    <Version>0.0.1-{BranchName}.60</Version>
   </PropertyGroup>
   <ItemGroup>
     <None Remove="Components\Pages\Itemz\Traceability\TabControlStyle.css" />
