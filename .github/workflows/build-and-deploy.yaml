@@ -49,7 +49,7 @@ jobs:
         git config --global user.email "openroserm@outlook.com"
         git config --global user.name "OpenRose Requirements Management"
 
-    - name: Debug: Show .csproj files before replacement
+    - name: Debug_Show .csproj files before replacement
       run: |
         find . -type f -name "*.csproj" -exec echo "File: {}" \; -exec cat {} \;
 
@@ -59,7 +59,7 @@ jobs:
         sed -i "s/{BranchName}/${BRANCH_NAME_ESCAPED}/g" **/*.csproj
         sed -i "s/{FullSemVer}/${{ env.FullSemVer }}/g" **/*.csproj
 
-    - name: Debug: Show .csproj files after replacement
+    - name: Debug_Show .csproj files after replacement
       run: |
         find . -type f -name "*.csproj" -exec echo "File: {}" \; -exec cat {} \;
 
