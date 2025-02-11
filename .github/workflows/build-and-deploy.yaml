@@ -21,7 +21,7 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Set up .NET
-      uses: actions/setup-dotnet@v1
+      uses: actions/setup-dotnet@v2
       with:
         dotnet-version: '9.x' # Adjust to the version of .NET you are using
 
@@ -107,7 +107,7 @@ jobs:
 
     - name: Upload artifact
       if: github.ref == 'refs/tags/*'
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: deployment-package
         path: package
