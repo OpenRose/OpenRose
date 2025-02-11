@@ -33,7 +33,7 @@ jobs:
 
     - name: Calculate Version
       id: gitversion
-      run: gitversion /showvariable FullSemVer
+      run: dotnet-gitversion /showvariable FullSemVer
 
     - name: Increment version numbers
       run: |
@@ -41,7 +41,7 @@ jobs:
           echo "Skipping version increment"
           exit 0
         fi
-        gitversion /updateprojectinfo
+        dotnet-gitversion /updateprojectinfo
         git add .
         git commit -m "Increment version number [skip ci]"
         git push
@@ -56,7 +56,7 @@ jobs:
 
     - name: Create WebDeployment Packages
       run: |
-        VERSION=$(gitversion /showvariable FullSemVer)
+        VERSION=$(dotnet-gitversion /showvariable FullSemVer)
         dotnet publish OpenRose.API/OpenRose.API.csproj -c Release -o ./package/OpenRose.API
         dotnet publish OpenRose.Web/OpenRose.WebUI.Client/OpenRose.WebUI.Client.csproj -c Release -o ./package/OpenRose.WebUI.Client
         dotnet publish OpenRose.Web/OpenRose.WebUI/OpenRose.WebUI.csproj -c Release -o ./package/OpenRose.WebUI
@@ -67,7 +67,7 @@ jobs:
     - name: Create Tag
       if: github.ref == 'refs/heads/main'
       run: |
-        VERSION=$(gitversion /showvariable FullSemVer)
+        VERSION=$(dotnet-gitversion /showvariable FullSemVer)
         git tag -a v$VERSION -m "Release $VERSION"
         git push origin v$VERSION
       env:
