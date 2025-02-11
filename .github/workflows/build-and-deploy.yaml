@@ -39,6 +39,8 @@ jobs:
       run: |
         echo "FullSemVer=$(dotnet-gitversion /showvariable FullSemVer)" >> $GITHUB_ENV
         echo "BranchName=$(git rev-parse --abbrev-ref HEAD)" >> $GITHUB_ENV
+        echo "FullSemVer=${{ env.FullSemVer }}"
+        echo "BranchName=${{ env.BranchName }}"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -47,11 +49,19 @@ jobs:
         git config --global user.email "openroserm@outlook.com"
         git config --global user.name "OpenRose Requirements Management"
 
+    - name: Debug: Show .csproj files before replacement
+      run: |
+        find . -type f -name "*.csproj" -exec echo "File: {}" \; -exec cat {} \;
+
     - name: Replace BranchName placeholder
       run: |
         BRANCH_NAME_ESCAPED=$(printf '%s\n' "${{ env.BranchName }}" | sed -e 's/[\/&]/\\&/g')
         sed -i "s/{BranchName}/${BRANCH_NAME_ESCAPED}/g" **/*.csproj
         sed -i "s/{FullSemVer}/${{ env.FullSemVer }}/g" **/*.csproj
+
+    - name: Debug: Show .csproj files after replacement
+      run: |
+        find . -type f -name "*.csproj" -exec echo "File: {}" \; -exec cat {} \;
 
     - name: Increment version numbers
       env:
