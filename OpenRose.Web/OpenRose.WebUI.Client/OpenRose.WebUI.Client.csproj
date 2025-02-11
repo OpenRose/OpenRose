@@ -5,12 +5,12 @@
     <Nullable>enable</Nullable>
     <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
     <StaticWebAssetProjectMode>Default</StaticWebAssetProjectMode>
-    <InformationalVersion>0.0.1-{BranchName}.74+Branch.Alpha-Test1.Sha.7f0d611da53cf322ab129a077128bac0662e475f</InformationalVersion>
+    <InformationalVersion>0.0.1-{BranchName}.78+Branch.Alpha-Test1.Sha.f8b78c5ee1bf7e3fd3682f13d2bc55fe7e47538e</InformationalVersion>
   </PropertyGroup>
   <PropertyGroup>
     <AssemblyVersion>0.0.1.0</AssemblyVersion>
     <FileVersion>0.0.1.0</FileVersion>
-    <Version>0.0.1-{BranchName}.74</Version>
+    <Version>0.0.1-{BranchName}.78</Version>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.1" />
