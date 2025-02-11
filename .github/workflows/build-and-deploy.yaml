@@ -37,7 +37,10 @@ jobs:
     - name: Calculate Version
       id: gitversion
       run: |
-        echo "FullSemVer=$(dotnet-gitversion /showvariable FullSemVer)" >> $GITHUB_ENV
+        echo "Running dotnet-gitversion to calculate FullSemVer..."
+        FullSemVer=$(dotnet-gitversion /showvariable FullSemVer)
+        echo "FullSemVer calculated: $FullSemVer"
+        echo "FullSemVer=$FullSemVer" >> $GITHUB_ENV
         echo "FullSemVer=${{ env.FullSemVer }}"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
