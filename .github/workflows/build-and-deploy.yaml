@@ -49,7 +49,8 @@ jobs:
 
     - name: Replace BranchName placeholder
       run: |
-        sed -i "s/{BranchName}/${{ env.BranchName }}/g" **/*.csproj
+        BRANCH_NAME_ESCAPED=$(echo ${{ env.BranchName }} | sed 's/\//\\\//g')
+        sed -i "s/{BranchName}/${BRANCH_NAME_ESCAPED}/g" **/*.csproj
         sed -i "s/{FullSemVer}/${{ env.FullSemVer }}/g" **/*.csproj
 
     - name: Increment version numbers
