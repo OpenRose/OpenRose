@@ -21,12 +21,15 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Set up .NET
-      uses: actions/setup-dotnet@v2
+      uses: actions/setup-dotnet@v3
       with:
         dotnet-version: '9.x' # Adjust to the version of .NET you are using
 
     - name: Install GitVersion
       run: dotnet tool install --global GitVersion.Tool
+
+    - name: Add GitVersion to PATH
+      run: echo "/home/runner/.dotnet/tools" >> $GITHUB_PATH
 
     - name: Calculate Version
       id: gitversion
@@ -111,4 +114,4 @@ jobs:
       with:
         name: deployment-package
         path: package
-        retention-days: 10  # Set the retention period to 30 days (adjust as needed)
+        retention-days: 30  # Set the retention period to 30 days (adjust as needed)
