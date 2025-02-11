@@ -39,6 +39,8 @@ jobs:
       run: |
         echo "FullSemVer=$(dotnet-gitversion /showvariable FullSemVer)" >> $GITHUB_ENV
         echo "BranchName=$(git rev-parse --abbrev-ref HEAD)" >> $GITHUB_ENV
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Set up Git user
       run: |
@@ -47,10 +49,8 @@ jobs:
 
     - name: Replace BranchName placeholder
       run: |
-        VERSION=${{ env.FullSemVer }}
-        BRANCH_NAME=${{ env.BranchName }}
-        find . -type f -name "*.csproj" -exec sed -i "s/{BranchName}/$BRANCH_NAME/g" {} \;
-        find . -type f -name "*.csproj" -exec sed -i "s/{FullSemVer}/$VERSION/g" {} \;
+        sed -i "s/{BranchName}/${{ env.BranchName }}/g" **/*.csproj
+        sed -i "s/{FullSemVer}/${{ env.FullSemVer }}/g" **/*.csproj
 
     - name: Increment version numbers
       env:
