@@ -49,7 +49,7 @@ jobs:
 
     - name: Replace BranchName placeholder
       run: |
-        BRANCH_NAME_ESCAPED=$(printf '%s\n' "${{ env.BranchName }}" | sed 's:[][\\/.*^$():{}?+|]:\\&:g')
+        BRANCH_NAME_ESCAPED=$(printf '%s\n' "${{ env.BranchName }}" | sed -e 's/[\/&]/\\&/g')
         sed -i "s/{BranchName}/${BRANCH_NAME_ESCAPED}/g" **/*.csproj
         sed -i "s/{FullSemVer}/${{ env.FullSemVer }}/g" **/*.csproj
 
