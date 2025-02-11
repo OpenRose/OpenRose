@@ -1,0 +1,22 @@
+mode: ContinuousDelivery
+assembly-versioning-scheme: MajorMinorPatch
+assembly-file-versioning-scheme: MajorMinorPatch
+ignore:
+  sha: []
+branches:
+  main:
+    tag: ''
+    increment: Minor
+    is-release-branch: true
+  Alpha:
+    tag: alpha
+    increment: Patch
+  Beta:
+    tag: beta
+    increment: Patch
+  pull-request:
+    tag: pr
+    increment: Inherit
+  hotfix:
+    tag: hotfix
+    increment: Patch

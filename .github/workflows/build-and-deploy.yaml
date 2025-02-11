@@ -1,0 +1,114 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - Alpha/**
+      - Beta/**
+  pull_request:
+    branches:
+      - main
+      - Alpha/**
+      - Beta/**
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '9.x' # Adjust to the version of .NET you are using
+
+    - name: Install GitVersion
+      run: dotnet tool install --global GitVersion.Tool
+
+    - name: Calculate Version
+      id: gitversion
+      run: gitversion /showvariable FullSemVer
+
+    - name: Increment version numbers
+      run: |
+        if [[ "$(git log -1 --pretty=%B)" == *"[skip ci]"* ]]; then
+          echo "Skipping version increment"
+          exit 0
+        fi
+        gitversion /updateprojectinfo
+        git add .
+        git commit -m "Increment version number [skip ci]"
+        git push
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build --configuration Release
+
+    - name: Create WebDeployment Packages
+      run: |
+        VERSION=$(gitversion /showvariable FullSemVer)
+        dotnet publish OpenRose.API/OpenRose.API.csproj -c Release -o ./package/OpenRose.API
+        dotnet publish OpenRose.Web/OpenRose.WebUI.Client/OpenRose.WebUI.Client.csproj -c Release -o ./package/OpenRose.WebUI.Client
+        dotnet publish OpenRose.Web/OpenRose.WebUI/OpenRose.WebUI.csproj -c Release -o ./package/OpenRose.WebUI
+        cp -r ./package/OpenRose.WebUI.Client/* ./package/OpenRose.WebUI/
+        zip -r deployment-package-OpenRose.API-$VERSION.zip ./package/OpenRose.API
+        zip -r deployment-package-OpenRose.WebUI-$VERSION.zip ./package/OpenRose.WebUI
+
+    - name: Create Tag
+      if: github.ref == 'refs/heads/main'
+      run: |
+        VERSION=$(gitversion /showvariable FullSemVer)
+        git tag -a v$VERSION -m "Release $VERSION"
+        git push origin v$VERSION
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Create Release
+      id: create_release
+      if: github.ref == 'refs/tags/*'
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        body: "Automated release with updated version and deployment package."
+        draft: false
+        prerelease: false
+
+    - name: Upload Release Assets
+      uses: actions/upload-release-asset@v1
+      if: github.ref == 'refs/tags/*'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: deployment-package-OpenRose.API-${{ github.ref }}.zip
+        asset_name: deployment-package-OpenRose.API-${{ github.ref }}.zip
+        asset_content_type: application/zip
+
+    - name: Upload Release Assets
+      uses: actions/upload-release-asset@v1
+      if: github.ref == 'refs/tags/*'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: deployment-package-OpenRose.WebUI-${{ github.ref }}.zip
+        asset_name: deployment-package-OpenRose.WebUI-${{ github.ref }}.zip
+        asset_content_type: application/zip
+
+    - name: Upload artifact
+      if: github.ref == 'refs/tags/*'
+      uses: actions/upload-artifact@v2
+      with:
+        name: deployment-package
+        path: package
+        retention-days: 10  # Set the retention period to 30 days (adjust as needed)
