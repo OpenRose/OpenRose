@@ -45,6 +45,7 @@ jobs:
     - name: Increment version numbers
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
       run: |
         if [[ "$(git log -1 --pretty=%B)" == *"[skip ci]"* ]]; then
           echo "Skipping version increment"
@@ -54,7 +55,7 @@ jobs:
         dotnet-gitversion /updateprojectfiles
         git add .
         git commit -m "Increment version number [skip ci]"
-        git push origin HEAD:${{ github.ref }}
+        git push https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/${{ github.repository }}.git HEAD:${{ github.ref }}
 
     - name: Restore dependencies
       run: dotnet restore
