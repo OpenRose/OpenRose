@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
     <NoDefaultLaunchSettingsFile>true</NoDefaultLaunchSettingsFile>
     <StaticWebAssetProjectMode>Default</StaticWebAssetProjectMode>
-    <InformationalVersion>0.0.1+Branch.Alpha-Test1.Sha.bb1c6f2ae8e1310afad90306c09750054702bd5b</InformationalVersion>
+    <InformationalVersion>0.0.1+Branch.Alpha-Test1.Sha.34a01d422576f682c26cdd52c78709142c7717c7</InformationalVersion>
   </PropertyGroup>
   <PropertyGroup>
     <AssemblyVersion>0.0.1.0</AssemblyVersion>
