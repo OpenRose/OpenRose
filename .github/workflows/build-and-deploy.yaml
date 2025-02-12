@@ -6,7 +6,6 @@ on:
       - main
       - Alpha/**
       - Beta/**
-      - '**'
   pull_request:
     branches:
       - main
@@ -103,17 +102,18 @@ jobs:
         VERSION=${{ env.FullSemVer }}
         git tag -a v$VERSION -m "Release $VERSION"
         git push origin v$VERSION
+        echo "RELEASE_TAG=v$VERSION" >> $GITHUB_ENV
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Create Release # Testing
+    - name: Create Release
       id: create_release
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
+        tag_name: ${{ env.RELEASE_TAG }}
+        release_name: Release ${{ env.RELEASE_TAG }}
         body: "Automated release with updated version and deployment package."
         draft: false
         prerelease: false
@@ -124,8 +124,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: deployment-package-OpenRose.API-${{ github.ref }}.zip
-        asset_name: deployment-package-OpenRose.API-${{ github.ref }}.zip
+        asset_path: deployment-package-OpenRose.API-${{ env.RELEASE_TAG }}.zip
+        asset_name: deployment-package-OpenRose.API-${{ env.RELEASE_TAG }}.zip
         asset_content_type: application/zip
 
     - name: Upload Release Assets
@@ -134,8 +134,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: deployment-package-OpenRose.WebUI-${{ github.ref }}.zip
-        asset_name: deployment-package-OpenRose.WebUI-${{ github.ref }}.zip
+        asset_path: deployment-package-OpenRose.WebUI-${{ env.RELEASE_TAG }}.zip
+        asset_name: deployment-package-OpenRose.WebUI-${{ env.RELEASE_TAG }}.zip
         asset_content_type: application/zip
 
     - name: Upload artifact
