@@ -6,6 +6,7 @@ on:
       - main
       - Alpha/**
       - Beta/**
+      - '**'
   pull_request:
     branches:
       - main
