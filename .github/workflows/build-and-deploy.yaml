@@ -98,7 +98,6 @@ jobs:
         zip -r deployment-package-OpenRose.WebUI-$VERSION.zip ./package/OpenRose.WebUI
 
     - name: Create Tag
-      if: github.ref == 'refs/heads/main'
       run: |
         VERSION=${{ env.FullSemVer }}
         git tag -a v$VERSION -m "Release $VERSION"
@@ -108,7 +107,6 @@ jobs:
 
     - name: Create Release
       id: create_release
-      if: github.ref == 'refs/tags/*'
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -121,7 +119,6 @@ jobs:
 
     - name: Upload Release Assets
       uses: actions/upload-release-asset@v1
-      if: github.ref == 'refs/tags/*'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
@@ -132,7 +129,6 @@ jobs:
 
     - name: Upload Release Assets
       uses: actions/upload-release-asset@v1
-      if: github.ref == 'refs/tags/*'
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
@@ -142,7 +138,6 @@ jobs:
         asset_content_type: application/zip
 
     - name: Upload artifact
-      if: github.ref == 'refs/tags/*'
       uses: actions/upload-artifact@v4
       with:
         name: deployment-package
