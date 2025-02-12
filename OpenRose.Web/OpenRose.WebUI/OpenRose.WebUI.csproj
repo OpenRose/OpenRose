@@ -3,7 +3,7 @@
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <InformationalVersion>0.0.1+Branch.Alpha-Test1.Sha.08bef41f5394702046068216ce8c8168c3804fd9</InformationalVersion>
+    <InformationalVersion>0.0.1+Branch.Alpha-Test1.Sha.80972b2f4e5ff8e466f82acc4bc566faaaeb1b0c</InformationalVersion>
   </PropertyGroup>
   <PropertyGroup>
     <AssemblyVersion>0.0.1.0</AssemblyVersion>
