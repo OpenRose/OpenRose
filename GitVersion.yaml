@@ -12,12 +12,10 @@ branches:
     regex: '^(Alpha/.*)$'
     is-release-branch: false
     increment: Patch
-    tag: ''
   Beta:
     regex: '^(Beta/.*)$'
     is-release-branch: false
     increment: Patch
-    tag: ''
   pull-request:
     regex: '^(pull/.*)$'
     increment: Inherit
