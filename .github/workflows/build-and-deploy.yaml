@@ -89,7 +89,7 @@ jobs:
 
     - name: Create WebDeployment Packages
       run: |
-        VERSION=${{ env.FullSemVer }}
+        VERSION=v${{ env.FullSemVer }}
         dotnet publish OpenRose.API/OpenRose.API.csproj -c Release -o ./package/OpenRose.API
         dotnet publish OpenRose.Web/OpenRose.WebUI.Client/OpenRose.WebUI.Client.csproj -c Release -o ./package/OpenRose.WebUI.Client
         dotnet publish OpenRose.Web/OpenRose.WebUI/OpenRose.WebUI.csproj -c Release -o ./package/OpenRose.WebUI
@@ -103,10 +103,10 @@ jobs:
 
     - name: Create Tag
       run: |
-        VERSION=${{ env.FullSemVer }}
-        git tag -a v$VERSION -m "Release $VERSION"
-        git push origin v$VERSION
-        echo "RELEASE_TAG=v$VERSION" >> $GITHUB_ENV
+        VERSION=v${{ env.FullSemVer }}
+        git tag -a $VERSION -m "Release $VERSION"
+        git push origin $VERSION
+        echo "RELEASE_TAG=$VERSION" >> $GITHUB_ENV
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
