@@ -98,6 +98,9 @@ jobs:
         zip -r ./package/deployment-package-OpenRose.API-$VERSION.zip ./package/OpenRose.API
         zip -r ./package/deployment-package-OpenRose.WebUI-$VERSION.zip ./package/OpenRose.WebUI
 
+    - name: List package directory contents
+      run: ls -la ./package
+
     - name: Create Tag
       run: |
         VERSION=${{ env.FullSemVer }}
@@ -119,7 +122,7 @@ jobs:
         draft: false
         prerelease: false
 
-    - name: Upload Release Assets
+    - name: Upload Release Assets - API
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -129,7 +132,7 @@ jobs:
         asset_name: deployment-package-OpenRose.API-${{ env.RELEASE_TAG }}.zip
         asset_content_type: application/zip
 
-    - name: Upload Release Assets
+    - name: Upload Release Assets - WebUI
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
