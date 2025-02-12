@@ -38,10 +38,13 @@ jobs:
       id: gitversion
       run: |
         echo "Running dotnet-gitversion to calculate FullSemVer..."
-        FullSemVer=$(dotnet-gitversion /showvariable FullSemVer)
+        FullSemVer=$(dotnet-gitversion /showvariable FullSemVer 2>&1) || {
+          echo "dotnet-gitversion failed with the following output:"
+          echo "$FullSemVer"
+          exit 1
+        }
         echo "FullSemVer calculated: $FullSemVer"
         echo "FullSemVer=$FullSemVer" >> $GITHUB_ENV
-        echo "FullSemVer=${{ env.FullSemVer }}"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
