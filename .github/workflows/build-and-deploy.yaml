@@ -94,8 +94,8 @@ jobs:
         dotnet publish OpenRose.Web/OpenRose.WebUI.Client/OpenRose.WebUI.Client.csproj -c Release -o ./package/OpenRose.WebUI.Client
         dotnet publish OpenRose.Web/OpenRose.WebUI/OpenRose.WebUI.csproj -c Release -o ./package/OpenRose.WebUI
         cp -r ./package/OpenRose.WebUI.Client/* ./package/OpenRose.WebUI/
-        zip -r deployment-package-OpenRose.API-$VERSION.zip ./package/OpenRose.API
-        zip -r deployment-package-OpenRose.WebUI-$VERSION.zip ./package/OpenRose.WebUI
+        zip -r ./package/deployment-package-OpenRose.API-$VERSION.zip ./package/OpenRose.API
+        zip -r ./package/deployment-package-OpenRose.WebUI-$VERSION.zip ./package/OpenRose.WebUI
 
     - name: Create Tag
       run: |
@@ -124,7 +124,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: deployment-package-OpenRose.API-${{ env.RELEASE_TAG }}.zip
+        asset_path: ./package/deployment-package-OpenRose.API-${{ env.RELEASE_TAG }}.zip
         asset_name: deployment-package-OpenRose.API-${{ env.RELEASE_TAG }}.zip
         asset_content_type: application/zip
 
@@ -134,7 +134,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: deployment-package-OpenRose.WebUI-${{ env.RELEASE_TAG }}.zip
+        asset_path: ./package/deployment-package-OpenRose.WebUI-${{ env.RELEASE_TAG }}.zip
         asset_name: deployment-package-OpenRose.WebUI-${{ env.RELEASE_TAG }}.zip
         asset_content_type: application/zip
 
