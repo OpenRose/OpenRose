@@ -94,6 +94,7 @@ jobs:
         dotnet publish OpenRose.Web/OpenRose.WebUI.Client/OpenRose.WebUI.Client.csproj -c Release -o ./package/OpenRose.WebUI.Client
         dotnet publish OpenRose.Web/OpenRose.WebUI/OpenRose.WebUI.csproj -c Release -o ./package/OpenRose.WebUI
         cp -r ./package/OpenRose.WebUI.Client/* ./package/OpenRose.WebUI/
+        mkdir -p ./package
         zip -r ./package/deployment-package-OpenRose.API-$VERSION.zip ./package/OpenRose.API
         zip -r ./package/deployment-package-OpenRose.WebUI-$VERSION.zip ./package/OpenRose.WebUI
 
@@ -142,5 +143,5 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: deployment-package
-        path: package
+        path: ./package
         retention-days: 30  # Set the retention period to 30 days (adjust as needed)
