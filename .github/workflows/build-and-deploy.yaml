@@ -43,8 +43,11 @@ jobs:
           echo "$FullSemVer"
           exit 1
         }
-        echo "FullSemVer calculated: $FullSemVer"
-        echo "FullSemVer=$FullSemVer" >> $GITHUB_ENV
+        CommitSha=$(git rev-parse --short HEAD)
+        BuildDate=$(date -u +"%Y%m%d%H%M%S")
+        FullSemVerWithMetadata="${FullSemVer}+build.${BuildDate}.commit.${CommitSha}"
+        echo "FullSemVer calculated: $FullSemVerWithMetadata"
+        echo "FullSemVer=$FullSemVerWithMetadata" >> $GITHUB_ENV
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
