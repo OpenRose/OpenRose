@@ -98,8 +98,8 @@ jobs:
         dotnet publish OpenRose.Web/OpenRose.WebUI/OpenRose.WebUI.csproj -c Release -o ./package/OpenRose.WebUI
         cp -r ./package/OpenRose.WebUI.Client/* ./package/OpenRose.WebUI/
         mkdir -p ./package
-        zip -r ./package/deployment-package-OpenRose.API-$VERSION.zip ./package/OpenRose.API
-        zip -r ./package/deployment-package-OpenRose.WebUI-$VERSION.zip ./package/OpenRose.WebUI
+        zip -r ./package/OpenRose.API-$VERSION.zip ./package/OpenRose.API
+        zip -r ./package/OpenRose.WebUI-$VERSION.zip ./package/OpenRose.WebUI
 
     - name: List package directory contents
       run: ls -la ./package
@@ -131,8 +131,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./package/deployment-package-OpenRose.API-${{ env.RELEASE_TAG }}.zip
-        asset_name: deployment-package-OpenRose.API-${{ env.RELEASE_TAG }}.zip
+        asset_path: ./package/OpenRose.API-${{ env.RELEASE_TAG }}.zip
+        asset_name: OpenRose.API-${{ env.RELEASE_TAG }}.zip
         asset_content_type: application/zip
 
     - name: Upload Release Assets - WebUI
@@ -141,8 +141,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./package/deployment-package-OpenRose.WebUI-${{ env.RELEASE_TAG }}.zip
-        asset_name: deployment-package-OpenRose.WebUI-${{ env.RELEASE_TAG }}.zip
+        asset_path: ./package/OpenRose.WebUI-${{ env.RELEASE_TAG }}.zip
+        asset_name: OpenRose.WebUI-${{ env.RELEASE_TAG }}.zip
         asset_content_type: application/zip
 
     - name: Upload artifact
