@@ -27,4 +27,10 @@
     <Folder Include="Components\Pages\ChangeLog\" />
     <Folder Include="wwwroot\icons\" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="web.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+	</Content>
+  </ItemGroup>	
 </Project>
