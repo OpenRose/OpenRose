@@ -3,12 +3,12 @@
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <InformationalVersion>0.0.4+Branch.Alpha-Test1.Sha.beb079951cd5b627297834caa314100c3edd2c10</InformationalVersion>
+    <InformationalVersion>0.0.5+Branch.Alpha-Test1.Sha.5807884c039480713cca3cd9d180028653fa3921</InformationalVersion>
   </PropertyGroup>
   <PropertyGroup>
-    <AssemblyVersion>0.0.4.0</AssemblyVersion>
-    <FileVersion>0.0.4.0</FileVersion>
-    <Version>0.0.4</Version>
+    <AssemblyVersion>0.0.5.0</AssemblyVersion>
+    <FileVersion>0.0.5.0</FileVersion>
+    <Version>0.0.5</Version>
   </PropertyGroup>
   <ItemGroup>
     <None Remove="Components\Pages\Itemz\Traceability\TabControlStyle.css" />
@@ -30,7 +30,7 @@
   <ItemGroup>
     <Content Include="web.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	  <CopyToPublishDirectory>Always</CopyToPublishDirectory>
-	</Content>
-  </ItemGroup>	
+      <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
 </Project>
