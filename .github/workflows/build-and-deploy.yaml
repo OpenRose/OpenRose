@@ -98,8 +98,9 @@ jobs:
         dotnet publish OpenRose.Web/OpenRose.WebUI/OpenRose.WebUI.csproj -c Release -o ./package/OpenRose.WebUI
         cp -r ./package/OpenRose.WebUI.Client/* ./package/OpenRose.WebUI/
         mkdir -p ./package
-        zip -r ./package/OpenRose.API-$VERSION.zip ./package/OpenRose.API
-        zip -r ./package/OpenRose.WebUI-$VERSION.zip ./package/OpenRose.WebUI
+        # Move the contents directly into the root of their respective zip files
+        cd ./package/OpenRose.API && zip -r ../OpenRose.API-$VERSION.zip . && cd ../..
+        cd ./package/OpenRose.WebUI && zip -r ../OpenRose.WebUI-$VERSION.zip . && cd ../..
 
     - name: List package directory contents
       run: ls -la ./package
