@@ -93,6 +93,7 @@ jobs:
     - name: Create WebDeployment Packages
       run: |
         VERSION=${{ env.FullSemVer }}
+        echo "VERSION: $VERSION"
         dotnet publish OpenRose.API/OpenRose.API.csproj -c Release -o ./package/OpenRose.API
         dotnet publish OpenRose.Web/OpenRose.WebUI.Client/OpenRose.WebUI.Client.csproj -c Release -o ./package/OpenRose.WebUI.Client
         dotnet publish OpenRose.Web/OpenRose.WebUI/OpenRose.WebUI.csproj -c Release -o ./package/OpenRose.WebUI
@@ -107,7 +108,9 @@ jobs:
     - name: Zip WebDeployment Packages
       run: |
         mkdir -p ./package
+        echo "Zipping OpenRose.API with VERSION: $VERSION"
         cd ./package/OpenRose.API && zip -r ../OpenRose.API-${VERSION}.zip . && cd ../..
+        echo "Zipping OpenRose.WebUI with VERSION: $VERSION"
         cd ./package/OpenRose.WebUI && zip -r ../OpenRose.WebUI-${VERSION}.zip . && cd ../..
 
     - name: List package directory contents
