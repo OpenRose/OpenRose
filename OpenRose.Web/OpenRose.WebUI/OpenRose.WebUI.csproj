@@ -12,8 +12,6 @@
 	</PropertyGroup>
 	<ItemGroup>
 		<None Remove="Components\Pages\Itemz\Traceability\TabControlStyle.css" />
-		<!-- Exclude web.config from default content items -->
-		<None Remove="web.config" />
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\OpenRose.WebUI.Client\OpenRose.WebUI.Client.csproj" />
@@ -29,11 +27,7 @@
 		<Folder Include="Components\Pages\ChangeLog\" />
 		<Folder Include="wwwroot\icons\" />
 	</ItemGroup>
-	<ItemGroup>
-		<!-- Manually include web.config file -->
-		<Content Include="web.config">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<CopyToPublishDirectory>Always</CopyToPublishDirectory>
-		</Content>
-	</ItemGroup>
+	<Target Name="CustomWebConfig" AfterTargets="AfterPublish">
+		<Copy SourceFiles="web.config" DestinationFolder="$(PublishDir)" />
+	</Target>
 </Project>
