@@ -48,6 +48,7 @@ jobs:
         FullSemVerWithMetadata="v${FullSemVer}+build.${BuildDate}.commit.${CommitSha}"
         echo "FullSemVer calculated: $FullSemVerWithMetadata"
         echo "FullSemVer=$FullSemVerWithMetadata" >> $GITHUB_ENV
+        echo "VERSION=$FullSemVerWithMetadata" >> $GITHUB_ENV
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -92,6 +93,7 @@ jobs:
 
     - name: Create WebDeployment Packages
       run: |
+        echo "Setting VERSION environment variable"
         VERSION=${{ env.FullSemVer }}
         echo "VERSION: $VERSION"
         dotnet publish OpenRose.API/OpenRose.API.csproj -c Release -o ./package/OpenRose.API
