@@ -45,7 +45,7 @@ jobs:
         }
         CommitSha=$(git rev-parse --short HEAD)
         BuildDate=$(date -u +"%Y%m%d%H%M%S")
-        FullSemVerWithMetadata="${FullSemVer}+build.${BuildDate}.commit.${CommitSha}"
+        FullSemVerWithMetadata="v${FullSemVer}+build.${BuildDate}.commit.${CommitSha}"
         echo "FullSemVer calculated: $FullSemVerWithMetadata"
         echo "FullSemVer=$FullSemVerWithMetadata" >> $GITHUB_ENV
       env:
@@ -92,7 +92,7 @@ jobs:
 
     - name: Create WebDeployment Packages
       run: |
-        VERSION=v${{ env.FullSemVer }}
+        VERSION=${{ env.FullSemVer }}
         dotnet publish OpenRose.API/OpenRose.API.csproj -c Release -o ./package/OpenRose.API
         dotnet publish OpenRose.Web/OpenRose.WebUI.Client/OpenRose.WebUI.Client.csproj -c Release -o ./package/OpenRose.WebUI.Client
         dotnet publish OpenRose.Web/OpenRose.WebUI/OpenRose.WebUI.csproj -c Release -o ./package/OpenRose.WebUI
@@ -107,15 +107,15 @@ jobs:
     - name: Zip WebDeployment Packages
       run: |
         mkdir -p ./package
-        cd ./package/OpenRose.API && zip -r ../OpenRose.API-$VERSION.zip . && cd ../..
-        cd ./package/OpenRose.WebUI && zip -r ../OpenRose.WebUI-$VERSION.zip . && cd ../..
+        cd ./package/OpenRose.API && zip -r ../OpenRose.API-${VERSION}.zip . && cd ../..
+        cd ./package/OpenRose.WebUI && zip -r ../OpenRose.WebUI-${VERSION}.zip . && cd ../..
 
     - name: List package directory contents
       run: ls -la ./package
 
     - name: Create Tag
       run: |
-        VERSION=v${{ env.FullSemVer }}
+        VERSION=${{ env.FullSemVer }}
         git tag -a $VERSION -m "Release $VERSION"
         git push origin $VERSION
         echo "RELEASE_TAG=$VERSION" >> $GITHUB_ENV
