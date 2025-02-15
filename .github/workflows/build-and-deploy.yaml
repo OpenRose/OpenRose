@@ -97,8 +97,16 @@ jobs:
         dotnet publish OpenRose.Web/OpenRose.WebUI.Client/OpenRose.WebUI.Client.csproj -c Release -o ./package/OpenRose.WebUI.Client
         dotnet publish OpenRose.Web/OpenRose.WebUI/OpenRose.WebUI.csproj -c Release -o ./package/OpenRose.WebUI
         cp -r ./package/OpenRose.WebUI.Client/* ./package/OpenRose.WebUI/
+
+    - name: Copy Custom web.config
+      run: cp -f OpenRose.Web/OpenRose.WebUI/web.config ./package/OpenRose.WebUI/web.config
+
+    - name: Display Custom web.config content
+      run: cat ./package/OpenRose.WebUI/web.config
+
+    - name: Zip WebDeployment Packages
+      run: |
         mkdir -p ./package
-        # Move the contents directly into the root of their respective zip files
         cd ./package/OpenRose.API && zip -r ../OpenRose.API-$VERSION.zip . && cd ../..
         cd ./package/OpenRose.WebUI && zip -r ../OpenRose.WebUI-$VERSION.zip . && cd ../..
 
