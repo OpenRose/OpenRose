@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\OpenRose.API.xml</DocumentationFile>
-    <InformationalVersion>0.0.6+Branch.Alpha-Test1.Sha.b5fd0d65ad345c5036943144da89f73dfc0bffab</InformationalVersion>
+    <InformationalVersion>0.0.6+Branch.Alpha-Test1.Sha.86047152e629d93b4e086d252f028d6dc1ce47cc</InformationalVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <NoWarn>1701;1702;1591</NoWarn>
