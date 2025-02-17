@@ -44,16 +44,20 @@ jobs:
           exit 1
         }
         BuildMetaData=$(dotnet-gitversion /showvariable BuildMetaData 2>&1)
-        FullSemVerWithBuild="${FullSemVer}+${BuildMetaData}"
+        FullSemVerWithBuild="${FullSemVer}.${BuildMetaData}"
         echo "FullSemVerWithBuild calculated: $FullSemVerWithBuild"
         echo "FullSemVerWithBuild=$FullSemVerWithBuild" >> $GITHUB_ENV
         echo "VERSION=$FullSemVerWithBuild" >> $GITHUB_ENV
         echo "VERSION: $FullSemVerWithBuild"
-        echo "Updating AssemblyInfo with VERSION: $FullSemVerWithBuild"
+        # Using a valid version string for NuGet (without '+')
+        NuGetVersion="${FullSemVer}.${BuildMetaData}"
+        echo "NuGetVersion=$NuGetVersion" >> $GITHUB_ENV
+        echo "NuGetVersion: $NuGetVersion"
+        echo "Updating AssemblyInfo with VERSION: $NuGetVersion"
         BRANCH_NAME=${GITHUB_REF##*/}
         COMMIT_SHA=${GITHUB_SHA}
-        sed -i "s/\\[assembly: AssemblyVersion(\".*\")\\]/\\[assembly: AssemblyVersion(\"${FullSemVerWithBuild}\")\\]/g" OpenRose.Web/OpenRose.WebUI/Properties/AssemblyInfo.cs
-        sed -i "s/\\[assembly: AssemblyFileVersion(\".*\")\\]/\\[assembly: AssemblyFileVersion(\"${FullSemVerWithBuild}\")\\]/g" OpenRose.Web/OpenRose.WebUI/Properties/AssemblyInfo.cs
+        sed -i "s/\\[assembly: AssemblyVersion(\".*\")\\]/\\[assembly: AssemblyVersion(\"${NuGetVersion}\")\\]/g" OpenRose.Web/OpenRose.WebUI/Properties/AssemblyInfo.cs
+        sed -i "s/\\[assembly: AssemblyFileVersion(\".*\")\\]/\\[assembly: AssemblyFileVersion(\"${NuGetVersion}\")\\]/g" OpenRose.Web/OpenRose.WebUI/Properties/AssemblyInfo.cs
         sed -i "s/\\[assembly: AssemblyInformationalVersion(\".*\")\\]/\\[assembly: AssemblyInformationalVersion(\"${FullSemVerWithBuild}\")\\]/g" OpenRose.Web/OpenRose.WebUI/Properties/AssemblyInfo.cs
         sed -i "s/\\[assembly: AssemblyMetadata(\"BranchName\", \".*\")\\]/\\[assembly: AssemblyMetadata(\"BranchName\", \"${BRANCH_NAME}\")\\]/g" OpenRose.Web/OpenRose.WebUI/Properties/AssemblyInfo.cs
         sed -i "s/\\[assembly: AssemblyMetadata(\"CommitSha\", \".*\")\\]/\\[assembly: AssemblyMetadata(\"CommitSha\", \"${COMMIT_SHA}\")\\]/g" OpenRose.Web/OpenRose.WebUI/Properties/AssemblyInfo.cs
@@ -74,7 +78,7 @@ jobs:
     - name: Create WebDeployment Packages
       run: |
         echo "Setting VERSION environment variable"
-        VERSION=${{ env.FullSemVerWithBuild }}
+        VERSION=${{ env.NuGetVersion }}
         echo "VERSION: $VERSION"
         dotnet publish OpenRose.API/OpenRose.API.csproj -c Release -o ./package/OpenRose.API
         dotnet publish OpenRose.Web/OpenRose.WebUI.Client/OpenRose.WebUI.Client.csproj -c Release -o ./package/OpenRose.WebUI.Client
@@ -107,7 +111,7 @@ jobs:
 
     - name: Create Tag
       run: |
-        VERSION=${{ env.FullSemVerWithBuild }}
+        VERSION=${{ env.NuGetVersion }}
         git tag -a $VERSION -m "Release $VERSION"
         git push origin $VERSION
         echo "RELEASE_TAG=$VERSION" >> $GITHUB_ENV
