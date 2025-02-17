@@ -44,7 +44,7 @@ jobs:
           exit 1
         }
         BuildMetaData=$(dotnet-gitversion /showvariable BuildMetaData 2>&1)
-        FullSemVerWithBuild="${FullSemVer}.${BuildMetaData}"
+        FullSemVerWithBuild="${FullSemVer}+${BuildMetaData}"
         echo "FullSemVerWithBuild calculated: $FullSemVerWithBuild"
         echo "FullSemVerWithBuild=$FullSemVerWithBuild" >> $GITHUB_ENV
         echo "VERSION=$FullSemVerWithBuild" >> $GITHUB_ENV
