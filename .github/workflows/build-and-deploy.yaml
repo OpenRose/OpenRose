@@ -43,12 +43,9 @@ jobs:
           echo "$FullSemVer"
           exit 1
         }
-        MajorMinorPatch=$(dotnet-gitversion /showvariable MajorMinorPatch 2>&1)
-        BuildMetaData=$(dotnet-gitversion /showvariable BuildMetaData 2>&1)
-        FullSemVerWithMetadata="${MajorMinorPatch}.${BuildMetaData}"
-        echo "FullSemVer calculated: $FullSemVerWithMetadata"
-        echo "FullSemVer=$FullSemVerWithMetadata" >> $GITHUB_ENV
-        echo "VERSION=$FullSemVerWithMetadata" >> $GITHUB_ENV
+        echo "FullSemVer calculated: $FullSemVer"
+        echo "FullSemVer=$FullSemVer" >> $GITHUB_ENV
+        echo "VERSION=$FullSemVer" >> $GITHUB_ENV
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
