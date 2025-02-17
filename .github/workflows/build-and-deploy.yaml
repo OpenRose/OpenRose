@@ -98,6 +98,7 @@ jobs:
 
     - name: Zip WebDeployment Packages
       run: |
+        VERSION=${{ env.SimpleVersion }}
         mkdir -p ./package
         echo "Zipping OpenRose.API with VERSION: $VERSION"
         cd ./package/OpenRose.API && zip -r ../OpenRose.API-${VERSION}.zip . && cd ../..
