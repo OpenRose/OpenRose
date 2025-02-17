@@ -43,9 +43,9 @@ jobs:
           echo "$FullSemVer"
           exit 1
         }
-        CommitSha=$(git rev-parse --short HEAD)
-        BuildDate=$(date -u +"%Y%m%d%H%M%S")
-        FullSemVerWithMetadata="v${FullSemVer}+build.${BuildDate}.commit.${CommitSha}"
+        MajorMinorPatch=$(dotnet-gitversion /showvariable MajorMinorPatch 2>&1)
+        BuildMetaData=$(dotnet-gitversion /showvariable BuildMetaData 2>&1)
+        FullSemVerWithMetadata="${MajorMinorPatch}.${BuildMetaData}"
         echo "FullSemVer calculated: $FullSemVerWithMetadata"
         echo "FullSemVer=$FullSemVerWithMetadata" >> $GITHUB_ENV
         echo "VERSION=$FullSemVerWithMetadata" >> $GITHUB_ENV
@@ -57,39 +57,22 @@ jobs:
         git config --global user.email "openroserm@outlook.com"
         git config --global user.name "OpenRose Requirements Management"
 
-    - name: Debug_Show .csproj files before replacement
-      run: |
-        find . -type f -name "*.csproj" -exec echo "File: {}" \; -exec cat {} \;
-
-    - name: Replace FullSemVer placeholder
-      run: |
-        echo "Replacing placeholders in .csproj files"
-        echo "Original FullSemVer: ${{ env.FullSemVer }}"
-        sed -i "s/{FullSemVer}/${{ env.FullSemVer }}/g" **/*.csproj
-
-    - name: Debug_Show .csproj files after replacement
-      run: |
-        find . -type f -name "*.csproj" -exec echo "File: {}" \; -exec cat {} \;
-
-    - name: Increment version numbers
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        if [[ "$(git log -1 --pretty=%B)" == *"[skip ci]"* ]]; then
-          echo "Skipping version increment"
-          exit 0
-        fi
-        dotnet-gitversion /version
-        dotnet-gitversion /updateprojectfiles
-        git add .
-        git commit -m "Increment version number [skip ci]"
-        git push origin HEAD:${{ github.ref }}
-
     - name: Restore dependencies
       run: dotnet restore
 
     - name: Build
       run: dotnet build --configuration Release
+
+    - name: Update AssemblyInfo
+      run: |
+        echo "Updating AssemblyInfo with VERSION: ${{ env.FullSemVer }}"
+        BRANCH_NAME=${GITHUB_REF##*/}
+        COMMIT_SHA=${GITHUB_SHA}
+        find . -type f -name "AssemblyInfo.cs" -exec sed -i "s/\\[assembly: AssemblyVersion(\".*\")\\]/\\[assembly: AssemblyVersion(\"${{ env.FullSemVer }}\")\\]/g" {} \;
+        find . -type f -name "AssemblyInfo.cs" -exec sed -i "s/\\[assembly: AssemblyFileVersion(\".*\")\\]/\\[assembly: AssemblyFileVersion(\"${{ env.FullSemVer }}\")\\]/g" {} \;
+        find . -type f -name "AssemblyInfo.cs" -exec sed -i "s/\\[assembly: AssemblyInformationalVersion(\".*\")\\]/\\[assembly: AssemblyInformationalVersion(\"${{ env.FullSemVer }}\")\\]/g" {} \;
+        find . -type f -name "AssemblyInfo.cs" -exec sed -i "s/\\[assembly: AssemblyMetadata(\"BranchName\", \".*\"\\)/\\[assembly: AssemblyMetadata(\"BranchName\", \"${BRANCH_NAME}\"\\)/g" {} \;
+        find . -type f -name "AssemblyInfo.cs" -exec sed -i "s/\\[assembly: AssemblyMetadata(\"CommitSha\", \".*\"\\)/\\[assembly: AssemblyMetadata(\"CommitSha\", \"${COMMIT_SHA}\"\\)/g" {} \;
 
     - name: Create WebDeployment Packages
       run: |
@@ -106,6 +89,13 @@ jobs:
 
     - name: Display Custom web.config content
       run: cat ./package/OpenRose.WebUI/web.config
+
+    - name: Copy AssemblyInfo to Package
+      run: |
+        mkdir -p ./package/OpenRose.API/Properties
+        mkdir -p ./package/OpenRose.WebUI/Properties
+        cp OpenRose.API/Properties/AssemblyInfo.cs ./package/OpenRose.API/Properties/
+        cp OpenRose.Web/OpenRose.WebUI/Properties/AssemblyInfo.cs ./package/OpenRose.WebUI/Properties/
 
     - name: Zip WebDeployment Packages
       run: |
