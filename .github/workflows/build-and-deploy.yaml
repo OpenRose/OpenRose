@@ -34,6 +34,14 @@ jobs:
     - name: Add GitVersion to PATH
       run: echo "/home/runner/.dotnet/tools" >> $GITHUB_PATH
 
+    - name: Set up Git user
+      run: |
+        git config --global user.email "openroserm@outlook.com"
+        git config --global user.name "OpenRose Requirements Management"
+
+    - name: Restore dependencies
+      run: dotnet restore
+
     - name: Calculate Version
       id: gitversion
       run: |
@@ -44,33 +52,23 @@ jobs:
           exit 1
         }
         BuildMetaData=$(dotnet-gitversion /showvariable BuildMetaData 2>&1)
-        FullSemVerWithBuild="${FullSemVer}.${BuildMetaData}"
+        SimpleVersion="${FullSemVer%%+*}"  # Remove anything after '+'
+        FullSemVerWithBuild="${FullSemVer}+${BuildMetaData}"
+        echo "SimpleVersion calculated: $SimpleVersion"
         echo "FullSemVerWithBuild calculated: $FullSemVerWithBuild"
+        echo "SimpleVersion=$SimpleVersion" >> $GITHUB_ENV
         echo "FullSemVerWithBuild=$FullSemVerWithBuild" >> $GITHUB_ENV
-        echo "VERSION=$FullSemVerWithBuild" >> $GITHUB_ENV
         echo "VERSION: $FullSemVerWithBuild"
-        # Using a valid version string for NuGet (without '+')
-        NuGetVersion="${FullSemVer}.${BuildMetaData}"
-        echo "NuGetVersion=$NuGetVersion" >> $GITHUB_ENV
-        echo "NuGetVersion: $NuGetVersion"
-        echo "Updating AssemblyInfo with VERSION: $NuGetVersion"
+        echo "Updating AssemblyInfo with SimpleVersion: $SimpleVersion and FullSemVerWithBuild: $FullSemVerWithBuild"
         BRANCH_NAME=${GITHUB_REF##*/}
         COMMIT_SHA=${GITHUB_SHA}
-        sed -i "s/\\[assembly: AssemblyVersion(\".*\")\\]/\\[assembly: AssemblyVersion(\"${NuGetVersion}\")\\]/g" OpenRose.Web/OpenRose.WebUI/Properties/AssemblyInfo.cs
-        sed -i "s/\\[assembly: AssemblyFileVersion(\".*\")\\]/\\[assembly: AssemblyFileVersion(\"${NuGetVersion}\")\\]/g" OpenRose.Web/OpenRose.WebUI/Properties/AssemblyInfo.cs
+        sed -i "s/\\[assembly: AssemblyVersion(\".*\")\\]/\\[assembly: AssemblyVersion(\"${SimpleVersion}\")\\]/g" OpenRose.Web/OpenRose.WebUI/Properties/AssemblyInfo.cs
+        sed -i "s/\\[assembly: AssemblyFileVersion(\".*\")\\]/\\[assembly: AssemblyFileVersion(\"${SimpleVersion}\")\\]/g" OpenRose.Web/OpenRose.WebUI/Properties/AssemblyInfo.cs
         sed -i "s/\\[assembly: AssemblyInformationalVersion(\".*\")\\]/\\[assembly: AssemblyInformationalVersion(\"${FullSemVerWithBuild}\")\\]/g" OpenRose.Web/OpenRose.WebUI/Properties/AssemblyInfo.cs
         sed -i "s/\\[assembly: AssemblyMetadata(\"BranchName\", \".*\")\\]/\\[assembly: AssemblyMetadata(\"BranchName\", \"${BRANCH_NAME}\")\\]/g" OpenRose.Web/OpenRose.WebUI/Properties/AssemblyInfo.cs
         sed -i "s/\\[assembly: AssemblyMetadata(\"CommitSha\", \".*\")\\]/\\[assembly: AssemblyMetadata(\"CommitSha\", \"${COMMIT_SHA}\")\\]/g" OpenRose.Web/OpenRose.WebUI/Properties/AssemblyInfo.cs
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Set up Git user
-      run: |
-        git config --global user.email "openroserm@outlook.com"
-        git config --global user.name "OpenRose Requirements Management"
-
-    - name: Restore dependencies
-      run: dotnet restore
 
     - name: Build
       run: dotnet build --configuration Release
@@ -78,7 +76,7 @@ jobs:
     - name: Create WebDeployment Packages
       run: |
         echo "Setting VERSION environment variable"
-        VERSION=${{ env.NuGetVersion }}
+        VERSION=${{ env.SimpleVersion }}
         echo "VERSION: $VERSION"
         dotnet publish OpenRose.API/OpenRose.API.csproj -c Release -o ./package/OpenRose.API
         dotnet publish OpenRose.Web/OpenRose.WebUI.Client/OpenRose.WebUI.Client.csproj -c Release -o ./package/OpenRose.WebUI.Client
@@ -111,7 +109,7 @@ jobs:
 
     - name: Create Tag
       run: |
-        VERSION=${{ env.NuGetVersion }}
+        VERSION=${{ env.SimpleVersion }}
         git tag -a $VERSION -m "Release $VERSION"
         git push origin $VERSION
         echo "RELEASE_TAG=$VERSION" >> $GITHUB_ENV
