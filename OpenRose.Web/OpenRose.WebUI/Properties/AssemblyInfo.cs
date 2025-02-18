@@ -16,3 +16,5 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyInformationalVersion("0.0.1.0")]
 [assembly: AssemblyMetadata("BranchName", "unknown")]
 [assembly: AssemblyMetadata("CommitSha", "unknown")]
+[assembly: AssemblyMetadata("BuildDateTime", "unknown")]
+[assembly: AssemblyMetadata("BuildNumber", "unknown")]
