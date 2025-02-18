@@ -13,16 +13,20 @@ branches:
     is-release-branch: false
     increment: Patch
     label: alpha
+    pre-release-weight: 100
   Beta:
     regex: '^(Beta/.*)$'
     is-release-branch: false
     increment: Patch
     label: beta
+    pre-release-weight: 200
   pull-request:
     regex: '^(pull/.*)$'
     increment: Inherit
     label: PullRequest
+    pre-release-weight: 300
   hotfix:
     regex: '^(hotfix/.*)$'
     increment: Patch
     label: hotfix
+    pre-release-weight: 400
