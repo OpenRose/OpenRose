@@ -12,13 +12,17 @@ branches:
     regex: '^(Alpha/.*)$'
     is-release-branch: false
     increment: Patch
+    label: alpha
   Beta:
     regex: '^(Beta/.*)$'
     is-release-branch: false
     increment: Patch
+    label: beta
   pull-request:
     regex: '^(pull/.*)$'
     increment: Inherit
+    label: PullRequest
   hotfix:
     regex: '^(hotfix/.*)$'
     increment: Patch
+    label: hotfix
