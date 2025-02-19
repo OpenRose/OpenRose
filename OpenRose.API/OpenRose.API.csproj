@@ -1,4 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
 	<PropertyGroup>
 		<TargetFramework>net9.0</TargetFramework>
 		<RootNamespace>OpenRose.API</RootNamespace>
@@ -7,19 +8,26 @@
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<DocumentationFile>bin\$(Configuration)\$(TargetFramework)\OpenRose.API.xml</DocumentationFile>
 		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+		<OutputType>Exe</OutputType>
+		<GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+		<UseAppHost>true</UseAppHost>
 		<!-- Disable auto-generation of assembly info -->
 	</PropertyGroup>
+
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
 		<NoWarn>1701;1702;1591</NoWarn>
 	</PropertyGroup>
+
 	<PropertyGroup>
 		<PublishDir>C:\Temp\A0\OpenRoseAPI\</PublishDir>
 	</PropertyGroup>
+
 	<ItemGroup>
 		<None Update="bin\$(Configuration)\$(TargetFramework)\OpenRose.API.xml">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 	</ItemGroup>
+
 	<ItemGroup>
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcCreateBaselineByExistingBaselineID_202410300246.sql" />
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcCreateBaselineByItemzTypeID_202410300238.sql" />
@@ -30,6 +38,7 @@
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcDeleteSingleItemzByItemzID_202406081944.sql" />
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcUpdateBaselineItemz_202408060015.sql" />
 	</ItemGroup>
+
 	<ItemGroup>
 		<PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
 		<PackageReference Include="Microsoft.AspNetCore.JsonPatch" Version="9.0.1" />
@@ -48,4 +57,5 @@
 		<PackageReference Include="System.Linq.Dynamic.Core" Version="1.6.0.1" />
 		<PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
 	</ItemGroup>
+
 </Project>

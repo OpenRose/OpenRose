@@ -5,6 +5,9 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 		<!-- Disable auto-generation of assembly info -->
+		<OutputType>Exe</OutputType>
+		<GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+		<UseAppHost>true</UseAppHost>		
 	</PropertyGroup>
 	<ItemGroup>
 		<None Remove="Components\Pages\Itemz\Traceability\TabControlStyle.css" />
