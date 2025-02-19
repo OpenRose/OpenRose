@@ -103,6 +103,10 @@ namespace ItemzApp.API
 					options.ValidateScopes = context.HostingEnvironment.IsDevelopment();
 					options.ValidateOnBuild = true;
 				})
+				.ConfigureAppConfiguration((hostingContext, config) =>
+				{ 
+					config.AddEnvironmentVariables(); // This is to make sure that we can use Environment Variables for configuration.
+				})
 				.ConfigureWebHostDefaults(webBuilder =>
 				{
 					webBuilder.UseStartup<Startup>();
