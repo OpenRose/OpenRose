@@ -26,6 +26,12 @@
 		<Folder Include="Components\Pages\ChangeLog\" />
 		<Folder Include="wwwroot\icons\" />
 	</ItemGroup>
+	<ItemGroup>
+	  <None Update="Start-OpenRose.Bat">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		  <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+	  </None>
+	</ItemGroup>
 	<Target Name="CustomWebConfig" AfterTargets="AfterPublish">
 		<Copy SourceFiles="web.config" DestinationFolder="$(PublishDir)" />
 	</Target>
