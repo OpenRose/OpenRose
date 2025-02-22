@@ -66,6 +66,16 @@ jobs:
           echo "$FullSemVer"
           exit 1
         }
+        AssemblySemFileVer=$(dotnet-gitversion /showvariable AssemblySemFileVer 2>&1) || {
+          echo "dotnet-gitversion failed with the following output:"
+          echo "$AssemblySemFileVer"
+          exit 1
+        }        
+        AssemblySemVer=$(dotnet-gitversion /showvariable AssemblySemVer 2>&1) || {
+          echo "dotnet-gitversion failed with the following output:"
+          echo "$AssemblySemVer"
+          exit 1
+        }        
         BuildMetaData=$(dotnet-gitversion /showvariable BuildMetaData 2>&1)
         SimpleVersion="${FullSemVer%%+*}"  # Remove anything after '+'
         FullSemVerWithBuild="${FullSemVer}+${BuildMetaData}"
@@ -77,12 +87,12 @@ jobs:
         echo "FullSemVerWithBuild=$FullSemVerWithBuild" >> $GITHUB_ENV
         echo "DateTimeStamp=$DateTimeStamp" >> $GITHUB_ENV
         echo "VERSION: $FullSemVerWithBuild"
-        echo "Updating AssemblyInfo with FullSemVer: $FullSemVer and FullSemVerWithBuild: $FullSemVerWithBuild"
+        echo "Updating AssemblyInfo with AssemblySemVer: $AssemblySemVer and  AssemblyFileVersion: $AssemblyFileVersion and FullSemVerWithBuild: $FullSemVerWithBuild"
         FULL_BRANCH_NAME=${GITHUB_REF#refs/heads/}
         BRANCH_NAME=$(echo $FULL_BRANCH_NAME | sed 's/\//-/g' | sed 's/-/_/g') 
         COMMIT_SHA=${GITHUB_SHA}
-        find . -name "AssemblyInfo.cs" -exec sed -i "s/\\[assembly: AssemblyVersion(\".*\")\\]/\\[assembly: AssemblyVersion(\"${FullSemVer}\")\\]/g" {} +
-        find . -name "AssemblyInfo.cs" -exec sed -i "s/\\[assembly: AssemblyFileVersion(\".*\")\\]/\\[assembly: AssemblyFileVersion(\"${FullSemVer}\")\\]/g" {} +
+        find . -name "AssemblyInfo.cs" -exec sed -i "s/\\[assembly: AssemblyVersion(\".*\")\\]/\\[assembly: AssemblyVersion(\"${AssemblySemVer}\")\\]/g" {} +
+        find . -name "AssemblyInfo.cs" -exec sed -i "s/\\[assembly: AssemblyFileVersion(\".*\")\\]/\\[assembly: AssemblyFileVersion(\"${AssemblySemFileVer}\")\\]/g" {} +
         find . -name "AssemblyInfo.cs" -exec sed -i "s/\\[assembly: AssemblyInformationalVersion(\".*\")\\]/\\[assembly: AssemblyInformationalVersion(\"${FullSemVerWithBuild}\")\\]/g" {} +
         find . -name "AssemblyInfo.cs" -exec sed -i "s/\\[assembly: AssemblyMetadata(\"BranchName\", \".*\")\\]/\\[assembly: AssemblyMetadata(\"BranchName\", \"${BRANCH_NAME}\")\\]/g" {} +
         find . -name "AssemblyInfo.cs" -exec sed -i "s/\\[assembly: AssemblyMetadata(\"CommitSha\", \".*\")\\]/\\[assembly: AssemblyMetadata(\"CommitSha\", \"${COMMIT_SHA}\")\\]/g" {} +
