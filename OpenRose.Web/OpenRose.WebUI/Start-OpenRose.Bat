@@ -1,3 +1,5 @@
+@echo off
+setlocal
 
 REM OpenRose - Requirements Management
 REM Licensed under the Apache License, Version 2.0. 
@@ -7,9 +9,6 @@ REM This script starts the OpenRose.API and OpenRose.WebUI applications in separ
 REM The script searches for the directories starting with OpenRose.API and OpenRose.WebUI in the parent directory of the script.
 REM The script assumes that the applications are located in the same directory as the script.
 REM DESIGNED TO HELP USERS TO RUN OpenRose as a standalone application.
-
-@echo off
-setlocal
 
 REM Find the directory starting with OpenRose.API
 for /d %%d in (..\OpenRose.API*) do (

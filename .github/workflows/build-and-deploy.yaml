@@ -4,18 +4,33 @@ on:
   push:
     branches:
       - main
-      - Alpha/**
-      - Beta/**
+      - Alpha**
+      - Beta**
   pull_request:
     branches:
       - main
-      - Alpha/**
-      - Beta/**
+      - Alpha**
+      - Beta**
+  workflow_dispatch:
+    inputs:
+      create_release:
+        description: 'Whether to create a release (true/false)'
+        required: true
+        default: 'false'
+      ref:
+        description: 'Branch to run the workflow against'
+        required: true
+        default: 'refs/heads/main'
+        type: choice
+        options: 
+          - refs/heads/main
+          - refs/heads/Alpha**
+          - refs/heads/Beta**
+          - refs/heads/HotFix**
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
@@ -114,7 +129,15 @@ jobs:
     - name: List package directory contents
       run: ls -la ./package
 
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: OpenRose-package-${{ env.SimpleVersion }}
+        path: ./package/*.zip
+        retention-days: 30  # Set the retention period to 30 days (adjust as needed)      
+
     - name: Create Tag
+      if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true'
       run: |
         VERSION=${{ env.SimpleVersion }}
         git tag -a $VERSION -m "Release $VERSION"
@@ -124,6 +147,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Create Release
+      if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true'
       id: create_release
       uses: actions/create-release@v1
       env:
@@ -136,6 +160,7 @@ jobs:
         prerelease: false
 
     - name: Upload Release Assets - API
+      if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true'
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -146,6 +171,7 @@ jobs:
         asset_content_type: application/zip
 
     - name: Upload Release Assets - WebUI
+      if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true'
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -154,10 +180,3 @@ jobs:
         asset_path: ./package/OpenRose.WebUI-${{ env.RELEASE_TAG }}.zip
         asset_name: OpenRose.WebUI-${{ env.RELEASE_TAG }}.zip
         asset_content_type: application/zip
-
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: deployment-package
-        path: ./package
-        retention-days: 30  # Set the retention period to 30 days (adjust as needed)
