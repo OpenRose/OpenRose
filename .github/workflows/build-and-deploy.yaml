@@ -147,7 +147,7 @@ jobs:
         retention-days: 30  # Set the retention period to 30 days (adjust as needed)      
 
     - name: Create Tag
-      if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true' # Manual trigger
+      #if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true' # Manual trigger
       run: |
         VERSION=${{ env.SimpleVersion }}
         git tag -a $VERSION -m "Release $VERSION"
@@ -157,7 +157,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Create Release
-      if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true'
+      #if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true'
       id: create_release
       uses: actions/create-release@v1
       env:
@@ -170,7 +170,7 @@ jobs:
         prerelease: false
 
     - name: Upload Release Assets - API
-      if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true'
+      #if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true'
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -181,7 +181,7 @@ jobs:
         asset_content_type: application/zip
 
     - name: Upload Release Assets - WebUI
-      if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true'
+      #if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true'
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
