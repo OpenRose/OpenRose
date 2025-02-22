@@ -75,7 +75,12 @@ jobs:
           echo "dotnet-gitversion failed with the following output:"
           echo "$AssemblySemVer"
           exit 1
-        }        
+        }  
+        EscapedBranchName=$(dotnet-gitversion /showvariable EscapedBranchName 2>&1) || {
+          echo "dotnet-gitversion failed with the following output:"
+          echo "$EscapedBranchName"
+          exit 1
+        }         
         BuildMetaData=$(dotnet-gitversion /showvariable BuildMetaData 2>&1)
         SimpleVersion="${AssemblySemVer}"  # Remove anything after '+'
         FullSemVerWithBuild="${FullSemVer}+${BuildMetaData}"
@@ -85,6 +90,8 @@ jobs:
         echo "DateTimeStamp: $DateTimeStamp"
         echo "SimpleVersion=$SimpleVersion" >> $GITHUB_ENV
         echo "FullSemVerWithBuild=$FullSemVerWithBuild" >> $GITHUB_ENV
+        echo "EscapedBranchName calculated: $EscapedBranchName"
+        echo "EscapedBranchName=$EscapedBranchName" >> $GITHUB_ENV
         echo "DateTimeStamp=$DateTimeStamp" >> $GITHUB_ENV
         echo "VERSION: $FullSemVerWithBuild"
         echo "Updating AssemblyInfo with AssemblySemVer: $AssemblySemVer and  AssemblyFileVersion: $AssemblyFileVersion and FullSemVerWithBuild: $FullSemVerWithBuild"
@@ -142,12 +149,12 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: OpenRose-package-${{ env.SimpleVersion }}
+        name: OpenRose-package-${{ env.SimpleVersion }}-${EscapedBranchName}
         path: ./package/*.zip
         retention-days: 30  # Set the retention period to 30 days (adjust as needed)      
 
     - name: Create Tag
-      #if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true' # Manual trigger
+      if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true' # Manual trigger
       run: |
         VERSION=${{ env.SimpleVersion }}
         git tag -a $VERSION -m "Release $VERSION"
@@ -157,7 +164,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Create Release
-      #if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true'
+      if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true'
       id: create_release
       uses: actions/create-release@v1
       env:
@@ -170,7 +177,7 @@ jobs:
         prerelease: false
 
     - name: Upload Release Assets - API
-      #if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true'
+      if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true'
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -181,7 +188,7 @@ jobs:
         asset_content_type: application/zip
 
     - name: Upload Release Assets - WebUI
-      #if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true'
+      if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true'
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
