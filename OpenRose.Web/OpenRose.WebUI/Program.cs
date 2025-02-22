@@ -33,6 +33,8 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()
     .AddInteractiveWebAssemblyComponents();
 
+builder.Configuration.AddEnvironmentVariables(); // Add environment variables to configuration
+
 // Configure API settings
 builder.Services.Configure<APISettings>(builder.Configuration.GetSection("ApiSettings"));
 

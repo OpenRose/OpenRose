@@ -1,0 +1,199 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - Alpha**
+      - Beta**
+  pull_request:
+    branches:
+      - main
+      - Alpha**
+      - Beta**
+  workflow_dispatch:
+    inputs:
+      create_release:
+        description: 'Whether to create a release (true/false)'
+        required: true
+        default: 'false'
+      ref:
+        description: 'Branch to run the workflow against'
+        required: true
+        default: 'refs/heads/main'
+        type: choice
+        options: 
+          - refs/heads/main
+          - refs/heads/Alpha**
+          - refs/heads/Beta**
+          - refs/heads/HotFix**
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0  ## Fetch the entire history
+        persist-credentials: true  # Ensure credentials persist for pushing
+
+    - name: Set up .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '9.x' # Adjust to the version of .NET you are using
+
+    - name: Install GitVersion
+      run: dotnet tool install --global GitVersion.Tool
+
+    - name: Add GitVersion to PATH
+      run: echo "/home/runner/.dotnet/tools" >> $GITHUB_PATH
+
+    - name: Set up Git user
+      run: |
+        git config --global user.email "openroserm@outlook.com"
+        git config --global user.name "OpenRose Requirements Management"
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Calculate Version
+      id: gitversion
+      run: |    
+        echo "Running dotnet-gitversion to calculate FullSemVer..."
+        FullSemVer=$(dotnet-gitversion /showvariable FullSemVer 2>&1) || {
+          echo "dotnet-gitversion failed with the following output:"
+          echo "$FullSemVer"
+          exit 1
+        }
+        AssemblySemFileVer=$(dotnet-gitversion /showvariable AssemblySemFileVer 2>&1) || {
+          echo "dotnet-gitversion failed with the following output:"
+          echo "$AssemblySemFileVer"
+          exit 1
+        }        
+        AssemblySemVer=$(dotnet-gitversion /showvariable AssemblySemVer 2>&1) || {
+          echo "dotnet-gitversion failed with the following output:"
+          echo "$AssemblySemVer"
+          exit 1
+        }  
+        EscapedBranchName=$(dotnet-gitversion /showvariable EscapedBranchName 2>&1) || {
+          echo "dotnet-gitversion failed with the following output:"
+          echo "$EscapedBranchName"
+          exit 1
+        }         
+        BuildMetaData=$(dotnet-gitversion /showvariable BuildMetaData 2>&1)
+        SimpleVersion="${AssemblySemVer}"  # Remove anything after '+'
+        FullSemVerWithBuild="${FullSemVer}+${BuildMetaData}"
+        DateTimeStamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+        echo "SimpleVersion calculated: $SimpleVersion"
+        echo "FullSemVerWithBuild calculated: $FullSemVerWithBuild"
+        echo "DateTimeStamp: $DateTimeStamp"
+        echo "SimpleVersion=$SimpleVersion" >> $GITHUB_ENV
+        echo "FullSemVerWithBuild=$FullSemVerWithBuild" >> $GITHUB_ENV
+        echo "EscapedBranchName calculated: $EscapedBranchName"
+        echo "EscapedBranchName=$EscapedBranchName" >> $GITHUB_ENV
+        echo "DateTimeStamp=$DateTimeStamp" >> $GITHUB_ENV
+        echo "VERSION: $FullSemVerWithBuild"
+        echo "Updating AssemblyInfo with AssemblySemVer: $AssemblySemVer and  AssemblyFileVersion: $AssemblyFileVersion and FullSemVerWithBuild: $FullSemVerWithBuild"
+        FULL_BRANCH_NAME=${GITHUB_REF#refs/heads/}
+        BRANCH_NAME=$(echo $FULL_BRANCH_NAME | sed 's/\//-/g' | sed 's/-/_/g') 
+        COMMIT_SHA=${GITHUB_SHA}
+        find . -name "AssemblyInfo.cs" -exec sed -i "s/\\[assembly: AssemblyVersion(\".*\")\\]/\\[assembly: AssemblyVersion(\"${AssemblySemVer}\")\\]/g" {} +
+        find . -name "AssemblyInfo.cs" -exec sed -i "s/\\[assembly: AssemblyFileVersion(\".*\")\\]/\\[assembly: AssemblyFileVersion(\"${AssemblySemFileVer}\")\\]/g" {} +
+        find . -name "AssemblyInfo.cs" -exec sed -i "s/\\[assembly: AssemblyInformationalVersion(\".*\")\\]/\\[assembly: AssemblyInformationalVersion(\"${FullSemVerWithBuild}\")\\]/g" {} +
+        find . -name "AssemblyInfo.cs" -exec sed -i "s/\\[assembly: AssemblyMetadata(\"BranchName\", \".*\")\\]/\\[assembly: AssemblyMetadata(\"BranchName\", \"${BRANCH_NAME}\")\\]/g" {} +
+        find . -name "AssemblyInfo.cs" -exec sed -i "s/\\[assembly: AssemblyMetadata(\"CommitSha\", \".*\")\\]/\\[assembly: AssemblyMetadata(\"CommitSha\", \"${COMMIT_SHA}\")\\]/g" {} +
+        find . -name "AssemblyInfo.cs" -exec sed -i "s/\\[assembly: AssemblyMetadata(\"BuildDateTime\", \".*\")\\]/\\[assembly: AssemblyMetadata(\"BuildDateTime\", \"${DateTimeStamp}\")\\]/g" {} +
+        find . -name "AssemblyInfo.cs" -exec sed -i "s/\\[assembly: AssemblyMetadata(\"BuildNumber\", \".*\")\\]/\\[assembly: AssemblyMetadata(\"BuildNumber\", \"${GITHUB_RUN_NUMBER}\")\\]/g" {} +
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build
+      run: dotnet build --configuration Release
+
+    - name: Create WebDeployment Packages
+      run: |
+        echo "Setting VERSION environment variable"
+        VERSION=${{ env.SimpleVersion }}
+        echo "VERSION: $VERSION"
+        dotnet publish OpenRose.API/OpenRose.API.csproj -c Release -o ./package/OpenRose.API --runtime win-x64 
+        dotnet publish OpenRose.Web/OpenRose.WebUI.Client/OpenRose.WebUI.Client.csproj -c Release -o ./package/OpenRose.WebUI.Client --runtime win-x64 
+        dotnet publish OpenRose.Web/OpenRose.WebUI/OpenRose.WebUI.csproj -c Release -o ./package/OpenRose.WebUI --runtime win-x64 
+        cp -r ./package/OpenRose.WebUI.Client/* ./package/OpenRose.WebUI/
+
+    - name: Copy Custom web.config
+      run: cp -f OpenRose.Web/OpenRose.WebUI/web.config ./package/OpenRose.WebUI/web.config
+
+    - name: Display Custom web.config content
+      run: cat ./package/OpenRose.WebUI/web.config
+
+    - name: Copy AssemblyInfo to Package
+      run: |
+        mkdir -p ./package/OpenRose.API/Properties
+        mkdir -p ./package/OpenRose.WebUI/Properties
+        cp OpenRose.API/Properties/AssemblyInfo.cs ./package/OpenRose.API/Properties/
+        cp OpenRose.Web/OpenRose.WebUI/Properties/AssemblyInfo.cs ./package/OpenRose.WebUI/Properties/
+
+    - name: Zip WebDeployment Packages
+      run: |
+        VERSION=${{ env.SimpleVersion }}
+        mkdir -p ./package
+        echo "Zipping OpenRose.API with VERSION: $VERSION"
+        cd ./package/OpenRose.API && zip -r ../OpenRose.API-${VERSION}.zip . && cd ../..
+        echo "Zipping OpenRose.WebUI with VERSION: $VERSION"
+        cd ./package/OpenRose.WebUI && zip -r ../OpenRose.WebUI-${VERSION}.zip . && cd ../..
+
+    - name: List package directory contents
+      run: ls -la ./package
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: OpenRose-package-${{ env.SimpleVersion }}-${{ env.EscapedBranchName }}
+        path: ./package/*.zip
+        retention-days: 30  # Set the retention period to 30 days (adjust as needed)      
+
+    - name: Create Tag
+      if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true' # Manual trigger
+      run: |
+        VERSION=${{ env.SimpleVersion }}
+        git tag -a $VERSION -m "Release $VERSION"
+        git push origin $VERSION
+        echo "RELEASE_TAG=$VERSION" >> $GITHUB_ENV
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Create Release
+      if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true'
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ env.RELEASE_TAG }}
+        release_name: Release ${{ env.RELEASE_TAG }}
+        body: "Automated release with updated version and deployment package."
+        draft: false
+        prerelease: false
+
+    - name: Upload Release Assets - API
+      if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true'
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./package/OpenRose.API-${{ env.RELEASE_TAG }}.zip
+        asset_name: OpenRose.API-${{ env.RELEASE_TAG }}.zip
+        asset_content_type: application/zip
+
+    - name: Upload Release Assets - WebUI
+      if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true'
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./package/OpenRose.WebUI-${{ env.RELEASE_TAG }}.zip
+        asset_name: OpenRose.WebUI-${{ env.RELEASE_TAG }}.zip
+        asset_content_type: application/zip

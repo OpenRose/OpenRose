@@ -7,6 +7,11 @@
 		<Nullable>enable</Nullable>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<DocumentationFile>bin\$(Configuration)\$(TargetFramework)\OpenRose.API.xml</DocumentationFile>
+		<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+		<OutputType>Exe</OutputType>
+		<GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+		<UseAppHost>true</UseAppHost>
+		<!-- Disable auto-generation of assembly info -->
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -14,9 +19,6 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<AssemblyVersion>0.0.0.1</AssemblyVersion>
-		<FileVersion>0.0.0.1</FileVersion>
-		<Version>0.0.0.1</Version>
 		<PublishDir>C:\Temp\A0\OpenRoseAPI\</PublishDir>
 	</PropertyGroup>
 

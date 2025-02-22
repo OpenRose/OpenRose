@@ -1,0 +1,32 @@
+mode: ContinuousDeployment
+assembly-versioning-scheme: MajorMinorPatch
+assembly-file-versioning-scheme: MajorMinorPatch
+ignore:
+  sha: []
+branches:
+  main:
+    regex: '^(main)$'
+    is-release-branch: true
+    increment: Minor
+  Alpha:
+    regex: '^(Alpha.*)$'
+    is-release-branch: false
+    increment: Patch
+    label: alpha
+    pre-release-weight: 100
+  Beta:
+    regex: '^(Beta.*)$'
+    is-release-branch: false
+    increment: Patch
+    label: beta
+    pre-release-weight: 200
+  pull-request:
+    regex: '^(pull/.*)$'
+    increment: Inherit
+    label: PullRequest
+    pre-release-weight: 300
+  hotfix:
+    regex: '^(HotFix.*)$'
+    increment: Patch
+    label: hotfix
+    pre-release-weight: 400
