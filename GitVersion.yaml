@@ -9,13 +9,13 @@ branches:
     is-release-branch: true
     increment: Minor
   Alpha:
-    regex: '^(Alpha/.*)$'
+    regex: '^(Alpha.*)$'
     is-release-branch: false
     increment: Patch
     label: alpha
     pre-release-weight: 100
   Beta:
-    regex: '^(Beta/.*)$'
+    regex: '^(Beta.*)$'
     is-release-branch: false
     increment: Patch
     label: beta
@@ -26,7 +26,7 @@ branches:
     label: PullRequest
     pre-release-weight: 300
   hotfix:
-    regex: '^(hotfix/.*)$'
+    regex: '^(HotFix.*)$'
     increment: Patch
     label: hotfix
     pre-release-weight: 400
