@@ -149,7 +149,7 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: OpenRose-package-${{ env.SimpleVersion }}-${EscapedBranchName}
+        name: OpenRose-package-${{ env.SimpleVersion }}-${{ env.EscapedBranchName }}
         path: ./package/*.zip
         retention-days: 30  # Set the retention period to 30 days (adjust as needed)      
 
