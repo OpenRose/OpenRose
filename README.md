@@ -6,6 +6,14 @@ Main purpose of this project is to help users and teams to **`do it right`** and
 
 OpenRose is developed as Open Source Application Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+### OpenRose Product Demos
+
+**[Click Here to go to OpenRose YouTube Channel](https://www.youtube.com/@openroserm)**
+
+Click on image below to watch OpenRose Introduction Video.
+
+[<img src="https://i.ytimg.com/vi/P0x3ZaHg8sA/hqdefault.jpg?sqp=-oaymwEcCNACELwBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLCXYp_Ee2ycg0Lm_GlntHkGiYBJyQ">](https://www.youtube.com/watch?v=P0x3ZaHg8sA)
+
 ## OpenRose Documentation Wiki
 
 Please refer to ![OpenRose Wiki](https://github.com/OpenRose/OpenRose/wiki) for documentation. 
@@ -32,7 +40,7 @@ BUT primarily, **Itemz** is nothing but Requirements / Needs / Wants / Notes / F
 
 ## Overview of Current State
 
-Just released version 0.0.0.1. 
+Just released version 0.1.0.0 
 
 Feature list
 
