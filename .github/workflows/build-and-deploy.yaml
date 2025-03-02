@@ -116,9 +116,9 @@ jobs:
         echo "Setting VERSION environment variable"
         VERSION=${{ env.SimpleVersion }}
         echo "VERSION: $VERSION"
-        dotnet publish OpenRose.API/OpenRose.API.csproj -c Release -o ./package/OpenRose.API --runtime win-x64 
-        dotnet publish OpenRose.Web/OpenRose.WebUI.Client/OpenRose.WebUI.Client.csproj -c Release -o ./package/OpenRose.WebUI.Client --runtime win-x64 
-        dotnet publish OpenRose.Web/OpenRose.WebUI/OpenRose.WebUI.csproj -c Release -o ./package/OpenRose.WebUI --runtime win-x64 
+        dotnet publish OpenRose.API/OpenRose.API.csproj -c Release -o ./package/OpenRose.API
+        dotnet publish OpenRose.Web/OpenRose.WebUI.Client/OpenRose.WebUI.Client.csproj -c Release -o ./package/OpenRose.WebUI.Client
+        dotnet publish OpenRose.Web/OpenRose.WebUI/OpenRose.WebUI.csproj -c Release -o ./package/OpenRose.WebUI
         cp -r ./package/OpenRose.WebUI.Client/* ./package/OpenRose.WebUI/
 
     - name: Copy Custom web.config
