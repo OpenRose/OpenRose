@@ -111,13 +111,14 @@ jobs:
     - name: Build
       run: dotnet build --configuration Release
 
+
     - name: Create WebDeployment Packages
       run: |
         echo "Setting VERSION environment variable"
         VERSION=${{ env.SimpleVersion }}
         echo "VERSION: $VERSION"
         dotnet publish OpenRose.API/OpenRose.API.csproj -c Release -o ./package/OpenRose.API -p:UseAppHost=true
-        dotnet publish OpenRose.Web/OpenRose.WebUI.Client/OpenRose.WebUI.Client.csproj -c Release -o ./package/OpenRose.WebUI.Client -p:UseAppHost=true
+        dotnet publish OpenRose.Web/OpenRose.WebUI.Client/OpenRose.WebUI.Client.csproj -c Release -o ./package/OpenRose.WebUI.Client
         dotnet publish OpenRose.Web/OpenRose.WebUI/OpenRose.WebUI.csproj -c Release -o ./package/OpenRose.WebUI -p:UseAppHost=true
         cp -r ./package/OpenRose.WebUI.Client/* ./package/OpenRose.WebUI/
 
