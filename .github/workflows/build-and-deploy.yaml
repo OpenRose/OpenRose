@@ -164,47 +164,15 @@ jobs:
         path: ./package/*.zip
         retention-days: 30  # Set the retention period to 30 days (adjust as needed)
 
-    - name: Create Tag
-      if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true' # Manual trigger
+    - name: Create Tag and Release
+      if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true' && matrix.platform == 'win-x64' # Manual trigger
       run: |
         VERSION=${{ env.SimpleVersion }}
         git tag -a $VERSION -m "Release $VERSION"
         git push origin $VERSION
         echo "RELEASE_TAG=$VERSION" >> $GITHUB_ENV
+        gh release create $VERSION ./package/OpenRose*.zip --title "Release $VERSION" --notes "Automated release with updated version and deployment package."
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Create Release
-      if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true'
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ env.RELEASE_TAG }}
-        release_name: Release ${{ env.RELEASE_TAG }}
-        body: "Automated release with updated version and deployment package."
-        draft: false
-        prerelease: false
-
-    - name: Upload Release Assets - API
-      if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true'
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./package/OpenRose.API-${{ env.RELEASE_TAG }}-${{ matrix.platform }}.zip
-        asset_name: OpenRose.API-${{ env.RELEASE_TAG }}-${{ matrix.platform }}.zip
-        asset_content_type: application/zip
-
-    - name: Upload Release Assets - WebUI
-      if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true'
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./package/OpenRose.WebUI-${{ env.RELEASE_TAG }}-${{ matrix.platform }}.zip
-        asset_name: OpenRose.WebUI-${{ env.RELEASE_TAG }}-${{ matrix.platform }}.zip
-        asset_content_type: application/zip
+        GITHUB_USER: OpenRose
+        GITHUB_REPOSITORY: OpenRose/OpenRose
