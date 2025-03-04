@@ -178,6 +178,11 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
+    - name: Set up Git user
+      run: |
+        git config --global user.email "openroserm@outlook.com"
+        git config --global user.name "OpenRose Requirements Management"
+
     - name: Set Environment Variables
       run: |
         echo "SimpleVersion=${{ needs.build.outputs.SimpleVersion }}" >> $GITHUB_ENV
