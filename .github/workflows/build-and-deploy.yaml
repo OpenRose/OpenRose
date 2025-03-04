@@ -113,8 +113,9 @@ jobs:
         find . -name "AssemblyInfo.cs" -exec sed -i "s/\[assembly: AssemblyMetadata(\"BranchName\", \".*\")\]/\[assembly: AssemblyMetadata(\"BranchName\", \"${BRANCH_NAME}\")\]/g" {} +
         find . -name "AssemblyInfo.cs" -exec sed -i "s/\[assembly: AssemblyMetadata(\"CommitSha\", \".*\")\]/\[assembly: AssemblyMetadata(\"CommitSha\", \"${COMMIT_SHA}\")\]/g" {} +
         find . -name "AssemblyInfo.cs" -exec sed -i "s/\[assembly: AssemblyMetadata(\"BuildDateTime\", \".*\")\]/\[assembly: AssemblyMetadata(\"BuildDateTime\", \"${DateTimeStamp}\")\]/g" {} +
-        echo "::set-output name=SimpleVersion::$SimpleVersion"
-        echo "::set-output name=EscapedBranchName::$EscapedBranchName"
+        echo "BuildOptputSimpleVersion=$SimpleVersion" >> $GITHUB_OUTPUT
+        echo "BuildOutputEscapedBranchName=$EscapedBranchName" >> $GITHUB_OUTPUT
+        
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -185,8 +186,8 @@ jobs:
 
     - name: Set Environment Variables
       run: |
-        echo "SimpleVersion=${{ needs.build.outputs.SimpleVersion }}" >> $GITHUB_ENV
-        echo "EscapedBranchName=${{ needs.build.outputs.EscapedBranchName }}" >> $GITHUB_ENV
+        echo "SimpleVersion=${{ needs.build.outputs.BuildOptputSimpleVersion }}" >> $GITHUB_ENV
+        echo "EscapedBranchName=${{ needs.build.outputs.BuildOptputEscapedBranchName }}" >> $GITHUB_ENV
 
     - name: Download build artifacts - win-x64
       uses: actions/download-artifact@v4
