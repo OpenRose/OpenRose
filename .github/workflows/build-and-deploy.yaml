@@ -36,6 +36,10 @@ jobs:
       matrix:
         platform: [win-x64, win-x86]
 
+    outputs:
+      SimpleVersion: ${{ steps.set_env.outputs.SimpleVersion }}
+      EscapedBranchName: ${{ steps.set_env.outputs.EscapedBranchName }}
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
@@ -63,7 +67,7 @@ jobs:
       run: dotnet restore
 
     - name: Calculate Version
-      id: gitversion
+      id: set_env
       run: |
         echo "Running dotnet-gitversion to calculate FullSemVer..."
         FullSemVer=$(dotnet-gitversion /showvariable FullSemVer 2>&1) || {
@@ -109,7 +113,8 @@ jobs:
         find . -name "AssemblyInfo.cs" -exec sed -i "s/\[assembly: AssemblyMetadata(\"BranchName\", \".*\")\]/\[assembly: AssemblyMetadata(\"BranchName\", \"${BRANCH_NAME}\")\]/g" {} +
         find . -name "AssemblyInfo.cs" -exec sed -i "s/\[assembly: AssemblyMetadata(\"CommitSha\", \".*\")\]/\[assembly: AssemblyMetadata(\"CommitSha\", \"${COMMIT_SHA}\")\]/g" {} +
         find . -name "AssemblyInfo.cs" -exec sed -i "s/\[assembly: AssemblyMetadata(\"BuildDateTime\", \".*\")\]/\[assembly: AssemblyMetadata(\"BuildDateTime\", \"${DateTimeStamp}\")\]/g" {} +
-        find . -name "AssemblyInfo.cs" -exec sed -i "s/\[assembly: AssemblyMetadata(\"BuildNumber\", \".*\")\]/\[assembly: AssemblyMetadata(\"BuildNumber\", \"${GITHUB_RUN_NUMBER}\")\]/g" {} +
+        echo "::set-output name=SimpleVersion::$SimpleVersion"
+        echo "::set-output name=EscapedBranchName::$EscapedBranchName"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -158,7 +163,7 @@ jobs:
       run: ls -la ./package
 
     - name: Upload artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v3
       with:
         name: OpenRose-package-${{ env.SimpleVersion }}-${{ env.EscapedBranchName }}-${{ matrix.platform }}
         path: ./package/*.zip
@@ -173,21 +178,26 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
+    - name: Set Environment Variables
+      run: |
+        echo "SimpleVersion=${{ needs.build.outputs.SimpleVersion }}" >> $GITHUB_ENV
+        echo "EscapedBranchName=${{ needs.build.outputs.EscapedBranchName }}" >> $GITHUB_ENV
+
     - name: Download build artifacts - win-x64
       uses: actions/download-artifact@v3
       with:
-        name: OpenRose-package-${{ needs.build.outputs.SimpleVersion }}-${{ needs.build.outputs.EscapedBranchName }}-win-x64
+        name: OpenRose-package-${{ env.SimpleVersion }}-${{ env.EscapedBranchName }}-win-x64
         path: ./artifacts/win-x64
 
     - name: Download build artifacts - win-x86
       uses: actions/download-artifact@v3
       with:
-        name: OpenRose-package-${{ needs.build.outputs.SimpleVersion }}-${{ needs.build.outputs.EscapedBranchName }}-win-x86
+        name: OpenRose-package-${{ env.SimpleVersion }}-${{ env.EscapedBranchName }}-win-x86
         path: ./artifacts/win-x86
 
     - name: Create Tag
       run: |
-        VERSION=${{ needs.build.outputs.SimpleVersion }}
+        VERSION=${{ env.SimpleVersion }}
         git tag -a $VERSION -m "Release $VERSION"
         git push origin $VERSION
         echo "RELEASE_TAG=$VERSION" >> $GITHUB_ENV
