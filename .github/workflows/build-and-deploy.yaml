@@ -37,8 +37,8 @@ jobs:
         platform: [win-x64, win-x86]
 
     outputs:
-      SimpleVersion: ${{ steps.set_env.outputs.SimpleVersion }}
-      EscapedBranchName: ${{ steps.set_env.outputs.EscapedBranchName }}
+      BuildOptputSimpleVersion: ${{ steps.set_env.outputs.SimpleVersion }}
+      BuildOutputEscapedBranchName: ${{ steps.set_env.outputs.EscapedBranchName }}
 
     steps:
     - name: Checkout repository
