@@ -22,7 +22,7 @@ on:
         required: true
         default: 'refs/heads/main'
         type: choice
-        options: 
+        options:
           - refs/heads/main
           - refs/heads/Alpha**
           - refs/heads/Beta**
@@ -164,15 +164,54 @@ jobs:
         path: ./package/*.zip
         retention-days: 30  # Set the retention period to 30 days (adjust as needed)
 
-    - name: Create Tag and Release
-      if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true' && matrix.platform == 'win-x64' # Manual trigger
+  create_release:
+    runs-on: ubuntu-latest
+    needs: build
+    # if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true' 
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Download build artifacts - win-x64
+      uses: actions/download-artifact@v3
+      with:
+        name: OpenRose-package-${{ needs.build.outputs.SimpleVersion }}-${{ needs.build.outputs.EscapedBranchName }}-win-x64
+        path: ./artifacts/win-x64
+
+    - name: Download build artifacts - win-x86
+      uses: actions/download-artifact@v3
+      with:
+        name: OpenRose-package-${{ needs.build.outputs.SimpleVersion }}-${{ needs.build.outputs.EscapedBranchName }}-win-x86
+        path: ./artifacts/win-x86
+
+    - name: Create Tag
       run: |
-        VERSION=${{ env.SimpleVersion }}
+        VERSION=${{ needs.build.outputs.SimpleVersion }}
         git tag -a $VERSION -m "Release $VERSION"
         git push origin $VERSION
         echo "RELEASE_TAG=$VERSION" >> $GITHUB_ENV
-        gh release create $VERSION ./package/OpenRose*.zip --title "Release $VERSION" --notes "Automated release with updated version and deployment package."
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        GITHUB_USER: OpenRose
-        GITHUB_REPOSITORY: OpenRose/OpenRose
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ env.RELEASE_TAG }}
+        release_name: Release ${{ env.RELEASE_TAG }}
+        body: "Automated release with updated version and deployment package."
+        draft: false
+        prerelease: false
+
+    - name: Upload Release Assets
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./artifacts/**/OpenRose*.zip
+        asset_name: $(basename ${{ artifact_path }})
+        asset_content_type: application/zip
