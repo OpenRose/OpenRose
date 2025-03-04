@@ -155,9 +155,9 @@ jobs:
         VERSION=${{ env.SimpleVersion }}
         mkdir -p ./package
         echo "Zipping OpenRose.API with VERSION: $VERSION"
-        cd ./package/OpenRose.API && zip -r ../OpenRose.API-${VERSION}-${{ matrix.platform }}.zip . && cd ../..
+        cd ./package/OpenRose.API && zip -r ../${{ matrix.platform }}-OpenRose.API-${VERSION}.zip . && cd ../..
         echo "Zipping OpenRose.WebUI with VERSION: $VERSION"
-        cd ./package/OpenRose.WebUI && zip -r ../OpenRose.WebUI-${VERSION}-${{ matrix.platform }}.zip . && cd ../..
+        cd ./package/OpenRose.WebUI && zip -r ../${{ matrix.platform }}-OpenRose.WebUI-${VERSION}.zip . && cd ../..
 
     - name: List package directory contents
       run: ls -la ./package
@@ -223,7 +223,7 @@ jobs:
 
     - name: Upload Release Assets
       run: |
-        for file in ./artifacts/**/*.zip; do
+        for file in ./artifacts/**/*OpenRose*.zip; do
           gh release upload ${{ env.RELEASE_TAG }} "$file"
         done
       env:
