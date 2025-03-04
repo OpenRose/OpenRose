@@ -113,8 +113,14 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Build
-      run: dotnet build --configuration Release --runtime ${{ matrix.platform }}
+    - name: Build API
+      run: dotnet build OpenRose.API/OpenRose.API.csproj --configuration Release --runtime ${{ matrix.platform }}
+
+    - name: Build WebUI Client
+      run: dotnet build OpenRose.Web/OpenRose.WebUI.Client/OpenRose.WebUI.Client.csproj --configuration Release --runtime ${{ matrix.platform }}
+
+    - name: Build WebUI
+      run: dotnet build OpenRose.Web/OpenRose.WebUI/OpenRose.WebUI.csproj --configuration Release --runtime ${{ matrix.platform }}
 
     - name: Create WebDeployment Packages
       run: |
