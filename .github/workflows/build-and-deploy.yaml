@@ -22,7 +22,7 @@ on:
         required: true
         default: 'refs/heads/main'
         type: choice
-        options:
+        options: 
           - refs/heads/main
           - refs/heads/Alpha**
           - refs/heads/Beta**
@@ -64,7 +64,7 @@ jobs:
 
     - name: Calculate Version
       id: gitversion
-      run: |    
+      run: |
         echo "Running dotnet-gitversion to calculate FullSemVer..."
         FullSemVer=$(dotnet-gitversion /showvariable FullSemVer 2>&1) || {
           echo "dotnet-gitversion failed with the following output:"
@@ -75,17 +75,17 @@ jobs:
           echo "dotnet-gitversion failed with the following output:"
           echo "$AssemblySemFileVer"
           exit 1
-        }        
+        }
         AssemblySemVer=$(dotnet-gitversion /showvariable AssemblySemVer 2>&1) || {
           echo "dotnet-gitversion failed with the following output:"
           echo "$AssemblySemVer"
           exit 1
-        }  
+        }
         EscapedBranchName=$(dotnet-gitversion /showvariable EscapedBranchName 2>&1) || {
           echo "dotnet-gitversion failed with the following output:"
           echo "$EscapedBranchName"
           exit 1
-        }         
+        }
         BuildMetaData=$(dotnet-gitversion /showvariable BuildMetaData 2>&1)
         SimpleVersion="${AssemblySemVer}"  # Remove anything after '+'
         FullSemVerWithBuild="${FullSemVer}+${BuildMetaData}"
@@ -101,7 +101,7 @@ jobs:
         echo "VERSION: $FullSemVerWithBuild"
         echo "Updating AssemblyInfo with AssemblySemVer: $AssemblySemVer and  AssemblyFileVersion: $AssemblyFileVersion and FullSemVerWithBuild: $FullSemVerWithBuild"
         FULL_BRANCH_NAME=${GITHUB_REF#refs/heads/}
-        BRANCH_NAME=$(echo $FULL_BRANCH_NAME | sed 's/\//-/g' | sed 's/-/_/g') 
+        BRANCH_NAME=$(echo $FULL_BRANCH_NAME | sed 's/\//-/g' | sed 's/-/_/g')
         COMMIT_SHA=${GITHUB_SHA}
         find . -name "AssemblyInfo.cs" -exec sed -i "s/\[assembly: AssemblyVersion(\".*\")\]/\[assembly: AssemblyVersion(\"${AssemblySemVer}\")\]/g" {} +
         find . -name "AssemblyInfo.cs" -exec sed -i "s/\[assembly: AssemblyFileVersion(\".*\")\]/\[assembly: AssemblyFileVersion(\"${AssemblySemFileVer}\")\]/g" {} +
@@ -167,7 +167,7 @@ jobs:
   create_release:
     runs-on: ubuntu-latest
     needs: build
-    # if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true' 
+    # if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true'
 
     steps:
     - name: Checkout repository
@@ -176,18 +176,18 @@ jobs:
     - name: Download build artifacts - win-x64
       uses: actions/download-artifact@v3
       with:
-        name: OpenRose-package-${{ needs.build.outputs.SimpleVersion }}-${{ needs.build.outputs.EscapedBranchName }}-win-x64
+        name: OpenRose-package-${{ env.SimpleVersion }}-${{ env.EscapedBranchName }}-win-x64
         path: ./artifacts/win-x64
 
     - name: Download build artifacts - win-x86
       uses: actions/download-artifact@v3
       with:
-        name: OpenRose-package-${{ needs.build.outputs.SimpleVersion }}-${{ needs.build.outputs.EscapedBranchName }}-win-x86
+        name: OpenRose-package-${{ env.SimpleVersion }}-${{ env.EscapedBranchName }}-win-x86
         path: ./artifacts/win-x86
 
     - name: Create Tag
       run: |
-        VERSION=${{ needs.build.outputs.SimpleVersion }}
+        VERSION=${{ env.SimpleVersion }}
         git tag -a $VERSION -m "Release $VERSION"
         git push origin $VERSION
         echo "RELEASE_TAG=$VERSION" >> $GITHUB_ENV
@@ -212,6 +212,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./artifacts/**/OpenRose*.zip
-        asset_name: $(basename ${{ artifact_path }})
+        asset_path: ./artifacts/**/*.zip
+        asset_name: $(basename ${{ asset_path }})
         asset_content_type: application/zip
