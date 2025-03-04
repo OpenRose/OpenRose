@@ -31,6 +31,11 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        platform: [win-x64, win-x86]
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
@@ -98,27 +103,27 @@ jobs:
         FULL_BRANCH_NAME=${GITHUB_REF#refs/heads/}
         BRANCH_NAME=$(echo $FULL_BRANCH_NAME | sed 's/\//-/g' | sed 's/-/_/g') 
         COMMIT_SHA=${GITHUB_SHA}
-        find . -name "AssemblyInfo.cs" -exec sed -i "s/\\[assembly: AssemblyVersion(\".*\")\\]/\\[assembly: AssemblyVersion(\"${AssemblySemVer}\")\\]/g" {} +
-        find . -name "AssemblyInfo.cs" -exec sed -i "s/\\[assembly: AssemblyFileVersion(\".*\")\\]/\\[assembly: AssemblyFileVersion(\"${AssemblySemFileVer}\")\\]/g" {} +
-        find . -name "AssemblyInfo.cs" -exec sed -i "s/\\[assembly: AssemblyInformationalVersion(\".*\")\\]/\\[assembly: AssemblyInformationalVersion(\"${FullSemVerWithBuild}\")\\]/g" {} +
-        find . -name "AssemblyInfo.cs" -exec sed -i "s/\\[assembly: AssemblyMetadata(\"BranchName\", \".*\")\\]/\\[assembly: AssemblyMetadata(\"BranchName\", \"${BRANCH_NAME}\")\\]/g" {} +
-        find . -name "AssemblyInfo.cs" -exec sed -i "s/\\[assembly: AssemblyMetadata(\"CommitSha\", \".*\")\\]/\\[assembly: AssemblyMetadata(\"CommitSha\", \"${COMMIT_SHA}\")\\]/g" {} +
-        find . -name "AssemblyInfo.cs" -exec sed -i "s/\\[assembly: AssemblyMetadata(\"BuildDateTime\", \".*\")\\]/\\[assembly: AssemblyMetadata(\"BuildDateTime\", \"${DateTimeStamp}\")\\]/g" {} +
-        find . -name "AssemblyInfo.cs" -exec sed -i "s/\\[assembly: AssemblyMetadata(\"BuildNumber\", \".*\")\\]/\\[assembly: AssemblyMetadata(\"BuildNumber\", \"${GITHUB_RUN_NUMBER}\")\\]/g" {} +
+        find . -name "AssemblyInfo.cs" -exec sed -i "s/\[assembly: AssemblyVersion(\".*\")\]/\[assembly: AssemblyVersion(\"${AssemblySemVer}\")\]/g" {} +
+        find . -name "AssemblyInfo.cs" -exec sed -i "s/\[assembly: AssemblyFileVersion(\".*\")\]/\[assembly: AssemblyFileVersion(\"${AssemblySemFileVer}\")\]/g" {} +
+        find . -name "AssemblyInfo.cs" -exec sed -i "s/\[assembly: AssemblyInformationalVersion(\".*\")\]/\[assembly: AssemblyInformationalVersion(\"${FullSemVerWithBuild}\")\]/g" {} +
+        find . -name "AssemblyInfo.cs" -exec sed -i "s/\[assembly: AssemblyMetadata(\"BranchName\", \".*\")\]/\[assembly: AssemblyMetadata(\"BranchName\", \"${BRANCH_NAME}\")\]/g" {} +
+        find . -name "AssemblyInfo.cs" -exec sed -i "s/\[assembly: AssemblyMetadata(\"CommitSha\", \".*\")\]/\[assembly: AssemblyMetadata(\"CommitSha\", \"${COMMIT_SHA}\")\]/g" {} +
+        find . -name "AssemblyInfo.cs" -exec sed -i "s/\[assembly: AssemblyMetadata(\"BuildDateTime\", \".*\")\]/\[assembly: AssemblyMetadata(\"BuildDateTime\", \"${DateTimeStamp}\")\]/g" {} +
+        find . -name "AssemblyInfo.cs" -exec sed -i "s/\[assembly: AssemblyMetadata(\"BuildNumber\", \".*\")\]/\[assembly: AssemblyMetadata(\"BuildNumber\", \"${GITHUB_RUN_NUMBER}\")\]/g" {} +
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Build
-      run: dotnet build --configuration Release
+      run: dotnet build --configuration Release --runtime ${{ matrix.platform }}
 
     - name: Create WebDeployment Packages
       run: |
         echo "Setting VERSION environment variable"
         VERSION=${{ env.SimpleVersion }}
         echo "VERSION: $VERSION"
-        dotnet publish OpenRose.API/OpenRose.API.csproj -c Release -o ./package/OpenRose.API -p:UseAppHost=true
-        dotnet publish OpenRose.Web/OpenRose.WebUI.Client/OpenRose.WebUI.Client.csproj -c Release -o ./package/OpenRose.WebUI.Client
-        dotnet publish OpenRose.Web/OpenRose.WebUI/OpenRose.WebUI.csproj -c Release -o ./package/OpenRose.WebUI
+        dotnet publish OpenRose.API/OpenRose.API.csproj -c Release -o ./package/OpenRose.API --runtime ${{ matrix.platform }}
+        dotnet publish OpenRose.Web/OpenRose.WebUI.Client/OpenRose.WebUI.Client.csproj -c Release -o ./package/OpenRose.WebUI.Client --runtime ${{ matrix.platform }}
+        dotnet publish OpenRose.Web/OpenRose.WebUI/OpenRose.WebUI.csproj -c Release -o ./package/OpenRose.WebUI --runtime ${{ matrix.platform }}
         cp -r ./package/OpenRose.WebUI.Client/* ./package/OpenRose.WebUI/
 
     - name: Copy Custom web.config
@@ -139,9 +144,9 @@ jobs:
         VERSION=${{ env.SimpleVersion }}
         mkdir -p ./package
         echo "Zipping OpenRose.API with VERSION: $VERSION"
-        cd ./package/OpenRose.API && zip -r ../OpenRose.API-${VERSION}.zip . && cd ../..
+        cd ./package/OpenRose.API && zip -r ../OpenRose.API-${VERSION}-${{ matrix.platform }}.zip . && cd ../..
         echo "Zipping OpenRose.WebUI with VERSION: $VERSION"
-        cd ./package/OpenRose.WebUI && zip -r ../OpenRose.WebUI-${VERSION}.zip . && cd ../..
+        cd ./package/OpenRose.WebUI && zip -r ../OpenRose.WebUI-${VERSION}-${{ matrix.platform }}.zip . && cd ../..
 
     - name: List package directory contents
       run: ls -la ./package
@@ -149,9 +154,9 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: OpenRose-package-${{ env.SimpleVersion }}-${{ env.EscapedBranchName }}
+        name: OpenRose-package-${{ env.SimpleVersion }}-${{ env.EscapedBranchName }}-${{ matrix.platform }}
         path: ./package/*.zip
-        retention-days: 30  # Set the retention period to 30 days (adjust as needed)      
+        retention-days: 30  # Set the retention period to 30 days (adjust as needed)
 
     - name: Create Tag
       if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true' # Manual trigger
@@ -183,8 +188,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./package/OpenRose.API-${{ env.RELEASE_TAG }}.zip
-        asset_name: OpenRose.API-${{ env.RELEASE_TAG }}.zip
+        asset_path: ./package/OpenRose.API-${{ env.RELEASE_TAG }}-${{ matrix.platform }}.zip
+        asset_name: OpenRose.API-${{ env.RELEASE_TAG }}-${{ matrix.platform }}.zip
         asset_content_type: application/zip
 
     - name: Upload Release Assets - WebUI
@@ -194,6 +199,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./package/OpenRose.WebUI-${{ env.RELEASE_TAG }}.zip
-        asset_name: OpenRose.WebUI-${{ env.RELEASE_TAG }}.zip
+        asset_path: ./package/OpenRose.WebUI-${{ env.RELEASE_TAG }}-${{ matrix.platform }}.zip
+        asset_name: OpenRose.WebUI-${{ env.RELEASE_TAG }}-${{ matrix.platform }}.zip
         asset_content_type: application/zip
