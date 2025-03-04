@@ -208,6 +208,7 @@ jobs:
 
     - name: Upload Release Assets
       uses: actions/upload-release-asset@v1
+          gh release upload ${{ env.RELEASE_TAG }} "$file"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
