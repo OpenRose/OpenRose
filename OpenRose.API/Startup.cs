@@ -27,6 +27,7 @@ using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using Serilog;
 using Serilog.Events;
+using OpenRose.API.Services;
 
 namespace ItemzApp.API
 {
@@ -234,15 +235,18 @@ namespace ItemzApp.API
             });
             services.AddSwaggerGenNewtonsoftSupport(); // required for generating ENUM as string in Swagger Docs. Ref: https://stackoverflow.com/a/59833198
 
-            // TODO: As part of planned upgrade to ASP .NET Core 5.x, we shall utilize
-            // new feature that allows DB Errors to be integrated into 'app.UseDeveloperExceptionPage()' within Configure method.
-            // Checkout https://docs.microsoft.com/en-us/dotnet/core/compatibility/aspnet-core/5.0/middleware-database-error-page-obsolete#recommended-action
+			// TODO: As part of planned upgrade to ASP .NET Core 5.x, we shall utilize
+			// new feature that allows DB Errors to be integrated into 'app.UseDeveloperExceptionPage()' within Configure method.
+			// Checkout https://docs.microsoft.com/en-us/dotnet/core/compatibility/aspnet-core/5.0/middleware-database-error-page-obsolete#recommended-action
 
+			services.AddHostedService<KeepSQLConnectionAliveService>();
 
-        }
+			// This below can be done to allow KeepSQLConnectionAliveService to be injected from DI container in the application
+			//  services.AddSingleton<IKeepSQLConnectionAliveService, KeepSQLConnectionAliveService>(); 
+		}
 
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger, ItemzContext itemzContext)
+		// This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+		public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger, ItemzContext itemzContext)
         {
             if (env.IsDevelopment())
             {

@@ -31,6 +31,17 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        platform: [win-x64, win-x86]
+
+    outputs:
+      BuildOutputSimpleVersion_win-x64: ${{ steps.set_env.outputs.SimpleVersion_win-x64 }}
+      BuildOutputEscapedBranchName_win-x64: ${{ steps.set_env.outputs.EscapedBranchName_win-x64 }}
+      BuildOutputSimpleVersion_win-x86: ${{ steps.set_env.outputs.SimpleVersion_win-x86 }}
+      BuildOutputEscapedBranchName_win-x86: ${{ steps.set_env.outputs.EscapedBranchName_win-x86 }}
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
@@ -58,8 +69,8 @@ jobs:
       run: dotnet restore
 
     - name: Calculate Version
-      id: gitversion
-      run: |    
+      id: set_env
+      run: |
         echo "Running dotnet-gitversion to calculate FullSemVer..."
         FullSemVer=$(dotnet-gitversion /showvariable FullSemVer 2>&1) || {
           echo "dotnet-gitversion failed with the following output:"
@@ -70,17 +81,17 @@ jobs:
           echo "dotnet-gitversion failed with the following output:"
           echo "$AssemblySemFileVer"
           exit 1
-        }        
+        }
         AssemblySemVer=$(dotnet-gitversion /showvariable AssemblySemVer 2>&1) || {
           echo "dotnet-gitversion failed with the following output:"
           echo "$AssemblySemVer"
           exit 1
-        }  
+        }
         EscapedBranchName=$(dotnet-gitversion /showvariable EscapedBranchName 2>&1) || {
           echo "dotnet-gitversion failed with the following output:"
           echo "$EscapedBranchName"
           exit 1
-        }         
+        }
         BuildMetaData=$(dotnet-gitversion /showvariable BuildMetaData 2>&1)
         SimpleVersion="${AssemblySemVer}"  # Remove anything after '+'
         FullSemVerWithBuild="${FullSemVer}+${BuildMetaData}"
@@ -96,29 +107,41 @@ jobs:
         echo "VERSION: $FullSemVerWithBuild"
         echo "Updating AssemblyInfo with AssemblySemVer: $AssemblySemVer and  AssemblyFileVersion: $AssemblyFileVersion and FullSemVerWithBuild: $FullSemVerWithBuild"
         FULL_BRANCH_NAME=${GITHUB_REF#refs/heads/}
-        BRANCH_NAME=$(echo $FULL_BRANCH_NAME | sed 's/\//-/g' | sed 's/-/_/g') 
+        BRANCH_NAME=$(echo $FULL_BRANCH_NAME | sed 's/\//-/g' | sed 's/-/_/g')
         COMMIT_SHA=${GITHUB_SHA}
-        find . -name "AssemblyInfo.cs" -exec sed -i "s/\\[assembly: AssemblyVersion(\".*\")\\]/\\[assembly: AssemblyVersion(\"${AssemblySemVer}\")\\]/g" {} +
-        find . -name "AssemblyInfo.cs" -exec sed -i "s/\\[assembly: AssemblyFileVersion(\".*\")\\]/\\[assembly: AssemblyFileVersion(\"${AssemblySemFileVer}\")\\]/g" {} +
-        find . -name "AssemblyInfo.cs" -exec sed -i "s/\\[assembly: AssemblyInformationalVersion(\".*\")\\]/\\[assembly: AssemblyInformationalVersion(\"${FullSemVerWithBuild}\")\\]/g" {} +
-        find . -name "AssemblyInfo.cs" -exec sed -i "s/\\[assembly: AssemblyMetadata(\"BranchName\", \".*\")\\]/\\[assembly: AssemblyMetadata(\"BranchName\", \"${BRANCH_NAME}\")\\]/g" {} +
-        find . -name "AssemblyInfo.cs" -exec sed -i "s/\\[assembly: AssemblyMetadata(\"CommitSha\", \".*\")\\]/\\[assembly: AssemblyMetadata(\"CommitSha\", \"${COMMIT_SHA}\")\\]/g" {} +
-        find . -name "AssemblyInfo.cs" -exec sed -i "s/\\[assembly: AssemblyMetadata(\"BuildDateTime\", \".*\")\\]/\\[assembly: AssemblyMetadata(\"BuildDateTime\", \"${DateTimeStamp}\")\\]/g" {} +
-        find . -name "AssemblyInfo.cs" -exec sed -i "s/\\[assembly: AssemblyMetadata(\"BuildNumber\", \".*\")\\]/\\[assembly: AssemblyMetadata(\"BuildNumber\", \"${GITHUB_RUN_NUMBER}\")\\]/g" {} +
+        find . -name "AssemblyInfo.cs" -exec sed -i "s/\[assembly: AssemblyVersion(\".*\")\]/\[assembly: AssemblyVersion(\"${AssemblySemVer}\")\]/g" {} +
+        find . -name "AssemblyInfo.cs" -exec sed -i "s/\[assembly: AssemblyFileVersion(\".*\")\]/\[assembly: AssemblyFileVersion(\"${AssemblySemFileVer}\")\]/g" {} +
+        find . -name "AssemblyInfo.cs" -exec sed -i "s/\[assembly: AssemblyInformationalVersion(\".*\")\]/\[assembly: AssemblyInformationalVersion(\"${FullSemVerWithBuild}\")\]/g" {} +
+        find . -name "AssemblyInfo.cs" -exec sed -i "s/\[assembly: AssemblyMetadata(\"BranchName\", \".*\")\]/\[assembly: AssemblyMetadata(\"BranchName\", \"${BRANCH_NAME}\")\]/g" {} +
+        find . -name "AssemblyInfo.cs" -exec sed -i "s/\[assembly: AssemblyMetadata(\"CommitSha\", \".*\")\]/\[assembly: AssemblyMetadata(\"CommitSha\", \"${COMMIT_SHA}\")\]/g" {} +
+        find . -name "AssemblyInfo.cs" -exec sed -i "s/\[assembly: AssemblyMetadata(\"BuildDateTime\", \".*\")\]/\[assembly: AssemblyMetadata(\"BuildDateTime\", \"${DateTimeStamp}\")\]/g" {} +
+        if [ "${{ matrix.platform }}" == "win-x64" ]; then
+          echo "SimpleVersion_win-x64=$SimpleVersion" >> $GITHUB_OUTPUT
+          echo "EscapedBranchName_win-x64=$EscapedBranchName" >> $GITHUB_OUTPUT
+        else
+          echo "SimpleVersion_win-x86=$SimpleVersion" >> $GITHUB_OUTPUT
+          echo "EscapedBranchName_win-x86=$EscapedBranchName" >> $GITHUB_OUTPUT
+        fi
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Build
-      run: dotnet build --configuration Release
+    - name: Build API
+      run: dotnet build OpenRose.API/OpenRose.API.csproj --configuration Release --runtime ${{ matrix.platform }}
+
+    - name: Build WebUI Client
+      run: dotnet build OpenRose.Web/OpenRose.WebUI.Client/OpenRose.WebUI.Client.csproj --configuration Release --runtime ${{ matrix.platform }}
+
+    - name: Build WebUI
+      run: dotnet build OpenRose.Web/OpenRose.WebUI/OpenRose.WebUI.csproj --configuration Release --runtime ${{ matrix.platform }}
 
     - name: Create WebDeployment Packages
       run: |
         echo "Setting VERSION environment variable"
         VERSION=${{ env.SimpleVersion }}
         echo "VERSION: $VERSION"
-        dotnet publish OpenRose.API/OpenRose.API.csproj -c Release -o ./package/OpenRose.API --runtime win-x64 
-        dotnet publish OpenRose.Web/OpenRose.WebUI.Client/OpenRose.WebUI.Client.csproj -c Release -o ./package/OpenRose.WebUI.Client --runtime win-x64 
-        dotnet publish OpenRose.Web/OpenRose.WebUI/OpenRose.WebUI.csproj -c Release -o ./package/OpenRose.WebUI --runtime win-x64 
+        dotnet publish OpenRose.API/OpenRose.API.csproj -c Release -o ./package/OpenRose.API --runtime ${{ matrix.platform }}
+        dotnet publish OpenRose.Web/OpenRose.WebUI.Client/OpenRose.WebUI.Client.csproj -c Release -o ./package/OpenRose.WebUI.Client --runtime ${{ matrix.platform }}
+        dotnet publish OpenRose.Web/OpenRose.WebUI/OpenRose.WebUI.csproj -c Release -o ./package/OpenRose.WebUI --runtime ${{ matrix.platform }}
         cp -r ./package/OpenRose.WebUI.Client/* ./package/OpenRose.WebUI/
 
     - name: Copy Custom web.config
@@ -139,9 +162,9 @@ jobs:
         VERSION=${{ env.SimpleVersion }}
         mkdir -p ./package
         echo "Zipping OpenRose.API with VERSION: $VERSION"
-        cd ./package/OpenRose.API && zip -r ../OpenRose.API-${VERSION}.zip . && cd ../..
+        cd ./package/OpenRose.API && zip -r ../${{ matrix.platform }}-OpenRose.API-${VERSION}.zip . && cd ../..
         echo "Zipping OpenRose.WebUI with VERSION: $VERSION"
-        cd ./package/OpenRose.WebUI && zip -r ../OpenRose.WebUI-${VERSION}.zip . && cd ../..
+        cd ./package/OpenRose.WebUI && zip -r ../${{ matrix.platform }}-OpenRose.WebUI-${VERSION}.zip . && cd ../..
 
     - name: List package directory contents
       run: ls -la ./package
@@ -149,14 +172,52 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: OpenRose-package-${{ env.SimpleVersion }}-${{ env.EscapedBranchName }}
+        name: OpenRose-package-${{ env.SimpleVersion }}-${{ env.EscapedBranchName }}-${{ matrix.platform }}
         path: ./package/*.zip
-        retention-days: 30  # Set the retention period to 30 days (adjust as needed)      
+        retention-days: 30  # Set the retention period to 30 days (adjust as needed)
+
+  create_release:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true'
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Git user
+      run: |
+        git config --global user.email "openroserm@outlook.com"
+        git config --global user.name "OpenRose Requirements Management"
+
+    - name: Set Environment Variables
+      run: |
+        echo "SimpleVersion_win-x64=${{ needs.build.outputs.BuildOutputSimpleVersion_win-x64 }}" >> $GITHUB_ENV
+        echo "EscapedBranchName_win-x64=${{ needs.build.outputs.BuildOutputEscapedBranchName_win-x64 }}" >> $GITHUB_ENV
+        echo "SimpleVersion_win-x86=${{ needs.build.outputs.BuildOutputSimpleVersion_win-x86 }}" >> $GITHUB_ENV
+        echo "EscapedBranchName_win-x86=${{ needs.build.outputs.BuildOutputEscapedBranchName_win-x86 }}" >> $GITHUB_ENV
+        echo "SimpleVersion calculated for win-x64: ${{ needs.build.outputs.BuildOutputSimpleVersion_win-x64 }}"
+        echo "EscapedBranchName calculated for win-x64: ${{ needs.build.outputs.BuildOutputEscapedBranchName_win-x64 }}"
+        echo "SimpleVersion calculated for win-x86: ${{ needs.build.outputs.BuildOutputSimpleVersion_win-x86 }}"
+        echo "EscapedBranchName calculated for win-x86: ${{ needs.build.outputs.BuildOutputEscapedBranchName_win-x86 }}"
+        echo '${{ toJSON(needs.build.outputs) }}'
+        
+
+    - name: Download build artifacts - win-x64
+      uses: actions/download-artifact@v4
+      with:
+        name: OpenRose-package-${{ env.SimpleVersion_win-x64 }}-${{ env.EscapedBranchName_win-x64 }}-win-x64
+        path: ./artifacts/win-x64
+
+    - name: Download build artifacts - win-x86
+      uses: actions/download-artifact@v4
+      with:
+        name: OpenRose-package-${{ env.SimpleVersion_win-x86 }}-${{ env.EscapedBranchName_win-x86 }}-win-x86
+        path: ./artifacts/win-x86
 
     - name: Create Tag
-      if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true' # Manual trigger
       run: |
-        VERSION=${{ env.SimpleVersion }}
+        VERSION=${{ env.SimpleVersion_win-x64 }}
         git tag -a $VERSION -m "Release $VERSION"
         git push origin $VERSION
         echo "RELEASE_TAG=$VERSION" >> $GITHUB_ENV
@@ -164,7 +225,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Create Release
-      if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true'
       id: create_release
       uses: actions/create-release@v1
       env:
@@ -176,24 +236,10 @@ jobs:
         draft: false
         prerelease: false
 
-    - name: Upload Release Assets - API
-      if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true'
-      uses: actions/upload-release-asset@v1
+    - name: Upload Release Assets
+      run: |
+        for file in ./artifacts/**/*OpenRose*.zip; do
+          gh release upload ${{ env.RELEASE_TAG }} "$file"
+        done
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./package/OpenRose.API-${{ env.RELEASE_TAG }}.zip
-        asset_name: OpenRose.API-${{ env.RELEASE_TAG }}.zip
-        asset_content_type: application/zip
-
-    - name: Upload Release Assets - WebUI
-      if: github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true'
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./package/OpenRose.WebUI-${{ env.RELEASE_TAG }}.zip
-        asset_name: OpenRose.WebUI-${{ env.RELEASE_TAG }}.zip
-        asset_content_type: application/zip
