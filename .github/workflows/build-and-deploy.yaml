@@ -37,7 +37,7 @@ jobs:
         platform: [win-x64, win-x86]
 
     outputs:
-      BuildOptputSimpleVersion: ${{ steps.set_env.outputs.SimpleVersion }}
+      BuildOutputSimpleVersion: ${{ steps.set_env.outputs.SimpleVersion }}
       BuildOutputEscapedBranchName: ${{ steps.set_env.outputs.EscapedBranchName }}
 
     steps:
@@ -113,8 +113,10 @@ jobs:
         find . -name "AssemblyInfo.cs" -exec sed -i "s/\[assembly: AssemblyMetadata(\"BranchName\", \".*\")\]/\[assembly: AssemblyMetadata(\"BranchName\", \"${BRANCH_NAME}\")\]/g" {} +
         find . -name "AssemblyInfo.cs" -exec sed -i "s/\[assembly: AssemblyMetadata(\"CommitSha\", \".*\")\]/\[assembly: AssemblyMetadata(\"CommitSha\", \"${COMMIT_SHA}\")\]/g" {} +
         find . -name "AssemblyInfo.cs" -exec sed -i "s/\[assembly: AssemblyMetadata(\"BuildDateTime\", \".*\")\]/\[assembly: AssemblyMetadata(\"BuildDateTime\", \"${DateTimeStamp}\")\]/g" {} +
-        echo "BuildOptputSimpleVersion=$SimpleVersion" >> $GITHUB_OUTPUT
+        echo "BuildOutputSimpleVersion=$SimpleVersion" >> $GITHUB_OUTPUT
         echo "BuildOutputEscapedBranchName=$EscapedBranchName" >> $GITHUB_OUTPUT
+        echo "SimpleVersion calculated: $SimpleVersion"        
+        echo "EscapedBranchName calculated: $EscapedBranchName" 
         
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -186,8 +188,12 @@ jobs:
 
     - name: Set Environment Variables
       run: |
-        echo "SimpleVersion=${{ needs.build.outputs.BuildOptputSimpleVersion }}" >> $GITHUB_ENV
+        echo "SimpleVersion=${{ needs.build.outputs.BuildOutputSimpleVersion }}" >> $GITHUB_ENV
         echo "EscapedBranchName=${{ needs.build.outputs.BuildOutputEscapedBranchName }}" >> $GITHUB_ENV
+        echo "SimpleVersion calculated via outputs: ${{ needs.build.outputs.BuildOutputSimpleVersion }}"
+        echo "EscapedBranchName calculated via outputs: ${{ needs.build.outputs.BuildOutputEscapedBranchName }}"
+        echo "SimpleVersion calculated: $SimpleVersion"        
+        echo "EscapedBranchName calculated: $EscapedBranchName"         
 
     - name: Download build artifacts - win-x64
       uses: actions/download-artifact@v4
