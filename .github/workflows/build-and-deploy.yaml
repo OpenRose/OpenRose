@@ -37,8 +37,10 @@ jobs:
         platform: [win-x64, win-x86]
 
     outputs:
-      BuildOutputSimpleVersion: ${{ steps.set_env.outputs.SimpleVersion }}
-      BuildOutputEscapedBranchName: ${{ steps.set_env.outputs.EscapedBranchName }}
+      BuildOutputSimpleVersion_win-x64: ${{ steps.set_env.outputs.SimpleVersion_win-x64 }}
+      BuildOutputEscapedBranchName_win-x64: ${{ steps.set_env.outputs.EscapedBranchName_win-x64 }}
+      BuildOutputSimpleVersion_win-x86: ${{ steps.set_env.outputs.SimpleVersion_win-x86 }}
+      BuildOutputEscapedBranchName_win-x86: ${{ steps.set_env.outputs.EscapedBranchName_win-x86 }}
 
     steps:
     - name: Checkout repository
@@ -113,11 +115,13 @@ jobs:
         find . -name "AssemblyInfo.cs" -exec sed -i "s/\[assembly: AssemblyMetadata(\"BranchName\", \".*\")\]/\[assembly: AssemblyMetadata(\"BranchName\", \"${BRANCH_NAME}\")\]/g" {} +
         find . -name "AssemblyInfo.cs" -exec sed -i "s/\[assembly: AssemblyMetadata(\"CommitSha\", \".*\")\]/\[assembly: AssemblyMetadata(\"CommitSha\", \"${COMMIT_SHA}\")\]/g" {} +
         find . -name "AssemblyInfo.cs" -exec sed -i "s/\[assembly: AssemblyMetadata(\"BuildDateTime\", \".*\")\]/\[assembly: AssemblyMetadata(\"BuildDateTime\", \"${DateTimeStamp}\")\]/g" {} +
-        echo "BuildOutputSimpleVersion=$SimpleVersion" >> $GITHUB_OUTPUT
-        echo "BuildOutputEscapedBranchName=$EscapedBranchName" >> $GITHUB_OUTPUT
-        echo "SimpleVersion calculated: $SimpleVersion"        
-        echo "EscapedBranchName calculated: $EscapedBranchName" 
-        
+        if [ "${{ matrix.platform }}" == "win-x64" ]; then
+          echo "SimpleVersion_win-x64=$SimpleVersion" >> $GITHUB_OUTPUT
+          echo "EscapedBranchName_win-x64=$EscapedBranchName" >> $GITHUB_OUTPUT
+        else
+          echo "SimpleVersion_win-x86=$SimpleVersion" >> $GITHUB_OUTPUT
+          echo "EscapedBranchName_win-x86=$EscapedBranchName" >> $GITHUB_OUTPUT
+        fi
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -188,28 +192,32 @@ jobs:
 
     - name: Set Environment Variables
       run: |
-        echo "SimpleVersion=${{ needs.build.outputs.BuildOutputSimpleVersion }}" >> $GITHUB_ENV
-        echo "EscapedBranchName=${{ needs.build.outputs.BuildOutputEscapedBranchName }}" >> $GITHUB_ENV
-        echo "SimpleVersion calculated via outputs: ${{ needs.build.outputs.BuildOutputSimpleVersion }}"
-        echo "EscapedBranchName calculated via outputs: ${{ needs.build.outputs.BuildOutputEscapedBranchName }}"
-        echo "SimpleVersion calculated: $SimpleVersion"        
-        echo "EscapedBranchName calculated: $EscapedBranchName"         
+        echo "SimpleVersion_win-x64=${{ needs.build.outputs.BuildOutputSimpleVersion_win-x64 }}" >> $GITHUB_ENV
+        echo "EscapedBranchName_win-x64=${{ needs.build.outputs.BuildOutputEscapedBranchName_win-x64 }}" >> $GITHUB_ENV
+        echo "SimpleVersion_win-x86=${{ needs.build.outputs.BuildOutputSimpleVersion_win-x86 }}" >> $GITHUB_ENV
+        echo "EscapedBranchName_win-x86=${{ needs.build.outputs.BuildOutputEscapedBranchName_win-x86 }}" >> $GITHUB_ENV
+        echo "SimpleVersion calculated for win-x64: ${{ needs.build.outputs.BuildOutputSimpleVersion_win-x64 }}"
+        echo "EscapedBranchName calculated for win-x64: ${{ needs.build.outputs.BuildOutputEscapedBranchName_win-x64 }}"
+        echo "SimpleVersion calculated for win-x86: ${{ needs.build.outputs.BuildOutputSimpleVersion_win-x86 }}"
+        echo "EscapedBranchName calculated for win-x86: ${{ needs.build.outputs.BuildOutputEscapedBranchName_win-x86 }}"
+        echo '${{ toJSON(needs.build.outputs) }}'
+        
 
     - name: Download build artifacts - win-x64
       uses: actions/download-artifact@v4
       with:
-        name: OpenRose-package-${{ env.SimpleVersion }}-${{ env.EscapedBranchName }}-win-x64
+        name: OpenRose-package-${{ env.SimpleVersion_win-x64 }}-${{ env.EscapedBranchName_win-x64 }}-win-x64
         path: ./artifacts/win-x64
 
     - name: Download build artifacts - win-x86
       uses: actions/download-artifact@v4
       with:
-        name: OpenRose-package-${{ env.SimpleVersion }}-${{ env.EscapedBranchName }}-win-x86
+        name: OpenRose-package-${{ env.SimpleVersion_win-x86 }}-${{ env.EscapedBranchName_win-x86 }}-win-x86
         path: ./artifacts/win-x86
 
     - name: Create Tag
       run: |
-        VERSION=${{ env.SimpleVersion }}
+        VERSION=${{ env.SimpleVersion_win-x64 }}
         git tag -a $VERSION -m "Release $VERSION"
         git push origin $VERSION
         echo "RELEASE_TAG=$VERSION" >> $GITHUB_ENV
