@@ -271,6 +271,7 @@ BEGIN
                         RAISERROR('ItemzTypeId not found in ItemzTypes table.', 16, 1);
                         RETURN;
                     END
+
                 END
 
                 -- Find the next sibling hierarchy ID with lock to prevent concurrent modifications
@@ -399,6 +400,13 @@ BEGIN
             SELECT NewRecordID, RecordType, Name, NewHierarchyID
             FROM #TempRecordHierarchy
             WHERE RecordType = 'Itemz';
+
+			IF @MainRecordType = 'Itemz' AND @Level = 3
+			BEGIN
+				-- Insert the ItemzTypeJoinItemz record for the copied Itemz at level 3
+				INSERT INTO ItemzTypeJoinItemz (ItemzTypeId, ItemzId)
+				VALUES (@ItemzTypeId, @NewMainRecordID);
+			END
 
             -- Insert the ItemzTypeJoinItemz records for the copied Itemzs at level 3
             INSERT INTO ItemzTypeJoinItemz (ItemzTypeId, ItemzId)
