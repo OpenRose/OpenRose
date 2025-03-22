@@ -23,12 +23,17 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <None Remove="DbContexts\UserStoredProcedure\userProcCopyRecordWithChildrenByRecordID_202503221207.sql" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<None Update="bin\$(Configuration)\$(TargetFramework)\OpenRose.API.xml">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 	</ItemGroup>
 
 	<ItemGroup>
+		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcCopyRecordWithChildrenByRecordID_202503221207.sql" />
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcCreateBaselineByExistingBaselineID_202410300246.sql" />
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcCreateBaselineByItemzTypeID_202410300238.sql" />
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcCreateBaselineByProjectID_202410300219.sql" />
