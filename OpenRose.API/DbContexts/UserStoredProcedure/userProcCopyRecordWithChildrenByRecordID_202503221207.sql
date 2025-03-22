@@ -69,14 +69,16 @@ BEGIN
             -- Check if the record ID exists in the ItemzHierarchy table
             IF @MainRecordHierarchyID IS NULL
             BEGIN
-                THROW 50000, 'Record ID not found in ItemzHierarchy table.', 1;
+                RAISERROR('Record ID not found in ItemzHierarchy table.', 16, 1);
+                RETURN;
             END
 
             -- Check if the record is Level 1 or above
             SELECT @Level = @MainRecordHierarchyID.GetLevel();
             IF @Level < 1
             BEGIN
-                THROW 50006, 'Record ID must be Level 1 or above.', 1;
+                RAISERROR('Record ID must be Level 1 or above.', 16, 1);
+                RETURN;
             END
 
             -- Generate the new name for the main record
@@ -93,9 +95,10 @@ BEGIN
 
             IF @ParentRecordID IS NULL
             BEGIN
-                DECLARE @ErrorMessage NVARCHAR(255); -- Declare a variable for the error message
-                SET @ErrorMessage = 'ParentRecordID with Parent Record was not found in ItemzHierarchy for ' + CAST(@ParentHierarchyID AS NVARCHAR(255));
-                THROW 50000, @ErrorMessage, 1;
+                DECLARE @ParentErrorMessage NVARCHAR(255); -- Renamed variable for the error message
+                SET @ParentErrorMessage = 'ParentRecordID with Parent Record was not found in ItemzHierarchy for ' + CAST(@ParentHierarchyID AS NVARCHAR(255));
+                RAISERROR(@ParentErrorMessage, 16, 1);
+                RETURN;
             END
 
             -- Handle copying based on RecordType
@@ -113,13 +116,15 @@ BEGIN
                 -- Check that @MainRecordHierarchyID is not the same as @NewMainHierarchyID
                 IF @MainRecordHierarchyID = @NewMainHierarchyID
                 BEGIN
-                    THROW 50005, 'New HierarchyId is the same as the Main HierarchyId.', 1;
+                    RAISERROR('New HierarchyId is the same as the Main HierarchyId.', 16, 1);
+                    RETURN;
                 END
 
                 -- Check for existing duplicates for @NewMainHierarchyID
                 IF EXISTS (SELECT 1 FROM ItemzHierarchy WHERE ItemzHierarchyId = @NewMainHierarchyID)
                 BEGIN
-                    THROW 50003, 'Duplicate HierarchyId found in ItemzHierarchy table.', 1;
+                    RAISERROR('Duplicate HierarchyId found in ItemzHierarchy table.', 16, 1);
+                    RETURN;
                 END
 
                 -- Insert a copy of the Project record
@@ -184,13 +189,15 @@ BEGIN
                 -- Check that @MainRecordHierarchyID is not the same as @NewMainHierarchyID
                 IF @MainRecordHierarchyID = @NewMainHierarchyID
                 BEGIN
-                    THROW 50005, 'New HierarchyId is the same as the Main HierarchyId.', 1;
+                    RAISERROR('New HierarchyId is the same as the Main HierarchyId.', 16, 1);
+                    RETURN;
                 END
 
                 -- Check for existing duplicates for @NewMainHierarchyID
                 IF EXISTS (SELECT 1 FROM ItemzHierarchy WHERE ItemzHierarchyId = @NewMainHierarchyID)
                 BEGIN
-                    THROW 50003, 'Duplicate HierarchyId found in ItemzHierarchy table.', 1;
+                    RAISERROR('Duplicate HierarchyId found in ItemzHierarchy table.', 16, 1);
+                    RETURN;
                 END
 
                 -- Insert a copy of the ItemzType record
@@ -253,14 +260,16 @@ BEGIN
                     -- Check if the ItemzTypeId is found
                     IF @ItemzTypeId IS NULL
                     BEGIN
-                        THROW 50001, 'ItemzTypeId not found at level 1 in ItemzHierarchy table.', 1;
+                        RAISERROR('ItemzTypeId not found at level 1 in ItemzHierarchy table.', 16, 1);
+                        RETURN;
                     END
 
                     -- Verify that the ItemzTypeId exists in the ItemzTypes table
                     IF NOT EXISTS (SELECT 1 FROM ItemzTypes WHERE Id = @ItemzTypeId)
                     BEGIN
                         PRINT 'ItemzTypeId: ' + CAST(@ItemzTypeId AS NVARCHAR(36)); -- Debug output
-                        THROW 50002, 'ItemzTypeId not found in ItemzTypes table.', 1;
+                        RAISERROR('ItemzTypeId not found in ItemzTypes table.', 16, 1);
+                        RETURN;
                     END
                 END
 
@@ -284,13 +293,15 @@ BEGIN
                 -- Check that @MainRecordHierarchyID is not the same as @NewMainHierarchyID
                 IF @MainRecordHierarchyID = @NewMainHierarchyID
                 BEGIN
-                    THROW 50005, 'New HierarchyId is the same as the Main HierarchyId.', 1;
+                    RAISERROR('New HierarchyId is the same as the Main HierarchyId.', 16, 1);
+                    RETURN;
                 END
 
                 -- Check for existing duplicates for @NewMainHierarchyID
                 IF EXISTS (SELECT 1 FROM ItemzHierarchy WHERE ItemzHierarchyId = @NewMainHierarchyID)
                 BEGIN
-                    THROW 50003, 'Duplicate HierarchyId found in ItemzHierarchy table.', 1;
+                    RAISERROR('Duplicate HierarchyId found in ItemzHierarchy table.', 16, 1);
+                    RETURN;
                 END
 
                 -- Insert the main Itemz and its hierarchy into the temporary table
@@ -329,7 +340,8 @@ BEGIN
                 HAVING COUNT(*) > 1
             )
             BEGIN
-                THROW 50004, 'Duplicate HierarchyId found in new records.', 1;
+                RAISERROR('Duplicate HierarchyId found in new records.', 16, 1);
+                RETURN;
             END
 
             -- Update ParentItemzTypeId for Itemz records
@@ -462,12 +474,16 @@ BEGIN
             END
             ELSE
             BEGIN
-                -- Rethrow the error if it's not a deadlock error
-                THROW;
+                -- Capture error details
+                DECLARE @CatchErrorMessage NVARCHAR(4000) = ERROR_MESSAGE();
+                DECLARE @CatchErrorSeverity INT = ERROR_SEVERITY();
+                DECLARE @CatchErrorState INT = ERROR_STATE();
+                
+                -- Rethrow the error with RAISERROR
+                RAISERROR(@CatchErrorMessage, @CatchErrorSeverity, @CatchErrorState);
+                RETURN;
             END
         END CATCH
     END
 END
-GO			
-			
-   
+GO
