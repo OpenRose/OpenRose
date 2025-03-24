@@ -887,6 +887,75 @@ namespace ItemzApp.API.Controllers
 			return NoContent();
 		}
 
+
+
+
+
+
+
+		/// <summary>
+		/// Copy Itemz including all it's child Itemz
+		/// </summary>
+		/// <param name="itemzId">GUID representing an unique ID of the Itemz that you want copy</param>
+		/// <returns>Newly created Itemz property details</returns>		
+		/// <response code="201">Returns newly created itemz property details</response>
+		/// <response code="404">Expected source Itemz with ID was not found in the repository</response>
+		/// <response code="409">Conflicts encountered while creating a copy from existing Itemz</response>
+
+		[HttpPost("CopyItemz", Name = "__Copy_Itemz_By_GUID_ID__")]
+		[ProducesResponseType(StatusCodes.Status201Created)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		[ProducesResponseType(StatusCodes.Status409Conflict)]
+		[ProducesDefaultResponseType]
+		public async Task<ActionResult<GetItemzDTO>> CopyItemzAsync(CopyItemzDTO copyItemzDTO)
+		{
+			if (!(await _itemzRepository.ItemzExistsAsync(copyItemzDTO.ItemzId)))
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Cannot Copy Itemz with ID {ItemzId} as it could not be found",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					copyItemzDTO.ItemzId);
+				return NotFound($"Cannot Copy Itemz with ID {copyItemzDTO.ItemzId} as it could not be found");
+			}
+
+			Guid newlyCopiedItemzId;
+
+			try
+            {
+				// EXPLANATION: Because copy is created via User Defined Stored Procedure,
+				// We therefor do not call SaveAsync() method on the _itemzRepository. 
+
+				newlyCopiedItemzId = await _itemzRepository.CopyItemzAsync(copyItemzDTO.ItemzId);
+				// await _itemzRepository.SaveAsync();
+			}
+			catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to copy existing Itemz:" + dbUpdateException.InnerException,
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
+					);
+				return Conflict($"Failed to create Itemz Copy for '{copyItemzDTO.ItemzId}'. DB Error reported, check the log file.");
+			}
+
+			_logger.LogDebug("{FormattedControllerAndActionNames}Created new Itemz with ID {newlyCopiedItemzId} by copying from Itemz ID {copyItemzDTO.ItemzId}",
+				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+				newlyCopiedItemzId,
+				copyItemzDTO.ItemzId);
+
+			// EXPLANATION: Because we are creating new Itemz by copying existing Itemz by using custom user defined stored procedure
+			// we do not have access to the underlying Entity. That's why we have to call _itemzRepository.GetItemzAsync
+			// and then use Automapper to convert it into DTO that is returned back to the user of the API.
+
+			return CreatedAtRoute("__Single_Itemz_By_GUID_ID__", new { ItemzId = newlyCopiedItemzId },
+				 _mapper.Map<GetItemzDTO>(await _itemzRepository.GetItemzAsync(newlyCopiedItemzId)) // Converting to DTO as this is going out to the consumer 
+				);
+
+		}
+
+
+
+
+
+
+
 		/// <summary>
 		/// Get list of supported HTTP Options for the Itemz controller.
 		/// </summary>
