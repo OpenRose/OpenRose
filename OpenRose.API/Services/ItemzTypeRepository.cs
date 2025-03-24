@@ -652,5 +652,70 @@ namespace ItemzApp.API.Services
                 }
             }
         }
-    }
+
+
+
+
+
+
+
+		public async Task<Guid> CopyItemzTypeAsync(Guid ItemzTypeId)
+		{
+			if (ItemzTypeId == Guid.Empty)
+			{
+				throw new ArgumentNullException(nameof(ItemzTypeId));
+			}
+
+			// EXPLANATION : Check if ItemzType exist in ItemzType Table
+
+			if (!_context.ItemzTypes!.Where(it => it.Id == ItemzTypeId).Any())
+			{
+				throw new ArgumentException(nameof(ItemzTypeId));
+			}
+
+			// EXPLANATION : Check if ItemzType exist in ItemzHierarchy Table.
+			// System is desinged to expect all ItemzType to be available in ItemzHierarhcy 
+            // This way, we know who the Parent Project record is and also we create association
+            // between ItemzType and immidate Child Itemz when we perform Copy of ItemzType
+
+			if (!_context.ItemzHierarchy!.AsNoTracking()
+							.Where(ih => ih.Id == ItemzTypeId).Any())
+			{
+				throw new ArgumentException(nameof(ItemzTypeId));
+			}
+
+			Guid returnValue = Guid.Empty;
+			var OUTPUT_ID = new SqlParameter
+			{
+				ParameterName = "OUTPUT_Id",
+				Direction = System.Data.ParameterDirection.Output,
+				SqlDbType = System.Data.SqlDbType.UniqueIdentifier,
+			};
+
+			var sqlParameters = new[]
+			{
+				new SqlParameter
+				{
+					ParameterName = "RecordID",
+					Value = ItemzTypeId,
+					SqlDbType = System.Data.SqlDbType.UniqueIdentifier,
+				}
+			};
+
+			sqlParameters = sqlParameters.Append(OUTPUT_ID).ToArray();
+
+			var _ = await _context.Database.ExecuteSqlRawAsync(sql: "EXEC userProcCopyRecordWithChildrenByRecordID @RecordID, @OUTPUT_Id = @OUTPUT_Id OUT", parameters: sqlParameters);
+			returnValue = (Guid)OUTPUT_ID.Value;
+
+			return returnValue;
+		}
+
+
+
+
+
+
+
+
+	}
 }

@@ -42,5 +42,7 @@ namespace ItemzApp.API.Services
         public Task MoveItemzTypeToAnotherProjectAsync(Guid movingItemzTypeId, Guid targetProjectId, bool atBottomOfChildNodes = true);
 
         public Task MoveItemzTypeBetweenTwoHierarchyRecordsAsync(Guid between1stItemzTypeId, Guid between2ndItemzTypeId, Guid movingItemzTypeId);
-    }
+
+		public Task<Guid> CopyItemzTypeAsync(Guid ItemzTypeId);
+	}
 }
