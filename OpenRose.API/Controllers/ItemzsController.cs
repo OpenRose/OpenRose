@@ -887,12 +887,6 @@ namespace ItemzApp.API.Controllers
 			return NoContent();
 		}
 
-
-
-
-
-
-
 		/// <summary>
 		/// Copy Itemz including all it's child Itemz
 		/// </summary>
@@ -949,12 +943,6 @@ namespace ItemzApp.API.Controllers
 				);
 
 		}
-
-
-
-
-
-
 
 		/// <summary>
 		/// Get list of supported HTTP Options for the Itemz controller.

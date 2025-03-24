@@ -653,12 +653,6 @@ namespace ItemzApp.API.Services
             }
         }
 
-
-
-
-
-
-
 		public async Task<Guid> CopyItemzTypeAsync(Guid ItemzTypeId)
 		{
 			if (ItemzTypeId == Guid.Empty)
@@ -709,13 +703,6 @@ namespace ItemzApp.API.Services
 
 			return returnValue;
 		}
-
-
-
-
-
-
-
 
 	}
 }

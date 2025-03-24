@@ -1017,8 +1017,6 @@ namespace ItemzApp.API.Services
 			}
 		}
 
-
-
 		public async Task<Guid> CopyItemzAsync(Guid ItemzId)
 		{
 			if (ItemzId == Guid.Empty)
@@ -1068,13 +1066,6 @@ namespace ItemzApp.API.Services
 
 			return returnValue;
 		}
-
-
-
-
-
-
-
 
 		#region NOT USED ANYMORE CODE 
 
