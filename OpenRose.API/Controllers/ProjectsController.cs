@@ -579,13 +579,70 @@ namespace ItemzApp.API.Controllers
             return Ok(lastProjectHierarchyID);
         }
 
-        /// <summary>
-        /// Get list of supported HTTP Options for the Projects controller.
-        /// </summary>
-        /// <returns>Custom response header with key as "Allow" and value as different HTTP options that are allowed</returns>
-        /// <response code="200">Custom response header with key as "Allow" and value as different HTTP options that are allowed</response>
+		/// <summary>
+		/// Copy Project including all it's child ItemzType as well as Itemz Hierarchy Structure
+		/// </summary>
+		/// <param name="copyProjectDTO">DTO containing GUID representing an unique ID of the Project that you want copy</param>
+		/// <returns>Newly created Project property details</returns>		
+		/// <response code="201">Returns newly created Project property details</response>
+		/// <response code="404">Expected source Project with ID was not found in the repository</response>
+		/// <response code="409">Conflicts encountered while creating a copy from existing Project</response>
 
-        [HttpOptions(Name = "__OPTIONS_for_Projects_Controller__")]
+		[HttpPost("CopyProject", Name = "__Copy_Project_By_GUID_ID__")]
+		[ProducesResponseType(StatusCodes.Status201Created)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		[ProducesResponseType(StatusCodes.Status409Conflict)]
+		[ProducesDefaultResponseType]
+		public async Task<ActionResult<GetProjectDTO>> CopyProjectAsync(CopyProjectDTO copyProjectDTO)
+		{
+			if (!(await _projectRepository.ProjectExistsAsync(copyProjectDTO.ProjectId)))
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Cannot Copy Project with ID {ProjectId} as it could not be found",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					copyProjectDTO.ProjectId);
+				return NotFound($"Cannot Copy Project with ID {copyProjectDTO.ProjectId} as it could not be found");
+			}
+
+			Guid newlyCopiedProjectId;
+
+			try
+			{
+				// EXPLANATION: Because copy is created via User Defined Stored Procedure,
+				// We therefor do not call SaveAsync() method on the _projectRepository. 
+
+				newlyCopiedProjectId = await _projectRepository.CopyProjectAsync(copyProjectDTO.ProjectId);
+				// await _projectRepository.SaveAsync();
+			}
+			catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to copy existing Project:" + dbUpdateException.InnerException,
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
+					);
+				return Conflict($"Failed to create Project Copy for '{copyProjectDTO.ProjectId}'. DB Error reported, check the log file.");
+			}
+
+			_logger.LogDebug("{FormattedControllerAndActionNames}Created new Project with ID {newlyCopiedProjectId} by copying from Project ID {copyProjectDTO.ProjectId}",
+				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+				newlyCopiedProjectId,
+				copyProjectDTO.ProjectId);
+
+			// EXPLANATION: Because we are creating new Project by copying existing Project by using custom user defined stored procedure
+			// we do not have access to the underlying Entity. That's why we have to call _projectRepository.GetProjectsAsync
+			// and then use Automapper to convert it into DTO that is returned back to the user of the API.
+
+			return CreatedAtRoute("__Single_Project_By_GUID_ID__", new { ProjectId = newlyCopiedProjectId },
+				 _mapper.Map<GetProjectDTO>(await _projectRepository.GetProjectAsync(newlyCopiedProjectId)) // Converting to DTO as this is going out to the consumer 
+				);
+
+		}
+
+		/// <summary>
+		/// Get list of supported HTTP Options for the Projects controller.
+		/// </summary>
+		/// <returns>Custom response header with key as "Allow" and value as different HTTP options that are allowed</returns>
+		/// <response code="200">Custom response header with key as "Allow" and value as different HTTP options that are allowed</response>
+
+		[HttpOptions(Name = "__OPTIONS_for_Projects_Controller__")]
         public IActionResult GetProjectsOptions()
         {
             Response.Headers.Add("Allow", "GET,HEAD,OPTIONS,POST,PUT,PATCH,DELETE");
