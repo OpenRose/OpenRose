@@ -75,12 +75,11 @@ jobs:
       id: set_env
       run: |
         echo "Running dotnet-gitversion with diagnostics..."
-        FullSemVer=$(dotnet-gitversion /showvariable FullSemVer /diag 2>&1) || {
+        FullSemVer=$(dotnet-gitversion /showvariable FullSemVer 2>&1) || {
           echo "dotnet-gitversion failed with the following output:"
           echo "$FullSemVer"
           exit 1
         }
-        echo "$FullSemVer"
         AssemblySemFileVer=$(dotnet-gitversion /showvariable AssemblySemFileVer 2>&1) || {
           echo "dotnet-gitversion failed with the following output:"
           echo "$AssemblySemFileVer"
@@ -108,7 +107,7 @@ jobs:
         echo "EscapedBranchName=$EscapedBranchName" >> $GITHUB_ENV
         echo "DateTimeStamp=$DateTimeStamp" >> $GITHUB_ENV
         echo "VERSION: $FullSemVerWithBuild"
-        echo "Updating AssemblyInfo with AssemblySemVer: $AssemblySemVer and  AssemblyFileVersion: $AssemblyFileVersion and FullSemVerWithBuild: $FullSemVerWithBuild"
+        echo "Updating AssemblyInfo with AssemblySemVer: $AssemblySemVer and AssemblyFileVersion: $AssemblySemFileVer and FullSemVerWithBuild: $FullSemVerWithBuild"
         FULL_BRANCH_NAME=${GITHUB_REF#refs/heads/}
         BRANCH_NAME=$(echo $FULL_BRANCH_NAME | sed 's/\//-/g' | sed 's/-/_/g')
         COMMIT_SHA=${GITHUB_SHA}
