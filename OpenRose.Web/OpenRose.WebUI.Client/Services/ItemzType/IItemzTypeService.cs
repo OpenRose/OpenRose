@@ -22,6 +22,9 @@ namespace OpenRose.WebUI.Client.Services.ItemzType
 
 		public Task __POST_Move_ItemzType_Between_ItemzTypes__Async(Guid? movingItemzTypeId, Guid? firstItemzTypeId, Guid? secondItemzTypeId);
 
+		public Task<GetItemzTypeDTO> __POST_Copy_ItemzType_By_GUID_ID__Async(CopyItemzTypeDTO body);
+
+
 		///// <summary>
 		///// Gets collection of Projects
 		///// </summary>

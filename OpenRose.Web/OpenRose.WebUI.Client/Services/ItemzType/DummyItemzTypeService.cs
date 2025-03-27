@@ -13,7 +13,12 @@ namespace OpenRose.WebUI.Client.Services.ItemzType
             throw new NotImplementedException();
         }
 
-        public Task<GetItemzTypeDTO?> __POST_Create_ItemzType__Async(CreateItemzTypeDTO createItemzTypeDTO)
+		public Task<GetItemzTypeDTO> __POST_Copy_ItemzType_By_GUID_ID__Async(CopyItemzTypeDTO body)
+		{
+			throw new NotImplementedException();
+		}
+
+		public Task<GetItemzTypeDTO?> __POST_Create_ItemzType__Async(CreateItemzTypeDTO createItemzTypeDTO)
         {
             throw new NotImplementedException();
         }
