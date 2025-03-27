@@ -49,6 +49,9 @@ jobs:
         fetch-depth: 0  ## Fetch the entire history
         persist-credentials: true  # Ensure credentials persist for pushing
 
+    - name: List all Git tags
+      run: git tag -l
+
     - name: Set up .NET
       uses: actions/setup-dotnet@v3
       with:
@@ -68,15 +71,16 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
 
-    - name: Calculate Version
+    - name: Calculate Version with Debug
       id: set_env
       run: |
-        echo "Running dotnet-gitversion to calculate FullSemVer..."
-        FullSemVer=$(dotnet-gitversion /showvariable FullSemVer 2>&1) || {
+        echo "Running dotnet-gitversion with diagnostics..."
+        FullSemVer=$(dotnet-gitversion /showvariable FullSemVer /diag 2>&1) || {
           echo "dotnet-gitversion failed with the following output:"
           echo "$FullSemVer"
           exit 1
         }
+        echo "$FullSemVer"
         AssemblySemFileVer=$(dotnet-gitversion /showvariable AssemblySemFileVer 2>&1) || {
           echo "dotnet-gitversion failed with the following output:"
           echo "$AssemblySemFileVer"
@@ -101,7 +105,6 @@ jobs:
         echo "DateTimeStamp: $DateTimeStamp"
         echo "SimpleVersion=$SimpleVersion" >> $GITHUB_ENV
         echo "FullSemVerWithBuild=$FullSemVerWithBuild" >> $GITHUB_ENV
-        echo "EscapedBranchName calculated: $EscapedBranchName"
         echo "EscapedBranchName=$EscapedBranchName" >> $GITHUB_ENV
         echo "DateTimeStamp=$DateTimeStamp" >> $GITHUB_ENV
         echo "VERSION: $FullSemVerWithBuild"
