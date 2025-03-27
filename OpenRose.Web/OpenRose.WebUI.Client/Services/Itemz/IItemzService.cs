@@ -28,5 +28,6 @@ namespace OpenRose.WebUI.Client.Services.Itemz
 
 		public Task __Delete_All_Orphan_Itemz__Async();
 
+		public Task<GetItemzDTO> __POST_Copy_Itemz_By_GUID_ID__Async(CopyItemzDTO body);
 	}
 }
