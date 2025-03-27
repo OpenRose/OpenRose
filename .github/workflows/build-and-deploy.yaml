@@ -75,11 +75,12 @@ jobs:
       id: set_env
       run: |
         echo "Running dotnet-gitversion with diagnostics..."
-        FullSemVer=$(dotnet-gitversion /showvariable FullSemVer 2>&1) || {
+        FullSemVer=$(dotnet-gitversion /showvariable FullSemVer /diag 2>&1) || {
           echo "dotnet-gitversion failed with the following output:"
           echo "$FullSemVer"
           exit 1
         }
+        echo "$FullSemVer"
         AssemblySemFileVer=$(dotnet-gitversion /showvariable AssemblySemFileVer 2>&1) || {
           echo "dotnet-gitversion failed with the following output:"
           echo "$AssemblySemFileVer"
