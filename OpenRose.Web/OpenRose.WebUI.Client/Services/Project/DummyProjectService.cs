@@ -14,7 +14,12 @@ namespace OpenRose.WebUI.Client.Services.Project
             throw new InvalidOperationException("OpenRose API base URL is not configured. Please provide a valid URL in the configuration file.");
         }
 
-        Task IProjectService.__DELETE_Project_By_GUID_ID__Async(Guid projectId)
+		public Task<GetProjectDTO> __POST_Copy_Project_By_GUID_ID__Async(CopyProjectDTO body)
+		{
+			throw new NotImplementedException();
+		}
+
+		Task IProjectService.__DELETE_Project_By_GUID_ID__Async(Guid projectId)
         {
 
             throw new NotImplementedException();

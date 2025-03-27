@@ -25,20 +25,23 @@ namespace OpenRose.WebUI.Client.Services.Project
         public Task<string?> __GET_Last_Project_HierarchyID__Async();
 
         public Task __DELETE_Project_By_GUID_ID__Async(Guid projectId);
-        ///// <summary>
-        ///// Gets collection of Projects
-        ///// </summary>
-        ///// <returns>Returns collection of Projects based on sorting order</returns>
-        ///// <exception cref="ApiException">A server side error occurred.</exception>
-        //System.Threading.Tasks.Task<System.Collections.Generic.ICollection<GetProjectDTO>> __GET_Projects__Async();
 
-        ///// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        ///// <summary>
-        ///// Gets collection of Projects
-        ///// </summary>
-        ///// <returns>Returns collection of Projects based on sorting order</returns>
-        ///// <exception cref="ApiException">A server side error occurred.</exception>
-        //System.Threading.Tasks.Task<System.Collections.Generic.ICollection<GetProjectDTO>> __GET_Projects__Async(System.Threading.CancellationToken cancellationToken);
+		public Task<GetProjectDTO> __POST_Copy_Project_By_GUID_ID__Async(CopyProjectDTO body);
 
-    }
+		///// <summary>
+		///// Gets collection of Projects
+		///// </summary>
+		///// <returns>Returns collection of Projects based on sorting order</returns>
+		///// <exception cref="ApiException">A server side error occurred.</exception>
+		//System.Threading.Tasks.Task<System.Collections.Generic.ICollection<GetProjectDTO>> __GET_Projects__Async();
+
+		///// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+		///// <summary>
+		///// Gets collection of Projects
+		///// </summary>
+		///// <returns>Returns collection of Projects based on sorting order</returns>
+		///// <exception cref="ApiException">A server side error occurred.</exception>
+		//System.Threading.Tasks.Task<System.Collections.Generic.ICollection<GetProjectDTO>> __GET_Projects__Async(System.Threading.CancellationToken cancellationToken);
+
+	}
 }
