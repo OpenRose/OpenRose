@@ -49,6 +49,10 @@ jobs:
         fetch-depth: 0  ## Fetch the entire history
         persist-credentials: true  # Ensure credentials persist for pushing
 
+    - name: Fetch all tags and branches
+      run: |
+        git fetch --all --tags
+
     - name: List all Git tags
       run: git tag -l
 
