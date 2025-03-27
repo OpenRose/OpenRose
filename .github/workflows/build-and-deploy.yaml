@@ -75,28 +75,27 @@ jobs:
       id: set_env
       run: |
         echo "Running dotnet-gitversion with diagnostics..."
-        FullSemVer=$(dotnet-gitversion /showvariable FullSemVer /diag 2>&1) || {
+        FullSemVer=$(dotnet-gitversion /showvariable FullSemVer /diag 2>&1 | grep -v '^INFO') || {
           echo "dotnet-gitversion failed with the following output:"
           echo "$FullSemVer"
           exit 1
         }
-        echo "$FullSemVer"
-        AssemblySemFileVer=$(dotnet-gitversion /showvariable AssemblySemFileVer 2>&1) || {
+        AssemblySemFileVer=$(dotnet-gitversion /showvariable AssemblySemFileVer 2>&1 | grep -v '^INFO') || {
           echo "dotnet-gitversion failed with the following output:"
           echo "$AssemblySemFileVer"
           exit 1
         }
-        AssemblySemVer=$(dotnet-gitversion /showvariable AssemblySemVer 2>&1) || {
+        AssemblySemVer=$(dotnet-gitversion /showvariable AssemblySemVer 2>&1 | grep -v '^INFO') || {
           echo "dotnet-gitversion failed with the following output:"
           echo "$AssemblySemVer"
           exit 1
         }
-        EscapedBranchName=$(dotnet-gitversion /showvariable EscapedBranchName 2>&1) || {
+        EscapedBranchName=$(dotnet-gitversion /showvariable EscapedBranchName 2>&1 | grep -v '^INFO') || {
           echo "dotnet-gitversion failed with the following output:"
           echo "$EscapedBranchName"
           exit 1
         }
-        BuildMetaData=$(dotnet-gitversion /showvariable BuildMetaData 2>&1)
+        BuildMetaData=$(dotnet-gitversion /showvariable BuildMetaData 2>&1 | grep -v '^INFO')
         SimpleVersion="${AssemblySemVer}"  # Remove anything after '+'
         FullSemVerWithBuild="${FullSemVer}+${BuildMetaData}"
         DateTimeStamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
