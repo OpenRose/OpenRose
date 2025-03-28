@@ -30,4 +30,4 @@ branches:
     increment: Patch
     label: hotfix
     pre-release-weight: 400
-tag-prefix: ''  # Ensures tags without 'v' or 'V' are recognized
+    

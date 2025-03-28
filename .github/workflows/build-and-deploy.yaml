@@ -101,8 +101,8 @@ jobs:
           exit 1
         }
         BuildMetaData=$(dotnet-gitversion /showvariable BuildMetaData 2>&1 | grep -v '^INFO')
-        SimpleVersion="${AssemblySemVer}"  # Remove anything after '+'
-        FullSemVerWithBuild="${FullSemVer}+${BuildMetaData}"
+        SimpleVersion="v${AssemblySemVer}"  # Add 'v' prefix
+        FullSemVerWithBuild="v${FullSemVer}+${BuildMetaData}"  # Add 'v' prefix
         DateTimeStamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
         echo "SimpleVersion calculated: $SimpleVersion"
         echo "FullSemVerWithBuild calculated: $FullSemVerWithBuild"
@@ -230,7 +230,7 @@ jobs:
 
     - name: Create Tag
       run: |
-        VERSION=${{ env.SimpleVersion_win-x64 }}
+        VERSION="${{ env.SimpleVersion_win-x64 }}"
         git tag -a $VERSION -m "Release $VERSION"
         git push origin $VERSION
         echo "RELEASE_TAG=$VERSION" >> $GITHUB_ENV
