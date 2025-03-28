@@ -1,4 +1,4 @@
-mode: ContinuousDeployment
+mode: ContinuousDelivery
 assembly-versioning-scheme: MajorMinorPatch
 assembly-file-versioning-scheme: MajorMinorPatch
 tag-prefix: 'v'
@@ -10,11 +10,17 @@ branches:
     is-release-branch: true
     increment: Minor
   Alpha:
-    regex: '^(Alpha.*)$'
-    is-release-branch: false
-    increment: Patch
+    regex: ^(Alpha.*)$
     label: alpha
-    pre-release-weight: 100
+    increment: Patch
+    is-release-branch: false
+    tracks-release-branches: false    
+#  Alpha:
+#    regex: '^(Alpha.*)$'
+#    is-release-branch: false
+#    increment: Patch
+#    label: alpha
+#    pre-release-weight: 100
   Beta:
     regex: '^(Beta.*)$'
     is-release-branch: false
@@ -31,3 +37,4 @@ branches:
     increment: Patch
     label: hotfix
     pre-release-weight: 400
+
