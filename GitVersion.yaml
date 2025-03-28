@@ -8,31 +8,26 @@ branches:
     regex: '^(main)$'
     is-release-branch: true
     increment: Minor
-    tag-prefix: ''
   Alpha:
     regex: '^(Alpha.*)$'
     is-release-branch: false
     increment: Patch
     label: alpha
     pre-release-weight: 100
-    tag-prefix: ''
   Beta:
     regex: '^(Beta.*)$'
     is-release-branch: false
     increment: Patch
     label: beta
     pre-release-weight: 200
-    tag-prefix: ''
   pull-request:
     regex: '^(pull/.*)$'
     increment: Inherit
     label: PullRequest
     pre-release-weight: 300
-    tag-prefix: ''
   hotfix:
     regex: '^(HotFix.*)$'
     increment: Patch
     label: hotfix
     pre-release-weight: 400
-    tag-prefix: ''
-    
+tag-prefix: ''  # Ensures tags without 'v' or 'V' are recognized
