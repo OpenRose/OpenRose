@@ -10,23 +10,22 @@ branches:
     is-release-branch: true
     increment: Minor
   Alpha:
-    regex: ^(Alpha.*)$
+    regex: '^(Alpha.*)$'
     label: alpha
     increment: Patch
     is-release-branch: false
-    tracks-release-branches: false    
-#  Alpha:
-#    regex: '^(Alpha.*)$'
-#    is-release-branch: false
-#    increment: Patch
-#    label: alpha
-#    pre-release-weight: 100
+    tracks-release-branches: false
+    prevent-increment:
+      of-merged-branch: false
+      when-current-commit-tagged: false
+    pre-release-weight: 100 
   Beta:
     regex: '^(Beta.*)$'
     is-release-branch: false
     increment: Patch
     label: beta
     pre-release-weight: 200
+    tracks-release-branches: false    
   pull-request:
     regex: '^(pull/.*)$'
     increment: Inherit
