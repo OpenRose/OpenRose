@@ -186,7 +186,7 @@ jobs:
     - name: Upload GitVersion Diagnostics
       uses: actions/upload-artifact@v4
       with:
-        name: gitversion-diagnostics
+        name: gitversion-diagnostics-${{ matrix.platform }}
         path: gitversion_diagnostics.log
 
   create_release:
