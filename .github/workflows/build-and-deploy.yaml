@@ -170,7 +170,11 @@ jobs:
         mkdir -p ./package/OpenRose.WebUI/Properties
         # Conditional copy for GitVersion Diagnostics
         if [ "${{ matrix.platform }}" = "win-x64" ]; then
-          cp ./package/docs/gitversion_diagnostics.log ./package/OpenRose.API/Properties/
+          if [ -f ./package/docs/gitversion_diagnostics.log ]; then # checks if file is present
+            mv ./package/docs/gitversion_diagnostics.log ./package/OpenRose.API/Properties/
+          else
+            echo "gitversion_diagnostics.log does not exist, skipping move."
+          fi
         fi
         cp OpenRose.API/Properties/AssemblyInfo.cs ./package/OpenRose.API/Properties/
         cp OpenRose.Web/OpenRose.WebUI/Properties/AssemblyInfo.cs ./package/OpenRose.WebUI/Properties/
