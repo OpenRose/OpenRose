@@ -76,13 +76,13 @@ jobs:
       run: dotnet restore
 
     - name: Generate and display GitVersion Diagnostics
-      if: contains(matrix.architecture, 'x64')    
+      if: matrix.platform == 'win-x64'    
       run: |
         mkdir -p package/docs/
         dotnet-gitversion /diag > package/docs/gitversion_diagnostics.log
         echo "Displaying GitVersion Diagnostics Log:"
         cat package/docs/gitversion_diagnostics.log
-
+        
     - name: Calculate Version with Diagnostics to File
       id: set_env
       run: |
@@ -168,7 +168,10 @@ jobs:
       run: |
         mkdir -p ./package/OpenRose.API/Properties
         mkdir -p ./package/OpenRose.WebUI/Properties
-        cp ./package/docs/gitversion_diagnostics.log ./package/OpenRose.API/Properties/
+        # Conditional copy for GitVersion Diagnostics
+        if [ "${{ matrix.platform }}" = "win-x64" ]; then
+          cp ./package/docs/gitversion_diagnostics.log ./package/OpenRose.API/Properties/
+        fi
         cp OpenRose.API/Properties/AssemblyInfo.cs ./package/OpenRose.API/Properties/
         cp OpenRose.Web/OpenRose.WebUI/Properties/AssemblyInfo.cs ./package/OpenRose.WebUI/Properties/
 
