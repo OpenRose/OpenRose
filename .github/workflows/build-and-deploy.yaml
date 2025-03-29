@@ -75,11 +75,13 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
 
-    - name: Generate and copy GitVersion Diagnostics
+    - name: Generate and display GitVersion Diagnostics
       if: contains(matrix.architecture, 'x64')    
       run: |
         mkdir -p package/docs/
         dotnet-gitversion /diag > package/docs/gitversion_diagnostics.log
+        echo "Displaying GitVersion Diagnostics Log:"
+        cat package/docs/gitversion_diagnostics.log
 
     - name: Calculate Version with Diagnostics to File
       id: set_env
@@ -166,6 +168,7 @@ jobs:
       run: |
         mkdir -p ./package/OpenRose.API/Properties
         mkdir -p ./package/OpenRose.WebUI/Properties
+        cp ./package/docs/gitversion_diagnostics.log ./package/OpenRose.API/Properties/
         cp OpenRose.API/Properties/AssemblyInfo.cs ./package/OpenRose.API/Properties/
         cp OpenRose.Web/OpenRose.WebUI/Properties/AssemblyInfo.cs ./package/OpenRose.WebUI/Properties/
 
