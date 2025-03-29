@@ -42,5 +42,7 @@ namespace ItemzApp.API.Services
         public Task<bool> DeleteProjectItemzHierarchyAsync(Guid projectId);
 
         public Task<string?> GetLastProjectHierarchyID();
-    }
+
+		public Task<Guid> CopyProjectAsync(Guid ProjectId);
+	}
 }

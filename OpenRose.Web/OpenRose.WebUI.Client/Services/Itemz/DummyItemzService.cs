@@ -28,7 +28,12 @@ namespace OpenRose.WebUI.Client.Services.Itemz
             throw new NotImplementedException();
         }
 
-        public Task<GetItemzDTO> __POST_Create_Itemz_Between_Existing_Itemz__Async(Guid? firstItemzId, Guid? secondItemzId, CreateItemzDTO body)
+		public Task<GetItemzDTO> __POST_Copy_Itemz_By_GUID_ID__Async(CopyItemzDTO body)
+		{
+			throw new NotImplementedException();
+		}
+
+		public Task<GetItemzDTO> __POST_Create_Itemz_Between_Existing_Itemz__Async(Guid? firstItemzId, Guid? secondItemzId, CreateItemzDTO body)
         {
             throw new NotImplementedException();
         }

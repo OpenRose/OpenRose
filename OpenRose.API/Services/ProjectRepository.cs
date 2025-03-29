@@ -385,5 +385,58 @@ namespace ItemzApp.API.Services
             // return projectHierarchyItemz.Count > 0 ? projectHierarchyItemz.FirstOrDefault()!.ItemzHierarchyId.ToString() : null;
             return projectHierarchyItemz.Count > 0 ? projectHierarchyItemz.FirstOrDefault()!.ItemzHierarchyId!.ToString() : null;
         }
-    }
+
+		public async Task<Guid> CopyProjectAsync(Guid ProjectId)
+		{
+			if (ProjectId == Guid.Empty)
+			{
+				throw new ArgumentNullException(nameof(ProjectId));
+			}
+
+			// EXPLANATION : Check if Project exist in Projects Table
+
+			if (!_context.Projects!.Where(p => p.Id == ProjectId).Any())
+			{
+				throw new ArgumentException(nameof(ProjectId));
+			}
+
+			// EXPLANATION : Check if Project exist in ItemzHierarchy Table.
+            // Because we need to copy all child records including all 
+            // ItemzType and Itemz Hierarchy structure, we need to check 
+            // that Project is available in ItemzHierarchy Table.
+
+
+			if (!_context.ItemzHierarchy!.AsNoTracking()
+							.Where(ih => ih.Id == ProjectId).Any())
+			{
+				throw new ArgumentException(nameof(ProjectId));
+			}
+
+			Guid returnValue = Guid.Empty;
+			var OUTPUT_ID = new SqlParameter
+			{
+				ParameterName = "OUTPUT_Id",
+				Direction = System.Data.ParameterDirection.Output,
+				SqlDbType = System.Data.SqlDbType.UniqueIdentifier,
+			};
+
+			var sqlParameters = new[]
+			{
+				new SqlParameter
+				{
+					ParameterName = "RecordID",
+					Value = ProjectId,
+					SqlDbType = System.Data.SqlDbType.UniqueIdentifier,
+				}
+			};
+
+			sqlParameters = sqlParameters.Append(OUTPUT_ID).ToArray();
+
+			var _ = await _context.Database.ExecuteSqlRawAsync(sql: "EXEC userProcCopyRecordWithChildrenByRecordID @RecordID, @OUTPUT_Id = @OUTPUT_Id OUT", parameters: sqlParameters);
+			returnValue = (Guid)OUTPUT_ID.Value;
+
+			return returnValue;
+		}
+
+	}
 }

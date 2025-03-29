@@ -1017,6 +1017,55 @@ namespace ItemzApp.API.Services
 			}
 		}
 
+		public async Task<Guid> CopyItemzAsync(Guid ItemzId)
+		{
+			if (ItemzId == Guid.Empty)
+			{
+				throw new ArgumentNullException(nameof(ItemzId));
+			}
+
+			// EXPLANATION : Check if Itemz exist in Itemz Table
+
+			if (!_context.Itemzs!.Where(i => i.Id == ItemzId).Any())
+			{
+				throw new ArgumentException(nameof(ItemzId));
+			}
+
+			// EXPLANATION : Check if Itemz exist in ItemzHierarchy Table.
+            // If it does not exist here then it must be an Orphand Itemz
+            // OR ItemzID is wrongly provided by the user.
+
+			if ( !_context.ItemzHierarchy!.AsNoTracking()
+							.Where(ih => ih.Id == ItemzId).Any())
+			{
+				throw new ArgumentException(nameof(ItemzId));
+			}
+
+			Guid returnValue = Guid.Empty;
+			var OUTPUT_ID = new SqlParameter
+			{
+				ParameterName = "OUTPUT_Id",
+				Direction = System.Data.ParameterDirection.Output,
+				SqlDbType = System.Data.SqlDbType.UniqueIdentifier,
+			};
+
+			var sqlParameters = new[]
+			{
+				new SqlParameter
+				{
+					ParameterName = "RecordID",
+					Value = ItemzId,
+					SqlDbType = System.Data.SqlDbType.UniqueIdentifier,
+				}
+			};
+
+			sqlParameters = sqlParameters.Append(OUTPUT_ID).ToArray();
+
+			var _ = await _context.Database.ExecuteSqlRawAsync(sql: "EXEC userProcCopyRecordWithChildrenByRecordID @RecordID, @OUTPUT_Id = @OUTPUT_Id OUT", parameters: sqlParameters);
+			returnValue = (Guid)OUTPUT_ID.Value;
+
+			return returnValue;
+		}
 
 		#region NOT USED ANYMORE CODE 
 

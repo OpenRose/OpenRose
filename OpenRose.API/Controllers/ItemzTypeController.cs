@@ -716,78 +716,135 @@ namespace ItemzApp.API.Controllers
             return NoContent();
         }
 
-        ///// <summary>
-        ///// Gets expected Top Itemz hierarchy number by ItemzTypeId
-        ///// </summary>
-        ///// <returns>string representing highest most last Itemz hierarchy id</returns>
-        ///// <response code="200">string representing highest most last Itemz hierarchy id</response>
-        ///// <response code="404">No Itemz hierarchy records found under ItemzTypeID</response>
-        ///// 
-        //[HttpGet("GetTopItemzHierarchyID/{ItemzTypeId}", Name = "__GET_Top_Itemz_HierarchyID__")] // e.g. http://HOST:PORT/api/Projects/GetLastItemzHierarchyID/
-        //[HttpHead("GetTopItemzHierarchyID/{ItemzTypeId}", Name = "__HEAD_Top_Itemz_HierarchyID__")]
-        //[ProducesResponseType(StatusCodes.Status200OK)]
-        //[ProducesResponseType(StatusCodes.Status404NotFound)]
-        //[ProducesDefaultResponseType]
-        //public async Task<ActionResult<string>> GetTopItemzHierarchyIDAsync(Guid ItemzTypeId)
-        //{
-        //    var topItemzHierarchyID = await _ItemzTypeRepository.GetTopItemzHierarchyID(ItemzTypeId);
-        //    if (topItemzHierarchyID == null)
-        //    {
-        //        _logger.LogDebug("{FormattedControllerAndActionNames}Seems like there are no hierarchy record found for Itemz " +
-        //            "under ItemzType ID {ItemzTypeId}. " +
-        //            "If there are Itemzs in the repository but you are not able to find top Itemz hierarchyid " +
-        //            "then please contact your system administrator.",
-        //            ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
-        //            , ItemzTypeId);
-        //        return NotFound();
-        //    }
-        //    _logger.LogDebug("{FormattedControllerAndActionNames}Returning results of {topItemzHierarchyID} as expected top Itemz hierarchy id under ItemzTypeID {ItemzTypeID}",
-        //        ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-        //        topItemzHierarchyID,
-        //        ItemzTypeId);
-        //    return Ok(topItemzHierarchyID);
-        //}
+		/// <summary>
+		/// Copy ItemzType including all it's child Itemz
+		/// </summary>
+		/// <param name="copyItemzTypeDTO">DTO containing unique ID of the ItemzType that shall be copied</param>
+		/// <returns>Newly created ItemzType property details</returns>		
+		/// <response code="201">Returns newly created ItemzType property details</response>
+		/// <response code="404">Expected source ItemzType with ID was not found in the repository</response>
+		/// <response code="409">Conflicts encountered while creating a copy from existing ItemzType</response>
 
-        ///// <summary>
-        ///// Gets expected Bottom Itemz hierarchy number by ItemzTypeId
-        ///// </summary>
-        ///// <returns>string representing highest most last Itemz hierarchy id</returns>
-        ///// <response code="200">string representing highest most last Itemz hierarchy id</response>
-        ///// <response code="404">No Itemz hierarchy records found under ItemzTypeID</response>
-        ///// 
-        //[HttpGet("GetLastItemzHierarchyID/{ItemzTypeId}", Name = "__GET_Last_Itemz_HierarchyID__")] // e.g. http://HOST:PORT/api/Projects/GetLastItemzHierarchyID/
-        //[HttpHead("GetLastItemzHierarchyID/{ItemzTypeId}", Name = "__HEAD_Last_Itemz_HierarchyID__")]
-        //[ProducesResponseType(StatusCodes.Status200OK)]
-        //[ProducesResponseType(StatusCodes.Status404NotFound)]
-        //[ProducesDefaultResponseType]
-        //public async Task<ActionResult<string>> GetLastItemzHierarchyIDAsync(Guid ItemzTypeId)
-        //{
+		[HttpPost("CopyItemzType", Name = "__Copy_ItemzType_By_GUID_ID__")]
+		[ProducesResponseType(StatusCodes.Status201Created)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		[ProducesResponseType(StatusCodes.Status409Conflict)]
+		[ProducesDefaultResponseType]
+		public async Task<ActionResult<GetItemzTypeDTO>> CopyItemzTypeAsync(CopyItemzTypeDTO copyItemzTypeDTO)
+		{
+			if (!(await _ItemzTypeRepository.ItemzTypeExistsAsync(copyItemzTypeDTO.ItemzTypeId)))
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Cannot Copy ItemzType with ID {ItemzTypeId} as it could not be found",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					copyItemzTypeDTO.ItemzTypeId);
+				return NotFound($"Cannot Copy ItemzType with ID {copyItemzTypeDTO.ItemzTypeId} as it could not be found");
+			}
 
-        //    var lastItemzHierarchyID = await _ItemzTypeRepository.GetLastItemzHierarchyID(ItemzTypeId);
-        //    if (lastItemzHierarchyID == null)
-        //    {
-        //        _logger.LogDebug("{FormattedControllerAndActionNames}Seems like there are no hierarchy record found for Itemz " +
-        //            "under ItemzType ID {ItemzTypeId}. " +
-        //            "If there are Itemzs in the repository but you are not able to find last Itemz hierarchyid " +
-        //            "then please contact your system administrator.",
-        //            ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
-        //            , ItemzTypeId);
-        //        return NotFound();
-        //    }
-        //    _logger.LogDebug("{FormattedControllerAndActionNames}Returning results of {lastItemzHierarchyID} as expected last OR bottom Itemz hierarchy id under ItemzTypeID {ItemzTypeID}",
-        //        ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-        //        lastItemzHierarchyID,
-        //        ItemzTypeId);
-        //    return Ok(lastItemzHierarchyID);
-        //}
+			Guid newlyCopiedItemzTypeId;
 
-        /// <summary>
-        /// Get list of supported HTTP Options for the ItemzTypes controller.
-        /// </summary>
-        /// <returns>Custom response header with key as "Allow" and value as different HTTP options that are allowed</returns>
-        /// <response code="200">Custom response header with key as "Allow" and value as different HTTP options that are allowed</response>
+			try
+			{
+				// EXPLANATION: Because copy is created via User Defined Stored Procedure,
+				// We therefor do not call SaveAsync() method on the _ItemzTypeRepository. 
 
-        [HttpOptions(Name = "__OPTIONS_for_ItemzTypes_Controller__")]
+				newlyCopiedItemzTypeId = await _ItemzTypeRepository.CopyItemzTypeAsync(copyItemzTypeDTO.ItemzTypeId);
+				// await _ItemzTypeRepository.SaveAsync();
+			}
+			catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to copy existing ItemzType:" + dbUpdateException.InnerException,
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
+					);
+				return Conflict($"Failed to create ItemzType Copy for '{copyItemzTypeDTO.ItemzTypeId}'. DB Error reported, check the log file.");
+			}
+
+			_logger.LogDebug("{FormattedControllerAndActionNames}Created new ItemzType with ID {newlyCopiedItemzTypeId} by copying from ItemzType ID {copyItemzTypeDTO.ItemzTypeId}",
+				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+				newlyCopiedItemzTypeId,
+				copyItemzTypeDTO.ItemzTypeId);
+
+			// EXPLANATION: Because we are creating new ItemzType by copying existing ItemzType by using custom user defined stored procedure
+			// we do not have access to the underlying Entity. That's why we have to call _ItemzTypeRepository.GetItemzTypeAsync
+			// and then use Automapper to convert it into DTO that is returned back to the user of the API.
+
+			return CreatedAtRoute("__Single_ItemzType_By_GUID_ID__", new { ItemzTypeId = newlyCopiedItemzTypeId },
+				 _mapper.Map<GetItemzTypeDTO>(await _ItemzTypeRepository.GetItemzTypeAsync(newlyCopiedItemzTypeId)) // Converting to DTO as this is going out to the consumer 
+				);
+
+		}
+
+		///// <summary>
+		///// Gets expected Top Itemz hierarchy number by ItemzTypeId
+		///// </summary>
+		///// <returns>string representing highest most last Itemz hierarchy id</returns>
+		///// <response code="200">string representing highest most last Itemz hierarchy id</response>
+		///// <response code="404">No Itemz hierarchy records found under ItemzTypeID</response>
+		///// 
+		//[HttpGet("GetTopItemzHierarchyID/{ItemzTypeId}", Name = "__GET_Top_Itemz_HierarchyID__")] // e.g. http://HOST:PORT/api/Projects/GetLastItemzHierarchyID/
+		//[HttpHead("GetTopItemzHierarchyID/{ItemzTypeId}", Name = "__HEAD_Top_Itemz_HierarchyID__")]
+		//[ProducesResponseType(StatusCodes.Status200OK)]
+		//[ProducesResponseType(StatusCodes.Status404NotFound)]
+		//[ProducesDefaultResponseType]
+		//public async Task<ActionResult<string>> GetTopItemzHierarchyIDAsync(Guid ItemzTypeId)
+		//{
+		//    var topItemzHierarchyID = await _ItemzTypeRepository.GetTopItemzHierarchyID(ItemzTypeId);
+		//    if (topItemzHierarchyID == null)
+		//    {
+		//        _logger.LogDebug("{FormattedControllerAndActionNames}Seems like there are no hierarchy record found for Itemz " +
+		//            "under ItemzType ID {ItemzTypeId}. " +
+		//            "If there are Itemzs in the repository but you are not able to find top Itemz hierarchyid " +
+		//            "then please contact your system administrator.",
+		//            ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
+		//            , ItemzTypeId);
+		//        return NotFound();
+		//    }
+		//    _logger.LogDebug("{FormattedControllerAndActionNames}Returning results of {topItemzHierarchyID} as expected top Itemz hierarchy id under ItemzTypeID {ItemzTypeID}",
+		//        ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+		//        topItemzHierarchyID,
+		//        ItemzTypeId);
+		//    return Ok(topItemzHierarchyID);
+		//}
+
+		///// <summary>
+		///// Gets expected Bottom Itemz hierarchy number by ItemzTypeId
+		///// </summary>
+		///// <returns>string representing highest most last Itemz hierarchy id</returns>
+		///// <response code="200">string representing highest most last Itemz hierarchy id</response>
+		///// <response code="404">No Itemz hierarchy records found under ItemzTypeID</response>
+		///// 
+		//[HttpGet("GetLastItemzHierarchyID/{ItemzTypeId}", Name = "__GET_Last_Itemz_HierarchyID__")] // e.g. http://HOST:PORT/api/Projects/GetLastItemzHierarchyID/
+		//[HttpHead("GetLastItemzHierarchyID/{ItemzTypeId}", Name = "__HEAD_Last_Itemz_HierarchyID__")]
+		//[ProducesResponseType(StatusCodes.Status200OK)]
+		//[ProducesResponseType(StatusCodes.Status404NotFound)]
+		//[ProducesDefaultResponseType]
+		//public async Task<ActionResult<string>> GetLastItemzHierarchyIDAsync(Guid ItemzTypeId)
+		//{
+
+		//    var lastItemzHierarchyID = await _ItemzTypeRepository.GetLastItemzHierarchyID(ItemzTypeId);
+		//    if (lastItemzHierarchyID == null)
+		//    {
+		//        _logger.LogDebug("{FormattedControllerAndActionNames}Seems like there are no hierarchy record found for Itemz " +
+		//            "under ItemzType ID {ItemzTypeId}. " +
+		//            "If there are Itemzs in the repository but you are not able to find last Itemz hierarchyid " +
+		//            "then please contact your system administrator.",
+		//            ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
+		//            , ItemzTypeId);
+		//        return NotFound();
+		//    }
+		//    _logger.LogDebug("{FormattedControllerAndActionNames}Returning results of {lastItemzHierarchyID} as expected last OR bottom Itemz hierarchy id under ItemzTypeID {ItemzTypeID}",
+		//        ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+		//        lastItemzHierarchyID,
+		//        ItemzTypeId);
+		//    return Ok(lastItemzHierarchyID);
+		//}
+
+		/// <summary>
+		/// Get list of supported HTTP Options for the ItemzTypes controller.
+		/// </summary>
+		/// <returns>Custom response header with key as "Allow" and value as different HTTP options that are allowed</returns>
+		/// <response code="200">Custom response header with key as "Allow" and value as different HTTP options that are allowed</response>
+
+		[HttpOptions(Name = "__OPTIONS_for_ItemzTypes_Controller__")]
         public IActionResult GetItemzTypesOptions()
         {
             Response.Headers.Add("Allow","GET,HEAD,OPTIONS,POST,PUT,PATCH,DELETE");

@@ -57,6 +57,8 @@ namespace ItemzApp.API.Services
 
         public Task DeleteAllOrphanItemz();
 
+        public Task<Guid> CopyItemzAsync(Guid ItemzId);
+
 		#region NOT USED ANYMORE CODE 
 
 		//public Task AddNewItemzHierarchyByItemzTypeIdAsync(Guid itemzId, Guid itemzTypeId, bool atBottomOfChildNodes = true);

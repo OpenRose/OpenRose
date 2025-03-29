@@ -49,6 +49,13 @@ jobs:
         fetch-depth: 0  ## Fetch the entire history
         persist-credentials: true  # Ensure credentials persist for pushing
 
+    - name: Fetch all tags and branches
+      run: |
+        git fetch --all --tags
+
+    - name: List all Git tags
+      run: git tag -l
+
     - name: Set up .NET
       uses: actions/setup-dotnet@v3
       with:
@@ -68,44 +75,51 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
 
-    - name: Calculate Version
+    - name: Generate and display GitVersion Diagnostics
+      if: matrix.platform == 'win-x64'    
+      run: |
+        mkdir -p package/docs/
+        dotnet-gitversion /diag > package/docs/gitversion_diagnostics.log
+        echo "Displaying GitVersion Diagnostics Log:"
+        cat package/docs/gitversion_diagnostics.log
+        
+    - name: Calculate Version with Diagnostics to File
       id: set_env
       run: |
-        echo "Running dotnet-gitversion to calculate FullSemVer..."
-        FullSemVer=$(dotnet-gitversion /showvariable FullSemVer 2>&1) || {
+        echo "Running dotnet-gitversion with diagnostics..."
+        FullSemVer=$(dotnet-gitversion /showvariable FullSemVer 2>&1 | grep -E '^[0-9]+\.[0-9]+\.[0-9]+') || {
           echo "dotnet-gitversion failed with the following output:"
           echo "$FullSemVer"
           exit 1
         }
-        AssemblySemFileVer=$(dotnet-gitversion /showvariable AssemblySemFileVer 2>&1) || {
+        AssemblySemFileVer=$(dotnet-gitversion /showvariable AssemblySemFileVer 2>&1 | grep -E '^[0-9]+\.[0-9]+\.[0-9]+') || {
           echo "dotnet-gitversion failed with the following output:"
           echo "$AssemblySemFileVer"
           exit 1
         }
-        AssemblySemVer=$(dotnet-gitversion /showvariable AssemblySemVer 2>&1) || {
+        AssemblySemVer=$(dotnet-gitversion /showvariable AssemblySemVer 2>&1 | grep -E '^[0-9]+\.[0-9]+\.[0-9]+') || {
           echo "dotnet-gitversion failed with the following output:"
           echo "$AssemblySemVer"
           exit 1
         }
-        EscapedBranchName=$(dotnet-gitversion /showvariable EscapedBranchName 2>&1) || {
+        EscapedBranchName=$(dotnet-gitversion /showvariable EscapedBranchName 2>&1 | grep -v '^INFO') || {
           echo "dotnet-gitversion failed with the following output:"
           echo "$EscapedBranchName"
           exit 1
         }
-        BuildMetaData=$(dotnet-gitversion /showvariable BuildMetaData 2>&1)
-        SimpleVersion="${AssemblySemVer}"  # Remove anything after '+'
-        FullSemVerWithBuild="${FullSemVer}+${BuildMetaData}"
+        BuildMetaData=$(dotnet-gitversion /showvariable BuildMetaData 2>&1 | grep -v '^INFO')
+        SimpleVersion="v${AssemblySemVer}"  # Add 'v' prefix
+        FullSemVerWithBuild="v${FullSemVer}+${BuildMetaData}"  # Add 'v' prefix
         DateTimeStamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
         echo "SimpleVersion calculated: $SimpleVersion"
         echo "FullSemVerWithBuild calculated: $FullSemVerWithBuild"
         echo "DateTimeStamp: $DateTimeStamp"
         echo "SimpleVersion=$SimpleVersion" >> $GITHUB_ENV
         echo "FullSemVerWithBuild=$FullSemVerWithBuild" >> $GITHUB_ENV
-        echo "EscapedBranchName calculated: $EscapedBranchName"
         echo "EscapedBranchName=$EscapedBranchName" >> $GITHUB_ENV
         echo "DateTimeStamp=$DateTimeStamp" >> $GITHUB_ENV
         echo "VERSION: $FullSemVerWithBuild"
-        echo "Updating AssemblyInfo with AssemblySemVer: $AssemblySemVer and  AssemblyFileVersion: $AssemblyFileVersion and FullSemVerWithBuild: $FullSemVerWithBuild"
+        echo "Updating AssemblyInfo with AssemblySemVer: $AssemblySemVer and AssemblyFileVersion: $AssemblySemFileVer and FullSemVerWithBuild: $FullSemVerWithBuild"
         FULL_BRANCH_NAME=${GITHUB_REF#refs/heads/}
         BRANCH_NAME=$(echo $FULL_BRANCH_NAME | sed 's/\//-/g' | sed 's/-/_/g')
         COMMIT_SHA=${GITHUB_SHA}
@@ -154,6 +168,14 @@ jobs:
       run: |
         mkdir -p ./package/OpenRose.API/Properties
         mkdir -p ./package/OpenRose.WebUI/Properties
+        # Conditional copy for GitVersion Diagnostics
+        if [ "${{ matrix.platform }}" = "win-x64" ]; then
+          if [ -f ./package/docs/gitversion_diagnostics.log ]; then # checks if file is present
+            mv ./package/docs/gitversion_diagnostics.log ./package/OpenRose.API/Properties/
+          else
+            echo "gitversion_diagnostics.log does not exist, skipping move."
+          fi
+        fi
         cp OpenRose.API/Properties/AssemblyInfo.cs ./package/OpenRose.API/Properties/
         cp OpenRose.Web/OpenRose.WebUI/Properties/AssemblyInfo.cs ./package/OpenRose.WebUI/Properties/
 
@@ -217,7 +239,7 @@ jobs:
 
     - name: Create Tag
       run: |
-        VERSION=${{ env.SimpleVersion_win-x64 }}
+        VERSION="${{ env.SimpleVersion_win-x64 }}"
         git tag -a $VERSION -m "Release $VERSION"
         git push origin $VERSION
         echo "RELEASE_TAG=$VERSION" >> $GITHUB_ENV

@@ -1,0 +1,397 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+@page "/copy"
+@using OpenRose.WebUI.Client.SharedModels
+@using OpenRose.WebUI.Client.Services.Itemz
+@using OpenRose.WebUI.Client.Services.ItemzType
+@using OpenRose.WebUI.Client.Services.Project
+@using OpenRose.WebUI.Components.Pages.Common
+@using OpenRose.WebUI.Services
+@inject IDialogService DialogService
+@inject NavigationManager NavManager
+@inject ConfigurationService ConfigurationService
+
+<MudPaper Class="pa-3 mb-3 align-start d-flex" Style="width: auto " Outlined="false">
+	<MudStack Row="true" Spacing="3">
+		<MudIcon Icon="@Icons.Material.Filled.AutoAwesomeMotion" Size="Size.Large" />
+		<MudText Typo="Typo.h5" Align="Align.Left">Copy</MudText>
+		<MudSpacer /> 
+		<MudText Class="mt-3" Typo="Typo.caption"> Copy Project / ItemzType / Itemz along with it's hierarchy data tree structure </MudText>
+	</MudStack>
+</MudPaper>
+
+<MudItem xs="12" Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3">
+	<MudPaper Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3" style="padding: 16px;">
+		<div class="d-flex flex-column align-items-center justify-center w-100 h-100">
+
+		<MudStack Row="false" Spacing="2" AlignItems="AlignItems.Center" JustifyContent="Justify.Center">
+			<div>
+				<MudTooltip Text="Step 1 is to select Record Type for the data to be copied">
+					<MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success"> STEP 1 </MudChip>
+				</MudTooltip>
+			</div>
+			<MudStack Row="false" AlignItems="AlignItems.Center" JustifyContent="Justify.Center">
+				<MudText Align="Align.Center">Select Record Type :</MudText> <!-- Center-aligned title -->
+				<MudRadioGroup T="string" Value="@radioRecordType" ValueChanged="OnRadioValueChanged">
+					<MudRadio Value="@("Project")" Color="Color.Primary" Dense="false">Project</MudRadio>
+					<MudRadio Value="@("ItemzType")" Color="Color.Primary" Dense="false">ItemzType</MudRadio>
+					<MudRadio Value="@("Itemz")" Color="Color.Primary" Dense="false">Itemz</MudRadio>
+				</MudRadioGroup>
+			</MudStack>
+		</MudStack>
+		</div>
+	</MudPaper>
+</MudItem>
+@if (radioRecordType != null)
+{
+	<MudItem xs="12" Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3">
+		<MudPaper Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3" style="padding: 16px;">
+
+		<MudStack Row="false" Spacing="2" AlignItems="AlignItems.Center" JustifyContent="Justify.Center">
+
+		<MudStack Row="false" Spacing="2" AlignItems="AlignItems.Center" JustifyContent="Justify.Center">
+			<MudTooltip Text="Step 2 is to select Source Record that should be copied">
+				<MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success"> STEP 2 </MudChip>
+			</MudTooltip>
+			<MudButton @onclick="async _ => await SelectSourceRecord()" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Primary">
+				Select @radioRecordType to be copied by ID
+			</MudButton>
+		</MudStack>
+		@if (radioRecordType == "Itemz" && copyItemz != null && copyItemz.Id != Guid.Empty)
+		{
+			<MudStack Row="false" Spacing="2" AlignItems="AlignItems.Center" JustifyContent="Justify.Center">
+				<MudCard style="background-color : #FABBBB; margin: 16px;" Class="w-100">
+					<MudCardContent Class="d-flex flex-wrap">
+						<div>
+							<MudText Typo="Typo.h6" Align="Align.Left"> Itemz Details </MudText> 
+							<MudDivider></MudDivider>
+							<MudText><strong>Name        : </strong> @copyItemz.Name </MudText>
+							<MudStack Row="true" Spacing="2">
+								<MudText><strong>ID          : </strong></MudText>
+								<CopyableText TextToCopy="@copyItemz.Id.ToString()" />
+							</MudStack>
+							<MudText><strong>Status      : </strong> @copyItemz.Status</MudText>
+							<MudText><strong>Priority    : </strong> @copyItemz.Priority</MudText>
+							<MudText><strong>Severity    : </strong> @copyItemz.Severity</MudText>
+						</div>
+					</MudCardContent>
+				</MudCard>
+			</MudStack>
+		}
+		else if (radioRecordType == "ItemzType" && copyItemzType != null && copyItemzType.Id != Guid.Empty)
+		{
+			<MudStack Row="false" Spacing="2" AlignItems="AlignItems.Center" JustifyContent="Justify.Center">
+				<MudCard style="background-color : #FABBBB; margin: 16px;" Class="w-100">
+					<MudCardContent Class="d-flex flex-wrap">
+						<div>
+							<MudText Typo="Typo.h6" Align="Align.Left"> ItemzType Details </MudText>
+							<MudDivider></MudDivider>
+							<MudText><strong>Name        : </strong> @copyItemzType.Name </MudText>
+							<MudStack Row="true" Spacing="2">
+								<MudText><strong>ID          : </strong></MudText>
+								<CopyableText TextToCopy="@copyItemzType.Id.ToString()" />
+							</MudStack>
+							<MudText><strong>Status      : </strong> @copyItemzType.Status</MudText>
+							<MudText><strong>IsSystem    : </strong> @copyItemzType.IsSystem.ToString()</MudText>
+						</div>
+					</MudCardContent>
+				</MudCard>
+			</MudStack>
+		}
+		else if (radioRecordType == "Project" && copyProject != null && copyProject.Id != Guid.Empty)
+		{
+			<MudStack Row="false" Spacing="2" AlignItems="AlignItems.Center" JustifyContent="Justify.Center">
+				<MudCard style="background-color : #FABBBB; margin: 16px;" Class="w-100">
+					<MudCardContent Class="d-flex flex-wrap">
+						<div>
+							<MudText Typo="Typo.h6" Align="Align.Left"> Project Details </MudText>
+							<MudDivider></MudDivider>
+							<MudText><strong>Name        : </strong> @copyProject.Name </MudText>
+							<MudStack Row="true" Spacing="2">
+								<MudText><strong>ID          : </strong></MudText>
+								<CopyableText TextToCopy="@copyProject.Id.ToString()" />
+							</MudStack>
+							<MudText><strong>Status      : </strong> @copyProject.Status</MudText>
+						</div>
+					</MudCardContent>
+				</MudCard>
+			</MudStack>
+		}
+		</MudStack>
+		</MudPaper>
+	</MudItem>
+}
+
+@if ((radioRecordType == "Itemz" && copyItemz != null && copyItemz.Id != Guid.Empty) ||
+	(radioRecordType == "ItemzType" && copyItemzType != null && copyItemzType.Id != Guid.Empty) ||
+	(radioRecordType == "Project" && copyProject != null && copyProject.Id != Guid.Empty))
+{
+	<MudPaper Class="pa-3 mb-3 align-end d-flex" Style="width: auto " Outlined="false">
+		<div class="d-flex flex-column align-items-center justify-center w-100 h-100">
+			<MudStack Row="true" Spacing="2">
+				<MudTooltip Text="Step 3 is to Perform OR Cancel the copy">
+					<MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success"> STEP 3 </MudChip>
+				</MudTooltip>
+
+				<MudButton @onclick="async _ => await PerformCopy()" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Primary">
+					Copy Selected @radioRecordType
+				</MudButton>
+
+				<MudButton @onclick="async _ => await performCleanUpActivity()" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Warning">
+					Cancel / Restart Copy
+				</MudButton>
+			</MudStack>
+		</div>
+	</MudPaper>
+}
+
+@if (copyingOverlay)
+{
+	<MudPaper Height="calc(100vh - 100px);" Width="100%">
+		<MudOverlay Visible="@copyingOverlay" DarkBackground="true" Absolute="true">
+			<MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+			<MudText Typo="Typo.h6" Align="Align.Center" Color="Color.Inherit">
+				Copying @radioRecordType and its associated hierarchy...
+			</MudText>
+		</MudOverlay>
+	</MudPaper>
+}
+@code {
+
+	[Inject]
+	public IItemzService ItemzService { get; set; }
+	[Inject]
+	public IItemzTypeService ItemzTypeService { get; set; }
+	[Inject]
+	public IProjectService ProjectService{ get; set; }
+
+	public GetItemzDTO copyItemz { get; set; } = new();
+	public GetItemzTypeDTO copyItemzType { get; set; } = new();
+	public GetProjectDTO copyProject { get; set; } = new();
+
+	public bool copyingOverlay { get; set; } = false;
+
+	public string radioRecordType { get; set; }
+
+	protected override async Task OnInitializedAsync()
+	{
+		if (!ConfigurationService.IsOpenRoseAPIConfigured)
+		{
+			NavManager.NavigateTo("/");
+			return;
+		}
+	}
+
+	public async Task SelectSourceRecord()
+	{
+		if (radioRecordType == "Itemz")
+		{
+			await selectSourceItemz();
+		}
+		else if (radioRecordType == "ItemzType")
+		{
+			await selectSourceItemzType();
+		}
+		else if (radioRecordType == "Project")
+		{
+			await selectSourceProject();
+		}
+		else
+		{
+			await DialogService.ShowMessageBox("ERROR", markupMessage: new MarkupString("<p style=\"color: red;\">Please select a valid Record Type before proceeding!</p>"), yesText: "OK");
+		}
+	}
+
+	public async Task selectSourceItemz()
+	{
+		var parameters = new DialogParameters { ["RecordType"] = radioRecordType };
+		var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+		var dialog = DialogService.Show<SelectSourceRecordDialog>("Enter Source Record ID", parameters, options);
+		var result = await dialog.Result;
+		if (!result.Canceled && result.Data is Guid inputSourceItemzId)
+		{
+			// Verify recordId exists in your repository
+			try
+			{
+				var foundSourceItemz = await ItemzService.__Single_Itemz_By_GUID_ID__Async(inputSourceItemzId);
+				if (foundSourceItemz != null)
+				{
+					copyItemz = foundSourceItemz;
+				}
+				else
+				{
+					await DialogService.ShowMessageBox("ERROR", markupMessage: new 
+						MarkupString($"<p style=\"color: red; \">Could not find Source Itemz with ID {inputSourceItemzId} in repository.</p>"), yesText: "OK");
+					copyItemz = new();
+				}
+			}
+			catch
+			{
+				await DialogService.ShowMessageBox("ERROR", markupMessage: new 
+					MarkupString($"<p style=\"color: red; \">EXCEPTION :: Could not find Source Itemz with ID {inputSourceItemzId} in repository.</p>"), yesText: "OK");
+				copyItemz = new(); // CLEAR OUT SELF.
+			}
+		}
+	}
+
+	public async Task selectSourceItemzType()
+	{
+		var parameters = new DialogParameters { ["RecordType"] = radioRecordType };
+		var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+		var dialog = DialogService.Show<SelectSourceRecordDialog>("Enter Source ItemzType Record ID", parameters, options);
+		var result = await dialog.Result;
+		if (!result.Canceled && result.Data is Guid inputSourceItemzTypeId)
+		{
+			try
+			{
+				var foundSourceItemzType = await ItemzTypeService.__Single_ItemzType_By_GUID_ID__Async(inputSourceItemzTypeId);
+				if (foundSourceItemzType != null)
+				{
+					copyItemzType = foundSourceItemzType;
+				}
+				else
+				{
+					await DialogService.ShowMessageBox("ERROR", markupMessage: new MarkupString($"<p style=\"color: red;\">Could not find Source ItemzType with ID {inputSourceItemzTypeId} in repository.</p>"), yesText: "OK");
+					copyItemzType = new();
+				}
+			}
+			catch
+			{
+				await DialogService.ShowMessageBox("ERROR", markupMessage: new MarkupString($"<p style=\"color: red;\">EXCEPTION: Could not find Source ItemzType with ID {inputSourceItemzTypeId} in repository.</p>"), yesText: "OK");
+				copyItemzType = new();
+			}
+		}
+	}
+
+	public async Task selectSourceProject()
+	{
+		var parameters = new DialogParameters { ["RecordType"] = radioRecordType };
+		var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+		var dialog = DialogService.Show<SelectSourceRecordDialog>("Enter Source Project Record ID", parameters, options);
+		var result = await dialog.Result;
+		if (!result.Canceled && result.Data is Guid inputSourceProjectId)
+		{
+			try
+			{
+				var foundSourceProject = await ProjectService.__Single_Project_By_GUID_ID__Async(inputSourceProjectId);
+				if (foundSourceProject != null)
+				{
+					copyProject = foundSourceProject;
+				}
+				else
+				{
+					await DialogService.ShowMessageBox("ERROR", markupMessage: new MarkupString($"<p style=\"color: red;\">Could not find Source Project with ID {inputSourceProjectId} in repository.</p>"), yesText: "OK");
+					copyProject = new();
+				}
+			}
+			catch
+			{
+				await DialogService.ShowMessageBox("ERROR", markupMessage: new MarkupString($"<p style=\"color: red;\">EXCEPTION: Could not find Source Project with ID {inputSourceProjectId} in repository.</p>"), yesText: "OK");
+				copyProject = new();
+			}
+		}
+	}
+
+	private async Task OnRadioValueChanged(string newValue)
+	{
+		radioRecordType = newValue; // Update the value of the backing field
+		await performCleanUpActivity(); // Call your clean-up method
+	}
+
+
+	public async Task PerformCopy()
+	{
+		if (radioRecordType == "Itemz")
+		{
+			if (copyItemz == null || copyItemz.Id == Guid.Empty)
+			{
+				await ShowErrorMessage("Copying Itemz should be selected first!");
+				return;
+			}
+
+			try
+			{
+				copyingOverlay = true;
+				// Thread.Sleep(300);
+				await ItemzService.__POST_Copy_Itemz_By_GUID_ID__Async(new CopyItemzDTO { ItemzId = copyItemz.Id });
+				copyingOverlay = false;
+				await ShowSuccessMessage("Copying of Itemz completed successfully!");
+			}
+			catch (Exception ex)
+			{
+				copyingOverlay = false;
+				await ShowErrorMessage($"Could not copy Itemz: {ex.Message}");
+			}
+		}
+		else if (radioRecordType == "ItemzType")
+		{
+			if (copyItemzType == null || copyItemzType.Id == Guid.Empty)
+			{
+				await ShowErrorMessage("Copying ItemzType should be selected first!");
+				return;
+			}
+
+			try
+			{
+				copyingOverlay = true;
+				// Thread.Sleep(100);
+				await ItemzTypeService.__POST_Copy_ItemzType_By_GUID_ID__Async(new CopyItemzTypeDTO { ItemzTypeId = copyItemzType.Id });
+				copyingOverlay = false;
+				await ShowSuccessMessage("Copying of ItemzType completed successfully!");
+			}
+			catch (Exception ex)
+			{
+				copyingOverlay = false;
+				await ShowErrorMessage($"Could not copy ItemzType: {ex.Message}");
+			}
+		}
+		else if (radioRecordType == "Project")
+		{
+			if (copyProject == null || copyProject.Id == Guid.Empty)
+			{
+				await ShowErrorMessage("Copying Project should be selected first!");
+				return;
+			}
+
+			try
+			{
+				copyingOverlay = true;
+				// Thread.Sleep(300);
+				await ProjectService.__POST_Copy_Project_By_GUID_ID__Async(new CopyProjectDTO { ProjectId = copyProject.Id });
+				copyingOverlay = false;
+				await ShowSuccessMessage("Copying of Project completed successfully!");
+			}
+			catch (Exception ex)
+			{
+				copyingOverlay = false;
+				await ShowErrorMessage($"Could not copy Project: {ex.Message}");
+			}
+		}
+
+		await performCleanUpActivity();
+	}
+
+	public async Task performCleanUpActivity()
+	{
+		// Perform clean-up activity
+		copyItemz = new();
+		copyProject = new();
+		copyItemzType = new();
+		copyingOverlay = false;
+	}
+
+	private async Task ShowErrorMessage(string message)
+	{
+		await DialogService.ShowMessageBox("ERROR", markupMessage: new MarkupString($"<p style=\"color: red;\">{message}</p>"), yesText: "OK");
+	}
+
+	private async Task ShowSuccessMessage(string message)
+	{
+		await DialogService.ShowMessageBox("SUCCESS", markupMessage: new MarkupString($"<p style=\"color: blue;\">{message}</p>"), yesText: "OK");
+	}
+  
+}
