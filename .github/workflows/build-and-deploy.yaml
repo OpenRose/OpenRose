@@ -75,11 +75,16 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
 
+    - name: Generate and copy GitVersion Diagnostics
+      if: contains(matrix.architecture, 'x64')    
+      run: |
+        mkdir -p package/docs/
+        dotnet-gitversion /diag > package/docs/gitversion_diagnostics.log
+
     - name: Calculate Version with Diagnostics to File
       id: set_env
       run: |
         echo "Running dotnet-gitversion with diagnostics..."
-        dotnet-gitversion /diag > gitversion_diagnostics.log
         FullSemVer=$(dotnet-gitversion /showvariable FullSemVer 2>&1 | grep -E '^[0-9]+\.[0-9]+\.[0-9]+') || {
           echo "dotnet-gitversion failed with the following output:"
           echo "$FullSemVer"
@@ -182,12 +187,6 @@ jobs:
         name: OpenRose-package-${{ env.SimpleVersion }}-${{ env.EscapedBranchName }}-${{ matrix.platform }}
         path: ./package/*.zip
         retention-days: 30  # Set the retention period to 30 days (adjust as needed)
-
-    - name: Upload GitVersion Diagnostics
-      uses: actions/upload-artifact@v4
-      with:
-        name: gitversion-diagnostics-${{ matrix.platform }}
-        path: gitversion_diagnostics.log
 
   create_release:
     runs-on: ubuntu-latest
