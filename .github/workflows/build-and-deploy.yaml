@@ -87,17 +87,17 @@ jobs:
       id: set_env
       run: |
         echo "Running dotnet-gitversion with diagnostics..."
-        FullSemVer=$(dotnet-gitversion /showvariable FullSemVer 2>&1 | grep -E '^[0-9]+\.[0-9]+\.[0-9]+') || {
+        FullSemVer=$(dotnet-gitversion /showvariable FullSemVer 2>&1 | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$') || {
           echo "dotnet-gitversion failed with the following output:"
           echo "$FullSemVer"
           exit 1
         }
-        AssemblySemFileVer=$(dotnet-gitversion /showvariable AssemblySemFileVer 2>&1 | grep -E '^[0-9]+\.[0-9]+\.[0-9]+') || {
+        AssemblySemFileVer=$(dotnet-gitversion /showvariable AssemblySemFileVer 2>&1 | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$') || {
           echo "dotnet-gitversion failed with the following output:"
           echo "$AssemblySemFileVer"
           exit 1
         }
-        AssemblySemVer=$(dotnet-gitversion /showvariable AssemblySemVer 2>&1 | grep -E '^[0-9]+\.[0-9]+\.[0-9]+') || {
+        AssemblySemVer=$(dotnet-gitversion /showvariable AssemblySemVer 2>&1 | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$') || {
           echo "dotnet-gitversion failed with the following output:"
           echo "$AssemblySemVer"
           exit 1
@@ -115,10 +115,8 @@ jobs:
         echo "FullSemVerWithBuild calculated: $FullSemVerWithBuild"
         echo "DateTimeStamp: $DateTimeStamp"
         echo "SimpleVersion=$SimpleVersion" >> $GITHUB_ENV
-        echo "FullSemVerWithBuild=$FullSemVerWithBuild" >> $GITHUB_ENV
         echo "EscapedBranchName=$EscapedBranchName" >> $GITHUB_ENV
         echo "DateTimeStamp=$DateTimeStamp" >> $GITHUB_ENV
-        echo "VERSION: $FullSemVerWithBuild"
         echo "Updating AssemblyInfo with AssemblySemVer: $AssemblySemVer and AssemblyFileVersion: $AssemblySemFileVer and FullSemVerWithBuild: $FullSemVerWithBuild"
         FULL_BRANCH_NAME=${GITHUB_REF#refs/heads/}
         BRANCH_NAME=$(echo $FULL_BRANCH_NAME | sed 's/\//-/g' | sed 's/-/_/g')
@@ -150,9 +148,6 @@ jobs:
 
     - name: Create WebDeployment Packages
       run: |
-        echo "Setting VERSION environment variable"
-        VERSION=${{ env.SimpleVersion }}
-        echo "VERSION: $VERSION"
         dotnet publish OpenRose.API/OpenRose.API.csproj -c Release -o ./package/OpenRose.API --runtime ${{ matrix.platform }}
         dotnet publish OpenRose.Web/OpenRose.WebUI.Client/OpenRose.WebUI.Client.csproj -c Release -o ./package/OpenRose.WebUI.Client --runtime ${{ matrix.platform }}
         dotnet publish OpenRose.Web/OpenRose.WebUI/OpenRose.WebUI.csproj -c Release -o ./package/OpenRose.WebUI --runtime ${{ matrix.platform }}
@@ -164,7 +159,7 @@ jobs:
     - name: Display Custom web.config content
       run: cat ./package/OpenRose.WebUI/web.config
 
-    - name: Copy AssemblyInfo to Package
+    - name: Copy AssemblyInfo and GitVersion Diagnostics to Package
       run: |
         mkdir -p ./package/OpenRose.API/Properties
         mkdir -p ./package/OpenRose.WebUI/Properties
