@@ -10,8 +10,12 @@ namespace OpenRose.WebUI.Services
     {
         public string GetAssemblyVersion()
         {
-            var version = Assembly.GetExecutingAssembly().GetName().Version;
-            return version?.ToString() ?? "Version not found";
-        }
+            // var version = Assembly.GetExecutingAssembly().GetName().Version;
+            // return version?.ToString() ?? "Version not found";
+
+			var assembly = Assembly.GetExecutingAssembly();
+			var informationalVersion = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+			return informationalVersion ?? "Version not set";
+    	}
     }
 }
