@@ -121,7 +121,7 @@ jobs:
         FULL_BRANCH_NAME=${GITHUB_REF#refs/heads/}
         BRANCH_NAME=$(echo $FULL_BRANCH_NAME | sed 's/\//-/g' | sed 's/-/_/g')
         COMMIT_SHA=${GITHUB_SHA}
-        find . -name "AssemblyInfo.cs" -exec sed -i "s/\[assembly: AssemblyVersion(\".*\")\]/\[assembly: AssemblyVersion(\"${AssemblySemVer}\")\]/g" {} +
+        find . -name "AssemblyInfo.cs" -exec sed -i "s/\[assembly: AssemblyVersion(\".*\")\]/\[assembly: AssemblyVersion(\"${FullSemVer}\")\]/g" {} +
         find . -name "AssemblyInfo.cs" -exec sed -i "s/\[assembly: AssemblyFileVersion(\".*\")\]/\[assembly: AssemblyFileVersion(\"${AssemblySemFileVer}\")\]/g" {} +
         find . -name "AssemblyInfo.cs" -exec sed -i "s/\[assembly: AssemblyInformationalVersion(\".*\")\]/\[assembly: AssemblyInformationalVersion(\"${FullSemVerWithBuild}\")\]/g" {} +
         find . -name "AssemblyInfo.cs" -exec sed -i "s/\[assembly: AssemblyMetadata(\"BranchName\", \".*\")\]/\[assembly: AssemblyMetadata(\"BranchName\", \"${BRANCH_NAME}\")\]/g" {} +
