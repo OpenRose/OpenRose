@@ -44,6 +44,21 @@ namespace ItemzApp.API.Controllers
 		[ProducesResponseType(StatusCodes.Status500InternalServerError)]
 		public async Task<IActionResult> ExportData(string entityType, Guid entityId)
 		{
+
+			// TODO : We need to decide on the input metadata for this method. At this 
+			// point, we only need 'exportRecordId' in GUID form as we are going to 
+			// export entire requirements breakdown structure under it. Also 'exportRecordID' 
+			// should be present in ItemzHierarcy and it should be at Level 1 or above so that 
+			// we know that it's certainly a project or an Itemztype or a Requirement Itemz.
+			// We have to decide if we want to take in any other information. For example, if we
+			// allow user to pass in any parameter that decides if traces are exported or not
+			// OR Include summary of number of records being exported
+			// OR Exclude metadata for drop down fields
+			// OR Do not export description
+			// OR Do not export Attachments
+			// etc. 
+
+
 			_logger.LogInformation($"Export requested for {entityType} with ID {entityId}");
 
 			try
