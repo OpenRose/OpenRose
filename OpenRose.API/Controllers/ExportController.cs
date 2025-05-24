@@ -35,14 +35,13 @@ namespace ItemzApp.API.Controllers
 		/// <summary>
 		/// Exports data based on the selected entity type (Project, ItemzType, Itemz).
 		/// </summary>
-		/// <param name="entityType">Type of entity to export (Project, ItemzType, Itemz).</param>
 		/// <param name="entityId">Unique identifier for the selected entity.</param>
 		/// <returns>Returns exported JSON file.</returns>
 		[HttpGet("{entityType}/{entityId}")]
 		[ProducesResponseType(StatusCodes.Status200OK)]
 		[ProducesResponseType(StatusCodes.Status404NotFound)]
 		[ProducesResponseType(StatusCodes.Status500InternalServerError)]
-		public async Task<IActionResult> ExportData(string entityType, Guid entityId)
+		public async Task<IActionResult> ExportData(Guid entityId)
 		{
 
 			// TODO : We need to decide on the input metadata for this method. At this 
@@ -59,19 +58,19 @@ namespace ItemzApp.API.Controllers
 			// etc. 
 
 
-			_logger.LogInformation($"Export requested for {entityType} with ID {entityId}");
+			_logger.LogInformation($"Export requested for ID {entityId}");
 
 			try
 			{
-				string filePath = await _exportRepository.GenerateExportFileAsync(entityType, entityId);
+				string filePath = await _exportRepository.GenerateExportFileAsync(entityId);
 
 				if (string.IsNullOrEmpty(filePath) || !System.IO.File.Exists(filePath))
 				{
-					_logger.LogWarning($"Export failed: File not found for {entityType} ID {entityId}");
+					_logger.LogWarning($"Export failed: File not found for ID {entityId}");
 					return NotFound("Export file generation failed.");
 				}
 
-				return File(System.IO.File.OpenRead(filePath), "application/json", $"{entityType}_export.json");
+				return File(System.IO.File.OpenRead(filePath), "application/json", $"_export.json"); // TODO : Perhaps add Date time to export file to make it unique.
 			}
 			catch (Exception ex)
 			{

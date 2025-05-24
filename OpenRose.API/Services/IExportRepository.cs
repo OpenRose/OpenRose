@@ -9,6 +9,6 @@ namespace ItemzApp.API.Services
 {
 	public interface IExportRepository
 	{
-		Task<string> GenerateExportFileAsync(string entityType, Guid entityId);
+		Task<string> GenerateExportFileAsync(Guid entityId);
 	}
 }
