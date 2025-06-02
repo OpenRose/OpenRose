@@ -36,7 +36,7 @@ namespace ItemzApp.API.Controllers
 		/// Exports data based on the selected entity type (Project, ItemzType, Itemz).
 		/// </summary>
 		/// <param name="recordId">Unique identifier for the selected entity.</param>
-		/// <returns>Returns exported JSON file.</returns>
+		/// <returns>Returns exported JSON file as stream that contains data.</returns>
 		[HttpGet("{entityType}/{entityId}")]
 		[ProducesResponseType(StatusCodes.Status200OK)]
 		[ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -56,6 +56,7 @@ namespace ItemzApp.API.Controllers
 			// OR Do not export description
 			// OR Do not export Attachments
 			// etc. 
+
 
 
 			_logger.LogInformation($"Export requested for ID {recordId}");
