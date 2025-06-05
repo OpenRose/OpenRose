@@ -320,6 +320,35 @@ namespace ItemzApp.API.Services
 		}
 
 
+		public async Task<NestedHierarchyIdRecordDetailsDTO?> GetRepositoryHierarchyRecord()
+		{
+			// Find the hierarchy record where Level == 0 (repository root)
+			var foundRepositoryRecord = await _context.ItemzHierarchy!
+				.AsNoTracking()
+				.Where(ih => ih.ItemzHierarchyId!.GetLevel() == 0)
+				.FirstOrDefaultAsync();
+
+			if (foundRepositoryRecord == null)
+			{
+				return null; // Or throw an exception if this should never happen
+			}
+
+			// Map to NestedHierarchyIdRecordDetailsDTO
+			var returningRepositoryRecordDTO = new NestedHierarchyIdRecordDetailsDTO
+			{
+				RecordId = foundRepositoryRecord.Id,
+				HierarchyId = foundRepositoryRecord.ItemzHierarchyId!.ToString(),
+				Level = foundRepositoryRecord.ItemzHierarchyId.GetLevel(),
+				RecordType = foundRepositoryRecord.RecordType,
+				Name = foundRepositoryRecord.Name ?? "",
+				Children = new List<NestedHierarchyIdRecordDetailsDTO>()
+			};
+
+			return returningRepositoryRecordDTO;
+		}
+
+
+
 		public async Task<RecordCountAndEnumerable<NestedHierarchyIdRecordDetailsDTO>> GetAllParentsOfItemzHierarchy(Guid recordId)
 		{
 			if (recordId == Guid.Empty)

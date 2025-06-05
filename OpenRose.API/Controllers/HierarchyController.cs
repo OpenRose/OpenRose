@@ -195,6 +195,47 @@ namespace ItemzApp.API.Controllers
 
 		}
 
+		/// <summary>
+		/// Gets the root Repository Hierarchy record (Level 0).
+		/// </summary>
+		/// <returns>Repository Hierarchy record details</returns>
+		/// <response code="200">Repository Hierarchy record details</response>
+		/// <response code="404">Repository hierarchy record not found</response>
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		[ProducesResponseType(StatusCodes.Status200OK, Type = typeof(NestedHierarchyIdRecordDetailsDTO))]
+		[HttpGet("GetRepositoryHierarchyRecord", Name = "__Get_Repository_Hierarchy_Record__")] // e.g. http://HOST:PORT/api/Hierarchy/GetRepositoryHierarchyRecord
+		[HttpHead("GetRepositoryHierarchyRecord", Name = "__HEAD_Repository_Hierarchy_Record__")]
+		public async Task<ActionResult<NestedHierarchyIdRecordDetailsDTO>> GetRepositoryHierarchyRecord()
+		{
+			_logger.LogDebug("{FormattedControllerAndActionNames} Processing request to get Repository (root) Hierarchy record.",
+				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext));
+
+			NestedHierarchyIdRecordDetailsDTO? repositoryRecordDto;
+			try
+			{
+				repositoryRecordDto = await _hierarchyRepository.GetRepositoryHierarchyRecord();
+
+				if (repositoryRecordDto == null)
+				{
+					_logger.LogDebug("{FormattedControllerAndActionNames} No Repository (root) Hierarchy record found.",
+						ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext));
+					return NotFound();
+				}
+			}
+			catch (ApplicationException appException)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames} Exception occurred while trying to get Repository Hierarchy record: " + appException.Message,
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext));
+				var tempMessage = $"Could not produce Repository Hierarchy record :: InnerException :: {appException.Message} ";
+				return BadRequest(tempMessage);
+			}
+
+			_logger.LogDebug("{FormattedControllerAndActionNames} Returning Repository (root) Hierarchy record.",
+				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext));
+
+			return Ok(repositoryRecordDto);
+		}
+
 
 		/// <summary>
 		/// Gets Hierarchy Records of all parents above Record Id provided in GUID form.
