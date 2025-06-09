@@ -161,6 +161,7 @@ namespace ItemzApp.API
             services.AddScoped<IBaselineItemzTraceRepository, BaselineItemzTraceRepository>();
             services.AddScoped<IHierarchyRepository, HierarchyRepository>();
             services.AddScoped<IBaselineHierarchyRepository, BaselineHierarchyRepository>();
+            services.AddScoped<IExportRepository, ExportRepository>();
 
             // EXPLANATION: As described in the Blog Article, https://purple.telstra.com/blog/a-better-way-of-resolving-ef-core-interceptors-with-dependency-injection
             // we are now registering ItemzContextInterceptor in the DI Container as Singleton service 

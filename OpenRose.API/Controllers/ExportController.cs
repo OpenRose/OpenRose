@@ -2,16 +2,17 @@
 // Licensed under the Apache License, Version 2.0. 
 // See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 
+using AutoMapper;
+using ItemzApp.API.Helper;
+using ItemzApp.API.Models;
+using ItemzApp.API.Services;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using AutoMapper;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using ItemzApp.API.Services;
-using ItemzApp.API.Models;
 
 namespace ItemzApp.API.Controllers
 {
@@ -19,15 +20,18 @@ namespace ItemzApp.API.Controllers
 	[Route("api/[controller]")] // e.g. http://HOST:PORT/api/export
 	public class ExportController : ControllerBase
 	{
+		private readonly IHierarchyRepository _hierarchyRepository;
 		private readonly IExportRepository _exportRepository;
 		private readonly IMapper _mapper;
 		private readonly ILogger<ExportController> _logger;
 
 		public ExportController(IExportRepository exportRepository,
+								IHierarchyRepository hierarchyRepository,
 								IMapper mapper,
 								ILogger<ExportController> logger)
 		{
 			_exportRepository = exportRepository ?? throw new ArgumentNullException(nameof(exportRepository));
+			_hierarchyRepository = hierarchyRepository ?? throw new ArgumentNullException(nameof(hierarchyRepository));
 			_mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
 			_logger = logger ?? throw new ArgumentNullException(nameof(logger));
 		}
@@ -77,6 +81,58 @@ namespace ItemzApp.API.Controllers
 			{
 				_logger.LogError(ex, "Error exporting data");
 				return StatusCode(500, $"Internal Server Error: {ex.Message}");
+			}
+		}
+
+
+
+
+
+
+		/// <summary>
+		/// Exports the root Repository Hierarchy record as a downloadable JSON file.
+		/// </summary>
+		/// <returns>JSON file of the Repository Hierarchy record</returns>
+		/// <response code="200">Returns the JSON file</response>
+		/// <response code="404">Repository hierarchy record not found</response>
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		[ProducesResponseType(StatusCodes.Status200OK)]
+		[HttpGet("ExportRepositoryRoot", Name = "__Export_Repository_Root__")] // e.g. http://HOST:PORT/api/Hierarchy/ExportRepositoryRoot
+		public async Task<IActionResult> ExportRepositoryRoot()
+		{
+			_logger.LogDebug("{FormattedControllerAndActionNames} Processing request to export Repository root as JSON.",
+				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext));
+
+			try
+			{
+				var repositoryRecordDto = await _hierarchyRepository.GetRepositoryHierarchyRecord();
+
+				if (repositoryRecordDto == null)
+				{
+					_logger.LogDebug("{FormattedControllerAndActionNames} No Repository (root) Hierarchy record found for export.",
+						ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext));
+					return NotFound();
+				}
+
+				var json = System.Text.Json.JsonSerializer.Serialize(
+					repositoryRecordDto,
+					new System.Text.Json.JsonSerializerOptions { WriteIndented = true }
+				);
+
+				var content = System.Text.Encoding.UTF8.GetBytes(json);
+
+				var fileName = $"RepositoryRootExport_{DateTime.UtcNow:yyyyMMdd_HHmmss}.json";
+
+				_logger.LogDebug("{FormattedControllerAndActionNames} Returning Repository root as file: {FileName}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext), fileName);
+
+				return File(content, "application/json", fileName);
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError("{FormattedControllerAndActionNames} Exception during repository root export: {Error}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext), ex.Message);
+				return StatusCode(StatusCodes.Status500InternalServerError, "Error exporting repository root hierarchy.");
 			}
 		}
 	}
