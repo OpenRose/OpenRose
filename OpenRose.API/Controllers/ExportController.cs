@@ -20,16 +20,19 @@ namespace ItemzApp.API.Controllers
 	[Route("api/[controller]")] // e.g. http://HOST:PORT/api/export
 	public class ExportController : ControllerBase
 	{
+		private readonly IProjectRepository _projectRepository;
 		private readonly IHierarchyRepository _hierarchyRepository;
 		private readonly IExportRepository _exportRepository;
 		private readonly IMapper _mapper;
 		private readonly ILogger<ExportController> _logger;
 
-		public ExportController(IExportRepository exportRepository,
+		public ExportController(IProjectRepository projectRepository, 
+								IExportRepository exportRepository,
 								IHierarchyRepository hierarchyRepository,
 								IMapper mapper,
 								ILogger<ExportController> logger)
 		{
+			_projectRepository = projectRepository ?? throw new ArgumentNullException(nameof(projectRepository));
 			_exportRepository = exportRepository ?? throw new ArgumentNullException(nameof(exportRepository));
 			_hierarchyRepository = hierarchyRepository ?? throw new ArgumentNullException(nameof(hierarchyRepository));
 			_mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
@@ -133,6 +136,99 @@ namespace ItemzApp.API.Controllers
 				_logger.LogError("{FormattedControllerAndActionNames} Exception during repository root export: {Error}",
 					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext), ex.Message);
 				return StatusCode(StatusCodes.Status500InternalServerError, "Error exporting repository root hierarchy.");
+			}
+		}
+
+
+
+
+		/// <summary>
+		/// Exports the specified Project as a RepositoryExportDTO JSON file.
+		/// </summary>
+		/// <param name="exportRecordType">Type of record to export (must be "Project")</param>
+		/// <param name="exportRecordId">GUID of the Project to export</param>
+		/// <returns>JSON file of the exported project in RepositoryExportDTO format</returns>
+		/// <response code="200">Returns the JSON file</response>
+		/// <response code="404">Repository or Project not found</response>
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		[ProducesResponseType(StatusCodes.Status200OK)]
+		[Produces("application/json")]
+		[HttpGet("ExportProject", Name = "__Export_Project__")]
+		public async Task<IActionResult> ExportProject([FromQuery] string exportRecordType, [FromQuery] Guid exportRecordId)
+		{
+			_logger.LogDebug("{FormattedControllerAndActionNames} Processing request to export Project as RepositoryExportDTO. ProjectId: {ProjectId}",
+				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext), exportRecordId);
+
+			if (!string.Equals(exportRecordType, "Project", StringComparison.OrdinalIgnoreCase))
+			{
+				return BadRequest("ExportRecordType must be 'Project'.");
+			}
+			if (exportRecordId == Guid.Empty)
+			{
+				return BadRequest("ExportRecordId must be a valid GUID.");
+			}
+
+			try
+			{
+				// 1. Get Repository root (for RepositoryId)
+				var repositoryRecordDto = await _hierarchyRepository.GetRepositoryHierarchyRecord();
+				if (repositoryRecordDto == null)
+				{
+					_logger.LogDebug("{FormattedControllerAndActionNames} No Repository (root) Hierarchy record found for export.",
+						ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext));
+					return NotFound("Repository (root) not found.");
+				}
+
+				// 2. Get Project entity
+				var projectEntity = await _projectRepository.GetProjectAsync(exportRecordId);
+				if (projectEntity == null)
+				{
+					return NotFound($"Project with ID '{exportRecordId}' not found.");
+				}
+
+				// 3. Map Project entity to GetProjectDTO (implement mapping as needed)
+				GetProjectDTO projectDto = _mapper.Map<GetProjectDTO>(projectEntity);
+				if (projectDto == null)
+				{
+					_logger.LogError("{FormattedControllerAndActionNames} Mapping Project entity to DTO failed for ProjectId: {ProjectId}",
+						ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext), exportRecordId);
+					return StatusCode(StatusCodes.Status500InternalServerError, "Failed to map Project entity to DTO.");
+				}
+
+				// 4. Create ProjectExportNode
+				var projectExportNode = new ProjectExportNode
+				{
+					Project = projectDto,
+					ItemzTypes = null // TODO :: Populate if needed in the future
+				};
+
+				// 5. Create RepositoryExportDTO
+				var exportDto = new RepositoryExportDTO
+				{
+					RepositoryId = repositoryRecordDto.RecordId,
+					Projects = new List<ProjectExportNode> { projectExportNode },
+					// Other properties remain null/empty
+				};
+
+				// 6. Serialize to JSON and return as file
+				var json = System.Text.Json.JsonSerializer.Serialize(
+					exportDto,
+					new System.Text.Json.JsonSerializerOptions { WriteIndented = true }
+				);
+				var content = System.Text.Encoding.UTF8.GetBytes(json);
+
+				var fileName = $"RepositoryExport_Project_{DateTime.UtcNow:yyyyMMdd_HHmmss}.json";
+
+				_logger.LogDebug("{FormattedControllerAndActionNames} Returning Project export as file: {FileName}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext), fileName);
+
+				return File(content, "application/json", fileName);
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError("{FormattedControllerAndActionNames} Exception during project export: {Error}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext), ex.Message);
+				return StatusCode(StatusCodes.Status500InternalServerError, "Error exporting project.");
 			}
 		}
 	}
