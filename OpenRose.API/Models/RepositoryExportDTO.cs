@@ -19,13 +19,13 @@ namespace ItemzApp.API.Models
 		public List<ItemzTypeExportNode>? ItemzTypes { get; set; }
 		public List<ItemzExportNode>? Itemz { get; set; }
 
+		// Trace links (for live Itemz)
+		public List<ItemzTraceDTO>? ItemzTraces { get; set; }
+
 		// Baseline-based export
 		public List<BaselineExportNode>? Baselines { get; set; }
 		public List<BaselineItemzTypeExportNode>? BaselineItemzTypes { get; set; }
 		public List<BaselineItemzExportNode>? BaselineItemz { get; set; }
-
-		// Trace links (for live Itemz)
-		public List<ItemzTraceDTO>? ItemzTraces { get; set; }
 
 		// Trace links (for Baseline Itemz)
 		public List<BaselineItemzTraceDTO>? BaselineItemzTraces { get; set; }
