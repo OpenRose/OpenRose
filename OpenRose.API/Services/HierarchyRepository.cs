@@ -154,7 +154,7 @@ namespace ItemzApp.API.Services
             if (foundHierarchyRecord.Count() != 1)
             {
                 throw new ApplicationException($"Expected 1 Hierarchy record to be found " +
-                    $"but instead found {foundHierarchyRecord.Count()} records for ID {recordId}" +
+                    $"but instead found {foundHierarchyRecord.Count()} records for ID {recordId} " +
                     "Please contact your System Administrator.");
             }
 			var hierarchyIdRecordDetails = new HierarchyIdRecordDetailsDTO();
