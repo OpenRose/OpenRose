@@ -40,5 +40,8 @@ namespace ItemzApp.API.Services
 
         public Task<int> RemoveAllToItemzTraceAsync(Guid itemzId);
 
-    }
+		Task<List<ItemzJoinItemzTrace>> GetAllTracesForItemzIdsAsync(IEnumerable<Guid> itemzIds);
+
+
+	}
 }
