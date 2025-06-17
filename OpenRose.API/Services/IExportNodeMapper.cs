@@ -12,5 +12,10 @@ namespace ItemzApp.API.Services
 		Task<ProjectExportNode> ConvertToProjectExportNode(NestedHierarchyIdRecordDetailsDTO node);
 		Task<ItemzTypeExportNode> ConvertToItemzTypeExportNode(NestedHierarchyIdRecordDetailsDTO node);
 		Task<ItemzExportNode> ConvertToItemzExportNode(NestedHierarchyIdRecordDetailsDTO node);
+
+		Task<BaselineExportNode> ConvertToBaselineExportNode(NestedBaselineHierarchyIdRecordDetailsDTO node);
+		Task<BaselineItemzTypeExportNode> ConvertToBaselineItemzTypeExportNode(NestedBaselineHierarchyIdRecordDetailsDTO node);
+		Task<BaselineItemzExportNode> ConvertToBaselineItemzExportNode(NestedBaselineHierarchyIdRecordDetailsDTO node);
+
 	}
 }

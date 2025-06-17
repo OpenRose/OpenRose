@@ -203,5 +203,16 @@ namespace ItemzApp.API.Services
                     .Where(bijit => bijit.BaselineToItemz!.isIncluded)
                     .CountAsync();
         }
-    }
+
+		public async Task<List<BaselineItemzJoinItemzTrace>> GetAllTracesForBaselineItemzIdsAsync(IEnumerable<Guid> baselineItemzIds)
+		{
+			// Use HashSet for efficient lookup
+			return await _baselineItemzTraceContext.BaselineItemzJoinItemzTrace!
+				.Where(t => baselineItemzIds.Contains(t.BaselineFromItemzId) || baselineItemzIds.Contains(t.BaselineToItemzId))
+				.AsNoTracking()
+				.ToListAsync();
+		}
+
+	}
+
 }

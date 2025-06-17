@@ -5,6 +5,7 @@
 using AutoMapper;
 using ItemzApp.API.Helper;
 using ItemzApp.API.Models;
+using ItemzApp.API.Models.BetweenControllerAndRepository;
 using ItemzApp.API.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -21,6 +22,9 @@ namespace ItemzApp.API.Controllers
 	[Route("api/[controller]")] // e.g. http://HOST:PORT/api/export
 	public class ExportController : ControllerBase
 	{
+		private readonly IBaselineHierarchyRepository _baselineHierarchyRepository;
+		private readonly IBaselineItemzTraceExportService _baselineItemzTraceExportService;
+		private readonly IItemzTraceExportService _itemzTraceExportService;
 		private readonly IExportNodeMapper _exportNodeMapper;
 		private readonly IProjectRepository _projectRepository;
 		private readonly IHierarchyRepository _hierarchyRepository;
@@ -28,13 +32,21 @@ namespace ItemzApp.API.Controllers
 		private readonly IMapper _mapper;
 		private readonly ILogger<ExportController> _logger;
 
-		public ExportController(IExportNodeMapper exportNodeMapper, 
+		public ExportController(IBaselineHierarchyRepository baselineHierarchyRepository, 
+								IBaselineItemzTraceExportService baselineItemzTraceExportService,
+								IItemzTraceExportService itemzTraceExportService,
+								IExportNodeMapper exportNodeMapper, 
 								IProjectRepository projectRepository, 
 								IExportRepository exportRepository,
 								IHierarchyRepository hierarchyRepository,
 								IMapper mapper,
 								ILogger<ExportController> logger)
 		{
+			_baselineHierarchyRepository = baselineHierarchyRepository ?? throw
+				new ArgumentNullException(nameof(baselineHierarchyRepository));
+			_baselineItemzTraceExportService = baselineItemzTraceExportService ?? throw 
+				new ArgumentNullException(nameof(baselineItemzTraceExportService));
+			_itemzTraceExportService = itemzTraceExportService ?? throw new ArgumentNullException(nameof(itemzTraceExportService));
 			_exportNodeMapper = exportNodeMapper ?? throw new ArgumentNullException(nameof(exportNodeMapper));
 			_projectRepository = projectRepository ?? throw new ArgumentNullException(nameof(projectRepository));
 			_exportRepository = exportRepository ?? throw new ArgumentNullException(nameof(exportRepository));
@@ -254,79 +266,183 @@ namespace ItemzApp.API.Controllers
 
 			try
 			{
-				// 1. Get Repository root (for RepositoryId)
+
 				var repositoryRecordDto = await _hierarchyRepository.GetRepositoryHierarchyRecord();
 				if (repositoryRecordDto == null)
-				{
-					_logger.LogDebug("{FormattedControllerAndActionNames} No Repository (root) Hierarchy record found for export.",
-						ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext));
 					return NotFound("Repository (root) not found.");
+
+				// Export Project OR ItemzType OR Itemz Data 
+
+				try
+				{
+					var parentHierarchyRecord = await _hierarchyRepository.GetHierarchyRecordDetailsByID(exportRecordId);
+					if (parentHierarchyRecord != null)
+					{
+
+						var hierarchyTree = await _hierarchyRepository.GetAllChildrenOfItemzHierarchy(exportRecordId);
+						var rootNode = new NestedHierarchyIdRecordDetailsDTO
+						{
+							RecordId = parentHierarchyRecord.RecordId,
+							HierarchyId = parentHierarchyRecord.HierarchyId,
+							Level = parentHierarchyRecord.Level,
+							RecordType = parentHierarchyRecord.RecordType,
+							Name = parentHierarchyRecord.Name,
+							Children = (List<NestedHierarchyIdRecordDetailsDTO>)hierarchyTree.AllRecords
+						};
+						var recordType = parentHierarchyRecord.RecordType?.ToLowerInvariant();
+
+						var exportDto = new RepositoryExportDTO
+						{
+							RepositoryId = repositoryRecordDto.RecordId
+						};
+
+						HashSet<Guid> exportedItemzIds = CollectExportedIdsByType(rootNode, "Itemz");
+						var itemzTraces = await _itemzTraceExportService.GetTracesForExportAsync(exportedItemzIds);
+						exportDto.ItemzTraces = itemzTraces;
+
+						switch (recordType)
+						{
+							case "project":
+								exportDto.Projects = new List<ProjectExportNode> { await _exportNodeMapper.ConvertToProjectExportNode(rootNode) };
+								break;
+							case "itemztype":
+								exportDto.ItemzTypes = new List<ItemzTypeExportNode> { await _exportNodeMapper.ConvertToItemzTypeExportNode(rootNode) };
+								break;
+							case "itemz":
+								exportDto.Itemz = new List<ItemzExportNode> { await _exportNodeMapper.ConvertToItemzExportNode(rootNode) };
+								break;
+							default:
+								return BadRequest($"Unsupported RecordType: {recordType}");
+						}
+
+						// Serialize and return
+						var json = System.Text.Json.JsonSerializer.Serialize(exportDto, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+						var content = System.Text.Encoding.UTF8.GetBytes(json);
+						var fileName = $"RepositoryExport_{recordType}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.json";
+						return File(content, "application/json", fileName);
+					}
+				}
+				catch (Exception ex)
+				{
+					_logger.LogDebug("Live hierarchy lookup failed: {0}", ex.Message);
 				}
 
-				// 2. Get the parent record itself
-				var parentHierarchyRecord = await _hierarchyRepository.GetHierarchyRecordDetailsByID(exportRecordId);
-				if (parentHierarchyRecord == null)
+				// Export Baseline OR BaselineItemzType OR BaselineItemz Data 
+
+				try
 				{
-					_logger.LogDebug("{FormattedControllerAndActionNames} Hierarchy record with ID '{ExportRecordId}' not found.",
-						ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext), exportRecordId);
-					return NotFound($"Hierarchy record with ID '{exportRecordId}' not found.");
+					var baselineHierarchyRecord = await _baselineHierarchyRepository.GetBaselineHierarchyRecordDetailsByID(exportRecordId);
+					if (baselineHierarchyRecord != null)
+					{
+
+
+						var baselineHierarchyTree = await _baselineHierarchyRepository.GetAllChildrenOfBaselineItemzHierarchy(exportRecordId);
+
+						var rootNode = new NestedBaselineHierarchyIdRecordDetailsDTO
+						{
+							RecordId = baselineHierarchyRecord.RecordId,
+							BaselineHierarchyId = baselineHierarchyRecord.BaselineHierarchyId,
+							Level = baselineHierarchyRecord.Level,
+							RecordType = baselineHierarchyRecord.RecordType,
+							Name = baselineHierarchyRecord.Name,
+							isIncluded = baselineHierarchyRecord.IsIncluded,
+							Children = (List<NestedBaselineHierarchyIdRecordDetailsDTO>)baselineHierarchyTree.AllRecords
+						};
+						var recordType = baselineHierarchyRecord.RecordType?.ToLowerInvariant();
+
+
+						var exportDto = new RepositoryExportDTO
+						{
+							RepositoryId = repositoryRecordDto.RecordId
+						};
+
+						var exportedBaselineItemzIds = CollectExportedIdsByType(rootNode, "BaselineItemz");
+						var baselineItemzTraces = await _baselineItemzTraceExportService.GetTracesForExportAsync(exportedBaselineItemzIds);
+						exportDto.BaselineItemzTraces = baselineItemzTraces;
+
+						switch (recordType)
+						{
+							case "baseline":
+								exportDto.Baselines = new List<BaselineExportNode> { await _exportNodeMapper.ConvertToBaselineExportNode(rootNode) };
+								break;
+							case "baselineitemztype":
+								exportDto.BaselineItemzTypes = new List<BaselineItemzTypeExportNode> { await _exportNodeMapper.ConvertToBaselineItemzTypeExportNode(rootNode) };
+								break;
+							case "baselineitemz":
+								exportDto.BaselineItemz = new List<BaselineItemzExportNode> { await _exportNodeMapper.ConvertToBaselineItemzExportNode(rootNode) };
+								break;
+							default:
+								return BadRequest($"Unsupported RecordType: {recordType}");
+						}
+
+						// Serialize and return
+						var json = System.Text.Json.JsonSerializer.Serialize(exportDto, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+						var content = System.Text.Encoding.UTF8.GetBytes(json);
+						var fileName = $"RepositoryExport_{recordType}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.json";
+						return File(content, "application/json", fileName);
+					}
+				}
+				catch (Exception ex)
+				{
+					_logger.LogDebug("Baseline hierarchy lookup failed: {0}", ex.Message);
 				}
 
-				// 3. Get all children (descendants)
-				var hierarchyTree = await _hierarchyRepository.GetAllChildrenOfItemzHierarchy(exportRecordId);
-
-				// 4. Compose root node
-				var rootNode = new NestedHierarchyIdRecordDetailsDTO
-				{
-					RecordId = parentHierarchyRecord.RecordId,
-					HierarchyId = parentHierarchyRecord.HierarchyId,
-					Level = parentHierarchyRecord.Level,
-					RecordType = parentHierarchyRecord.RecordType,
-					Name = parentHierarchyRecord.Name,
-					Children = (List<NestedHierarchyIdRecordDetailsDTO>)hierarchyTree.AllRecords
-				};
-
-				// 5. Use the record type from parentHierarchyRecord for export
-				var exportDto = new RepositoryExportDTO
-				{
-					RepositoryId = repositoryRecordDto.RecordId
-				};
-
-				switch (parentHierarchyRecord.RecordType?.ToLowerInvariant())
-				{
-					case "project":
-						exportDto.Projects = new List<ProjectExportNode> { await _exportNodeMapper.ConvertToProjectExportNode(rootNode) };
-						break;
-					case "itemztype":
-						exportDto.ItemzTypes = new List<ItemzTypeExportNode> { await _exportNodeMapper.ConvertToItemzTypeExportNode(rootNode) };
-						break;
-					case "itemz":
-						exportDto.Itemz = new List<ItemzExportNode> { await _exportNodeMapper.ConvertToItemzExportNode(rootNode) };
-						break;
-					default:
-						return BadRequest($"Unsupported RecordType: {parentHierarchyRecord.RecordType}");
-				}
-
-				// 6. Serialize and return file
-				var json = System.Text.Json.JsonSerializer.Serialize(
-					exportDto,
-					new System.Text.Json.JsonSerializerOptions { WriteIndented = true }
-				);
-				var content = System.Text.Encoding.UTF8.GetBytes(json);
-				var fileName = $"RepositoryExport_{parentHierarchyRecord.RecordType}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.json";
-
-				_logger.LogDebug("{FormattedControllerAndActionNames} Returning {ExportRecordType} export as file: {FileName}",
-					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext), parentHierarchyRecord.RecordType, fileName);
-
-				return File(content, "application/json", fileName);
-
+				// If we got here, then it means provided ID is not found for any of the data type that we support for exporting
+				return NotFound($"Record with ID '{exportRecordId}' not found across Itemz OR Baseline Hierarchy data.");
 			}
 			catch (Exception ex)
 			{
-				_logger.LogError("{FormattedControllerAndActionNames} Exception during hierarchy export: {Error}",
-					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext), ex.Message);
+				_logger.LogError("Exception during hierarchy export: {0}", ex.Message);
 				return StatusCode(StatusCodes.Status500InternalServerError, "Error exporting hierarchy.");
 			}
+		}
+
+
+		private HashSet<Guid> CollectExportedIdsByType(NestedHierarchyIdRecordDetailsDTO node, string typeToCollect)
+		{
+			var ids = new HashSet<Guid>();
+
+			void Traverse(NestedHierarchyIdRecordDetailsDTO current)
+			{
+				if (string.Equals(current.RecordType, typeToCollect, StringComparison.OrdinalIgnoreCase))
+				{
+					ids.Add(current.RecordId);
+				}
+				if (current.Children != null)
+				{
+					foreach (var child in current.Children)
+					{
+						Traverse(child);
+					}
+				}
+			}
+
+			Traverse(node);
+			return ids;
+		}
+
+
+		private HashSet<Guid> CollectExportedIdsByType(NestedBaselineHierarchyIdRecordDetailsDTO node, string typeToCollect)
+		{
+			var ids = new HashSet<Guid>();
+
+			void Traverse(NestedBaselineHierarchyIdRecordDetailsDTO current)
+			{
+				if (string.Equals(current.RecordType, typeToCollect, StringComparison.OrdinalIgnoreCase))
+				{
+					ids.Add(current.RecordId);
+				}
+				if (current.Children != null)
+				{
+					foreach (var child in current.Children)
+					{
+						Traverse(child);
+					}
+				}
+			}
+
+			Traverse(node);
+			return ids;
 		}
 
 	}

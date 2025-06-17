@@ -17,17 +17,26 @@ namespace ItemzApp.API.Services
 		private readonly IProjectRepository _projectRepository;
 		private readonly IItemzTypeRepository _itemzTypeRepository;
 		private readonly IItemzRepository _itemzRepository;
+		private readonly IBaselineRepository _baselineRepository;
+		private readonly IBaselineItemzTypeRepository _baselineItemzTypeRepository;
+		private readonly IBaselineItemzRepository _baselineItemzRepository;
 		private readonly IMapper _mapper;
 
 		public ExportNodeMapper(
 			IProjectRepository projectRepository,
 			IItemzTypeRepository itemzTypeRepository,
 			IItemzRepository itemzRepository,
+			IBaselineRepository baselineRepository,
+			IBaselineItemzTypeRepository baselineItemzTypeRepository,
+			IBaselineItemzRepository baselineItemzRepository,
 			IMapper mapper)
 		{
 			_projectRepository = projectRepository;
 			_itemzTypeRepository = itemzTypeRepository;
 			_itemzRepository = itemzRepository;
+			_baselineRepository = baselineRepository;
+			_baselineItemzTypeRepository = baselineItemzTypeRepository;
+			_baselineItemzRepository = baselineItemzRepository;
 			_mapper = mapper;
 		}
 
@@ -100,5 +109,77 @@ namespace ItemzApp.API.Services
 				SubItemz = subItemzExportNodes.Any() ? subItemzExportNodes : null
 			};
 		}
+
+		public async Task<BaselineExportNode> ConvertToBaselineExportNode(NestedBaselineHierarchyIdRecordDetailsDTO node)
+		{
+			// 1. Get the full Baseline entity for mapping
+			var baselineEntity = await _baselineRepository.GetBaselineAsync(node.RecordId);
+			var baselineDto = _mapper.Map<GetBaselineDTO>(baselineEntity);
+
+			// 2. Recursively map BaselineItemzTypes
+			var baselineItemzTypeExportNodes = new List<BaselineItemzTypeExportNode>();
+			if (node.Children != null)
+			{
+				foreach (var child in node.Children.Where(c => string.Equals(c.RecordType, "BaselineItemzType", StringComparison.OrdinalIgnoreCase)))
+				{
+					var baselineItemzTypeNode = await ConvertToBaselineItemzTypeExportNode(child);
+					baselineItemzTypeExportNodes.Add(baselineItemzTypeNode);
+				}
+			}
+
+			return new BaselineExportNode
+			{
+				Baseline = baselineDto,
+				BaselineItemzTypes = baselineItemzTypeExportNodes.Any() ? baselineItemzTypeExportNodes : null
+			};
+		}
+
+		public async Task<BaselineItemzTypeExportNode> ConvertToBaselineItemzTypeExportNode(NestedBaselineHierarchyIdRecordDetailsDTO node)
+		{
+			var baselineItemzTypeEntity = await _baselineItemzTypeRepository.GetBaselineItemzTypeAsync(node.RecordId);
+			var baselineItemzTypeDto = _mapper.Map<GetBaselineItemzTypeDTO>(baselineItemzTypeEntity);
+
+			// Recursively map BaselineItemz
+			var baselineItemzExportNodes = new List<BaselineItemzExportNode>();
+			if (node.Children != null)
+			{
+				foreach (var child in node.Children.Where(c => string.Equals(c.RecordType, "BaselineItemz", StringComparison.OrdinalIgnoreCase)))
+				{
+					var baselineItemzNode = await ConvertToBaselineItemzExportNode(child);
+					baselineItemzExportNodes.Add(baselineItemzNode);
+				}
+			}
+
+			return new BaselineItemzTypeExportNode
+			{
+				BaselineItemzType = baselineItemzTypeDto,
+				BaselineItemz = baselineItemzExportNodes.Any() ? baselineItemzExportNodes : null
+			};
+		}
+
+
+		public async Task<BaselineItemzExportNode> ConvertToBaselineItemzExportNode(NestedBaselineHierarchyIdRecordDetailsDTO node)
+		{
+			var baselineItemzEntity = await _baselineItemzRepository.GetBaselineItemzAsync(node.RecordId);
+			var baselineItemzDto = _mapper.Map<GetBaselineItemzDTO>(baselineItemzEntity);
+
+			// Recursively map sub BaselineItemz (if any)
+			var baselineSubItemzExportNodes = new List<BaselineItemzExportNode>();
+			if (node.Children != null)
+			{
+				foreach (var child in node.Children.Where(c => string.Equals(c.RecordType, "BaselineItemz", StringComparison.OrdinalIgnoreCase)))
+				{
+					var subBaselineItemzNode = await ConvertToBaselineItemzExportNode(child);
+					baselineSubItemzExportNodes.Add(subBaselineItemzNode);
+				}
+			}
+
+			return new BaselineItemzExportNode
+			{
+				BaselineItemz = baselineItemzDto,
+				BaselineSubItemz = baselineSubItemzExportNodes.Any() ? baselineSubItemzExportNodes : null
+			};
+		}
+
 	}
 }
