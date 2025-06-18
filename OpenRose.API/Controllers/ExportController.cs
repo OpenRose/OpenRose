@@ -15,6 +15,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Schema;
 
 namespace ItemzApp.API.Controllers
 {
@@ -375,8 +377,24 @@ namespace ItemzApp.API.Controllers
 								return BadRequest($"Unsupported RecordType: {recordType}");
 						}
 
-						// Serialize and return
+						// Serialize JSON Export Data
 						var json = System.Text.Json.JsonSerializer.Serialize(exportDto, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+
+						// Validate JSON before returning
+						var schemaJson = await System.IO.File.ReadAllTextAsync("Schemas/OpenRose.Export.schema.1.0.json");
+						var schema = JSchema.Parse(schemaJson);
+
+						var exportJObject = JObject.Parse(json);
+						if (!exportJObject.IsValid(schema, out IList<string> errors))
+						{
+							_logger.LogError("Export JSON failed schema validation: {Errors}", string.Join("; ", errors));
+							return UnprocessableEntity(new
+							{
+								error = "Export JSON failed schema validation.",
+								details = errors
+							});
+						}
+
 						var content = System.Text.Encoding.UTF8.GetBytes(json);
 						var fileName = $"RepositoryExport_{recordType}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.json";
 						return File(content, "application/json", fileName);
