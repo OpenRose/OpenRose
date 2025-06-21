@@ -252,6 +252,170 @@ namespace ItemzApp.API.Controllers
 
 
 
+		//[ProducesResponseType(StatusCodes.Status404NotFound)]
+		//[ProducesResponseType(StatusCodes.Status200OK)]
+		//[Produces("application/json")]
+		//[HttpGet("ExportHierarchy", Name = "__Export_Hierarchy__")]
+		//public async Task<IActionResult> ExportHierarchy([FromQuery] Guid exportRecordId)
+		//{
+		//	_logger.LogDebug("{FormattedControllerAndActionNames} Processing request to export hierarchy as RepositoryExportDTO. Id: {ExportRecordId}",
+		//		ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext), exportRecordId);
+
+		//	if (exportRecordId == Guid.Empty)
+		//	{
+		//		return BadRequest("ExportRecordId must be a valid GUID.");
+		//	}
+
+		//	try
+		//	{
+
+		//		var repositoryRecordDto = await _hierarchyRepository.GetRepositoryHierarchyRecord();
+		//		if (repositoryRecordDto == null)
+		//			return NotFound("Repository (root) not found.");
+
+		//		// Export Project OR ItemzType OR Itemz Data 
+
+		//		try
+		//		{
+		//			var parentHierarchyRecord = await _hierarchyRepository.GetHierarchyRecordDetailsByID(exportRecordId);
+		//			if (parentHierarchyRecord != null)
+		//			{
+
+		//				var hierarchyTree = await _hierarchyRepository.GetAllChildrenOfItemzHierarchy(exportRecordId);
+		//				var rootNode = new NestedHierarchyIdRecordDetailsDTO
+		//				{
+		//					RecordId = parentHierarchyRecord.RecordId,
+		//					HierarchyId = parentHierarchyRecord.HierarchyId,
+		//					Level = parentHierarchyRecord.Level,
+		//					RecordType = parentHierarchyRecord.RecordType,
+		//					Name = parentHierarchyRecord.Name,
+		//					Children = (List<NestedHierarchyIdRecordDetailsDTO>)hierarchyTree.AllRecords
+		//				};
+		//				var recordType = parentHierarchyRecord.RecordType?.ToLowerInvariant();
+
+		//				var exportDto = new RepositoryExportDTO
+		//				{
+		//					RepositoryId = repositoryRecordDto.RecordId
+		//				};
+
+		//				HashSet<Guid> exportedItemzIds = CollectExportedIdsByType(rootNode, "Itemz");
+		//				var itemzTraces = await _itemzTraceExportService.GetTracesForExportAsync(exportedItemzIds);
+		//				exportDto.ItemzTraces = itemzTraces;
+
+		//				switch (recordType)
+		//				{
+		//					case "project":
+		//						exportDto.Projects = new List<ProjectExportNode> { await _exportNodeMapper.ConvertToProjectExportNode(rootNode) };
+		//						break;
+		//					case "itemztype":
+		//						exportDto.ItemzTypes = new List<ItemzTypeExportNode> { await _exportNodeMapper.ConvertToItemzTypeExportNode(rootNode) };
+		//						break;
+		//					case "itemz":
+		//						exportDto.Itemz = new List<ItemzExportNode> { await _exportNodeMapper.ConvertToItemzExportNode(rootNode) };
+		//						break;
+		//					default:
+		//						return BadRequest($"Unsupported RecordType: {recordType}");
+		//				}
+
+		//				// Serialize and return
+		//				var json = System.Text.Json.JsonSerializer.Serialize(exportDto, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+		//				var content = System.Text.Encoding.UTF8.GetBytes(json);
+		//				var fileName = $"RepositoryExport_{recordType}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.json";
+		//				return File(content, "application/json", fileName);
+		//			}
+		//		}
+		//		catch (Exception ex)
+		//		{
+		//			_logger.LogDebug("Live hierarchy lookup failed: {0}", ex.Message);
+		//		}
+
+		//		// Export Baseline OR BaselineItemzType OR BaselineItemz Data 
+
+		//		try
+		//		{
+		//			var baselineHierarchyRecord = await _baselineHierarchyRepository.GetBaselineHierarchyRecordDetailsByID(exportRecordId);
+		//			if (baselineHierarchyRecord != null)
+		//			{
+
+
+		//				var baselineHierarchyTree = await _baselineHierarchyRepository.GetAllChildrenOfBaselineItemzHierarchy(exportRecordId);
+
+		//				var rootNode = new NestedBaselineHierarchyIdRecordDetailsDTO
+		//				{
+		//					RecordId = baselineHierarchyRecord.RecordId,
+		//					BaselineHierarchyId = baselineHierarchyRecord.BaselineHierarchyId,
+		//					Level = baselineHierarchyRecord.Level,
+		//					RecordType = baselineHierarchyRecord.RecordType,
+		//					Name = baselineHierarchyRecord.Name,
+		//					isIncluded = baselineHierarchyRecord.IsIncluded,
+		//					Children = (List<NestedBaselineHierarchyIdRecordDetailsDTO>)baselineHierarchyTree.AllRecords
+		//				};
+		//				var recordType = baselineHierarchyRecord.RecordType?.ToLowerInvariant();
+
+
+		//				var exportDto = new RepositoryExportDTO
+		//				{
+		//					RepositoryId = repositoryRecordDto.RecordId
+		//				};
+
+		//				var exportedBaselineItemzIds = CollectExportedIdsByType(rootNode, "BaselineItemz");
+		//				var baselineItemzTraces = await _baselineItemzTraceExportService.GetTracesForExportAsync(exportedBaselineItemzIds);
+		//				exportDto.BaselineItemzTraces = baselineItemzTraces;
+
+		//				switch (recordType)
+		//				{
+		//					case "baseline":
+		//						exportDto.Baselines = new List<BaselineExportNode> { await _exportNodeMapper.ConvertToBaselineExportNode(rootNode) };
+		//						break;
+		//					case "baselineitemztype":
+		//						exportDto.BaselineItemzTypes = new List<BaselineItemzTypeExportNode> { await _exportNodeMapper.ConvertToBaselineItemzTypeExportNode(rootNode) };
+		//						break;
+		//					case "baselineitemz":
+		//						exportDto.BaselineItemz = new List<BaselineItemzExportNode> { await _exportNodeMapper.ConvertToBaselineItemzExportNode(rootNode) };
+		//						break;
+		//					default:
+		//						return BadRequest($"Unsupported RecordType: {recordType}");
+		//				}
+
+		//				// Serialize JSON Export Data
+		//				var json = System.Text.Json.JsonSerializer.Serialize(exportDto, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+
+		//				// Validate JSON before returning
+		//				var schemaJson = await System.IO.File.ReadAllTextAsync("Schemas/OpenRose.Export.schema.1.0.json");
+		//				var schema = JSchema.Parse(schemaJson);
+
+		//				var exportJObject = JObject.Parse(json);
+		//				if (!exportJObject.IsValid(schema, out IList<string> errors))
+		//				{
+		//					_logger.LogError("Export JSON failed schema validation: {Errors}", string.Join("; ", errors));
+		//					return UnprocessableEntity(new
+		//					{
+		//						error = "Export JSON failed schema validation.",
+		//						details = errors
+		//					});
+		//				}
+
+		//				var content = System.Text.Encoding.UTF8.GetBytes(json);
+		//				var fileName = $"RepositoryExport_{recordType}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.json";
+		//				return File(content, "application/json", fileName);
+		//			}
+		//		}
+		//		catch (Exception ex)
+		//		{
+		//			_logger.LogDebug("Baseline hierarchy lookup failed: {0}", ex.Message);
+		//		}
+
+		//		// If we got here, then it means provided ID is not found for any of the data type that we support for exporting
+		//		return NotFound($"Record with ID '{exportRecordId}' not found across Itemz OR Baseline Hierarchy data.");
+		//	}
+		//	catch (Exception ex)
+		//	{
+		//		_logger.LogError("Exception during hierarchy export: {0}", ex.Message);
+		//		return StatusCode(StatusCodes.Status500InternalServerError, "Error exporting hierarchy.");
+		//	}
+		//}
+
+
 		[ProducesResponseType(StatusCodes.Status404NotFound)]
 		[ProducesResponseType(StatusCodes.Status200OK)]
 		[Produces("application/json")]
@@ -268,19 +432,19 @@ namespace ItemzApp.API.Controllers
 
 			try
 			{
-
 				var repositoryRecordDto = await _hierarchyRepository.GetRepositoryHierarchyRecord();
 				if (repositoryRecordDto == null)
 					return NotFound("Repository (root) not found.");
 
-				// Export Project OR ItemzType OR Itemz Data 
+				RepositoryExportDTO? exportDto = null;
+				string? recordType = null;
 
+				// Try live hierarchy (Project/ItemzType/Itemz)
 				try
 				{
 					var parentHierarchyRecord = await _hierarchyRepository.GetHierarchyRecordDetailsByID(exportRecordId);
 					if (parentHierarchyRecord != null)
 					{
-
 						var hierarchyTree = await _hierarchyRepository.GetAllChildrenOfItemzHierarchy(exportRecordId);
 						var rootNode = new NestedHierarchyIdRecordDetailsDTO
 						{
@@ -291,9 +455,9 @@ namespace ItemzApp.API.Controllers
 							Name = parentHierarchyRecord.Name,
 							Children = (List<NestedHierarchyIdRecordDetailsDTO>)hierarchyTree.AllRecords
 						};
-						var recordType = parentHierarchyRecord.RecordType?.ToLowerInvariant();
+						recordType = parentHierarchyRecord.RecordType?.ToLowerInvariant();
 
-						var exportDto = new RepositoryExportDTO
+						exportDto = new RepositoryExportDTO
 						{
 							RepositoryId = repositoryRecordDto.RecordId
 						};
@@ -316,12 +480,6 @@ namespace ItemzApp.API.Controllers
 							default:
 								return BadRequest($"Unsupported RecordType: {recordType}");
 						}
-
-						// Serialize and return
-						var json = System.Text.Json.JsonSerializer.Serialize(exportDto, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
-						var content = System.Text.Encoding.UTF8.GetBytes(json);
-						var fileName = $"RepositoryExport_{recordType}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.json";
-						return File(content, "application/json", fileName);
 					}
 				}
 				catch (Exception ex)
@@ -329,84 +487,86 @@ namespace ItemzApp.API.Controllers
 					_logger.LogDebug("Live hierarchy lookup failed: {0}", ex.Message);
 				}
 
-				// Export Baseline OR BaselineItemzType OR BaselineItemz Data 
-
-				try
+				// If not found in live hierarchy, try baseline hierarchy
+				if (exportDto == null)
 				{
-					var baselineHierarchyRecord = await _baselineHierarchyRepository.GetBaselineHierarchyRecordDetailsByID(exportRecordId);
-					if (baselineHierarchyRecord != null)
+					try
 					{
-
-
-						var baselineHierarchyTree = await _baselineHierarchyRepository.GetAllChildrenOfBaselineItemzHierarchy(exportRecordId);
-
-						var rootNode = new NestedBaselineHierarchyIdRecordDetailsDTO
+						var baselineHierarchyRecord = await _baselineHierarchyRepository.GetBaselineHierarchyRecordDetailsByID(exportRecordId);
+						if (baselineHierarchyRecord != null)
 						{
-							RecordId = baselineHierarchyRecord.RecordId,
-							BaselineHierarchyId = baselineHierarchyRecord.BaselineHierarchyId,
-							Level = baselineHierarchyRecord.Level,
-							RecordType = baselineHierarchyRecord.RecordType,
-							Name = baselineHierarchyRecord.Name,
-							isIncluded = baselineHierarchyRecord.IsIncluded,
-							Children = (List<NestedBaselineHierarchyIdRecordDetailsDTO>)baselineHierarchyTree.AllRecords
-						};
-						var recordType = baselineHierarchyRecord.RecordType?.ToLowerInvariant();
+							var baselineHierarchyTree = await _baselineHierarchyRepository.GetAllChildrenOfBaselineItemzHierarchy(exportRecordId);
 
-
-						var exportDto = new RepositoryExportDTO
-						{
-							RepositoryId = repositoryRecordDto.RecordId
-						};
-
-						var exportedBaselineItemzIds = CollectExportedIdsByType(rootNode, "BaselineItemz");
-						var baselineItemzTraces = await _baselineItemzTraceExportService.GetTracesForExportAsync(exportedBaselineItemzIds);
-						exportDto.BaselineItemzTraces = baselineItemzTraces;
-
-						switch (recordType)
-						{
-							case "baseline":
-								exportDto.Baselines = new List<BaselineExportNode> { await _exportNodeMapper.ConvertToBaselineExportNode(rootNode) };
-								break;
-							case "baselineitemztype":
-								exportDto.BaselineItemzTypes = new List<BaselineItemzTypeExportNode> { await _exportNodeMapper.ConvertToBaselineItemzTypeExportNode(rootNode) };
-								break;
-							case "baselineitemz":
-								exportDto.BaselineItemz = new List<BaselineItemzExportNode> { await _exportNodeMapper.ConvertToBaselineItemzExportNode(rootNode) };
-								break;
-							default:
-								return BadRequest($"Unsupported RecordType: {recordType}");
-						}
-
-						// Serialize JSON Export Data
-						var json = System.Text.Json.JsonSerializer.Serialize(exportDto, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
-
-						// Validate JSON before returning
-						var schemaJson = await System.IO.File.ReadAllTextAsync("Schemas/OpenRose.Export.schema.1.0.json");
-						var schema = JSchema.Parse(schemaJson);
-
-						var exportJObject = JObject.Parse(json);
-						if (!exportJObject.IsValid(schema, out IList<string> errors))
-						{
-							_logger.LogError("Export JSON failed schema validation: {Errors}", string.Join("; ", errors));
-							return UnprocessableEntity(new
+							var rootNode = new NestedBaselineHierarchyIdRecordDetailsDTO
 							{
-								error = "Export JSON failed schema validation.",
-								details = errors
-							});
-						}
+								RecordId = baselineHierarchyRecord.RecordId,
+								BaselineHierarchyId = baselineHierarchyRecord.BaselineHierarchyId,
+								Level = baselineHierarchyRecord.Level,
+								RecordType = baselineHierarchyRecord.RecordType,
+								Name = baselineHierarchyRecord.Name,
+								isIncluded = baselineHierarchyRecord.IsIncluded,
+								Children = (List<NestedBaselineHierarchyIdRecordDetailsDTO>)baselineHierarchyTree.AllRecords
+							};
+							recordType = baselineHierarchyRecord.RecordType?.ToLowerInvariant();
 
-						var content = System.Text.Encoding.UTF8.GetBytes(json);
-						var fileName = $"RepositoryExport_{recordType}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.json";
-						return File(content, "application/json", fileName);
+							exportDto = new RepositoryExportDTO
+							{
+								RepositoryId = repositoryRecordDto.RecordId
+							};
+
+							var exportedBaselineItemzIds = CollectExportedIdsByType(rootNode, "BaselineItemz");
+							var baselineItemzTraces = await _baselineItemzTraceExportService.GetTracesForExportAsync(exportedBaselineItemzIds);
+							exportDto.BaselineItemzTraces = baselineItemzTraces;
+
+							switch (recordType)
+							{
+								case "baseline":
+									exportDto.Baselines = new List<BaselineExportNode> { await _exportNodeMapper.ConvertToBaselineExportNode(rootNode) };
+									break;
+								case "baselineitemztype":
+									exportDto.BaselineItemzTypes = new List<BaselineItemzTypeExportNode> { await _exportNodeMapper.ConvertToBaselineItemzTypeExportNode(rootNode) };
+									break;
+								case "baselineitemz":
+									exportDto.BaselineItemz = new List<BaselineItemzExportNode> { await _exportNodeMapper.ConvertToBaselineItemzExportNode(rootNode) };
+									break;
+								default:
+									return BadRequest($"Unsupported RecordType: {recordType}");
+							}
+						}
+					}
+					catch (Exception ex)
+					{
+						_logger.LogDebug("Baseline hierarchy lookup failed: {0}", ex.Message);
 					}
 				}
-				catch (Exception ex)
+
+				// If we got here and still no exportDto, record was not found
+				if (exportDto == null)
 				{
-					_logger.LogDebug("Baseline hierarchy lookup failed: {0}", ex.Message);
+					return NotFound($"Record with ID '{exportRecordId}' not found across Itemz OR Baseline Hierarchy data.");
 				}
 
-				// If we got here, then it means provided ID is not found for any of the data type that we support for exporting
-				return NotFound($"Record with ID '{exportRecordId}' not found across Itemz OR Baseline Hierarchy data.");
+				// Serialize JSON Export Data
+				var json = System.Text.Json.JsonSerializer.Serialize(exportDto, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+
+				// Validate JSON before returning
+				var schemaJson = await System.IO.File.ReadAllTextAsync("Schemas/OpenRose.Export.schema.1.0.json");
+				var schema = JSchema.Parse(schemaJson);
+
+				var exportJObject = JObject.Parse(json);
+				if (!exportJObject.IsValid(schema, out IList<string> errors))
+				{
+					_logger.LogError("Export JSON failed schema validation: {Errors}", string.Join("; ", errors));
+					return UnprocessableEntity(new
+					{
+						error = "Export JSON failed schema validation.",
+						details = errors
+					});
+				}
+
+				var content = System.Text.Encoding.UTF8.GetBytes(json);
+				var fileName = $"RepositoryExport_{recordType}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.json";
+				return File(content, "application/json", fileName);
 			}
 			catch (Exception ex)
 			{
@@ -414,7 +574,6 @@ namespace ItemzApp.API.Controllers
 				return StatusCode(StatusCodes.Status500InternalServerError, "Error exporting hierarchy.");
 			}
 		}
-
 
 		private HashSet<Guid> CollectExportedIdsByType(NestedHierarchyIdRecordDetailsDTO node, string typeToCollect)
 		{
