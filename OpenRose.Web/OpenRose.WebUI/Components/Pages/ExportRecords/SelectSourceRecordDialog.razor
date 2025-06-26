@@ -1,0 +1,45 @@
+﻿﻿@*
+ * Select Source Record Dialog for Export
+ *@
+
+<MudDialog>
+    <TitleContent>
+        <MudText Color="Color.Primary">Select Source @RecordType</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudTextField @bind-Value="UserInput" Label="@DynamicLabel" Variant="Variant.Text" Immediate="true" />
+        <MudText Color="Color.Error" Dense="true">@ErrorMessage</MudText>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="Submit">Submit</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="Cancel">Cancel</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; }
+
+    [Parameter]
+    public string RecordType { get; set; } // Passed dynamically from parent
+
+    private string UserInput { get; set; } = string.Empty;
+    private string ErrorMessage { get; set; } = string.Empty;
+
+    // Computed property for the label
+    private string DynamicLabel => $"Enter {RecordType} ID";
+
+    private void Submit()
+    {
+        if (Guid.TryParse(UserInput, out Guid inputRecordId))
+        {
+            MudDialog.Close(DialogResult.Ok(inputRecordId));
+        }
+        else
+        {
+            ErrorMessage = $"Please enter a valid GUID for the {RecordType} ID.";
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

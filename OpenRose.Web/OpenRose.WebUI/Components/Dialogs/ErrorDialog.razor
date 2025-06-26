@@ -1,0 +1,26 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * Export Records UI with details preview for all 6 record types.
+*@
+
+@using MudBlazor
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+            <MudIcon Icon="@Icons.Material.Filled.Error" Color="Color.Error" Size="Size.Large" />
+            <MudText Typo="Typo.caption" Color="Color.Error" Style="white-space: pre-line;">@Message</MudText>
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Error" OnClick="@Close">OK</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; }
+    [Parameter] public required string Message { get; set; }
+
+    private void Close() => MudDialog.Close();
+}
