@@ -375,114 +375,125 @@ namespace ItemzApp.API.Services
 		}
 
 
-
-
-
-
-
-
-
-
-
 		// TODO :: Baseline Itemz Hierarchy Record should include additional information which is related to Baseline Itemz only. 
 		// For example, "IsIncluded" is a property found in BaselineHierarchyRecord but not in HierarchyRecord. So we need to
 		// Make sure that we pass back those information as well.
-		public async Task<RecordCountAndEnumerable<NestedBaselineHierarchyIdRecordDetailsDTO>> GetAllChildrenOfBaselineItemzHierarchy(Guid recordId)
-        {
-            if (recordId == Guid.Empty)
-            {
-                throw new ArgumentNullException(nameof(recordId));
-            }
+		public async Task<RecordCountAndEnumerable<NestedBaselineHierarchyIdRecordDetailsDTO>> GetAllChildrenOfBaselineItemzHierarchy(
+	Guid recordId,
+	bool exportIncludedBaselineItemzOnly = false
+)
+		{
+			if (recordId == Guid.Empty)
+			{
+				throw new ArgumentNullException(nameof(recordId));
+			}
 
-            var foundBaselineHierarchyRecord = _context.BaselineItemzHierarchy!.AsNoTracking()
-                            .Where(bih => bih.Id == recordId);
+			var foundBaselineHierarchyRecord = _context.BaselineItemzHierarchy!.AsNoTracking()
+				.Where(bih => bih.Id == recordId);
 
-            if (foundBaselineHierarchyRecord.Count() != 1)
-            {
-                throw new ApplicationException($"Expected 1 Baseline Itemz Hierarchy record to be found " +
-                    $"but instead found {foundBaselineHierarchyRecord.Count()} records for ID {recordId}" +
-                    "Please contact your System Administrator.");
-            }
+			if (foundBaselineHierarchyRecord.Count() != 1)
+			{
+				throw new ApplicationException($"Expected 1 Baseline Itemz Hierarchy record to be found " +
+					$"but instead found {foundBaselineHierarchyRecord.Count()} records for ID {recordId}" +
+					"Please contact your System Administrator.");
+			}
 
-            var foundBaselineHierarchyRecordLevel = foundBaselineHierarchyRecord.FirstOrDefault()!.BaselineItemzHierarchyId!.GetLevel();
-
-			// EXPLANATION : We are using SQL Server HierarchyID field type. Now we can use EF Core special
-			// methods to query for all Decendents as per below. 
-
-			RecordCountAndEnumerable<NestedBaselineHierarchyIdRecordDetailsDTO> recordCountAndEnumerable = new RecordCountAndEnumerable<NestedBaselineHierarchyIdRecordDetailsDTO>();
+			var foundBaselineHierarchyRecordLevel = foundBaselineHierarchyRecord.FirstOrDefault()!.BaselineItemzHierarchyId!.GetLevel();
 
 			var baselineAllHierarchyItemzs = await _context.BaselineItemzHierarchy!
-                    .AsNoTracking()
-                    .Where(bih => bih.BaselineItemzHierarchyId!.IsDescendantOf(foundBaselineHierarchyRecord.FirstOrDefault()!.BaselineItemzHierarchyId!))
-                    .OrderBy(bih => bih.BaselineItemzHierarchyId!)
-                    .ToListAsync();
+				.AsNoTracking()
+				.Where(bih => bih.BaselineItemzHierarchyId!.IsDescendantOf(foundBaselineHierarchyRecord.FirstOrDefault()!.BaselineItemzHierarchyId!))
+				.OrderBy(bih => bih.BaselineItemzHierarchyId!)
+				.ToListAsync();
 
-            List<NestedBaselineHierarchyIdRecordDetailsDTO> returningRecords = [];
-
-			if (baselineAllHierarchyItemzs.Count() > 1) // We check for 1 as 1st record returned is the same as recordId which we skip out.
-			{
-				recordCountAndEnumerable.RecordCount = (baselineAllHierarchyItemzs.Count() - 1);
-			}
-			else
-			{
-				recordCountAndEnumerable.RecordCount = 0;
-				recordCountAndEnumerable.AllRecords = new List<NestedBaselineHierarchyIdRecordDetailsDTO>();
-			}
+			List<NestedBaselineHierarchyIdRecordDetailsDTO> returningRecords = [];
 
 			for (var i = 0; i < baselineAllHierarchyItemzs.Count(); i++)
-            {
-                if (i == 0) continue; // Skip first record as it's for the supplied recordId
-                if (baselineAllHierarchyItemzs[i].BaselineItemzHierarchyId!.GetLevel() == (foundBaselineHierarchyRecordLevel + 1))
-                {
-                    returningRecords.Add(new NestedBaselineHierarchyIdRecordDetailsDTO
-                    {
-                        RecordId = baselineAllHierarchyItemzs[i].Id,
-                        BaselineHierarchyId = baselineAllHierarchyItemzs[i].BaselineItemzHierarchyId!.ToString(),
-                        Level = baselineAllHierarchyItemzs[i].BaselineItemzHierarchyId!.GetLevel(),
-                        RecordType = baselineAllHierarchyItemzs[i].RecordType,
-                        Name = baselineAllHierarchyItemzs[i].Name ?? "",
-                        isIncluded = baselineAllHierarchyItemzs[i].isIncluded,
-                        Children = new List<NestedBaselineHierarchyIdRecordDetailsDTO>()
-                    });
-                }
-                else if (baselineAllHierarchyItemzs[i].BaselineItemzHierarchyId!.GetLevel() > (foundBaselineHierarchyRecordLevel + 1))
-                {
+			{
+				if (i == 0) continue; // Skip first record as it's for the supplied recordId
 
+				var current = baselineAllHierarchyItemzs[i];
 
-                    // Find the last record at a specified level directly within returningRecords
-                    //var targetLevel = (baselineAllHierarchyItemzs[i].BaselineItemzHierarchyId!.GetLevel() - 1);
-                    var foundParentRecordInReturningList = FindParentRecord(returningRecords, baselineAllHierarchyItemzs[i]);
+				// Skip nodes that are excluded, if flag is set
+				if (exportIncludedBaselineItemzOnly && current.isIncluded == false)
+					continue;
 
-                    if (foundParentRecordInReturningList != null)
-                    {
-                        foundParentRecordInReturningList.Children.Add(new NestedBaselineHierarchyIdRecordDetailsDTO
-                        {
-                            RecordId = baselineAllHierarchyItemzs[i].Id,
-                            BaselineHierarchyId = baselineAllHierarchyItemzs[i].BaselineItemzHierarchyId!.ToString(),
-                            Level = baselineAllHierarchyItemzs[i].BaselineItemzHierarchyId!.GetLevel(),
-                            RecordType = baselineAllHierarchyItemzs[i].RecordType,
-                            Name = baselineAllHierarchyItemzs[i].Name ?? "",
-                            isIncluded = baselineAllHierarchyItemzs[i].isIncluded,
-                            Children = new List<NestedBaselineHierarchyIdRecordDetailsDTO>()
-                        });
-                    }
-                    else
-                    {
-                        throw new ApplicationException($"Parent record could not be found for  " +
-                                            $"RecordID {baselineAllHierarchyItemzs[i].Id} with " +
-                                            $"BaselineHierarchyID  {baselineAllHierarchyItemzs[i].BaselineItemzHierarchyId!.ToString()} and " +
-                                            $"Level as {baselineAllHierarchyItemzs[i].BaselineItemzHierarchyId!.GetLevel().ToString()} " +
-                                            "Please contact your System Administrator.");
-                    }
-                }
-            }
+				if (current.BaselineItemzHierarchyId!.GetLevel() == (foundBaselineHierarchyRecordLevel + 1))
+				{
+					returningRecords.Add(new NestedBaselineHierarchyIdRecordDetailsDTO
+					{
+						RecordId = current.Id,
+						BaselineHierarchyId = current.BaselineItemzHierarchyId!.ToString(),
+						Level = current.BaselineItemzHierarchyId!.GetLevel(),
+						RecordType = current.RecordType,
+						Name = current.Name ?? "",
+						isIncluded = current.isIncluded,
+						Children = new List<NestedBaselineHierarchyIdRecordDetailsDTO>()
+					});
+				}
+				else if (current.BaselineItemzHierarchyId!.GetLevel() > (foundBaselineHierarchyRecordLevel + 1))
+				{
+					var foundParentRecordInReturningList = FindParentRecord(returningRecords, current);
 
-			recordCountAndEnumerable.AllRecords = returningRecords;
+					if (foundParentRecordInReturningList != null)
+					{
+						// If parent is not included (when flag is set), skip adding children to it
+						if (exportIncludedBaselineItemzOnly && !foundParentRecordInReturningList.isIncluded)
+							continue;
+
+						foundParentRecordInReturningList.Children.Add(new NestedBaselineHierarchyIdRecordDetailsDTO
+						{
+							RecordId = current.Id,
+							BaselineHierarchyId = current.BaselineItemzHierarchyId!.ToString(),
+							Level = current.BaselineItemzHierarchyId!.GetLevel(),
+							RecordType = current.RecordType,
+							Name = current.Name ?? "",
+							isIncluded = current.isIncluded,
+							Children = new List<NestedBaselineHierarchyIdRecordDetailsDTO>()
+						});
+					}
+					else
+					{
+						throw new ApplicationException($"Parent record could not be found for  " +
+							$"RecordID {current.Id} with " +
+							$"BaselineHierarchyID  {current.BaselineItemzHierarchyId!.ToString()} and " +
+							$"Level as {current.BaselineItemzHierarchyId!.GetLevel().ToString()} " +
+							"Please contact your System Administrator.");
+					}
+				}
+			}
+
+			// Optional: Recursively prune children of excluded parents
+			if (exportIncludedBaselineItemzOnly)
+			{
+				void PruneExcludedChildren(List<NestedBaselineHierarchyIdRecordDetailsDTO> nodes)
+				{
+					foreach (var node in nodes.ToList())
+					{
+						if (!node.isIncluded)
+						{
+							nodes.Remove(node);
+						}
+						else if (node.Children != null && node.Children.Any())
+						{
+							PruneExcludedChildren(node.Children);
+						}
+					}
+				}
+				PruneExcludedChildren(returningRecords);
+			}
+
+			// Always set results and count at the end, based on final filtered collection
+			RecordCountAndEnumerable<NestedBaselineHierarchyIdRecordDetailsDTO> recordCountAndEnumerable = new RecordCountAndEnumerable<NestedBaselineHierarchyIdRecordDetailsDTO>
+			{
+				AllRecords = returningRecords,
+				RecordCount = returningRecords.Count
+			};
 			return recordCountAndEnumerable;
-        }
+		}
 
 
-        public async Task<int> GetAllChildrenCountOfBaselineItemzHierarchy(Guid recordId)
+		public async Task<int> GetAllChildrenCountOfBaselineItemzHierarchy(Guid recordId)
         {
             if (recordId == Guid.Empty)
             {

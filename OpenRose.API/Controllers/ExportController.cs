@@ -251,15 +251,17 @@ namespace ItemzApp.API.Controllers
 		//}
 
 
-
 		[ProducesResponseType(StatusCodes.Status404NotFound)]
 		[ProducesResponseType(StatusCodes.Status200OK)]
 		[Produces("application/json")]
 		[HttpGet("ExportHierarchy", Name = "__Export_Hierarchy__")]
-		public async Task<IActionResult> ExportHierarchy([FromQuery] Guid exportRecordId)
+		public async Task<IActionResult> ExportHierarchy(
+	[FromQuery] Guid exportRecordId,
+	[FromQuery] bool exportIncludedBaselineItemzOnly = false // NEW PARAMETER
+)
 		{
-			_logger.LogDebug("{FormattedControllerAndActionNames} Processing request to export hierarchy as RepositoryExportDTO. Id: {ExportRecordId}",
-				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext), exportRecordId);
+			_logger.LogDebug("{FormattedControllerAndActionNames} Processing request to export hierarchy as RepositoryExportDTO. Id: {ExportRecordId}, exportIncludedBaselineItemzOnly: {ExportIncludedBaselineItemzOnly}",
+				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext), exportRecordId, exportIncludedBaselineItemzOnly);
 
 			if (exportRecordId == Guid.Empty)
 			{
@@ -331,7 +333,21 @@ namespace ItemzApp.API.Controllers
 						var baselineHierarchyRecord = await _baselineHierarchyRepository.GetBaselineHierarchyRecordDetailsByID(exportRecordId);
 						if (baselineHierarchyRecord != null)
 						{
-							var baselineHierarchyTree = await _baselineHierarchyRepository.GetAllChildrenOfBaselineItemzHierarchy(exportRecordId);
+							var rootRecordType = baselineHierarchyRecord.RecordType?.ToLowerInvariant();
+
+							// Only apply 404 logic for BaselineItemz nodes
+							if (rootRecordType == "baselineitemz"
+								&& exportIncludedBaselineItemzOnly
+								&& baselineHierarchyRecord.IsIncluded == false)
+							{
+								return NotFound(
+									$"Requested BaselineItemz (ID: {exportRecordId}) is excluded and cannot be exported with exportIncludedBaselineItemzOnly=true."
+								);
+							}
+
+							var baselineHierarchyTree = await _baselineHierarchyRepository.GetAllChildrenOfBaselineItemzHierarchy(
+								exportRecordId, exportIncludedBaselineItemzOnly // Pass flag to repository if supported
+							);
 
 							var rootNode = new NestedBaselineHierarchyIdRecordDetailsDTO
 							{
