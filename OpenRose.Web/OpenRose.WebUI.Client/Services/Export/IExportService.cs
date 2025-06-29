@@ -18,6 +18,6 @@ namespace OpenRose.WebUI.Client.Services.Export
 		/// <returns>
 		/// A tuple containing the file bytes and the suggested filename.
 		/// </returns>
-		Task<(byte[]? fileContent, string? fileName)> DownloadExportHierarchyAsync(Guid exportRecordId, CancellationToken cancellationToken = default);
+		Task<(byte[]? fileContent, string? fileName)> DownloadExportHierarchyAsync(Guid exportRecordId, bool exportIncludedBaselineItemzOnly, CancellationToken cancellationToken = default);
 	}
 }

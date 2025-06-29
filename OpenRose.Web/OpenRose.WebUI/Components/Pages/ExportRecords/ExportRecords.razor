@@ -85,7 +85,7 @@
     <MudItem xs="12" Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3">
         <MudPaper Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3" style="padding: 16px;">
             <MudStack Row="false" Spacing="2" AlignItems="AlignItems.Center" JustifyContent="Justify.Center">
-                <MudTooltip Text="Step 3: Review and Export">
+                <MudTooltip Text="Step 3: Review Exporting Record Details">
                     <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 3</MudChip>
                 </MudTooltip>
                 @if (recordType == "Project")
@@ -180,6 +180,22 @@
                         </MudCardContent>
                     </MudCard>
                 }
+                @if (recordType == "Baseline" || recordType == "BaselineItemzType" || recordType == "BaselineItemz")
+                {
+                    <MudStack Row="false" Spacing="2" AlignItems="AlignItems.Center" JustifyContent="Justify.Center" Class="mb-2 mt-2">
+                        <div>
+                            <MudTooltip Text="Step 4: Filtering BaselineItemz by Inclusion">
+                                <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 4</MudChip>
+                            </MudTooltip>
+                        </div>
+                        <MudText Typo="Typo.body2" Color="Color.Primary">
+                            BaselineItemz are marked as either 'Included' or 'Excluded'. Select filtering option below:
+                        </MudText>
+                        <MudCheckBox @bind-Value="exportIncludedBaselineItemzOnly">
+                            Only export BaselineItemz marked for Inclusion
+                        </MudCheckBox>
+                    </MudStack>
+                }
                 <MudStack Row="true" Spacing="2" Class="mt-4">
                     <MudButton OnClick="ExportRecord" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Primary" Disabled="@exportingOverlay">
                         Export Selected @recordType
@@ -209,6 +225,7 @@
     public string recordType { get; set; }
     public Guid selectedRecordId { get; set; } = Guid.Empty;
     public bool exportingOverlay { get; set; } = false;
+    private bool exportIncludedBaselineItemzOnly = false;
 
     // DTOs for each record type
     public GetProjectDTO selectedProject { get; set; } = new();
@@ -304,7 +321,10 @@
         try
         {
             exportingOverlay = true;
-            var (fileContent, fileName) = await ExportService.DownloadExportHierarchyAsync(selectedRecordId);
+
+            // Use the value before resetting!
+            var (fileContent, fileName) = await ExportService.DownloadExportHierarchyAsync(selectedRecordId, exportIncludedBaselineItemzOnly);
+
             exportingOverlay = false;
             if (fileContent == null || fileContent.Length == 0)
             {
@@ -314,16 +334,16 @@
 
             await DownloadFile(fileContent, fileName ?? $"Export_{recordType}_{selectedRecordId}.json");
             await ShowSuccessMessage("Export completed successfully!");
+
+            // Now it's safe to reset selection (including checkbox)
+            await ResetSelection();
         }
         catch (Exception ex)
         {
             exportingOverlay = false;
             await ShowErrorMessage($"Could not export {recordType}: {ex.Message}");
         }
-
-        await ResetSelection();
     }
-
     private async Task ResetSelection()
     {
         selectedRecordId = Guid.Empty;
@@ -334,6 +354,7 @@
         selectedBaselineItemzType = new();
         selectedBaselineItemz = new();
         exportingOverlay = false;
+        exportIncludedBaselineItemzOnly = false;
         await Task.CompletedTask;
     }
 

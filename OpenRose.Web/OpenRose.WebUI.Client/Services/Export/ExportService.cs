@@ -21,12 +21,14 @@ namespace OpenRose.WebUI.Client.Services.Export
 		}
 
 		/// <inheritdoc/>
-		public async Task<(byte[]? fileContent, string? fileName)> DownloadExportHierarchyAsync(Guid exportRecordId, CancellationToken cancellationToken = default)
+		public async Task<(byte[]? fileContent, string? fileName)> DownloadExportHierarchyAsync(Guid exportRecordId, bool exportIncludedBaselineItemzOnly, CancellationToken cancellationToken = default)
 		{
 			if (exportRecordId == Guid.Empty)
 				throw new ArgumentException("ExportRecordId must be a valid GUID.", nameof(exportRecordId));
 
 			var requestUri = $"/api/export/ExportHierarchy?exportRecordId={exportRecordId}";
+			if (exportIncludedBaselineItemzOnly)
+				requestUri += "&exportIncludedBaselineItemzOnly=true";
 
 			// Set Accept header for JSON file
 			var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
