@@ -21,11 +21,7 @@ namespace ItemzApp.API.Services
 
 		public Task<NestedHierarchyIdRecordDetailsDTO?> GetRepositoryHierarchyRecord();
 
-		//public Task<IEnumerable<NestedHierarchyIdRecordDetailsDTO?>> GetAllParentsOfItemzHierarchy(Guid recordId);
-
 		public Task<RecordCountAndEnumerable<NestedHierarchyIdRecordDetailsDTO>> GetAllParentsOfItemzHierarchy(Guid recordId);
-
-		// public Task<IEnumerable<NestedHierarchyIdRecordDetailsDTO?>> GetAllChildrenOfItemzHierarchy(Guid recordId);
 
 		public Task<RecordCountAndEnumerable<NestedHierarchyIdRecordDetailsDTO>> GetAllChildrenOfItemzHierarchy(Guid recordId);
 

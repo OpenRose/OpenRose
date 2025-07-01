@@ -161,7 +161,6 @@ namespace ItemzApp.API
             services.AddScoped<IBaselineItemzTraceRepository, BaselineItemzTraceRepository>();
             services.AddScoped<IHierarchyRepository, HierarchyRepository>();
             services.AddScoped<IBaselineHierarchyRepository, BaselineHierarchyRepository>();
-            services.AddScoped<IExportRepository, ExportRepository>(); // TODO : THIS WAS TEMPORARILY USED TO MAKE SURE THAT APPLICATION COMPILES PERHAPS THIS IS NOT NEEDED
 			services.AddScoped<IExportNodeMapper, ExportNodeMapper>();
 			services.AddScoped<IItemzTraceExportService, ItemzTraceExportService>();
             services.AddScoped<IBaselineItemzTraceExportService, BaselineItemzTraceExportService>();

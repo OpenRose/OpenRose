@@ -12,7 +12,6 @@ namespace ItemzApp.API.Models
 	public class RepositoryExportDTO
 	{
 		public Guid RepositoryId { get; set; }
-		// public string? Name { get; set; }
 
 		// Project-based export
 		public List<ProjectExportNode>? Projects { get; set; }

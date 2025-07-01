@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using ItemzApp.API.Models;
-//using ItemzApp.API.Repositories;
 
 namespace ItemzApp.API.Services
 {
