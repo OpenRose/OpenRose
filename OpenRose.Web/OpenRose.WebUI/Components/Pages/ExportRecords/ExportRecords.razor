@@ -1,0 +1,378 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * Export Records UI with details preview for all 6 record types.
+*@
+
+@page "/export"
+@using OpenRose.WebUI.Client.SharedModels
+@using OpenRose.WebUI.Client.Services.Project
+@using OpenRose.WebUI.Client.Services.ItemzType
+@using OpenRose.WebUI.Client.Services.Itemz
+@using OpenRose.WebUI.Client.Services.Baselines
+@using OpenRose.WebUI.Client.Services.BaselineItemzTypes
+@using OpenRose.WebUI.Client.Services.BaselineItemz
+@using OpenRose.WebUI.Client.Services.Export
+@using OpenRose.WebUI.Components.Pages.Common
+@using OpenRose.WebUI.Services
+@using OpenRose.WebUI.Components.Dialogs
+@inject IProjectService ProjectService
+@inject IItemzTypeService ItemzTypeService
+@inject IItemzService ItemzService
+@inject IBaselinesService BaselinesService
+@inject IBaselineItemzTypesService BaselineItemzTypesService
+@inject IBaselineItemzService BaselineItemzService
+@inject IExportService ExportService
+@inject IDialogService DialogService
+@inject NavigationManager NavManager
+@inject ConfigurationService ConfigurationService
+@inject IJSRuntime JS
+
+<MudPaper Class="pa-3 mb-3 align-start d-flex" Style="width: auto " Outlined="false">
+    <MudStack Row="true" Spacing="3">
+        <MudIcon Icon="@Icons.Material.Filled.FileDownload" Size="Size.Large" />
+        <MudText Typo="Typo.h5" Align="Align.Left">Export</MudText>
+        <MudSpacer />
+        <MudText Class="mt-3" Typo="Typo.caption">
+            Export Project / ItemzType / Itemz / Baseline / BaselineItemzType / BaselineItemz with its hierarchy as JSON
+        </MudText>
+    </MudStack>
+</MudPaper>
+
+<MudItem xs="12" Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3">
+    <MudPaper Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3" style="padding: 16px;">
+        <div class="d-flex flex-column align-items-center justify-center w-100 h-100">
+            <MudStack Row="false" Spacing="2" AlignItems="AlignItems.Center" JustifyContent="Justify.Center">
+                <div>
+                    <MudTooltip Text="Step 1: Select Record Type for export">
+                        <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 1</MudChip>
+                    </MudTooltip>
+                </div>
+                <MudStack Row="false" AlignItems="AlignItems.Center" JustifyContent="Justify.Center">
+                    <MudText Align="Align.Center">Select Record Type:</MudText>
+                    <MudRadioGroup T="string" Value="@recordType" ValueChanged="OnRecordTypeChanged">
+                        <MudRadio Value="@("Project")" Color="Color.Primary">Project</MudRadio>
+                        <MudRadio Value="@("ItemzType")" Color="Color.Primary">ItemzType</MudRadio>
+                        <MudRadio Value="@("Itemz")" Color="Color.Primary">Itemz</MudRadio>
+                        <MudRadio Value="@("Baseline")" Color="Color.Primary">Baseline</MudRadio>
+                        <MudRadio Value="@("BaselineItemzType")" Color="Color.Primary">BaselineItemzType</MudRadio>
+                        <MudRadio Value="@("BaselineItemz")" Color="Color.Primary">BaselineItemz</MudRadio>
+                    </MudRadioGroup>
+                </MudStack>
+            </MudStack>
+        </div>
+    </MudPaper>
+</MudItem>
+
+@if (recordType != null)
+{
+    <MudItem xs="12" Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3">
+        <MudPaper Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3" style="padding: 16px;">
+            <MudStack Row="false" Spacing="2" AlignItems="AlignItems.Center" JustifyContent="Justify.Center">
+                <MudTooltip Text="Step 2: Select the record by ID">
+                    <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 2</MudChip>
+                </MudTooltip>
+                <MudButton @onclick="async _ => await SelectSourceRecord()" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Primary">
+                    Select @recordType to be exported by ID
+                </MudButton>
+            </MudStack>
+        </MudPaper>
+    </MudItem>
+}
+
+@if (HasSelectedRecord())
+{
+    <MudItem xs="12" Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3">
+        <MudPaper Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3" style="padding: 16px;">
+            <MudStack Row="false" Spacing="2" AlignItems="AlignItems.Center" JustifyContent="Justify.Center">
+                <MudTooltip Text="Step 3: Review Exporting Record Details">
+                    <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 3</MudChip>
+                </MudTooltip>
+                @if (recordType == "Project")
+                {
+                    <MudCard style="background-color : #C1E1C1; margin: 16px;" Class="w-100">
+                        <MudCardContent>
+                            <MudText Typo="Typo.h6" Align="Align.Left">Project Details</MudText>
+                            <MudDivider></MudDivider>
+                            <MudText><strong>Name        : </strong> @selectedProject.Name </MudText>
+                            <MudStack Row="true" Spacing="2">
+                                <MudText><strong>ID          : </strong></MudText>
+                                <CopyableText TextToCopy="@selectedProject.Id.ToString()" />
+                            </MudStack>
+                            <MudText><strong>Status      : </strong> @selectedProject.Status</MudText>
+                        </MudCardContent>
+                    </MudCard>
+                }
+                else if (recordType == "ItemzType")
+                {
+                    <MudCard style="background-color : #C1E1C1; margin: 16px;" Class="w-100">
+                        <MudCardContent>
+                            <MudText Typo="Typo.h6" Align="Align.Left">ItemzType Details</MudText>
+                            <MudDivider></MudDivider>
+                            <MudText><strong>Name        : </strong> @selectedItemzType.Name </MudText>
+                            <MudStack Row="true" Spacing="2">
+                                <MudText><strong>ID          : </strong></MudText>
+                                <CopyableText TextToCopy="@selectedItemzType.Id.ToString()" />
+                            </MudStack>
+                            <MudText><strong>Status      : </strong> @selectedItemzType.Status</MudText>
+                            <MudText><strong>IsSystem    : </strong> @selectedItemzType.IsSystem.ToString()</MudText>
+                        </MudCardContent>
+                    </MudCard>
+                }
+                else if (recordType == "Itemz")
+                {
+                    <MudCard style="background-color : #C1E1C1; margin: 16px;" Class="w-100">
+                        <MudCardContent>
+                            <MudText Typo="Typo.h6" Align="Align.Left">Itemz Details</MudText>
+                            <MudDivider></MudDivider>
+                            <MudText><strong>Name        : </strong> @selectedItemz.Name </MudText>
+                            <MudStack Row="true" Spacing="2">
+                                <MudText><strong>ID          : </strong></MudText>
+                                <CopyableText TextToCopy="@selectedItemz.Id.ToString()" />
+                            </MudStack>
+                            <MudText><strong>Status      : </strong> @selectedItemz.Status</MudText>
+                            <MudText><strong>Priority    : </strong> @selectedItemz.Priority</MudText>
+                            <MudText><strong>Severity    : </strong> @selectedItemz.Severity</MudText>
+                        </MudCardContent>
+                    </MudCard>
+                }
+                else if (recordType == "Baseline")
+                {
+                    <MudCard style="background-color : #C1E1C1; margin: 16px;" Class="w-100">
+                        <MudCardContent>
+                            <MudText Typo="Typo.h6" Align="Align.Left">Baseline Details</MudText>
+                            <MudDivider></MudDivider>
+                            <MudText><strong>Name        : </strong> @selectedBaseline.Name </MudText>
+                            <MudStack Row="true" Spacing="2">
+                                <MudText><strong>ID          : </strong></MudText>
+                                <CopyableText TextToCopy="@selectedBaseline.Id.ToString()" />
+                            </MudStack>
+                        </MudCardContent>
+                    </MudCard>
+                }
+                else if (recordType == "BaselineItemzType")
+                {
+                    <MudCard style="background-color : #C1E1C1; margin: 16px;" Class="w-100">
+                        <MudCardContent>
+                            <MudText Typo="Typo.h6" Align="Align.Left">BaselineItemzType Details</MudText>
+                            <MudDivider></MudDivider>
+                            <MudText><strong>Name        : </strong> @selectedBaselineItemzType.Name </MudText>
+                            <MudStack Row="true" Spacing="2">
+                                <MudText><strong>ID          : </strong></MudText>
+                                <CopyableText TextToCopy="@selectedBaselineItemzType.Id.ToString()" />
+                            </MudStack>
+                            <MudText><strong>Status      : </strong> @selectedBaselineItemzType.Status</MudText>
+                        </MudCardContent>
+                    </MudCard>
+                }
+                else if (recordType == "BaselineItemz")
+                {
+                    <MudCard style="background-color : #C1E1C1; margin: 16px;" Class="w-100">
+                        <MudCardContent>
+                            <MudText Typo="Typo.h6" Align="Align.Left">BaselineItemz Details</MudText>
+                            <MudDivider></MudDivider>
+                            <MudText><strong>Name        : </strong> @selectedBaselineItemz.Name </MudText>
+                            <MudStack Row="true" Spacing="2">
+                                <MudText><strong>ID          : </strong></MudText>
+                                <CopyableText TextToCopy="@selectedBaselineItemz.Id.ToString()" />
+                            </MudStack>
+                            <MudText><strong>Status      : </strong> @selectedBaselineItemz.Status</MudText>
+                        </MudCardContent>
+                    </MudCard>
+                }
+                @if (recordType == "Baseline" || recordType == "BaselineItemzType" || recordType == "BaselineItemz")
+                {
+                    <MudStack Row="false" Spacing="2" AlignItems="AlignItems.Center" JustifyContent="Justify.Center" Class="mb-2 mt-2">
+                        <div>
+                            <MudTooltip Text="Step 4: Filtering BaselineItemz by Inclusion">
+                                <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 4</MudChip>
+                            </MudTooltip>
+                        </div>
+                        <MudText Typo="Typo.body2" Color="Color.Primary">
+                            BaselineItemz are marked as either 'Included' or 'Excluded'. Select filtering option below:
+                        </MudText>
+                        <MudCheckBox @bind-Value="exportIncludedBaselineItemzOnly">
+                            Only export BaselineItemz marked for Inclusion
+                        </MudCheckBox>
+                    </MudStack>
+                }
+                <MudStack Row="true" Spacing="2" Class="mt-4">
+                    <MudButton OnClick="ExportRecord" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Primary" Disabled="@exportingOverlay">
+                        Export Selected @recordType
+                    </MudButton>
+                    <MudButton OnClick="ResetSelection" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Warning">
+                        Cancel / Restart Export
+                    </MudButton>
+                </MudStack>
+            </MudStack>
+        </MudPaper>
+    </MudItem>
+}
+
+@if (exportingOverlay)
+{
+    <MudPaper Height="calc(100vh - 100px);" Width="100%">
+        <MudOverlay Visible="@exportingOverlay" DarkBackground="true" Absolute="true">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+            <MudText Typo="Typo.h6" Align="Align.Center" Color="Color.Inherit">
+                Exporting @recordType and its hierarchy...
+            </MudText>
+        </MudOverlay>
+    </MudPaper>
+}
+
+@code {
+    public string recordType { get; set; }
+    public Guid selectedRecordId { get; set; } = Guid.Empty;
+    public bool exportingOverlay { get; set; } = false;
+    private bool exportIncludedBaselineItemzOnly = false;
+
+    // DTOs for each record type
+    public GetProjectDTO selectedProject { get; set; } = new();
+    public GetItemzTypeDTO selectedItemzType { get; set; } = new();
+    public GetItemzDTO selectedItemz { get; set; } = new();
+    public GetBaselineDTO selectedBaseline { get; set; } = new();
+    public GetBaselineItemzTypeDTO selectedBaselineItemzType { get; set; } = new();
+    public GetBaselineItemzDTO selectedBaselineItemz { get; set; } = new();
+
+    protected override void OnInitialized()
+    {
+        if (!ConfigurationService.IsOpenRoseAPIConfigured)
+        {
+            NavManager.NavigateTo("/");
+            return;
+        }
+    }
+
+    private async Task OnRecordTypeChanged(string newValue)
+    {
+        recordType = newValue;
+        await ResetSelection();
+    }
+
+    public async Task SelectSourceRecord()
+    {
+        var parameters = new DialogParameters { ["RecordType"] = recordType };
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = DialogService.Show<SelectSourceRecordDialog>("Enter Source Record ID", parameters, options);
+        var result = await dialog.Result;
+        if (!result.Canceled && result.Data is Guid inputRecordId)
+        {
+            selectedRecordId = inputRecordId;
+            await FetchRecordDetails(recordType, inputRecordId);
+        }
+    }
+
+    private async Task FetchRecordDetails(string type, Guid id)
+    {
+        bool notFound = false;
+        switch (type)
+        {
+            case "Project":
+                selectedProject = await ProjectService.__Single_Project_By_GUID_ID__Async(id) ?? new();
+                notFound = selectedProject.Id == Guid.Empty;
+                break;
+            case "ItemzType":
+                selectedItemzType = await ItemzTypeService.__Single_ItemzType_By_GUID_ID__Async(id) ?? new();
+                notFound = selectedItemzType.Id == Guid.Empty;
+                break;
+            case "Itemz":
+                selectedItemz = await ItemzService.__Single_Itemz_By_GUID_ID__Async(id) ?? new();
+                notFound = selectedItemz.Id == Guid.Empty;
+                break;
+            case "Baseline":
+                selectedBaseline = await BaselinesService.__Single_Baseline_By_GUID_ID__Async(id) ?? new();
+                notFound = selectedBaseline.Id == Guid.Empty;
+                break;
+            case "BaselineItemzType":
+                selectedBaselineItemzType = await BaselineItemzTypesService.__Single_BaselineItemzType_By_GUID_ID__Async(id) ?? new();
+                notFound = selectedBaselineItemzType.Id == Guid.Empty;
+                break;
+            case "BaselineItemz":
+                selectedBaselineItemz = await BaselineItemzService.__Single_BaselineItemz_By_GUID_ID__Async(id) ?? new();
+                notFound = selectedBaselineItemz.Id == Guid.Empty;
+                break;
+        }
+        if (notFound)
+        {
+            await ShowErrorMessage($"Could not find {type} with ID {id} in repository.");
+            await ResetSelection();
+        }
+    }
+
+    private bool HasSelectedRecord()
+    {
+        return (recordType == "Project" && selectedProject != null && selectedProject.Id != Guid.Empty)
+            || (recordType == "ItemzType" && selectedItemzType != null && selectedItemzType.Id != Guid.Empty)
+            || (recordType == "Itemz" && selectedItemz != null && selectedItemz.Id != Guid.Empty)
+            || (recordType == "Baseline" && selectedBaseline != null && selectedBaseline.Id != Guid.Empty)
+            || (recordType == "BaselineItemzType" && selectedBaselineItemzType != null && selectedBaselineItemzType.Id != Guid.Empty)
+            || (recordType == "BaselineItemz" && selectedBaselineItemz != null && selectedBaselineItemz.Id != Guid.Empty);
+    }
+
+    private async Task ExportRecord()
+    {
+        if (!HasSelectedRecord())
+        {
+            await ShowErrorMessage("Please select a valid record to export!");
+            return;
+        }
+
+        try
+        {
+            exportingOverlay = true;
+
+            // Use the value before resetting!
+            var (fileContent, fileName) = await ExportService.DownloadExportHierarchyAsync(selectedRecordId, exportIncludedBaselineItemzOnly);
+
+            exportingOverlay = false;
+            if (fileContent == null || fileContent.Length == 0)
+            {
+                await ShowErrorMessage("Export failed or no data returned from server.");
+                return;
+            }
+
+            await DownloadFile(fileContent, fileName ?? $"Export_{recordType}_{selectedRecordId}.json");
+            await ShowSuccessMessage("Export completed successfully!");
+
+            // Now it's safe to reset selection (including checkbox)
+            await ResetSelection();
+        }
+        catch (Exception ex)
+        {
+            exportingOverlay = false;
+            await ShowErrorMessage($"Could not export {recordType}: {ex.Message}");
+        }
+    }
+    private async Task ResetSelection()
+    {
+        selectedRecordId = Guid.Empty;
+        selectedProject = new();
+        selectedItemzType = new();
+        selectedItemz = new();
+        selectedBaseline = new();
+        selectedBaselineItemzType = new();
+        selectedBaselineItemz = new();
+        exportingOverlay = false;
+        exportIncludedBaselineItemzOnly = false;
+        await Task.CompletedTask;
+    }
+
+    private async Task DownloadFile(byte[] fileContent, string fileName)
+    {
+        await JS.InvokeVoidAsync("openRoseDownloadFile", fileName, "application/json", Convert.ToBase64String(fileContent));
+    }
+
+    private async Task ShowErrorMessage(string message)
+    {
+        var parameters = new DialogParameters { ["Message"] = message };
+        var options = new DialogOptions { CloseButton = false, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialogRef = DialogService.Show<ErrorDialog>("Error", parameters, options);
+        await dialogRef.Result;
+    }
+
+    private async Task ShowSuccessMessage(string message)
+    {
+        await DialogService.ShowMessageBox("SUCCESS", markupMessage: new MarkupString($"<p style=\"color: blue;\">{message}</p>"), yesText: "OK");
+    }
+}

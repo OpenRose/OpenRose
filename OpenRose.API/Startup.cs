@@ -161,14 +161,17 @@ namespace ItemzApp.API
             services.AddScoped<IBaselineItemzTraceRepository, BaselineItemzTraceRepository>();
             services.AddScoped<IHierarchyRepository, HierarchyRepository>();
             services.AddScoped<IBaselineHierarchyRepository, BaselineHierarchyRepository>();
+			services.AddScoped<IExportNodeMapper, ExportNodeMapper>();
+			services.AddScoped<IItemzTraceExportService, ItemzTraceExportService>();
+            services.AddScoped<IBaselineItemzTraceExportService, BaselineItemzTraceExportService>();
 
-            // EXPLANATION: As described in the Blog Article, https://purple.telstra.com/blog/a-better-way-of-resolving-ef-core-interceptors-with-dependency-injection
-            // we are now registering ItemzContextInterceptor in the DI Container as Singleton service 
-            // and then utilizing it in AddDbContext method to register this Interceptor via provider.GetRequiredService.
-            // This way, just in case, if an Interceptor needs other services from the DI Container like logger, etc. then
-            // it will be possible to include them in the constructor parameter of the Interceptor.
+			// EXPLANATION: As described in the Blog Article, https://purple.telstra.com/blog/a-better-way-of-resolving-ef-core-interceptors-with-dependency-injection
+			// we are now registering ItemzContextInterceptor in the DI Container as Singleton service 
+			// and then utilizing it in AddDbContext method to register this Interceptor via provider.GetRequiredService.
+			// This way, just in case, if an Interceptor needs other services from the DI Container like logger, etc. then
+			// it will be possible to include them in the constructor parameter of the Interceptor.
 
-            services.AddScoped<ItemzContexInterceptor>();
+			services.AddScoped<ItemzContexInterceptor>();
 
 			var connectionString = Configuration.GetConnectionString("ItemzContext");
 

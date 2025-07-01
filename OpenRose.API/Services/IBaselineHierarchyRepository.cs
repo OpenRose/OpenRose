@@ -19,9 +19,14 @@ namespace ItemzApp.API.Services
 
         public Task<IEnumerable<BaselineHierarchyIdRecordDetailsDTO?>> GetImmediateChildrenOfBaselineItemzHierarchy(Guid recordId);
 
-        public Task<RecordCountAndEnumerable<NestedBaselineHierarchyIdRecordDetailsDTO>> GetAllChildrenOfBaselineItemzHierarchy(Guid recordId);
+        //public Task<RecordCountAndEnumerable<NestedBaselineHierarchyIdRecordDetailsDTO>> GetAllChildrenOfBaselineItemzHierarchy(Guid recordId);
 
-        public Task<int> GetAllChildrenCountOfBaselineItemzHierarchy(Guid recordId);
+		public Task<RecordCountAndEnumerable<NestedBaselineHierarchyIdRecordDetailsDTO>> GetAllChildrenOfBaselineItemzHierarchy(
+			Guid recordId,
+			bool exportIncludedBaselineItemzOnly = false
+		);
+
+		public Task<int> GetAllChildrenCountOfBaselineItemzHierarchy(Guid recordId);
 
 
         // public Task<IEnumerable<NestedBaselineHierarchyIdRecordDetailsDTO?>> GetAllChildrenOfBaselineItemzHierarchy(Guid recordId);

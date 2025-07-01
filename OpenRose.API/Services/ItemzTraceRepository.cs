@@ -258,5 +258,14 @@ namespace ItemzApp.API.Services
             }
             return false;  // Could not be found
         }
-    }
+
+		public async Task<List<ItemzJoinItemzTrace>> GetAllTracesForItemzIdsAsync(IEnumerable<Guid> itemzIds)
+		{
+			var idSet = itemzIds.ToHashSet(); // for efficient lookup if needed
+			return await _itemzTraceContext.ItemzJoinItemzTrace!
+				.Where(t => idSet.Contains(t.FromItemzId) || idSet.Contains(t.ToItemzId))
+				.AsNoTracking()
+				.ToListAsync();
+		}
+	}
 }

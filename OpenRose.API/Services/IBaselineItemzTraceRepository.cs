@@ -30,5 +30,7 @@ namespace ItemzApp.API.Services
         public Task<int> GetToTraceCountByBaselineItemz(Guid baselineItemzId);
 
         public Task<int> GetAllFromAndToTracesCountByBaselineItemzIdAsync(Guid baselineItemzId);
-    }
+
+		Task<List<BaselineItemzJoinItemzTrace>> GetAllTracesForBaselineItemzIdsAsync(IEnumerable<Guid> baselineItemzIds);
+	}
 }

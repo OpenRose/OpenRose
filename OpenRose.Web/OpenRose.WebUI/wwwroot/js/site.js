@@ -213,3 +213,12 @@ document.addEventListener('DOMContentLoaded', function () {
 //    applyMarkdownEditorFullscreenStyles();
 //});
 
+// Helper for downloading files via JS interop with Blazor
+window.openRoseDownloadFile = (fileName, mimeType, base64Data) => {
+    var link = document.createElement('a');
+    link.download = fileName;
+    link.href = "data:" + mimeType + ";base64," + base64Data;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
