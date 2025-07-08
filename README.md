@@ -40,10 +40,13 @@ BUT primarily, **Itemz** is nothing but Requirements / Needs / Wants / Notes / F
 
 ## Overview of Current State
 
-Latest released version 0.1.2-243
+Latest released version 0.2.0-32
 
 Main New Feature
 
+ - Export Requirements Data - [Demo](https://www.youtube.com/watch?v=1Y9MAcyOjWg)
+
+version 0.1.2-243
  - Copy Requirements Data - [Demo](https://www.youtube.com/watch?v=2bExGaaQSVc)
 
 Feature list
