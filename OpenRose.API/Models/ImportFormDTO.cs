@@ -2,8 +2,9 @@
 // Licensed under the Apache License, Version 2.0.
 // See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 
+using Microsoft.AspNetCore.Http;
 using System;
-
+using System.ComponentModel.DataAnnotations;
 
 namespace ItemzApp.API.Models
 {
@@ -11,12 +12,19 @@ namespace ItemzApp.API.Models
 	/// Form data for importing OpenRose JSON along with placement information.
 	/// Used to bind multipart/form-data content for file upload + metadata.
 	/// </summary>
-	public class ImportDataPlacementDTO
+	public class ImportFormDTO
 	{
+		/// <summary>
+		/// JSON file exported from OpenRose to be imported.
+		/// </summary>
+		[Required]
+		public IFormFile File { get; set; }
+
 		/// <summary>
 		/// The parent record under which the entity/entities will be imported.
 		/// It's a required property to identify parent record.
 		/// </summary>
+		[Required]
 		public Guid TargetParentId { get; set; }
 
 		/// <summary>
