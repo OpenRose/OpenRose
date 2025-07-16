@@ -103,15 +103,13 @@ namespace ItemzApp.API.Controllers
 			if (!string.Equals(detectedType, "Project", StringComparison.OrdinalIgnoreCase) &&
 				!string.Equals(detectedType, "Baseline", StringComparison.OrdinalIgnoreCase))
 			{
-				if (placementDto.TargetParentId == Guid.Empty)
-				{
-					return BadRequest("TargetParentId is required and must be a valid non-empty GUID for this type.");
-				}
+
 
 				var dtoValidatorResult = ImportDataPlacementDTOValidator.ValidatePlacement(detectedType, placementDto);
 				if (!dtoValidatorResult.IsValid)
 				{
-					Console.WriteLine($"Validation failed: {dtoValidatorResult.ErrorMessage}");
+					_logger.LogWarning("Import placement validation failed: {Error}", dtoValidatorResult.ErrorMessage);
+					return BadRequest(dtoValidatorResult.ErrorMessage);
 				}
 			}
 

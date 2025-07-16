@@ -17,7 +17,7 @@ namespace ItemzApp.API.Models
 		/// The parent record under which the entity/entities will be imported.
 		/// It's a required property to identify parent record.
 		/// </summary>
-		public Guid TargetParentId { get; set; }
+		public Guid? TargetParentId { get; set; }
 
 		/// <summary>
 		/// If true, import occurs at the bottom of the parent's child list.

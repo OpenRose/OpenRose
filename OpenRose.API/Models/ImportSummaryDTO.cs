@@ -8,5 +8,6 @@ namespace ItemzApp.API.Models
 	{
 		public int TotalCreated { get; set; }
 		public int Depth { get; set; }
+		public int TotalTraces { get; set; }
 	}
 }
