@@ -97,6 +97,12 @@ namespace ItemzApp.API.Services
 
 				var itemzRecord = repositoryExportDto.Itemz.First();
 				var itemzDto = itemzRecord.Itemz;
+
+				// EXPLANATION: Purpose of first creating 'tempDto' of type 'CreateItemzDTO'
+				// is to make sure that we do not map ID, Created By, Created Date fields and rather 
+				// we remove data related to such properties that are supposed to be created manually 
+				// at the time of creating new record. So we had to introduce 'tempDto'.
+
 				var tempDto = _mapper.Map<CreateItemzDTO>(itemzDto);
 				var rootEntity = _mapper.Map<Itemz>(tempDto);
 
@@ -184,6 +190,12 @@ namespace ItemzApp.API.Services
 		{
 			var itemzDto = itemzExportNode.Itemz;
 			var originalId = itemzDto.Id;
+
+			// EXPLANATION: Purpose of first creating 'tempItemzDTO' of type 'CreateItemzDTO'
+			// is to make sure that we do not map ID, Created By, Created Date fields and rather 
+			// we remove data related to such properties that are supposed to be created manually 
+			// at the time of creating new record. So we had to introduce 'tempItemzDTO'.
+
 
 			var tempItemzDTO = _mapper.Map<CreateItemzDTO>(itemzDto);
 			var itemzEntity = _mapper.Map<Itemz>(tempItemzDTO);
