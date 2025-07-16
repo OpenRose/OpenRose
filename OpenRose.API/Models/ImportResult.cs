@@ -13,5 +13,6 @@ namespace ItemzApp.API.Models
 		public Guid? ImportedRootId { get; set; }
 		public ImportSummaryDTO? ImportSummary { get; set; }
 		public List<string>? Errors { get; set; }
+		public Dictionary<Guid, Guid> ItemzIdMapping { get; set; } = new();
 	}
 }

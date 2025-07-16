@@ -14,6 +14,7 @@ using Newtonsoft.Json.Schema;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -130,7 +131,11 @@ namespace ItemzApp.API.Controllers
 				{
 					message = "Import successful.",
 					importedRootId = result.ImportedRootId,
-					importSummary = result.ImportSummary
+					importSummary = result.ImportSummary,
+					importedRecordIdMapping = result.ItemzIdMapping.Select(kvp => new {
+						originalId = kvp.Key,
+						newId = kvp.Value
+					})
 				});
 			}
 			catch (Exception ex)

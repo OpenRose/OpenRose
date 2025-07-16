@@ -188,6 +188,7 @@ namespace ItemzApp.API.Services
 					Depth = maxDepth,
 					TotalTraces = traceCreated
 				};
+				result.ItemzIdMapping = idMap;
 			}
 			catch (Exception ex)
 			{
