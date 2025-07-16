@@ -116,7 +116,16 @@ namespace ItemzApp.API.Controllers
 
 			try
 			{
-				var result = await _importService.ImportAsync(repositoryExportDto, detectedType, placementDto);
+				ImportResult result;
+
+				if (string.Equals(detectedType, "ItemzType", StringComparison.OrdinalIgnoreCase))
+				{
+					result = await _importService.ImportItemzTypeHierarchyAsync(repositoryExportDto, placementDto);
+				}
+				else
+				{
+					result = await _importService.ImportAsync(repositoryExportDto, detectedType, placementDto);
+				}
 
 				if (!result.Success)
 				{
@@ -143,6 +152,7 @@ namespace ItemzApp.API.Controllers
 				_logger.LogError(ex, "Exception during import process.");
 				return StatusCode(StatusCodes.Status500InternalServerError, "Unexpected error during import.");
 			}
+
 		}
 	}
 }

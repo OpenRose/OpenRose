@@ -15,16 +15,19 @@ namespace ItemzApp.API.Services
 {
 	public class ImportService : IImportService
 	{
+		private readonly IItemzTypeRepository _itemzTypeRepository;
 		private readonly IItemzRepository _itemzRepository; 
 		private readonly IItemzTraceRepository _traceRepository; 
 		private readonly ILogger<ImportService> _logger;
 		private readonly IMapper _mapper;
 
-		public ImportService(IItemzRepository itemzRepository,
+		public ImportService(IItemzTypeRepository itemzTypeRepository, 
+							IItemzRepository itemzRepository,
 							 IItemzTraceRepository traceRepository,
 							 ILogger<ImportService> logger,
 							 IMapper mapper)
 		{
+			_itemzTypeRepository = itemzTypeRepository;
 			_itemzRepository = itemzRepository;
 			_traceRepository = traceRepository;
 			_logger = logger;
@@ -147,35 +150,8 @@ namespace ItemzApp.API.Services
 					}
 				}
 
-				// Import trace links
-				int traceCreated = 0;
-
-				foreach (var trace in repositoryExportDto.ItemzTraces ?? Enumerable.Empty<ItemzTraceDTO>())
-				{
-					if (idMap.TryGetValue(trace.FromTraceItemzId, out var fromId) &&
-						idMap.TryGetValue(trace.ToTraceItemzId, out var toId))
-					{
-						var traceDto = new ItemzTraceDTO
-						{
-							FromTraceItemzId = fromId,
-							ToTraceItemzId = toId
-						};
-						await _traceRepository.EstablishTraceBetweenItemzAsync(traceDto);
-						traceCreated++;
-					}
-					else
-					{
-						_logger.LogWarning("Skipping trace due to missing Itemz ID mapping: {From} -> {To}",
-							trace.FromTraceItemzId, trace.ToTraceItemzId);
-					}
-				}
-
-				bool traceSaved = await _traceRepository.SaveAsync();
-				if (!traceSaved)
-				{
-					_logger.LogWarning("Itemz trace save failed after import.");
-					result.Errors.Add("Warning: Trace links may not have been saved.");
-				}
+				// Process trace links
+				int traceCreated = await ProcessItemzTracesAsync(repositoryExportDto.ItemzTraces, idMap, result.Errors);
 
 				_logger.LogInformation("Imported {Count} Itemz records at depth {Depth}. Trace links created: {TraceCount}. Root ID: {RootId}",
 					totalCreated, maxDepth, traceCreated, rootEntity.Id);
@@ -201,10 +177,10 @@ namespace ItemzApp.API.Services
 
 
 		private async Task<(Guid RootId, int TotalCreated, int Depth)> ImportItemzRecursivelyWithStats(
-			ItemzExportNode itemzExportNode,
-			Guid? parentItemzId,
-			int currentDepth,
-			Dictionary<Guid, Guid> idMap)
+									ItemzExportNode itemzExportNode,
+									Guid? parentItemzId,
+									int currentDepth,
+									Dictionary<Guid, Guid> idMap)
 		{
 			var itemzDto = itemzExportNode.Itemz;
 			var originalId = itemzDto.Id;
@@ -239,6 +215,166 @@ namespace ItemzApp.API.Services
 			}
 
 			return (itemzEntity.Id, totalCreated, maxDepth);
+		}
+
+
+
+
+
+		public async Task<ImportResult> ImportItemzTypeHierarchyAsync(
+			RepositoryExportDTO repositoryExportDto,
+			ImportDataPlacementDTO placementDto)
+		{
+			var result = new ImportResult
+			{
+				Success = false,
+				Errors = new List<string>()
+			};
+
+			if (repositoryExportDto.ItemzTypes == null || repositoryExportDto.ItemzTypes.Count != 1)
+			{
+				result.Errors.Add("Expected exactly one ItemzType to import.");
+				return result;
+			}
+
+			try
+			{
+				// Resolve ProjectId based on placement method
+				Guid? resolvedProjectId;
+
+				if (placementDto.TargetParentId.HasValue && placementDto.TargetParentId.Value != Guid.Empty)
+				{
+					resolvedProjectId = placementDto.TargetParentId;
+				}
+				else if (placementDto.FirstItemzTypeId.HasValue)
+				{
+					var siblingItemzType = await _itemzTypeRepository.GetItemzTypeAsync(placementDto.FirstItemzTypeId.Value);
+					if (siblingItemzType == null)
+					{
+						result.Errors.Add($"Could not find ItemzType with ID '{placementDto.FirstItemzTypeId.Value}' to resolve ProjectId.");
+						return result;
+					}
+					resolvedProjectId = siblingItemzType.ProjectId;
+				}
+				else
+				{
+					result.Errors.Add("Project ID could not be resolved for ItemzType import.");
+					return result;
+				}
+
+				// Create ItemzType entity
+				var itemzTypeRecord = repositoryExportDto.ItemzTypes.First();
+				var itemzTypeDto = itemzTypeRecord.ItemzType;
+
+				var createDto = new CreateItemzTypeDTO
+				{
+					ProjectId = (Guid)resolvedProjectId,
+					Name = itemzTypeDto.Name,
+					Status = itemzTypeDto.Status,
+					Description = itemzTypeDto.Description
+				};
+
+				var itemzTypeEntity = _mapper.Map<ItemzType>(createDto);
+				_itemzTypeRepository.AddItemzType(itemzTypeEntity);
+				await _itemzTypeRepository.SaveAsync();
+
+				await _itemzTypeRepository.AddNewItemzTypeHierarchyAsync(itemzTypeEntity);
+				await _itemzTypeRepository.SaveAsync();
+
+				// Place ItemzType into hierarchy
+				if (placementDto.FirstItemzTypeId.HasValue && placementDto.SecondItemzTypeId.HasValue)
+				{
+					await _itemzTypeRepository.MoveItemzTypeBetweenTwoHierarchyRecordsAsync(
+						placementDto.FirstItemzTypeId.Value,
+						placementDto.SecondItemzTypeId.Value,
+						itemzTypeEntity.Id);
+				}
+				else if (!placementDto.AtBottomOfChildNodes)
+				{
+					await _itemzTypeRepository.MoveItemzTypeToAnotherProjectAsync(
+													movingItemzTypeId: itemzTypeEntity.Id,
+													targetProjectId: (Guid)resolvedProjectId,
+													atBottomOfChildNodes: placementDto.AtBottomOfChildNodes
+													);
+				}
+				await _itemzTypeRepository.SaveAsync();
+
+				// Import all Itemz under this ItemzType
+				var idMap = new Dictionary<Guid, Guid>
+				{
+					[itemzTypeDto.Id] = itemzTypeEntity.Id
+				};
+
+				int totalCreated = 0;
+				int maxDepth = 1;
+
+				foreach (var itemzNode in itemzTypeRecord.Itemz ?? Enumerable.Empty<ItemzExportNode>())
+				{
+					var (rootId, created, depth) = await ImportItemzRecursivelyWithStats(itemzNode, itemzTypeEntity.Id, 2, idMap);
+					totalCreated += created;
+					maxDepth = Math.Max(maxDepth, depth);
+				}
+
+				// Process trace links
+				int traceCreated = await ProcessItemzTracesAsync(repositoryExportDto.ItemzTraces, idMap, result.Errors);
+
+				_logger.LogInformation("Imported 1 ItemzType '{Name}' with {Count} Itemz at depth {Depth}. Traces: {Traces}. Root ID: {RootId}",
+					itemzTypeEntity.Name, totalCreated, maxDepth, traceCreated, itemzTypeEntity.Id);
+
+				result.Success = true;
+				result.ImportedRootId = itemzTypeEntity.Id;
+				result.ImportSummary = new ImportSummaryDTO
+				{
+					TotalCreated = totalCreated,
+					Depth = maxDepth,
+					TotalTraces = traceCreated
+				};
+				result.ItemzIdMapping = idMap;
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, "Failed to import ItemzType.");
+				result.Errors.Add("Internal error during ItemzType import.");
+			}
+
+			return result;
+		}
+
+
+		private async Task<int> ProcessItemzTracesAsync(
+			IEnumerable<ItemzTraceDTO>? traceDtos,
+			Dictionary<Guid, Guid> idMap,
+			List<string> errorList)
+		{
+			int traceCreated = 0;
+
+			foreach (var trace in traceDtos ?? Enumerable.Empty<ItemzTraceDTO>())
+			{
+				if (idMap.TryGetValue(trace.FromTraceItemzId, out var fromId) &&
+					idMap.TryGetValue(trace.ToTraceItemzId, out var toId))
+				{
+					await _traceRepository.EstablishTraceBetweenItemzAsync(new ItemzTraceDTO
+					{
+						FromTraceItemzId = fromId,
+						ToTraceItemzId = toId
+					});
+					traceCreated++;
+				}
+				else
+				{
+					_logger.LogWarning("Skipping trace due to missing Itemz ID mapping: {From} -> {To}",
+						trace.FromTraceItemzId, trace.ToTraceItemzId);
+				}
+			}
+
+			bool traceSaved = await _traceRepository.SaveAsync();
+			if (!traceSaved)
+			{
+				errorList.Add("Warning: Trace links may not have been saved.");
+				_logger.LogWarning("Trace save failed after import.");
+			}
+
+			return traceCreated;
 		}
 
 	}

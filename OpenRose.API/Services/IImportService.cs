@@ -4,13 +4,21 @@ using System.Threading.Tasks;
 
 namespace ItemzApp.API.Services
 {
-	/// <summary>
-	/// Interface for the import service.
-	/// </summary>
 	public interface IImportService
 	{
-		Task<ImportResult> ImportAsync(RepositoryExportDTO repositoryExportDto,
-										string detectedType,
-										ImportDataPlacementDTO placementDto);
+		/// <summary>
+		/// Imports a hierarchy starting at an Itemz record.
+		/// </summary>
+		Task<ImportResult> ImportAsync(
+			RepositoryExportDTO repositoryExportDto,
+			string detectedType,
+			ImportDataPlacementDTO placementDto);
+
+		/// <summary>
+		/// Imports a hierarchy starting at an ItemzType record.
+		/// </summary>
+		Task<ImportResult> ImportItemzTypeHierarchyAsync(
+			RepositoryExportDTO repositoryExportDto,
+			ImportDataPlacementDTO placementDto);
 	}
 }
