@@ -20,5 +20,13 @@ namespace ItemzApp.API.Services
 		Task<ImportResult> ImportItemzTypeHierarchyAsync(
 			RepositoryExportDTO repositoryExportDto,
 			ImportDataPlacementDTO placementDto);
+
+		/// <summary>
+		/// Imports a hierarchy starting at a Project record.
+		/// </summary>
+		Task<ImportResult> ImportProjectHierarchyAsync(
+			RepositoryExportDTO repositoryExportDto,
+			ImportDataPlacementDTO placementDto);
+
 	}
 }

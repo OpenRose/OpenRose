@@ -9,24 +9,28 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace ItemzApp.API.Services
 {
 	public class ImportService : IImportService
 	{
+		private readonly IProjectRepository _projectRepository;
 		private readonly IItemzTypeRepository _itemzTypeRepository;
 		private readonly IItemzRepository _itemzRepository; 
 		private readonly IItemzTraceRepository _traceRepository; 
 		private readonly ILogger<ImportService> _logger;
 		private readonly IMapper _mapper;
 
-		public ImportService(IItemzTypeRepository itemzTypeRepository, 
+		public ImportService(IProjectRepository projectRepository, 
+							IItemzTypeRepository itemzTypeRepository, 
 							IItemzRepository itemzRepository,
 							 IItemzTraceRepository traceRepository,
 							 ILogger<ImportService> logger,
 							 IMapper mapper)
 		{
+			_projectRepository = projectRepository;
 			_itemzTypeRepository = itemzTypeRepository;
 			_itemzRepository = itemzRepository;
 			_traceRepository = traceRepository;
@@ -486,6 +490,120 @@ namespace ItemzApp.API.Services
 		}
 
 
+
+
+		public async Task<ImportResult> ImportProjectHierarchyAsync(
+			RepositoryExportDTO repositoryExportDto,
+			ImportDataPlacementDTO placementDto)
+		{
+			var result = new ImportResult
+			{
+				Success = false,
+				Errors = new List<string>()
+			};
+
+			if (repositoryExportDto.Projects == null || repositoryExportDto.Projects.Count != 1)
+			{
+				result.Errors.Add("Expected exactly one Project to import.");
+				return result;
+			}
+
+			try
+			{
+				var projectRecord = repositoryExportDto.Projects.First();
+				var idMap = new Dictionary<Guid, Guid>();
+
+				var (projectId, totalCreated, maxDepth) = await ImportSingleProjectAsync(projectRecord, idMap);
+
+				// 📎 Process trace links across all Itemz in the project
+				int traceCreated = await ProcessItemzTracesAsync(repositoryExportDto.ItemzTraces, idMap, result.Errors);
+
+				_logger.LogInformation("Imported 1 Project '{Name}' with {Count} Itemz across {Types} ItemzTypes at depth {Depth}. Traces: {Traces}. Root ID: {RootId}",
+					projectRecord.Project.Name,
+					totalCreated,
+					projectRecord.ItemzTypes?.Count ?? 0,
+					maxDepth,
+					traceCreated,
+					projectId);
+
+				result.Success = true;
+				result.ImportedRootId = projectId;
+				result.ImportSummary = new ImportSummaryDTO
+				{
+					TotalCreated = totalCreated,
+					Depth = maxDepth,
+					TotalTraces = traceCreated
+				};
+				result.ItemzIdMapping = idMap;
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, "Failed to import Project.");
+				result.Errors.Add("Internal error during Project import.");
+			}
+
+			return result;
+		}
+
+
+
+
+
+
+		private async Task<(Guid ProjectId, int TotalCreated, int MaxDepth)> ImportSingleProjectAsync(
+			ProjectExportNode projectNode,
+			Dictionary<Guid, Guid> idMap)
+		{
+			var projectDto = projectNode.Project;
+
+			var safeProjectName = GenerateImportSafeProjectName(projectDto.Name);
+
+
+			var createDto = new CreateProjectDTO
+			{
+				Name = safeProjectName,
+				Status = projectDto.Status,
+				Description = projectDto.Description,
+				// CreatedBy = projectDto.CreatedBy,
+				// CreatedDate = projectDto.CreatedDate
+			};
+
+			var projectEntity = _mapper.Map<Project>(createDto);
+			_projectRepository.AddProject(projectEntity);
+			await _projectRepository.SaveAsync();
+
+			try
+			{
+				await _projectRepository.AddNewProjectHierarchyAsync(projectEntity);
+				await _projectRepository.SaveAsync();
+			}
+			catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
+			{
+				_logger.LogError(dbUpdateException, "Failed to add project hierarchy for imported project '{Name}'", projectEntity.Name);
+				throw new InvalidOperationException($"Could not establish hierarchy for project '{projectEntity.Name}'.", dbUpdateException);
+			}
+
+			idMap[projectDto.Id] = projectEntity.Id;
+
+			int totalCreated = 0;
+			int maxDepth = 1;
+
+			foreach (var itemzTypeNode in projectNode.ItemzTypes ?? Enumerable.Empty<ItemzTypeExportNode>())
+			{
+				var (_, created, depth) = await ImportSingleItemzTypeAsync(
+					itemzTypeNode,
+					projectEntity.Id,
+					idMap);
+
+				totalCreated += created;
+				maxDepth = Math.Max(maxDepth, depth);
+			}
+
+			return (projectEntity.Id, totalCreated, maxDepth);
+		}
+
+
+
 		private async Task<int> ProcessItemzTracesAsync(
 			IEnumerable<ItemzTraceDTO>? traceDtos,
 			Dictionary<Guid, Guid> idMap,
@@ -521,6 +639,32 @@ namespace ItemzApp.API.Services
 
 			return traceCreated;
 		}
+
+		private string GenerateImportSafeProjectName(string originalName)
+		{
+			const int maxLength = 128;
+			string newSuffix = $"IMP {Random.Shared.Next(10000, 99999)}";
+
+			string trimmedName = originalName?.Trim() ?? "";
+
+			// Detect and remove existing IMP suffix (e.g., "IMP 31244")
+			var impSuffixRegex = new Regex(@"IMP\s\d{5}$", RegexOptions.IgnoreCase);
+			if (impSuffixRegex.IsMatch(trimmedName))
+			{
+				trimmedName = impSuffixRegex.Replace(trimmedName, "").TrimEnd();
+			}
+
+			// Make room for the new suffix
+			int availableLength = maxLength - newSuffix.Length - 1; // space between name and suffix
+			if (trimmedName.Length > availableLength)
+			{
+				trimmedName = trimmedName.Substring(0, availableLength);
+			}
+
+			return $"{trimmedName} {newSuffix}";
+		}
+
+
 
 	}
 }

@@ -118,7 +118,11 @@ namespace ItemzApp.API.Controllers
 			{
 				ImportResult result;
 
-				if (string.Equals(detectedType, "ItemzType", StringComparison.OrdinalIgnoreCase))
+				if (string.Equals(detectedType, "Project", StringComparison.OrdinalIgnoreCase))
+				{
+					result = await _importService.ImportProjectHierarchyAsync(repositoryExportDto, placementDto);
+				}
+				else if (string.Equals(detectedType, "ItemzType", StringComparison.OrdinalIgnoreCase))
 				{
 					result = await _importService.ImportItemzTypeHierarchyAsync(repositoryExportDto, placementDto);
 				}
@@ -126,6 +130,7 @@ namespace ItemzApp.API.Controllers
 				{
 					result = await _importService.ImportAsync(repositoryExportDto, detectedType, placementDto);
 				}
+
 
 				if (!result.Success)
 				{
