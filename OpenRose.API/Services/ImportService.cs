@@ -452,13 +452,88 @@ namespace ItemzApp.API.Services
 
 
 
+		//private async Task<(Guid RootId, int TotalCreated, int MaxDepth)> ImportSingleItemzTypeAsync(
+		//														ItemzTypeExportNode itemzTypeNode,
+		//														Guid targetProjectId,
+		//														Dictionary<Guid, Guid> idMap)
+		//{
+		//	var itemzTypeDto = itemzTypeNode.ItemzType;
+
+		//	var createDto = new CreateItemzTypeDTO
+		//	{
+		//		ProjectId = targetProjectId,
+		//		Name = itemzTypeDto.Name,
+		//		Status = itemzTypeDto.Status,
+		//		Description = itemzTypeDto.Description
+		//	};
+
+		//	var itemzTypeEntity = _mapper.Map<ItemzType>(createDto);
+		//	_itemzTypeRepository.AddItemzType(itemzTypeEntity);
+		//	await _itemzTypeRepository.SaveAsync();
+
+		//	await _itemzTypeRepository.AddNewItemzTypeHierarchyAsync(itemzTypeEntity);
+		//	await _itemzTypeRepository.SaveAsync();
+
+		//	idMap[itemzTypeDto.Id] = itemzTypeEntity.Id;
+
+		//	int totalCreated = 0;
+		//	int maxDepth = 1;
+
+		//	foreach (var itemzNode in itemzTypeNode.Itemz ?? Enumerable.Empty<ItemzExportNode>())
+		//	{
+		//		var (_, created, depth) = await ImportItemzRecursivelyWithStats(itemzNode, itemzTypeEntity.Id, 2, idMap);
+		//		totalCreated += created;
+		//		maxDepth = Math.Max(maxDepth, depth);
+		//	}
+
+		//	return (itemzTypeEntity.Id, totalCreated, maxDepth);
+		//}
+
+
 		private async Task<(Guid RootId, int TotalCreated, int MaxDepth)> ImportSingleItemzTypeAsync(
-																ItemzTypeExportNode itemzTypeNode,
-																Guid targetProjectId,
-																Dictionary<Guid, Guid> idMap)
+													ItemzTypeExportNode itemzTypeNode,
+													Guid targetProjectId,
+													Dictionary<Guid, Guid> idMap)
 		{
 			var itemzTypeDto = itemzTypeNode.ItemzType;
 
+			// Check for System "Parking Lot"
+			if (itemzTypeDto.Name == "Parking Lot" && itemzTypeDto.IsSystem)
+			{
+				var existingItemzTypes = await _projectRepository.GetItemzTypesAsync(targetProjectId);
+
+				var systemParkingLot = existingItemzTypes?
+					.FirstOrDefault(it =>
+						string.Equals(it.Name, "Parking Lot", StringComparison.OrdinalIgnoreCase) &&
+						it.IsSystem);
+
+				if (systemParkingLot != null)
+				{
+					idMap[itemzTypeDto.Id] = systemParkingLot.Id;
+
+					int totalCreated = 0;
+					int maxDepth = 1;
+
+					foreach (var itemzNode in itemzTypeNode.Itemz ?? Enumerable.Empty<ItemzExportNode>())
+					{
+						var (_, created, depth) = await ImportItemzRecursivelyWithStats(
+							itemzNode,
+							systemParkingLot.Id,
+							2,
+							idMap);
+
+						totalCreated += created;
+						maxDepth = Math.Max(maxDepth, depth);
+					}
+
+					// Log merge event
+					_logger.LogInformation("Merged imported Itemz into existing System 'Parking Lot' ItemzType with ID {Id}", systemParkingLot.Id);
+
+					return (systemParkingLot.Id, totalCreated, maxDepth);
+				}
+			}
+
+			// Normal creation flow
 			var createDto = new CreateItemzTypeDTO
 			{
 				ProjectId = targetProjectId,
@@ -476,19 +551,23 @@ namespace ItemzApp.API.Services
 
 			idMap[itemzTypeDto.Id] = itemzTypeEntity.Id;
 
-			int totalCreated = 0;
-			int maxDepth = 1;
+			int normalCreated = 0;
+			int normalDepth = 1;
 
 			foreach (var itemzNode in itemzTypeNode.Itemz ?? Enumerable.Empty<ItemzExportNode>())
 			{
-				var (_, created, depth) = await ImportItemzRecursivelyWithStats(itemzNode, itemzTypeEntity.Id, 2, idMap);
-				totalCreated += created;
-				maxDepth = Math.Max(maxDepth, depth);
+				var (_, created, depth) = await ImportItemzRecursivelyWithStats(
+					itemzNode,
+					itemzTypeEntity.Id,
+					2,
+					idMap);
+
+				normalCreated += created;
+				normalDepth = Math.Max(normalDepth, depth);
 			}
 
-			return (itemzTypeEntity.Id, totalCreated, maxDepth);
+			return (itemzTypeEntity.Id, normalCreated, normalDepth);
 		}
-
 
 
 
