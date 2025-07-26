@@ -329,45 +329,6 @@ namespace ItemzApp.API.Services
 		}
 
 
-
-		//private async Task<(Guid RootId, int TotalCreated, int MaxDepth)> ImportSingleItemzTypeAsync(
-		//														ItemzTypeExportNode itemzTypeNode,
-		//														Guid targetProjectId,
-		//														Dictionary<Guid, Guid> idMap)
-		//{
-		//	var itemzTypeDto = itemzTypeNode.ItemzType;
-
-		//	var createDto = new CreateItemzTypeDTO
-		//	{
-		//		ProjectId = targetProjectId,
-		//		Name = itemzTypeDto.Name,
-		//		Status = itemzTypeDto.Status,
-		//		Description = itemzTypeDto.Description
-		//	};
-
-		//	var itemzTypeEntity = _mapper.Map<ItemzType>(createDto);
-		//	_itemzTypeRepository.AddItemzType(itemzTypeEntity);
-		//	await _itemzTypeRepository.SaveAsync();
-
-		//	await _itemzTypeRepository.AddNewItemzTypeHierarchyAsync(itemzTypeEntity);
-		//	await _itemzTypeRepository.SaveAsync();
-
-		//	idMap[itemzTypeDto.Id] = itemzTypeEntity.Id;
-
-		//	int totalCreated = 0;
-		//	int maxDepth = 1;
-
-		//	foreach (var itemzNode in itemzTypeNode.Itemz ?? Enumerable.Empty<ItemzExportNode>())
-		//	{
-		//		var (_, created, depth) = await ImportItemzRecursivelyWithStats(itemzNode, itemzTypeEntity.Id, 2, idMap);
-		//		totalCreated += created;
-		//		maxDepth = Math.Max(maxDepth, depth);
-		//	}
-
-		//	return (itemzTypeEntity.Id, totalCreated, maxDepth);
-		//}
-
-
 		private async Task<(Guid RootId, int TotalCreated, int MaxDepth)> ImportSingleItemzTypeAsync(
 													ItemzTypeExportNode itemzTypeNode,
 													Guid targetProjectId,
