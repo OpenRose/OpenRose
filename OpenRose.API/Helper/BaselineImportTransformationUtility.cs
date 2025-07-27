@@ -11,6 +11,30 @@ namespace ItemzApp.API.Helper
 {
 	public static class BaselineImportTransformationUtility
 	{
+
+		public static ItemzTypeExportNode TransformBaselineItemzTypeToItemzTypeNode(
+											BaselineItemzTypeExportNode baselineNode)
+		{
+			return new ItemzTypeExportNode
+			{
+				ItemzType = new GetItemzTypeDTO
+				{
+					Id = baselineNode.BaselineItemzType.Id,
+					Name = baselineNode.BaselineItemzType.Name,
+					Status = baselineNode.BaselineItemzType.Status,
+					Description = baselineNode.BaselineItemzType.Description,
+					CreatedBy = baselineNode.BaselineItemzType.CreatedBy,
+					CreatedDate = baselineNode.BaselineItemzType.CreatedDate,
+					IsSystem = baselineNode.BaselineItemzType.IsSystem
+				},
+				Itemz = baselineNode.BaselineItemz?
+					.Select(TransformBaselineNodeToItemzNode) // this already exists
+					.ToList()
+			};
+		}
+
+
+
 		public static GetItemzDTO TransformBaselineItemzToItemz(GetBaselineItemzDTO baselineItemz)
 		{
 			return new GetItemzDTO
