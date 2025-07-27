@@ -55,5 +55,14 @@ namespace ItemzApp.API.Models
 		/// Must be paired with FirstItemzId. Mutually exclusive with AtBottomOfChildNodes.
 		/// </summary>
 		public Guid? SecondItemzId { get; set; }
+
+
+		/// <summary>
+		/// Determines whether BaselineItemz marked as excluded (`isIncluded = false`)
+		/// should still be imported into the LIVE database. Default is false, which 
+		/// skips excluded records during import.
+		/// </summary>
+		public bool ImportExcludedBaselineItemz { get; set; } = false;
+
 	}
 }
