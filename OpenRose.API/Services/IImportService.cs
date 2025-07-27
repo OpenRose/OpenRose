@@ -1,5 +1,6 @@
 ﻿using ItemzApp.API.Controllers;
 using ItemzApp.API.Models;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace ItemzApp.API.Services
@@ -25,6 +26,13 @@ namespace ItemzApp.API.Services
 		/// Imports a hierarchy starting at a Project record.
 		/// </summary>
 		Task<ImportResult> ImportProjectHierarchyAsync(
+			RepositoryExportDTO repositoryExportDto,
+			ImportDataPlacementDTO placementDto);
+
+		/// <summary>
+		/// Imports a hierarchy of BaselineItemz records.
+		/// </summary>
+		Task<ImportResult> ImportBaselineItemzAsync(
 			RepositoryExportDTO repositoryExportDto,
 			ImportDataPlacementDTO placementDto);
 

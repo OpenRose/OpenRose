@@ -5,6 +5,7 @@
 using AutoMapper;
 using ItemzApp.API.Entities;
 using ItemzApp.API.Models;
+using ItemzApp.API.Helper;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -522,10 +523,35 @@ namespace ItemzApp.API.Services
 
 
 
+
+		public async Task<ImportResult> ImportBaselineItemzAsync(
+										RepositoryExportDTO repositoryExportDto,
+										ImportDataPlacementDTO placementDto)
+		{
+			// Transform BaselineItemz hierarchy to Itemz-compatible format
+			var itemzNodes = repositoryExportDto.BaselineItemz
+				.Select(BaselineImportTransformationUtility.TransformBaselineNodeToItemzNode)
+				.ToList();
+
+			var itemzTraces = BaselineImportTransformationUtility.TransformBaselineTracesToItemzTraces(repositoryExportDto.BaselineItemzTraces ?? new List<BaselineItemzTraceDTO>());
+
+			var convertedRepository = new RepositoryExportDTO
+			{
+				Itemz = itemzNodes,
+				ItemzTraces = itemzTraces
+			};
+
+			// Call into existing Itemz import logic
+			return await ImportAsync(convertedRepository, "Itemz", placementDto);
+		}
+
+
+
+
 		private async Task<int> ProcessItemzTracesAsync(
-			IEnumerable<ItemzTraceDTO>? traceDtos,
-			Dictionary<Guid, Guid> idMap,
-			List<string> errorList)
+								IEnumerable<ItemzTraceDTO>? traceDtos,
+								Dictionary<Guid, Guid> idMap,
+								List<string> errorList)
 		{
 			int traceCreated = 0;
 
