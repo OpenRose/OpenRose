@@ -598,6 +598,46 @@ namespace ItemzApp.API.Services
 		}
 
 
+		public async Task<ImportResult> ImportBaselineAsProjectAsync(
+			RepositoryExportDTO repositoryExportDto,
+			ImportDataPlacementDTO placementDto)
+		{
+			var result = new ImportResult();
+
+			if (repositoryExportDto?.Baselines == null || !repositoryExportDto.Baselines.Any())
+			{
+				result.Success = false;
+				result.Errors = new List<string> { "No Baselines found to import." };
+				return result;
+			}
+
+			try
+			{
+				var projectNodes = repositoryExportDto.Baselines
+					.Select(BaselineImportTransformationUtility.TransformBaselineToProject)
+					.ToList();
+
+				var convertedRepository = new RepositoryExportDTO
+				{
+					Projects = projectNodes,
+					ItemzTraces = BaselineImportTransformationUtility
+						.TransformBaselineTracesToItemzTraces(repositoryExportDto.BaselineItemzTraces ?? new List<BaselineItemzTraceDTO>())
+				};
+
+				return await ImportProjectHierarchyAsync(convertedRepository, placementDto);
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, "Failed to import Baseline as Project.");
+				return new ImportResult
+				{
+					Success = false,
+					Errors = new List<string> { "Error occurred during Baseline import." }
+				};
+			}
+		}
+
+
 
 
 		private async Task<int> ProcessItemzTracesAsync(

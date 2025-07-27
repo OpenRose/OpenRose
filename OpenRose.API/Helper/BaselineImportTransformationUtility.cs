@@ -4,6 +4,7 @@
 
 
 using ItemzApp.API.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -11,6 +12,30 @@ namespace ItemzApp.API.Helper
 {
 	public static class BaselineImportTransformationUtility
 	{
+
+		public static ProjectExportNode TransformBaselineToProject(BaselineExportNode baselineNode)
+		{
+			var projectDto = new GetProjectDTO
+			{
+				Id = Guid.NewGuid(),
+				Name = baselineNode.Baseline?.Name,
+				Description = baselineNode.Baseline?.Description,
+				Status = "New",
+				CreatedBy = baselineNode.Baseline?.CreatedBy,
+				CreatedDate = baselineNode.Baseline?.CreatedDate ?? DateTimeOffset.UtcNow
+			};
+
+			var itemzTypeNodes = baselineNode.BaselineItemzTypes?
+				.Select(TransformBaselineItemzTypeToItemzTypeNode)
+				.ToList();
+
+			return new ProjectExportNode
+			{
+				Project = projectDto,
+				ItemzTypes = itemzTypeNodes
+			};
+		}
+
 
 		public static ItemzTypeExportNode TransformBaselineItemzTypeToItemzTypeNode(
 											BaselineItemzTypeExportNode baselineNode)
@@ -32,7 +57,6 @@ namespace ItemzApp.API.Helper
 					.ToList()
 			};
 		}
-
 
 
 		public static GetItemzDTO TransformBaselineItemzToItemz(GetBaselineItemzDTO baselineItemz)

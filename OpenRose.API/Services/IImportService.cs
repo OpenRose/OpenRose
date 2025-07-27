@@ -48,5 +48,12 @@ namespace ItemzApp.API.Services
 		Task<ImportResult> ImportBaselineItemzTypeAsync(
 			RepositoryExportDTO repositoryExportDto,
 			ImportDataPlacementDTO placementDto);
+
+		/// <summary>
+		/// Imports a hierarchy of Baseline record, potentially containing BaselineItemzType and BaselineItemz breakdown.
+		/// </summary>
+		Task<ImportResult> ImportBaselineAsProjectAsync(
+			RepositoryExportDTO repositoryExportDto,
+			ImportDataPlacementDTO placementDto);
 	}
 }

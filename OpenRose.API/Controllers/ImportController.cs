@@ -154,6 +154,11 @@ namespace ItemzApp.API.Controllers
 				{
 					result = await _importService.ImportBaselineItemzTypeAsync(repositoryExportDto, placementDto);
 				}
+				else if (string.Equals(detectedType, "Baseline", StringComparison.OrdinalIgnoreCase))
+				{
+					result = await _importService.ImportBaselineAsProjectAsync(repositoryExportDto, placementDto);
+				}
+
 				else
 				{
 					result = await _importService.ImportAsync(repositoryExportDto, detectedType, placementDto);
