@@ -78,30 +78,27 @@ namespace ItemzApp.API.Controllers
 				return BadRequest("Invalid file format or content. Please upload a valid OpenRose export JSON file.");
 			}
 
-			// Apply filter based on isIncluded value for BaselineItemz
-			if (repositoryExportDto?.BaselineItemz != null)
+			bool hasBaselineItemz =
+				repositoryExportDto?.BaselineItemz?.Any() == true;
+
+			bool hasBaselineItemzTypes =
+				repositoryExportDto?.BaselineItemzTypes?.Any(t => t.BaselineItemz?.Any() == true) == true;
+
+			bool hasBaselines =
+				repositoryExportDto?.Baselines?.Any(b =>
+					b.BaselineItemzTypes?.Any(t => t.BaselineItemz?.Any() == true) == true) == true;
+
+			bool needsFiltering = !form.ImportExcludedBaselineItemz &&
+								  (hasBaselineItemz || hasBaselineItemzTypes || hasBaselines);
+
+			if (needsFiltering)
 			{
-				if (!form.ImportExcludedBaselineItemz)
-				{
-					int originalCount = repositoryExportDto.BaselineItemz.Count;
-					repositoryExportDto.BaselineItemz = repositoryExportDto.BaselineItemz
-						.Where(b => b.BaselineItemz != null && b.BaselineItemz.isIncluded)
-						.ToList();
-
-
-					// Filters out invalid trace links by ensuring both source and target BaselineItemz IDs
-					// exist in the current export scope. This step helps maintain integrity of relationships
-					// and avoids exporting dangling or orphaned trace connections.
-
-					repositoryExportDto.BaselineItemzTraces = BaselineImportUtility
-						.FilterValidBaselineItemzTraces(repositoryExportDto.BaselineItemzTraces ?? new List<BaselineItemzTraceDTO>(),
-														repositoryExportDto.BaselineItemz);
-
-					int filteredCount = repositoryExportDto.BaselineItemz.Count;
-
-					_logger.LogInformation("Filtered BaselineItemz by isIncluded: {Kept} of {Total} retained.", filteredCount, originalCount);
-				}
+				BaselineImportUtility.FilterExcludedBaselineItemzAcrossRepository(
+					repositoryExportDto,
+					form.ImportExcludedBaselineItemz,
+					_logger);
 			}
+
 
 			string detectedType = null;
 			if (repositoryExportDto.Projects?.Count > 0) detectedType = "Project";
@@ -152,6 +149,10 @@ namespace ItemzApp.API.Controllers
 				else if (string.Equals(detectedType, "BaselineItemz", StringComparison.OrdinalIgnoreCase))
 				{
 					result = await _importService.ImportBaselineItemzAsync(repositoryExportDto, placementDto);
+				}
+				else if (string.Equals(detectedType, "BaselineItemzType", StringComparison.OrdinalIgnoreCase))
+				{
+					result = await _importService.ImportBaselineItemzTypeAsync(repositoryExportDto, placementDto);
 				}
 				else
 				{
