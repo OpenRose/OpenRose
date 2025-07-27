@@ -1,4 +1,10 @@
-﻿using ItemzApp.API.Controllers;
+﻿// OpenRose - Requirements Management
+// Licensed under the Apache License, Version 2.0.
+// See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+
+
+
+using ItemzApp.API.Controllers;
 using ItemzApp.API.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -36,5 +42,11 @@ namespace ItemzApp.API.Services
 			RepositoryExportDTO repositoryExportDto,
 			ImportDataPlacementDTO placementDto);
 
+		/// <summary>
+		/// Imports a hierarchy of BaselineItemzType records, potentially containing BaselineItemz breakdown.
+		/// </summary>
+		Task<ImportResult> ImportBaselineItemzTypeAsync(
+			RepositoryExportDTO repositoryExportDto,
+			ImportDataPlacementDTO placementDto);
 	}
 }

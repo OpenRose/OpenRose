@@ -548,6 +548,58 @@ namespace ItemzApp.API.Services
 
 
 
+		public async Task<ImportResult> ImportBaselineItemzTypeAsync(
+										RepositoryExportDTO repositoryExportDto,
+										ImportDataPlacementDTO placementDto)
+		{
+			var result = new ImportResult
+			{
+				Success = false,
+				Errors = new List<string>()
+			};
+
+			// Validate input
+			if (repositoryExportDto.BaselineItemzTypes == null || !repositoryExportDto.BaselineItemzTypes.Any())
+			{
+				result.Errors.Add("No BaselineItemzType records found in the import data.");
+				return result;
+			}
+
+			try
+			{
+				// Transform BaselineItemzTypes → ItemzTypes
+				var itemzTypeNodes = repositoryExportDto.BaselineItemzTypes
+					.Select(BaselineImportTransformationUtility.TransformBaselineItemzTypeToItemzTypeNode)
+					.ToList();
+
+				// Transform BaselineItemzTraces → ItemzTraces
+				var itemzTraces = BaselineImportTransformationUtility
+					.TransformBaselineTracesToItemzTraces(repositoryExportDto.BaselineItemzTraces ?? new List<BaselineItemzTraceDTO>());
+
+				// Build converted repository DTO
+				var convertedRepository = new RepositoryExportDTO
+				{
+					ItemzTypes = itemzTypeNodes,
+					ItemzTraces = itemzTraces
+				};
+
+				// Delegate to existing ItemzType import method
+				var itemzTypeResult = await ImportItemzTypeHierarchyAsync(convertedRepository, placementDto);
+
+				// Return delegated result
+				return itemzTypeResult;
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, "Exception during BaselineItemzType import.");
+				result.Errors.Add("Internal error occurred during BaselineItemzType import.");
+				return result;
+			}
+		}
+
+
+
+
 		private async Task<int> ProcessItemzTracesAsync(
 								IEnumerable<ItemzTraceDTO>? traceDtos,
 								Dictionary<Guid, Guid> idMap,
