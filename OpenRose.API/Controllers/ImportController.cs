@@ -78,6 +78,31 @@ namespace ItemzApp.API.Controllers
 				return BadRequest("Invalid file format or content. Please upload a valid OpenRose export JSON file.");
 			}
 
+			// Apply filter based on isIncluded value for BaselineItemz
+			if (repositoryExportDto?.BaselineItemz != null)
+			{
+				if (!form.ImportExcludedBaselineItemz)
+				{
+					int originalCount = repositoryExportDto.BaselineItemz.Count;
+					repositoryExportDto.BaselineItemz = repositoryExportDto.BaselineItemz
+						.Where(b => b.BaselineItemz != null && b.BaselineItemz.isIncluded)
+						.ToList();
+
+
+					// Filters out invalid trace links by ensuring both source and target BaselineItemz IDs
+					// exist in the current export scope. This step helps maintain integrity of relationships
+					// and avoids exporting dangling or orphaned trace connections.
+
+					repositoryExportDto.BaselineItemzTraces = BaselineImportUtility
+						.FilterValidBaselineItemzTraces(repositoryExportDto.BaselineItemzTraces ?? new List<BaselineItemzTraceDTO>(),
+														repositoryExportDto.BaselineItemz);
+
+					int filteredCount = repositoryExportDto.BaselineItemz.Count;
+
+					_logger.LogInformation("Filtered BaselineItemz by isIncluded: {Kept} of {Total} retained.", filteredCount, originalCount);
+				}
+			}
+
 			string detectedType = null;
 			if (repositoryExportDto.Projects?.Count > 0) detectedType = "Project";
 			else if (repositoryExportDto.ItemzTypes?.Count > 0) detectedType = "ItemzType";
@@ -104,8 +129,6 @@ namespace ItemzApp.API.Controllers
 			if (!string.Equals(detectedType, "Project", StringComparison.OrdinalIgnoreCase) &&
 				!string.Equals(detectedType, "Baseline", StringComparison.OrdinalIgnoreCase))
 			{
-
-
 				var dtoValidatorResult = ImportDataPlacementDTOValidator.ValidatePlacement(detectedType, placementDto);
 				if (!dtoValidatorResult.IsValid)
 				{
@@ -126,11 +149,14 @@ namespace ItemzApp.API.Controllers
 				{
 					result = await _importService.ImportItemzTypeHierarchyAsync(repositoryExportDto, placementDto);
 				}
+				else if (string.Equals(detectedType, "BaselineItemz", StringComparison.OrdinalIgnoreCase))
+				{
+					result = await _importService.ImportBaselineItemzAsync(repositoryExportDto, placementDto);
+				}
 				else
 				{
 					result = await _importService.ImportAsync(repositoryExportDto, detectedType, placementDto);
 				}
-
 
 				if (!result.Success)
 				{
@@ -157,7 +183,6 @@ namespace ItemzApp.API.Controllers
 				_logger.LogError(ex, "Exception during import process.");
 				return StatusCode(StatusCodes.Status500InternalServerError, "Unexpected error during import.");
 			}
-
 		}
 	}
 }
