@@ -1,0 +1,185 @@
+﻿@page "/import"
+@using OpenRose.WebUI.Client.Services.Import
+@using OpenRose.WebUI.Client.SharedModels
+@using System.Text.Json
+@inject IImportService ImportService
+@inject IDialogService DialogService
+
+<MudPaper Class="pa-3 mb-3 align-start d-flex" Style="width: auto" Outlined="false">
+    <MudStack Row="true" Spacing="3">
+        <MudIcon Icon="@Icons.Material.Filled.FileUpload" Size="Size.Large" />
+        <MudText Typo="Typo.h5">Import</MudText>
+        <MudSpacer />
+        <MudText Class="mt-3" Typo="Typo.caption">
+            Upload a JSON file to import Project / ItemzType / Itemz / Baseline / BaselineItemzType / BaselineItemz with its hierarchy
+        </MudText>
+    </MudStack>
+</MudPaper>
+
+<MudPaper Class="pa-4 mb-4" Elevation="0">
+    <MudStack Spacing="2">
+        <InputFile OnChange="HandleFileChange" />
+        <MudText Typo="Typo.caption" Color="Color.Secondary">@selectedFileName</MudText>
+
+        <MudSwitch Label="Include Excluded BaselineItemz" @bind-Value="importForm.ImportExcludedBaselineItemz" />
+        <MudSwitch Label="Place at Bottom of Parent’s Children" @bind-Value="importForm.AtBottomOfChildNodes" />
+
+        <MudTextField Label="Target Parent ID (optional)" @bind-Value="targetParentIdText" />
+        <MudTextField Label="First ItemzType ID (optional)" @bind-Value="firstItemzTypeText" />
+        <MudTextField Label="Second ItemzType ID (optional)" @bind-Value="secondItemzTypeText" />
+        <MudTextField Label="First Itemz ID (optional)" @bind-Value="firstItemzText" />
+        <MudTextField Label="Second Itemz ID (optional)" @bind-Value="secondItemzText" />
+
+        <MudButton OnClick="Import" Disabled="@(!fileSelected)" Color="Color.Primary" Variant="Variant.Filled">
+            Import Now
+        </MudButton>
+
+        @if (!string.IsNullOrEmpty(message))
+        {
+            <MudText Color="@messageColor" Typo="Typo.body2">@message</MudText>
+        }
+    </MudStack>
+</MudPaper>
+
+@* @if (importingOverlay)
+{
+    <MudOverlay Visible="true" DarkBackground="true" Absolute="true">
+        <div style="height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+            <MudText Typo="Typo.h6" Align="Align.Center" Class="mt-2">
+                Importing... Hang tight!
+            </MudText>
+        </div>
+    </MudOverlay>
+} *@
+
+@if (importingOverlay)
+{
+    <MudOverlay Visible="true" DarkBackground="true" Absolute="true">
+        <div style="height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+            <MudPaper Class="pa-6" Elevation="24" Style="background-color: white; border-radius: 8px; text-align: center; max-width: 300px;">
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+                <MudText Typo="Typo.h6" Class="mt-2" Color="Color.Primary">
+                    Importing... Hang tight!
+                </MudText>
+            </MudPaper>
+        </div>
+    </MudOverlay>
+}
+
+
+@code {
+    private IBrowserFile uploadedFile;
+    private bool fileSelected = false;
+    private string selectedFileName = string.Empty;
+    private string message = string.Empty;
+    private Color messageColor = Color.Default;
+    private bool importingOverlay = false;
+
+
+    private ImportFormClientDTO importForm = new();
+
+    private string targetParentIdText
+    {
+        get => importForm.TargetParentId?.ToString() ?? "";
+        set => importForm.TargetParentId = Guid.TryParse(value, out var guid) ? guid : null;
+    }
+    private string firstItemzTypeText
+    {
+        get => importForm.FirstItemzTypeId?.ToString() ?? "";
+        set => importForm.FirstItemzTypeId = Guid.TryParse(value, out var guid) ? guid : null;
+    }
+    private string secondItemzTypeText
+    {
+        get => importForm.SecondItemzTypeId?.ToString() ?? "";
+        set => importForm.SecondItemzTypeId = Guid.TryParse(value, out var guid) ? guid : null;
+    }
+    private string firstItemzText
+    {
+        get => importForm.FirstItemzId?.ToString() ?? "";
+        set => importForm.FirstItemzId = Guid.TryParse(value, out var guid) ? guid : null;
+    }
+    private string secondItemzText
+    {
+        get => importForm.SecondItemzId?.ToString() ?? "";
+        set => importForm.SecondItemzId = Guid.TryParse(value, out var guid) ? guid : null;
+    }
+
+    private void HandleFileChange(InputFileChangeEventArgs e)
+    {
+        uploadedFile = e.File;
+        fileSelected = uploadedFile != null;
+        selectedFileName = uploadedFile?.Name ?? "";
+        message = "";
+    }
+
+    private async Task Import()
+    {
+        if (uploadedFile == null)
+        {
+            message = "Please upload a valid file.";
+            messageColor = Color.Error;
+            return;
+        }
+
+        importingOverlay = true;
+
+        try
+        {
+            var response = await ImportService.ImportHierarchyAsync(uploadedFile, importForm);
+            if (response.IsSuccessStatusCode)
+            {
+                var jsonString = await response.Content.ReadAsStringAsync();
+                var importResponse = JsonSerializer.Deserialize<ImportResult>(jsonString, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+                message = "Import completed successfully!";
+                messageColor = Color.Success;
+
+                importingOverlay = false; // Turn off before dialog
+
+                await ShowSummaryDialog(importResponse?.ImportSummary, importResponse?.ImportedRootId);
+            }
+            else
+            {
+                importingOverlay = false;
+
+                var errorText = await response.Content.ReadAsStringAsync();
+                message = $"Import failed: {errorText}";
+                messageColor = Color.Error;
+            }
+        }
+        catch (Exception ex)
+        {
+            importingOverlay = false;
+
+            message = $"Unexpected error during import: {ex.Message}";
+            messageColor = Color.Error;
+        }
+    }
+
+
+    private async Task ShowSummaryDialog(ImportSummaryDTO importSummary, Guid? importedRootId)
+    {
+        if (importSummary is null) return;
+
+        var parameters = new DialogParameters
+        {
+            ["TotalCreated"] = importSummary.TotalCreated,
+            ["TotalTraces"] = importSummary.TotalTraces,
+            ["ImportedRootId"] = importedRootId
+        };
+
+        var options = new DialogOptions
+        {
+            CloseButton = true,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true
+        };
+
+        await DialogService.ShowAsync<ImportSummaryDialog>("Import Summary", parameters, options);
+
+    }
+}

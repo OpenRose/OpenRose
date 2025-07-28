@@ -52,7 +52,10 @@
 				<MudNavLink Href="/moveitemztypebetween" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.FormatIndentIncrease">ItemzType - Between</MudNavLink>
 			</MudNavGroup>
 			<MudNavLink Href="/copy" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.AutoAwesomeMotion">Copy</MudNavLink>
-			<MudNavLink Href="/export" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.ImportExport">Export</MudNavLink>
+			<MudNavGroup Icon="@Icons.Material.Filled.ImportExport" Title="Import / Export" Expanded="true">
+				<MudNavLink Href="/export" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.FileDownload" >Export</MudNavLink>
+				<MudNavLink Href="/import" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.FileUpload" >Import</MudNavLink>
+			</MudNavGroup>
 			<MudNavLink Href="/orphanitemz" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.HolidayVillage">Orphan Itemz</MudNavLink>
 			<MudNavLink Href="/settings" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Settings">Settings</MudNavLink>
 			<MudNavLink Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.BarChart">Stats</MudNavLink>
