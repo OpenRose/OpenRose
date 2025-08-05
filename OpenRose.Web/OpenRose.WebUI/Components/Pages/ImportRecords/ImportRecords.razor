@@ -9,6 +9,7 @@
 @using OpenRose.WebUI.Client.Services.Project
 @using OpenRose.WebUI.Client.Services.ItemzType
 @using OpenRose.WebUI.Client.Services.Hierarchy 
+@using OpenRose.WebUI.Client.Services.Itemz
 @using OpenRose.WebUI.Client.SharedModels
 @using OpenRose.WebUI.Components.Dialogs
 @using OpenRose.WebUI.Components.Pages.Common
@@ -65,7 +66,7 @@
             <MudStack Row="false" Spacing="2" AlignItems="AlignItems.Center" JustifyContent="Justify.Center">
                 <div>
                     <MudTooltip Text="Step 1: Upload and Analyze Import File">
-                        <MudChip T="string" Icon="@Icons.Material.Filled.UploadFile" Size="Size.Small" Color="Color.Success">STEP 1</MudChip>
+                        <MudChip T="string" Icon="@Icons.Material.Filled.UploadFile" Size="Size.Large" Color="Color.Success">STEP 1</MudChip>
                     </MudTooltip>
                 </div>
                 <InputFile OnChange="HandleFileChange" />
@@ -75,123 +76,16 @@
                         Detected Record Type: @recordType
                     </MudChip>
                 }
-
             </MudStack>
         </div>
     </MudPaper>
 </MudItem>
-
-@* <MudText Typo="Typo.caption">Detected type: @recordType</MudText>
-<MudText Typo="Typo.caption">File selected: @fileSelected</MudText>
- *@
-
-@* 
-<MudItem xs="12" Class="my-4">
-    <MudPaper Class="pa-4" Elevation="1">
-        <MudStack Row="false" Spacing="2" AlignItems="AlignItems.Center" JustifyContent="Justify.Center">
-            @if (!string.IsNullOrEmpty(recordType))
-            {
-                var type = recordType.ToLowerInvariant();
-
-                if (type == "baselineitemz" || type == "baselineitemztypes" || type == "baselines")
-                {
-                    <MudSwitch Label="Include Excluded BaselineItemz" @bind-Value="importForm.ImportExcludedBaselineItemz" />
-                }
-
-                @if (type == "projects" || type == "baselines")
-                {
-                    <MudText Typo="Typo.subtitle1">Ready to import. No further options required.</MudText>
-                    <MudButton OnClick="Import" Disabled="@(!fileSelected)" Color="Color.Primary" Variant="Variant.Filled">
-                        Import Now
-                    </MudButton>
-                }
-                else if (type == "itemztypes" || type == "baselineitemztypes")
-                {
-                    <div>
-                        <MudTooltip Text="Step 2: Choose import location option">
-                            <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 2</MudChip>
-                        </MudTooltip>
-                    </div>
-                    <MudRadioGroup T="string" @bind-Value="itemzTypeImportChoice">
-                        <MudRadio Value="@("underProject")">Under existing Project</MudRadio>
-                        <MudRadio Value="@("betweenItemzTypes")">Between two existing ItemzTypes</MudRadio>
-                    </MudRadioGroup>
-
-                    @if (itemzTypeImportChoice == "underProject")
-                    {
-                        <div>
-                            <MudTooltip Text="Step 3: Provide Target Project ID to import under and choose TOP or BOTTOM placement under it">
-                                <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 3</MudChip>
-                            </MudTooltip>
-                        </div>
-                        <MudTextField Label="Target Parent ID" @bind-Value="targetParentIdText" Required="true" />
-                        <MudSwitch Label="Place at Bottom of Parent’s Children" @bind-Value="importForm.AtBottomOfChildNodes" />
-                    }
-                    else if (itemzTypeImportChoice == "betweenItemzTypes")
-                    {
-                        <div>
-                            <MudTooltip Text="Step 3: Provide two sibling ItemzTypes Ids to import in between">
-                                <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 3</MudChip>
-                            </MudTooltip>
-                        </div>
-                        <MudTextField Label="First ItemzType ID" @bind-Value="firstItemzTypeText" Required="true" />
-                        <MudTextField Label="Second ItemzType ID" @bind-Value="secondItemzTypeText" Required="true" />
-                    }
-
-                    <MudButton OnClick="Import" Disabled="@(!fileSelected)" Color="Color.Primary" Variant="Variant.Filled">
-                        Import Now
-                    </MudButton>
-                }
-                else if (type == "itemz" || type == "baselineitemz")
-                {
-                    <div>
-                        <MudTooltip Text="Step 2: Choose import location option">
-                            <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 2</MudChip>
-                        </MudTooltip>
-                    </div>
-                    <MudRadioGroup T="string" @bind-Value="itemzImportChoice">
-                        <MudRadio Value="@("underParent")">Under existing ItemzType/Itemz</MudRadio>
-                        <MudRadio Value="@("betweenItemz")">Between two existing Itemz</MudRadio>
-                    </MudRadioGroup>
-
-                    @if (itemzImportChoice == "underParent")
-                    {
-                        <div>
-                            <MudTooltip Text="Step 3: Provide Target ItemzType ID to import under and choose TOP or BOTTOM placement under it">
-                                <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 3</MudChip>
-                            </MudTooltip>
-                        </div>
-                        <MudTextField Label="Target Parent ID" @bind-Value="targetParentIdText" Required="true" />
-                        <MudSwitch Label="Place at Bottom of Parent’s Children" @bind-Value="importForm.AtBottomOfChildNodes" />
-                    }
-                    else if (itemzImportChoice == "betweenItemz")
-                    {
-                        <div>
-                            <MudTooltip Text="Step 3: Provide two sibling Itemz Ids to import in between">
-                                <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 3</MudChip>
-                            </MudTooltip>
-                        </div>
-                        <MudTextField Label="First Itemz ID" @bind-Value="firstItemzText" Required="true" />
-                        <MudTextField Label="Second Itemz ID" @bind-Value="secondItemzText" Required="true" />
-                    }
-
-                    <MudButton OnClick="Import" Disabled="@(!fileSelected)" Color="Color.Primary" Variant="Variant.Filled">
-                        Import Now
-                    </MudButton>
-                }
-            }
-        </MudStack>
-    </MudPaper>
-</MudItem>
- *@
-
-
+@if (!string.IsNullOrEmpty(recordType))
+{
  <MudItem xs="12" Class="my-4">
     <MudPaper Class="pa-4" Elevation="1">
         <MudStack Row="false" Spacing="2" AlignItems="AlignItems.Center" JustifyContent="Justify.Center">
-
-            @if (!string.IsNullOrEmpty(recordType))
-            {
+            @{
                 var type = recordType.ToLowerInvariant();
 
                 if (type == "projects")
@@ -199,7 +93,10 @@
                     <MudTooltip Text="Step 2: Ready to import Project">
                         <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 2</MudChip>
                     </MudTooltip>
-                    <MudButton OnClick="Import" Disabled="@(!fileSelected)" Variant="Variant.Filled" Color="Color.Primary">Import Now</MudButton>
+                    <MudStack Row="true" Spacing="2" Class="mt-4">
+                        <MudButton OnClick="Import" Disabled="@(!fileSelected)" Variant="Variant.Filled" Color="Color.Primary">Import Now</MudButton>
+                        <MudButton OnClick="ResetImportState" Disabled="@importingOverlay" Variant="Variant.Filled" Color="Color.Secondary" Class="ml-2">Cancel / Restart Import</MudButton>
+                    </MudStack>
                 }
                 else if (type == "itemztypes")
                 {
@@ -235,7 +132,13 @@
 				            </MudCard>
 				            </MudStack>
 			            }
-                        <MudSwitch Label="Place at Bottom of Parent’s Children" @bind-Value="importForm.AtBottomOfChildNodes" />
+
+                        @* <MudSwitch Label="Place at Bottom of Parent’s Children" @bind-Value="importForm.AtBottomOfChildNodes" /> *@
+                        <MudSwitch Label="@(importForm.AtBottomOfChildNodes ?
+                                       "Place imported data at the Bottom of existing child list" :
+                                       "Place imported data at the Top of existing child list")"
+                       @bind-Value="importForm.AtBottomOfChildNodes" />
+
                     }
                     else if (itemzTypeImportChoice == "betweenItemzTypes")
                     {
@@ -243,7 +146,7 @@
                             <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 3</MudChip>
                         </MudTooltip>
 
-                        <MudButton @onclick="async _ => await selectTargetItemzType()" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Primary"> Select Target First ItemzType </MudButton>
+                        <MudButton @onclick="async _ => await selectTargetBetweenItemzType()" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Primary"> Select Target First ItemzType </MudButton>
                         @*
                         <MudTextField Label="First ItemzType ID" @bind-Value="firstItemzTypeText" Required="true" style="width: 400px;" />
                         <MudTextField Label="Second ItemzType ID" @bind-Value="secondItemzTypeText" Required="true" style="width: 400px;" />
@@ -287,7 +190,10 @@
                         <MudTooltip Text="Step 4: Ready to import BaselineItemzType">
                             <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 4</MudChip>
                         </MudTooltip>
-                        <MudButton OnClick="Import" Disabled="@(!fileSelected || !IsReadyToImportItemzType)" Variant="Variant.Filled" Color="Color.Primary">Import Now</MudButton>
+                        <MudStack Row="true" Spacing="2" Class="mt-4">
+                            <MudButton OnClick="Import" Disabled="@(!fileSelected || !IsReadyToImportItemzType)" Variant="Variant.Filled" Color="Color.Primary">Import Now</MudButton>
+                            <MudButton OnClick="ResetImportState" Disabled="@importingOverlay" Variant="Variant.Filled" Color="Color.Secondary" Class="ml-2">Cancel / Restart Import</MudButton>
+                        </MudStack>
                     }
                 }
 
@@ -304,27 +210,129 @@
 
                     @if (itemzImportChoice == "underParent")
                     {
-                        <MudTooltip Text="Step 3: Provide Parent ID and placement">
-                            <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 3</MudChip>
-                        </MudTooltip>
-                        <MudTextField Label="Target Parent ID" @bind-Value="targetParentIdText" Required="true" Style="width: 400px;" />
-                        <MudSwitch Label="Place at Bottom of Parent’s Children" @bind-Value="importForm.AtBottomOfChildNodes" />
+                        <MudStack Row="true" Spacing="2">
+
+                            <MudTooltip Text="Step 3: Provide Parent ID and placement">
+                                <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 3</MudChip>
+                            </MudTooltip>
+                            @* <MudTextField Label="Target Parent ID" @bind-Value="targetParentIdText" Required="true" Style="width: 400px;" /> *@
+
+                            <MudButton @onclick="async _ => await selectTargetItemz()" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Primary"> Select Target Itemz </MudButton>
+                            <MudButton @onclick="async _ => await selectTargetItemzType()" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Primary"> Select Target ItemzType </MudButton>
+
+                            @* <MudSwitch Label="Place at Bottom of Parent’s Children" @bind-Value="importForm.AtBottomOfChildNodes" /> *@
+                        </MudStack>
+                        @if (targetItemz != null && targetItemz.Id != Guid.Empty)
+                        {
+                            <MudStack Row="false" Spacing="2">
+                                <MudCard style="background-color : #FABBBB; margin: 16px;" Class="w-100">
+                                    <MudCardContent>
+                                        <MudText Typo="Typo.h6" Align="Align.Left"> Target Itemz Details </MudText>
+                                        <MudDivider></MudDivider>
+                                        <MudText><strong>Name        : </strong> @targetItemz.Name </MudText>
+                                        <MudStack Row="true" Spacing="2">
+                                            <MudText><strong>ID          : </strong></MudText>
+                                            <CopyableText TextToCopy="@targetItemz.Id.ToString()" />
+                                        </MudStack>
+                                        <MudText><strong>Status      : </strong> @targetItemz.Status</MudText>
+                                        <MudText><strong>Priority    : </strong> @targetItemz.Priority</MudText>
+                                        <MudText><strong>Severity    : </strong> @targetItemz.Severity</MudText>
+                                    </MudCardContent>
+                                </MudCard>
+                            </MudStack>
+                        }
+                        else if (targetItemzType != null && targetItemzType.Id != Guid.Empty)
+                        {
+                            <MudStack Row="false" Spacing="2">
+                                <MudCard style="background-color : #FABBBB; margin: 16px;" Class="w-100">
+                                    <MudCardContent>
+                                        <MudText Typo="Typo.h6" Align="Align.Left"> Target ItemzType Details </MudText>
+                                        <MudDivider></MudDivider>
+                                        <MudText><strong>Name        : </strong> @targetItemzType.Name </MudText>
+                                        <MudStack Row="true" Spacing="2">
+                                            <MudText><strong>ID          : </strong></MudText>
+                                            <CopyableText TextToCopy="@targetItemzType.Id.ToString()" />
+                                        </MudStack>
+                                        <MudText><strong>Status      : </strong> @targetItemzType.Status</MudText>
+                                    </MudCardContent>
+                                </MudCard>
+                            </MudStack>
+                        }
                     }
                     else if (itemzImportChoice == "betweenItemz")
                     {
                         <MudTooltip Text="Step 3: Provide two sibling Itemz IDs">
                             <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 3</MudChip>
                         </MudTooltip>
-                        <MudTextField Label="First Itemz ID" @bind-Value="firstItemzText" Required="true" Style="width: 400px;" />
-                        <MudTextField Label="Second Itemz ID" @bind-Value="secondItemzText" Required="true" Style="width: 400px;" />
+
+@*                         <MudTextField Label="First Itemz ID" @bind-Value="firstItemzText" Required="true" Style="width: 400px;" />
+                        <MudTextField Label="Second Itemz ID" @bind-Value="secondItemzText" Required="true" Style="width: 400px;" /> *@
+                        <MudButton @onclick="async _ => await selectTargetBetweenItemz()" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Primary"> Select Target First Itemz </MudButton>
+                        @if (targetFirstItemz != null && targetFirstItemz.Id != Guid.Empty && targetSecondItemz != null && targetSecondItemz.Id != Guid.Empty)
+                        {
+                            <MudStack Row="false" Spacing="2">
+                                <MudCard style="background-color : #FABBBB; margin: 16px;" Class="w-100">
+                                    <MudCardContent>
+                                        <MudText Typo="Typo.h6" Align="Align.Left"> Target First Itemz Details </MudText>
+                                        <MudDivider></MudDivider>
+                                        <MudText><strong>Name        : </strong> @targetFirstItemz.Name </MudText>
+                                        <MudStack Row="true" Spacing="2">
+                                            <MudText><strong>ID          : </strong></MudText>
+                                            <CopyableText TextToCopy="@targetFirstItemz.Id.ToString()" />
+                                        </MudStack>
+                                        <MudText><strong>Status      : </strong> @targetFirstItemz.Status</MudText>
+                                        <MudText><strong>Priority    : </strong> @targetFirstItemz.Priority</MudText>
+                                        <MudText><strong>Severity    : </strong> @targetFirstItemz.Severity</MudText>
+                                    </MudCardContent>
+                                </MudCard>
+                                <MudCard style="background-color : #FABBBB; margin: 16px;" Class="w-100">
+                                    <MudCardContent>
+                                        <MudText Typo="Typo.h6" Align="Align.Left"> Target Second Itemz Details </MudText>
+                                        <MudDivider></MudDivider>
+                                        <MudText><strong>Name        : </strong> @targetSecondItemz.Name </MudText>
+                                        <MudStack Row="true" Spacing="2">
+                                            <MudText><strong>ID          : </strong></MudText>
+                                            <CopyableText TextToCopy="@targetSecondItemz.Id.ToString()" />
+                                        </MudStack>
+                                        <MudText><strong>Status      : </strong> @targetSecondItemz.Status</MudText>
+                                        <MudText><strong>Priority    : </strong> @targetSecondItemz.Priority</MudText>
+                                        <MudText><strong>Severity    : </strong> @targetSecondItemz.Severity</MudText>
+                                    </MudCardContent>
+                                </MudCard>
+                            </MudStack>
+                        }
                     }
 
                     @if (IsReadyToImportItemz)
                     {
-                        <MudTooltip Text="Step 4: Ready to import Itemz">
-                            <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 4</MudChip>
-                        </MudTooltip>
-                        <MudButton OnClick="Import" Disabled="@(!fileSelected || !IsReadyToImportItemz)" Variant="Variant.Filled" Color="Color.Primary">Import Now</MudButton>
+                        @if (itemzImportChoice == "underParent")
+                        {
+                            <MudTooltip Text="Step 4: Decide on placement at Top or Bottom under target record">
+                                <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 4</MudChip>
+                            </MudTooltip>
+
+                            <MudSwitch Label="@(importForm.AtBottomOfChildNodes ?
+                                "Place imported data at the Bottom of existing child list" :
+                                "Place imported data at the Top of existing child list")" 
+                                @bind-Value="importForm.AtBottomOfChildNodes" />
+                            <MudTooltip Text="Step 5: Ready to import Itemz">
+                                <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 5</MudChip>
+                            </MudTooltip>
+                            <MudStack Row="true" Spacing="2" Class="mt-4">
+                                <MudButton OnClick="Import" Disabled="@(!fileSelected || !IsReadyToImportItemz)" Variant="Variant.Filled" Color="Color.Primary">Import Now</MudButton>
+                                <MudButton OnClick="ResetImportState" Disabled="@importingOverlay" Variant="Variant.Filled" Color="Color.Secondary" Class="ml-2">Cancel / Restart Import</MudButton>
+                            </MudStack>
+                        }
+                        else 
+                        {
+                            <MudTooltip Text="Step 4: Ready to import Itemz">
+                                <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 4</MudChip>
+                            </MudTooltip>
+                            <MudStack Row="true" Spacing="2" Class="mt-4">
+                                <MudButton OnClick="Import" Disabled="@(!fileSelected || !IsReadyToImportItemz)" Variant="Variant.Filled" Color="Color.Primary">Import Now</MudButton>
+                                <MudButton OnClick="ResetImportState" Disabled="@importingOverlay" Variant="Variant.Filled" Color="Color.Secondary" Class="ml-2">Cancel / Restart Import</MudButton>
+                            </MudStack>
+                        }
                     }
                 }
                 else if (type == "baselines")
@@ -332,19 +340,28 @@
                     <MudTooltip Text="Step 2: Baseline import options">
                         <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 2</MudChip>
                     </MudTooltip>
-                    <MudSwitch Label="Include Excluded BaselineItemz" @bind-Value="importForm.ImportExcludedBaselineItemz" />
+                        <MudSwitch Label="@(importForm.ImportExcludedBaselineItemz ?
+                            "Include \"Excluded BaselineItemz\" [Include + Excluded]" :
+                            "Exclude \"Excluded BaselineItemz\" [Included Only] ")"
+                            @bind-Value="importForm.ImportExcludedBaselineItemz" />
 
                     <MudTooltip Text="Step 3: Ready to import Baseline">
                         <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 3</MudChip>
                     </MudTooltip>
-                    <MudButton OnClick="Import" Disabled="@(!fileSelected)" Variant="Variant.Filled" Color="Color.Primary">Import Now</MudButton>
+                    <MudStack Row="true" Spacing="2" Class="mt-4">
+                        <MudButton OnClick="Import" Disabled="@(!fileSelected)" Variant="Variant.Filled" Color="Color.Primary">Import Now</MudButton>
+                        <MudButton OnClick="ResetImportState" Disabled="@importingOverlay" Variant="Variant.Filled" Color="Color.Secondary" Class="ml-2">Cancel / Restart Import</MudButton>
+                    </MudStack>
                 }
                 else if (type == "baselineitemztypes")
                 {
                     <MudTooltip Text="Step 2: Choose include excluded BaselineItemz option">
                         <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 2</MudChip>
                     </MudTooltip>
-                    <MudSwitch Label="Include Excluded BaselineItemz" @bind-Value="importForm.ImportExcludedBaselineItemz" />
+                        <MudSwitch Label="@(importForm.ImportExcludedBaselineItemz ?
+                            "Include \"Excluded BaselineItemz\" [Include + Excluded]" :
+                            "Exclude \"Excluded BaselineItemz\" [Included Only] ")"
+                            @bind-Value="importForm.ImportExcludedBaselineItemz" />
 
 
                     <MudTooltip Text="Step 3: Choose BaselineItemzType import location">
@@ -379,7 +396,10 @@
                                 </MudCard>
                             </MudStack>
                         }
-                        <MudSwitch Label="Place at Bottom of Parent’s Children" @bind-Value="importForm.AtBottomOfChildNodes" />
+                        <MudSwitch Label="@(importForm.AtBottomOfChildNodes ?
+                            "Place imported data at the Bottom of existing child list" :
+                            "Place imported data at the Top of existing child list")" 
+                            @bind-Value="importForm.AtBottomOfChildNodes" />
                     }
                     else if (itemzTypeImportChoice == "betweenItemzTypes")
                     {
@@ -391,7 +411,7 @@
                         @* <MudTextField Label="First ItemzType ID" @bind-Value="firstItemzTypeText" Required="true" Style="width: 400px;" />
                         <MudTextField Label="Second ItemzType ID" @bind-Value="secondItemzTypeText" Required="true" Style="width: 400px;" /> *@
 
-                        <MudButton @onclick="async _ => await selectTargetItemzType()" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Primary"> Select Target First ItemzType </MudButton>
+                        <MudButton @onclick="async _ => await selectTargetBetweenItemzType()" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Primary"> Select Target First ItemzType </MudButton>
 
                         @if (targetFirstItemzType != null && targetFirstItemzType.Id != Guid.Empty && targetSecondItemzType != null && targetSecondItemzType.Id != Guid.Empty)
                         {
@@ -431,7 +451,10 @@
                         <MudTooltip Text="Step 5: Ready to import BaselineItemzType">
                             <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 5</MudChip>
                         </MudTooltip>
-                        <MudButton OnClick="Import" Disabled="@(!fileSelected || !IsReadyToImportBaselineItemzType)" Variant="Variant.Filled" Color="Color.Primary">Import Now</MudButton>
+                        <MudStack Row="true" Spacing="2" Class="mt-4">
+                            <MudButton OnClick="Import" Disabled="@(!fileSelected || !IsReadyToImportBaselineItemzType)" Variant="Variant.Filled" Color="Color.Primary">Import Now</MudButton>
+                            <MudButton OnClick="ResetImportState" Disabled="@importingOverlay" Variant="Variant.Filled" Color="Color.Secondary" Class="ml-2">Cancel / Restart Import</MudButton>
+                        </MudStack>
                     }
                 }
                 else if (type == "baselineitemz")
@@ -439,7 +462,10 @@
                     <MudTooltip Text="Step 2: Choose include excluded BaselineItemz option">
                         <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 2</MudChip>
                     </MudTooltip>
-                    <MudSwitch Label="Include Excluded BaselineItemz" @bind-Value="importForm.ImportExcludedBaselineItemz" />
+                        <MudSwitch Label="@(importForm.ImportExcludedBaselineItemz ?
+                            "Include \"Excluded BaselineItemz\" [Include + Excluded]" :
+                            "Exclude \"Excluded BaselineItemz\" [Included Only] ")"
+                            @bind-Value="importForm.ImportExcludedBaselineItemz" />
 
                     <MudTooltip Text="Step 3: Choose BaselineItemz import location">
                         <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 3</MudChip>
@@ -452,28 +478,142 @@
 
                     @if (itemzImportChoice == "underParent")
                     {
-                        <MudTooltip Text="Step 4: Provide Parent ID and placement">
-                            <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 4</MudChip>
-                        </MudTooltip>
-                        <MudTextField Label="Target Parent ID" @bind-Value="targetParentIdText" Required="true" Style="width: 400px;" />
-                        <MudSwitch Label="Place at Bottom of Parent’s Children" @bind-Value="importForm.AtBottomOfChildNodes" />
+                        <MudStack Row="true" Spacing="2">
+                            <MudTooltip Text="Step 4: Provide Parent ID and placement">
+                                <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 4</MudChip>
+                            </MudTooltip>
+                           @*  <MudTextField Label="Target Parent ID" @bind-Value="targetParentIdText" Required="true" Style="width: 400px;" /> *@
+
+                            <MudButton @onclick="async _ => await selectTargetItemz()" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Primary"> Select Target Itemz </MudButton>
+                            <MudButton @onclick="async _ => await selectTargetItemzType()" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Primary"> Select Target ItemzType </MudButton>
+
+
+                            @* <MudSwitch Label="Place at Bottom of Parent’s Children" @bind-Value="importForm.AtBottomOfChildNodes" /> *@
+                        </MudStack>
+                        @if (targetItemz != null && targetItemz.Id != Guid.Empty)
+                        {
+                            <MudStack Row="false" Spacing="2">
+                                <MudCard style="background-color : #FABBBB; margin: 16px;" Class="w-100">
+                                    <MudCardContent>
+                                        <MudText Typo="Typo.h6" Align="Align.Left"> Target Itemz Details </MudText>
+                                        <MudDivider></MudDivider>
+                                        <MudText><strong>Name        : </strong> @targetItemz.Name </MudText>
+                                        <MudStack Row="true" Spacing="2">
+                                            <MudText><strong>ID          : </strong></MudText>
+                                            <CopyableText TextToCopy="@targetItemz.Id.ToString()" />
+                                        </MudStack>
+                                        <MudText><strong>Status      : </strong> @targetItemz.Status</MudText>
+                                        <MudText><strong>Priority    : </strong> @targetItemz.Priority</MudText>
+                                        <MudText><strong>Severity    : </strong> @targetItemz.Severity</MudText>
+                                    </MudCardContent>
+                                </MudCard>
+                            </MudStack>
+                        }
+                        else if (targetItemzType != null && targetItemzType.Id != Guid.Empty)
+                        {
+                            <MudStack Row="false" Spacing="2">
+                                <MudCard style="background-color : #FABBBB; margin: 16px;" Class="w-100">
+                                    <MudCardContent>
+                                        <MudText Typo="Typo.h6" Align="Align.Left"> Target ItemzType Details </MudText>
+                                        <MudDivider></MudDivider>
+                                        <MudText><strong>Name        : </strong> @targetItemzType.Name </MudText>
+                                        <MudStack Row="true" Spacing="2">
+                                            <MudText><strong>ID          : </strong></MudText>
+                                            <CopyableText TextToCopy="@targetItemzType.Id.ToString()" />
+                                        </MudStack>
+                                        <MudText><strong>Status      : </strong> @targetItemzType.Status</MudText>
+                                    </MudCardContent>
+                                </MudCard>
+                            </MudStack>
+                        }
                     }
                     else if (itemzImportChoice == "betweenItemz")
                     {
                         <MudTooltip Text="Step 4: Provide two sibling Itemz IDs">
                             <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 4</MudChip>
                         </MudTooltip>
-                        <MudTextField Label="First Itemz ID" @bind-Value="firstItemzText" Required="true" Style="width: 400px;" />
-                        <MudTextField Label="Second Itemz ID" @bind-Value="secondItemzText" Required="true" Style="width: 400px;" />
+                        
+                        @* <MudTextField Label="First Itemz ID" @bind-Value="firstItemzText" Required="true" Style="width: 400px;" />
+                        <MudTextField Label="Second Itemz ID" @bind-Value="secondItemzText" Required="true" Style="width: 400px;" /> *@
+
+
+
+                        <MudButton @onclick="async _ => await selectTargetBetweenItemz()" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Primary"> Select Target First Itemz </MudButton>
+                        @if (targetFirstItemz != null && targetFirstItemz.Id != Guid.Empty && targetSecondItemz != null && targetSecondItemz.Id != Guid.Empty)
+                        {
+                            <MudStack Row="false" Spacing="2">
+                                <MudCard style="background-color : #FABBBB; margin: 16px;" Class="w-100">
+                                    <MudCardContent>
+                                        <MudText Typo="Typo.h6" Align="Align.Left"> Target First Itemz Details </MudText>
+                                        <MudDivider></MudDivider>
+                                        <MudText><strong>Name        : </strong> @targetFirstItemz.Name </MudText>
+                                        <MudStack Row="true" Spacing="2">
+                                            <MudText><strong>ID          : </strong></MudText>
+                                            <CopyableText TextToCopy="@targetFirstItemz.Id.ToString()" />
+                                        </MudStack>
+                                        <MudText><strong>Status      : </strong> @targetFirstItemz.Status</MudText>
+                                        <MudText><strong>Priority    : </strong> @targetFirstItemz.Priority</MudText>
+                                        <MudText><strong>Severity    : </strong> @targetFirstItemz.Severity</MudText>
+                                    </MudCardContent>
+                                </MudCard>
+                                <MudCard style="background-color : #FABBBB; margin: 16px;" Class="w-100">
+                                    <MudCardContent>
+                                        <MudText Typo="Typo.h6" Align="Align.Left"> Target Second Itemz Details </MudText>
+                                        <MudDivider></MudDivider>
+                                        <MudText><strong>Name        : </strong> @targetSecondItemz.Name </MudText>
+                                        <MudStack Row="true" Spacing="2">
+                                            <MudText><strong>ID          : </strong></MudText>
+                                            <CopyableText TextToCopy="@targetSecondItemz.Id.ToString()" />
+                                        </MudStack>
+                                        <MudText><strong>Status      : </strong> @targetSecondItemz.Status</MudText>
+                                        <MudText><strong>Priority    : </strong> @targetSecondItemz.Priority</MudText>
+                                        <MudText><strong>Severity    : </strong> @targetSecondItemz.Severity</MudText>
+                                    </MudCardContent>
+                                </MudCard>
+                            </MudStack>
+                        }
                     }
 
-                    @if (IsReadyToImportBaselineItemz)
+                    @* @if (IsReadyToImportBaselineItemz)
                     {
                         <MudTooltip Text="Step 5: Ready to import BaselineItemz">
                             <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 5</MudChip>
                         </MudTooltip>
                         <MudButton OnClick="Import" Disabled="@(!fileSelected || !IsReadyToImportBaselineItemz)" Variant="Variant.Filled" Color="Color.Primary">Import Now</MudButton>
+                    } *@
+
+                    @if (IsReadyToImportItemz)
+                    {
+                        @if (itemzImportChoice == "underParent")
+                        {
+                            <MudTooltip Text="Step 5: Decide on placement at Top or Bottom under target record">
+                                <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 5</MudChip>
+                            </MudTooltip>
+
+                            <MudSwitch Label="@(importForm.AtBottomOfChildNodes ?
+                                "Place imported data at the Bottom of existing child list" :
+                                "Place imported data at the Top of existing child list")"
+                                @bind-Value="importForm.AtBottomOfChildNodes" />
+                            <MudTooltip Text="Step 6: Ready to import Itemz">
+                                <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 6</MudChip>
+                            </MudTooltip>
+                            <MudStack Row="true" Spacing="2" Class="mt-4">
+                                <MudButton OnClick="Import" Disabled="@(!fileSelected || !IsReadyToImportItemz)" Variant="Variant.Filled" Color="Color.Primary">Import Now</MudButton>
+                                <MudButton OnClick="ResetImportState" Disabled="@importingOverlay" Variant="Variant.Filled" Color="Color.Secondary" Class="ml-2">Cancel / Restart Import</MudButton>
+                            </MudStack>
+                        }
+                        else
+                        {
+                            <MudTooltip Text="Step 5: Ready to import Itemz">
+                                <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 5</MudChip>
+                            </MudTooltip>
+                            <MudStack Row="true" Spacing="2" Class="mt-4">
+                                <MudButton OnClick="Import" Disabled="@(!fileSelected || !IsReadyToImportItemz)" Variant="Variant.Filled" Color="Color.Primary">Import Now</MudButton>
+                                <MudButton OnClick="ResetImportState" Disabled="@importingOverlay" Variant="Variant.Filled" Color="Color.Secondary" Class="ml-2">Cancel / Restart Import</MudButton>
+                            </MudStack>
+                        }
                     }
+
                 }
                 @if (!string.IsNullOrEmpty(message))
                 {
@@ -483,7 +623,7 @@
         </MudStack>
     </MudPaper>
 </MudItem>
-
+}
 
 
 
@@ -510,7 +650,10 @@
     [Inject]
     public IItemzTypeService ItemzTypeService { get; set; }
     [Inject]
+    public IItemzService ItemzService { get; set; }
+    [Inject]
     public IHierarchyService HierarchyService { get; set; }
+
 
     private string _itemzTypeImportChoice = string.Empty;
     private string itemzTypeImportChoice
@@ -523,6 +666,9 @@
             {
                 firstItemzTypeText = string.Empty;
                 secondItemzTypeText = string.Empty;
+                targetFirstItemzType = new();
+                targetSecondItemzType = new();
+
             }
             else if (value == "betweenItemzTypes")
             {
@@ -544,10 +690,13 @@
             {
                 firstItemzText = string.Empty;
                 secondItemzText = string.Empty;
+                targetFirstItemz = new();
+                targetSecondItemz = new();
             }
             else if (value == "betweenItemz")
             {
                 targetParentIdText = string.Empty;
+                targetItemz = new();
             }
         }
     }
@@ -562,8 +711,14 @@
     private bool importingOverlay = false;
 
     public GetProjectDTO targetProject { get; set; } = new();
+    public GetItemzTypeDTO targetItemzType { get; set; } = new();
     public GetItemzTypeDTO targetFirstItemzType { get; set; } = new();
     public GetItemzTypeDTO targetSecondItemzType { get; set; } = new();
+    public GetItemzDTO targetItemz { get; set; } = new();
+    public GetItemzDTO targetFirstItemz { get; set; } = new();
+    public GetItemzDTO targetSecondItemz { get; set; } = new();
+
+
 
 
     private bool IsReadyToImportItemzType =>
@@ -698,6 +853,9 @@
                 importingOverlay = false; // Turn off before dialog
 
                 await ShowSummaryDialog(importResponse?.ImportSummary, importResponse?.ImportedRootId);
+
+                // Reset the screen after summary is shown
+                await ResetImportState();
             }
             else
             {
@@ -786,7 +944,7 @@
 
 
 
-    public async Task selectTargetItemzType()
+    public async Task selectTargetBetweenItemzType()
     {
         targetFirstItemzType = new(); // CLEAR OUT SELF.
         targetSecondItemzType = new(); // CLEAR OUT SELF.
@@ -843,6 +1001,147 @@
     }
 
 
+    public async Task selectTargetItemzType()
+    {
+        targetItemz = new(); // CLEAR OUT THE OTHER ONE
+        targetParentIdText = string.Empty; // CLEAR OUT SELF.
+        var parameters = new DialogParameters();
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = DialogService.Show<SelectTargetItemzTypeDialog>("Enter Target ItemzType Record ID", parameters, options);
+        var result = await dialog.Result;
+        if (!result.Canceled && result.Data is Guid inputTargetItemzTypeId)
+        {
+
+            // Verify recordId exists in your repository
+            try
+            {
+                var foundTargetItemzType = await ItemzTypeService.__Single_ItemzType_By_GUID_ID__Async(inputTargetItemzTypeId);
+                if (foundTargetItemzType != null)
+                {
+                    targetItemzType = foundTargetItemzType;
+                    targetParentIdText = targetItemzType.Id.ToString();
+                }
+                else
+                {
+                    await DialogService.ShowMessageBox("ERROR", markupMessage: new
+                            MarkupString($"<p style=\"color: red; \">Could not find Target ItemzType with ID {inputTargetItemzTypeId} in repository.</p>"), yesText: "OK");
+                    targetItemzType = new(); // CLEAR OUT SELF
+                    targetParentIdText = string.Empty; // CLEAR OUT SELF.
+
+                }
+            }
+            catch (Exception ex)
+            {
+                await DialogService.ShowMessageBox("ERROR", markupMessage: new
+                        MarkupString($"<p style=\"color: red; \">EXCEPTION :: Could not find Target ItemzType with ID {inputTargetItemzTypeId} in repository.</p>"), yesText: "OK");
+                targetItemzType = new(); // CLEAR OUT SELF
+                targetParentIdText = string.Empty; // CLEAR OUT SELF.
+            }
+        }
+    }
+
+
+
+    public async Task selectTargetBetweenItemz()
+    {
+        targetFirstItemz = new(); // CLEAR OUT SELF.
+        targetSecondItemz = new(); // CLEAR OUT SELF.
+        firstItemzText = string.Empty; // CLEAR OUT SELF.
+        secondItemzText = string.Empty; // CLEAR OUT SELF.
+
+        var parameters = new DialogParameters();
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = DialogService.Show<SelectTargetItemzDialog>("Enter Target Itemz Record ID", parameters, options);
+        var result = await dialog.Result;
+        if (!result.Canceled && result.Data is Guid inputTargetItemzId)
+        {
+
+            // Verify recordId exists in your repository
+            try
+            {
+                var foundTargetFirstItemz = await ItemzService.__Single_Itemz_By_GUID_ID__Async(inputTargetItemzId);
+                if (foundTargetFirstItemz != null)
+                {
+                    targetFirstItemz = foundTargetFirstItemz;
+                    firstItemzText = targetFirstItemz.Id.ToString();
+
+                    var foundNextSiblingHierarchyDetails = await HierarchyService.__Get_Next_Sibling_Hierarchy_Record_Details_By_GUID__Async(targetFirstItemz.Id);
+                    if (foundNextSiblingHierarchyDetails != null)
+                    {
+                        var foundTargetSecondItemz = await ItemzService.__Single_Itemz_By_GUID_ID__Async(foundNextSiblingHierarchyDetails.RecordId);
+                        if (foundTargetSecondItemz != null)
+                        {
+                            targetSecondItemz = foundTargetSecondItemz;
+                            secondItemzText = targetSecondItemz.Id.ToString();
+                        }
+                    }
+
+                }
+                else
+                {
+                    await DialogService.ShowMessageBox("ERROR", markupMessage: new
+                            MarkupString($"<p style=\"color: red; \">Could not find Target First OR Second Itemz with ID {inputTargetItemzId} in repository.</p>"), yesText: "OK");
+                    targetFirstItemz = new(); // CLEAR OUT SELF.
+                    targetSecondItemz = new(); // CLEAR OUT SELF.
+                    firstItemzText = string.Empty; // CLEAR OUT SELF.
+                    secondItemzText = string.Empty; // CLEAR OUT SELF.
+                }
+
+
+            }
+            catch (Exception ex)
+            {
+                await DialogService.ShowMessageBox("ERROR", markupMessage: new
+                        MarkupString($"<p style=\"color: red; \">EXCEPTION :: Could not find Target First OR Second Itemz with ID {inputTargetItemzId} in repository.</p>"), yesText: "OK");
+                targetFirstItemz = new(); // CLEAR OUT SELF.
+                targetSecondItemz = new(); // CLEAR OUT SELF.
+                firstItemzText = string.Empty; // CLEAR OUT SELF.
+                secondItemzText = string.Empty; // CLEAR OUT SELF.
+            }
+        }
+    }
+
+
+
+    public async Task selectTargetItemz()
+    {
+        targetItemzType = new(); // CLEAR OUT THE OTHER ONE
+        targetParentIdText = string.Empty; // CLEAR OUT SELF.
+        var parameters = new DialogParameters();
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialog = DialogService.Show<SelectTargetItemzDialog>("Enter Target Itemz Record ID", parameters, options);
+        var result = await dialog.Result;
+        if (!result.Canceled && result.Data is Guid inputTargetItemzId)
+        {
+
+            // Verify recordId exists in your repository
+            try
+            {
+                var foundTargetItemz = await ItemzService.__Single_Itemz_By_GUID_ID__Async(inputTargetItemzId);
+                if (foundTargetItemz != null)
+                {
+                    targetItemz = foundTargetItemz;
+                    targetParentIdText = targetItemz.Id.ToString();
+                }
+                else
+                {
+                    await DialogService.ShowMessageBox("ERROR", markupMessage: new
+                            MarkupString($"<p style=\"color: red; \">Could not find Target Itemz with ID {inputTargetItemzId} in repository.</p>"), yesText: "OK");
+                    targetItemz = new(); // CLEAR OUT SELF.
+                    targetParentIdText = string.Empty; // CLEAR OUT SELF.
+                }
+            }
+            catch (Exception ex)
+            {
+                await DialogService.ShowMessageBox("ERROR", markupMessage: new
+                        MarkupString($"<p style=\"color: red; \">EXCEPTION :: Could not find Target Itemz with ID {inputTargetItemzId} in repository.</p>"), yesText: "OK");
+                targetItemz = new(); // CLEAR OUT SELF.
+                targetParentIdText = string.Empty; // CLEAR OUT SELF.
+            }
+        }
+    }
+
+
     public static async Task<string> DetectImportRecordTypeAsync(Stream jsonStream)
     {
         var jsonDoc = await JsonDocument.ParseAsync(jsonStream, new JsonDocumentOptions { MaxDepth = 32});
@@ -873,5 +1172,43 @@
 
         return "Unknown";
     }
+
+    private async Task ResetImportState()
+    {
+        // Reset Import Choices
+        _itemzTypeImportChoice = string.Empty;
+        _itemzImportChoice = string.Empty;
+        recordType = string.Empty;
+
+        // File Upload State
+        uploadedFile = null;
+        fileSelected = false;
+        selectedFileName = string.Empty;
+
+        // Messaging and UI Overlay
+        message = string.Empty;
+        messageColor = Color.Default;
+        importingOverlay = false;
+
+        // Target DTOs
+        targetProject = new();
+        targetItemzType = new();
+        targetFirstItemzType = new();
+        targetSecondItemzType = new();
+        targetItemz = new();
+        targetFirstItemz = new();
+        targetSecondItemz = new();
+
+        // Form Inputs
+        importForm = new();
+        targetParentIdText = string.Empty;
+        firstItemzTypeText = string.Empty;
+        secondItemzTypeText = string.Empty;
+        firstItemzText = string.Empty;
+        secondItemzText = string.Empty;
+
+        await Task.CompletedTask;
+    }
+
 
 }
