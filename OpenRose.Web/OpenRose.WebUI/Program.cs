@@ -25,6 +25,7 @@ using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using MudBlazor.Services;
 using MudExtensions.Services;
 using OpenRose.WebUI.Client.Services.Export;
+using OpenRose.WebUI.Client.Services.Import;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -73,6 +74,7 @@ if (!configurationService.IsOpenRoseAPIConfigured)
     builder.Services.AddSingleton<IBaselineItemzTraceService, DummyBaselineItemzTraceService>();
     builder.Services.AddSingleton<IBaselineItemzCollectionService, DummyBaselineItemzCollectionService>();
     builder.Services.AddSingleton<IExportService, DummyExportService>();
+	builder.Services.AddSingleton<IImportService, DummyImportService>();
 }
 else
 {
@@ -150,6 +152,11 @@ else
 	{
 		client.BaseAddress = new Uri(apiSettings!.BaseUrl);
 	});
+	builder.Services.AddHttpClient<IImportService, ImportService>(client =>
+	{
+		client.BaseAddress = new Uri(apiSettings!.BaseUrl);
+	});
+
 
 	// EXPLAINATION :: "FindProjectAndBaselineIdsByBaselineItemzIdService" depens on "IBaselineHierarchyService" and so 
 	// we need to register it here within the else block where we know that OpenRose API settings are available.

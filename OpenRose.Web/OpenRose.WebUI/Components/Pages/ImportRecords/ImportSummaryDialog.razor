@@ -1,0 +1,37 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * Export Records UI with details preview for all 6 record types.
+*@
+
+@using MudBlazor
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6" Color="Color.Primary">✅ Import Summary</MudText>
+    </TitleContent>
+
+    <DialogContent>
+        @if (ImportedRootId.HasValue)
+        {
+            <MudText>Imported Root ID: <strong>@ImportedRootId</strong></MudText>
+        }
+        <MudText>Total Items Created: <strong>@TotalCreated</strong></MudText>
+        <MudText>Total Traces Created: <strong>@TotalTraces</strong></MudText>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="CloseDialog">OK</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; }
+
+    [Parameter] public int TotalCreated { get; set; }
+    [Parameter] public int TotalTraces { get; set; }
+    [Parameter] public Guid? ImportedRootId { get; set; }
+
+
+    private void CloseDialog() => MudDialog.Close(DialogResult.Ok(true));
+}

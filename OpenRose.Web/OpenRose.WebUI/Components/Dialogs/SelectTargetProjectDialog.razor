@@ -12,9 +12,6 @@
         <MudText Color="Color.Primary">Select Target Project</MudText>
     </TitleContent>
     <DialogContent>
-@*         <MudTextField @bind-Value="UserInput" Label="Record ID" Variant="Variant.Text" Immediate="true" /> 
-        <MudText Color="Color.Error" Dense="true">@ErrorMessage</MudText>
- *@
         <MudSelect @bind-Value="UserInput"
                    For="@(() => UserInput)"
                    Required="true"
