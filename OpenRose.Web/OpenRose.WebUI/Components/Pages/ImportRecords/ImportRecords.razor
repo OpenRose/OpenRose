@@ -58,8 +58,6 @@
 </MudPaper>
  *@
 
-
-
 <MudItem xs="12" Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3">
     <MudPaper Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3" style="padding: 16px;">
         <div class="d-flex flex-column align-items-center justify-center w-100 h-100">
@@ -113,7 +111,6 @@
                         <MudTooltip Text="Step 3: Provide Project ID and placement">
                             <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 3</MudChip>
                         </MudTooltip>
-@*                         <MudTextField Label="Target Parent ID" @bind-Value="targetParentIdText" Required="true" style="width: 400px;" /> *@
                         <MudButton @onclick="async _ => await selectTargetProject()" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Primary"> Select Target Project </MudButton>
 			            @if (targetProject != null && targetProject.Id != Guid.Empty )
 			            {
@@ -133,7 +130,6 @@
 				            </MudStack>
 			            }
 
-                        @* <MudSwitch Label="Place at Bottom of Parent’s Children" @bind-Value="importForm.AtBottomOfChildNodes" /> *@
                         <MudSwitch Label="@(importForm.AtBottomOfChildNodes ?
                                        "Place imported data at the Bottom of existing child list" :
                                        "Place imported data at the Top of existing child list")"
@@ -147,10 +143,6 @@
                         </MudTooltip>
 
                         <MudButton @onclick="async _ => await selectTargetBetweenItemzType()" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Primary"> Select Target First ItemzType </MudButton>
-                        @*
-                        <MudTextField Label="First ItemzType ID" @bind-Value="firstItemzTypeText" Required="true" style="width: 400px;" />
-                        <MudTextField Label="Second ItemzType ID" @bind-Value="secondItemzTypeText" Required="true" style="width: 400px;" />
-                        *@
                         @if (targetFirstItemzType != null && targetFirstItemzType.Id != Guid.Empty && targetSecondItemzType != null && targetSecondItemzType.Id != Guid.Empty)
                         {
                             <MudStack Row="false" Spacing="2">
@@ -215,12 +207,8 @@
                             <MudTooltip Text="Step 3: Provide Parent ID and placement">
                                 <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 3</MudChip>
                             </MudTooltip>
-                            @* <MudTextField Label="Target Parent ID" @bind-Value="targetParentIdText" Required="true" Style="width: 400px;" /> *@
-
                             <MudButton @onclick="async _ => await selectTargetItemz()" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Primary"> Select Target Itemz </MudButton>
                             <MudButton @onclick="async _ => await selectTargetItemzType()" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Primary"> Select Target ItemzType </MudButton>
-
-                            @* <MudSwitch Label="Place at Bottom of Parent’s Children" @bind-Value="importForm.AtBottomOfChildNodes" /> *@
                         </MudStack>
                         @if (targetItemz != null && targetItemz.Id != Guid.Empty)
                         {
@@ -264,9 +252,6 @@
                         <MudTooltip Text="Step 3: Provide two sibling Itemz IDs">
                             <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 3</MudChip>
                         </MudTooltip>
-
-@*                         <MudTextField Label="First Itemz ID" @bind-Value="firstItemzText" Required="true" Style="width: 400px;" />
-                        <MudTextField Label="Second Itemz ID" @bind-Value="secondItemzText" Required="true" Style="width: 400px;" /> *@
                         <MudButton @onclick="async _ => await selectTargetBetweenItemz()" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Primary"> Select Target First Itemz </MudButton>
                         @if (targetFirstItemz != null && targetFirstItemz.Id != Guid.Empty && targetSecondItemz != null && targetSecondItemz.Id != Guid.Empty)
                         {
@@ -377,7 +362,6 @@
                         <MudTooltip Text="Step 4: Provide Project ID and placement">
                             <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 4</MudChip>
                         </MudTooltip>
-                        @* <MudTextField Label="Target Parent ID" @bind-Value="targetParentIdText" Required="true" Style="width: 400px;" /> *@
                         <MudButton @onclick="async _ => await selectTargetProject()" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Primary"> Select Target Project </MudButton>
                         @if (targetProject != null && targetProject.Id != Guid.Empty)
                         {
@@ -406,13 +390,7 @@
                         <MudTooltip Text="Step 4: Provide two sibling ItemzType IDs">
                             <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 4</MudChip>
                         </MudTooltip>
-
-
-                        @* <MudTextField Label="First ItemzType ID" @bind-Value="firstItemzTypeText" Required="true" Style="width: 400px;" />
-                        <MudTextField Label="Second ItemzType ID" @bind-Value="secondItemzTypeText" Required="true" Style="width: 400px;" /> *@
-
                         <MudButton @onclick="async _ => await selectTargetBetweenItemzType()" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Primary"> Select Target First ItemzType </MudButton>
-
                         @if (targetFirstItemzType != null && targetFirstItemzType.Id != Guid.Empty && targetSecondItemzType != null && targetSecondItemzType.Id != Guid.Empty)
                         {
                             <MudStack Row="false" Spacing="2">
@@ -482,13 +460,8 @@
                             <MudTooltip Text="Step 4: Provide Parent ID and placement">
                                 <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 4</MudChip>
                             </MudTooltip>
-                           @*  <MudTextField Label="Target Parent ID" @bind-Value="targetParentIdText" Required="true" Style="width: 400px;" /> *@
-
                             <MudButton @onclick="async _ => await selectTargetItemz()" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Primary"> Select Target Itemz </MudButton>
                             <MudButton @onclick="async _ => await selectTargetItemzType()" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Primary"> Select Target ItemzType </MudButton>
-
-
-                            @* <MudSwitch Label="Place at Bottom of Parent’s Children" @bind-Value="importForm.AtBottomOfChildNodes" /> *@
                         </MudStack>
                         @if (targetItemz != null && targetItemz.Id != Guid.Empty)
                         {
@@ -532,12 +505,6 @@
                         <MudTooltip Text="Step 4: Provide two sibling Itemz IDs">
                             <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 4</MudChip>
                         </MudTooltip>
-                        
-                        @* <MudTextField Label="First Itemz ID" @bind-Value="firstItemzText" Required="true" Style="width: 400px;" />
-                        <MudTextField Label="Second Itemz ID" @bind-Value="secondItemzText" Required="true" Style="width: 400px;" /> *@
-
-
-
                         <MudButton @onclick="async _ => await selectTargetBetweenItemz()" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Primary"> Select Target First Itemz </MudButton>
                         @if (targetFirstItemz != null && targetFirstItemz.Id != Guid.Empty && targetSecondItemz != null && targetSecondItemz.Id != Guid.Empty)
                         {
@@ -573,15 +540,6 @@
                             </MudStack>
                         }
                     }
-
-                    @* @if (IsReadyToImportBaselineItemz)
-                    {
-                        <MudTooltip Text="Step 5: Ready to import BaselineItemz">
-                            <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">STEP 5</MudChip>
-                        </MudTooltip>
-                        <MudButton OnClick="Import" Disabled="@(!fileSelected || !IsReadyToImportBaselineItemz)" Variant="Variant.Filled" Color="Color.Primary">Import Now</MudButton>
-                    } *@
-
                     @if (IsReadyToImportItemz)
                     {
                         @if (itemzImportChoice == "underParent")
@@ -624,8 +582,6 @@
     </MudPaper>
 </MudItem>
 }
-
-
 
 @if (importingOverlay)
 {
@@ -765,15 +721,7 @@
         set => importForm.SecondItemzId = Guid.TryParse(value, out var guid) ? guid : null;
     }
 
-    // private void HandleFileChange(InputFileChangeEventArgs e)
-    // {
-    //     uploadedFile = e.File;
-    //     fileSelected = uploadedFile != null;
-    //     selectedFileName = uploadedFile?.Name ?? "";
-    //     message = "";
-    // }
-
-
+    
     private async Task<string> ReadFileContentsAsync(IBrowserFile file)
     {
         using var stream = file.OpenReadStream(maxAllowedSize: 10_000_000);
@@ -799,7 +747,7 @@
             }
 
             using var stream = uploadedFile.OpenReadStream(maxAllowedSize: 10_000_000);
-            recordType = await DetectImportRecordTypeAsync(stream);
+            recordType = await DetectImportRecordTypeLiteAsync(stream);
 
             if (string.IsNullOrWhiteSpace(recordType) || recordType.Equals("Unknown", StringComparison.OrdinalIgnoreCase))
             {
@@ -823,8 +771,6 @@
         StateHasChanged();
     }
 
-
-
     private async Task Import()
     {
         if (uploadedFile == null)
@@ -846,9 +792,6 @@
                 {
                     PropertyNameCaseInsensitive = true
                 });
-
-                // message = "Import completed successfully!";
-                // messageColor = Color.Success;
 
                 importingOverlay = false; // Turn off before dialog
 
@@ -898,7 +841,6 @@
 
     }
 
-
     public async Task selectTargetProject()
     {
         var parameters = new DialogParameters();
@@ -907,13 +849,6 @@
         var result = await dialog.Result;
         if (!result.Canceled && result.Data is Guid inputTargetProjectId)
         {
-
-            // if (sourceItemzType.Id == inputTargetProjectId)
-            // {
-            //     await DialogService.ShowMessageBox("ERROR", markupMessage: new MarkupString($"<p style=\"color: red; \">Source and Target Id can not be same.</p>"), yesText: "OK");
-            //     targetProject = new();
-            //     return;
-            // }
 
             // Verify recordId exists in your repository
             try
@@ -941,8 +876,6 @@
             }
         }
     }
-
-
 
     public async Task selectTargetBetweenItemzType()
     {
@@ -1101,8 +1034,6 @@
         }
     }
 
-
-
     public async Task selectTargetItemz()
     {
         targetItemzType = new(); // CLEAR OUT THE OTHER ONE
@@ -1141,37 +1072,96 @@
         }
     }
 
+    // This method detects the type of records in the JSON stream
+    // but it loads entire JSON document into memory. We are going to
+    // try another method which is going to load just 1 or 2 levels of data
+    // from the stream, which is more efficient for large files.
+    // public static async Task<string> DetectImportRecordTypeAsync(Stream jsonStream)
+    // {
+    //     var jsonDoc = await JsonDocument.ParseAsync(jsonStream, new JsonDocumentOptions { MaxDepth = 32});
+    //     var root = jsonDoc.RootElement;
 
-    public static async Task<string> DetectImportRecordTypeAsync(Stream jsonStream)
+    //     var importCandidates = new[] {
+    //         "Projects", "ItemzTypes", "Itemz", "Baselines",
+    //         "BaselineItemzTypes", "BaselineItemz"
+    //     };
+
+    //     foreach (var property in root.EnumerateObject())
+    //     {
+    //         var propName = property.Name;
+
+    //         foreach (var candidate in importCandidates)
+    //         {
+    //             if (string.Equals(propName, candidate, StringComparison.OrdinalIgnoreCase))
+    //             {
+    //                 var element = property.Value;
+    //                 if (element.ValueKind != JsonValueKind.Null &&
+    //                     !(element.ValueKind == JsonValueKind.Array && element.GetArrayLength() == 0))
+    //                 {
+    //                     return candidate;
+    //                 }
+    //             }
+    //         }
+    //     }
+
+    //     return "Unknown";
+    // }
+
+    public static async Task<string> DetectImportRecordTypeLiteAsync(Stream jsonStream)
     {
-        var jsonDoc = await JsonDocument.ParseAsync(jsonStream, new JsonDocumentOptions { MaxDepth = 32});
-        var root = jsonDoc.RootElement;
+        var buffer = new byte[8192]; // small, efficient chunk size
+        using var memoryStream = new MemoryStream();
+        int bytesRead;
 
-        var importCandidates = new[] {
-            "Projects", "ItemzTypes", "Itemz", "Baselines",
-            "BaselineItemzTypes", "BaselineItemz"
-        };
-
-        foreach (var property in root.EnumerateObject())
+        // Read a slice of the stream — enough to reach root nodes
+        while ((bytesRead = await jsonStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
         {
-            var propName = property.Name;
+            memoryStream.Write(buffer, 0, bytesRead);
+            if (memoryStream.Length > 4096) break; // heuristic limit
+        }
 
-            foreach (var candidate in importCandidates)
+        memoryStream.Seek(0, SeekOrigin.Begin);
+        var reader = new Utf8JsonReader(memoryStream.ToArray());
+
+        var candidateKeys = new[] {
+        "Projects", "ItemzTypes", "Itemz", "Baselines",
+        "BaselineItemzTypes", "BaselineItemz"
+    };
+
+        string? currentProperty = null;
+
+        while (reader.Read())
+        {
+            if (reader.TokenType == JsonTokenType.PropertyName)
             {
-                if (string.Equals(propName, candidate, StringComparison.OrdinalIgnoreCase))
-                {
-                    var element = property.Value;
-                    if (element.ValueKind != JsonValueKind.Null &&
-                        !(element.ValueKind == JsonValueKind.Array && element.GetArrayLength() == 0))
-                    {
-                        return candidate;
-                    }
-                }
+                currentProperty = reader.GetString();
             }
+            else if (currentProperty != null && candidateKeys.Contains(currentProperty, StringComparer.OrdinalIgnoreCase))
+            {
+                if (reader.TokenType == JsonTokenType.StartArray)
+                {
+                    // Peek inside array to see if it has data
+                    reader.Read();
+                    if (reader.TokenType != JsonTokenType.EndArray)
+                        return currentProperty;
+                }
+                else if (reader.TokenType != JsonTokenType.Null)
+                {
+                    // It's not null — we found usable content
+                    return currentProperty;
+                }
+
+                currentProperty = null; // reset after check
+            }
+
+            // Stop after root-level properties
+            if (reader.CurrentDepth > 1)
+                break;
         }
 
         return "Unknown";
     }
+
 
     private async Task ResetImportState()
     {
@@ -1209,6 +1199,4 @@
 
         await Task.CompletedTask;
     }
-
-
 }
