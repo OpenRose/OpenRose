@@ -9,6 +9,7 @@
 @using OpenRose.WebUI.Client.Services.Itemz
 @using OpenRose.WebUI.Client.Services.ItemzType
 @using OpenRose.WebUI.Client.Services.Project
+@using OpenRose.WebUI.Components.Dialogs
 @using OpenRose.WebUI.Components.Pages.Common
 @using OpenRose.WebUI.Services
 @inject IDialogService DialogService
@@ -104,14 +105,7 @@
 		}
 		else if (radioRecordType == "Project" && copyProject != null && copyProject.Id != Guid.Empty)
 		{
-			@*  
 
-				TODO :: We need to make sure that we show users list of project rather then ask user to type in Project ID.
-						So we need change following logic to match-up to how we allow user to select Project ID when importing ItemzType Data 
-						into OpenRose Requirements Management System. We have to sotre returned Project ID to be able to use it subsequently
-						when copying Project Data.
-
-			*@
 			<MudStack Row="false" Spacing="2" AlignItems="AlignItems.Center" JustifyContent="Justify.Center">
 				<MudCard style="background-color : #FABBBB; margin: 16px;" Class="w-100">
 					<MudCardContent Class="d-flex flex-wrap">
@@ -277,9 +271,9 @@
 
 	public async Task selectSourceProject()
 	{
-		var parameters = new DialogParameters { ["RecordType"] = radioRecordType };
+		var parameters = new DialogParameters();
 		var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-		var dialog = DialogService.Show<SelectSourceRecordDialog>("Enter Source Project Record ID", parameters, options);
+		var dialog = DialogService.Show<SelectTargetProjectDialog>("Select Source Project", parameters, options);
 		var result = await dialog.Result;
 		if (!result.Canceled && result.Data is Guid inputSourceProjectId)
 		{
@@ -292,13 +286,15 @@
 				}
 				else
 				{
-					await DialogService.ShowMessageBox("ERROR", markupMessage: new MarkupString($"<p style=\"color: red;\">Could not find Source Project with ID {inputSourceProjectId} in repository.</p>"), yesText: "OK");
+					await DialogService.ShowMessageBox("ERROR", markupMessage: new
+							MarkupString($"<p style=\"color: red; \">Could not find Source Project with ID {inputSourceProjectId} in repository.</p>"), yesText: "OK");
 					copyProject = new();
 				}
 			}
-			catch
+			catch (Exception ex)
 			{
-				await DialogService.ShowMessageBox("ERROR", markupMessage: new MarkupString($"<p style=\"color: red;\">EXCEPTION: Could not find Source Project with ID {inputSourceProjectId} in repository.</p>"), yesText: "OK");
+				await DialogService.ShowMessageBox("ERROR", markupMessage: new
+						MarkupString($"<p style=\"color: red; \">EXCEPTION :: Could not find Source Project with ID {inputSourceProjectId} in repository.</p>"), yesText: "OK");
 				copyProject = new();
 			}
 		}
