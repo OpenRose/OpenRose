@@ -4,6 +4,18 @@
  * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 *@
 
+@* 
+We currently have many different ItemzType selection dialog box which can be merged into single component here is the list
+of such dialog boxes that can be shared across multiple places. 
+
+OpenRose\OpenRose.Web\OpenRose.WebUI\Components\Dialogs\SelectTargetItemzTypeDialog.razor
+OpenRose\OpenRose.Web\OpenRose.WebUI\Components\Pages\MoveItemz\SelectTargetItemzTypeDialog.razor
+OpenRose\OpenRose.Web\OpenRose.WebUI\Components\Pages\MoveItemzType\SelectTargetItemzTypeDialog.razor
+OpenRose\OpenRose.Web\OpenRose.WebUI\Components\Pages\MoveItemzType\SelectSourceItemzTypeDialog.razor
+
+There will be other places where we can improve as well but lets start with this Requirements Itemz dialog box.
+ *@
+
 <MudDialog>
     <TitleContent>
         <MudText Color="Color.Primary">Select Target ItemzType</MudText>
