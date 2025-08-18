@@ -150,7 +150,10 @@
 
 	public async Task selectSourceItemzType()
 	{
-		var parameters = new DialogParameters();
+		var parameters = new DialogParameters
+		{
+			{ "ActionContext", "Source" }
+		}; 
 		var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
 		var dialog = DialogService.Show<SelectItemzTypeDialog>("Enter Source ItemzType Record ID", parameters, options);
 		var result = await dialog.Result;
@@ -186,7 +189,10 @@
 	{
 		targetFirstItemzType = new(); // CLEAR OUT SELF.
 		targetSecondItemzType = new(); // CLEAR OUT SELF.
-		var parameters = new DialogParameters();
+		var parameters = new DialogParameters
+		{
+			{ "ActionContext", "Target" }
+		}; 
 		var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
 		var dialog = DialogService.Show<SelectItemzTypeDialog>("Enter Target ItemzType Record ID", parameters, options);
 		var result = await dialog.Result;

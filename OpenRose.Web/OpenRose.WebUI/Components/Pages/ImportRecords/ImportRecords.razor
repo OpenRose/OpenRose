@@ -884,7 +884,10 @@
         firstItemzTypeText = string.Empty; // CLEAR OUT SELF.
         secondItemzTypeText = string.Empty; // CLEAR OUT SELF.
 
-        var parameters = new DialogParameters();
+        var parameters = new DialogParameters
+        {
+            { "ActionContext", "Target" }
+        };
         var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
         var dialog = DialogService.Show<SelectItemzTypeDialog>("Enter Target ItemzType Record ID", parameters, options);
         var result = await dialog.Result;
@@ -938,7 +941,10 @@
     {
         targetItemz = new(); // CLEAR OUT THE OTHER ONE
         targetParentIdText = string.Empty; // CLEAR OUT SELF.
-        var parameters = new DialogParameters();
+        var parameters = new DialogParameters
+        {
+            { "ActionContext", "Target" }
+        };
         var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
         var dialog = DialogService.Show<SelectItemzTypeDialog>("Enter Target ItemzType Record ID", parameters, options);
         var result = await dialog.Result;
