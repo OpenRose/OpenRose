@@ -18,7 +18,6 @@ There will be other places where we can improve as well but lets start with this
 
 <MudDialog>
     <TitleContent>
-        @* <MudText Color="Color.Primary">@DialogTitle</MudText> *@
         <MudText Color="Color.Primary">@MudDialog.Title</MudText>
     </TitleContent>
     <DialogContent>
@@ -35,9 +34,7 @@ There will be other places where we can improve as well but lets start with this
     [CascadingParameter]
     private IMudDialogInstance MudDialog { get; set; }
     
-    [Parameter] public string ActionContext { get; set; } = ""; 
-
-    private string DialogTitle => $"Select {ActionContext} ItemzType";
+    [Parameter] public string ActionContext { get; set; } = ""; // Usually "Source" or "Target"
 
     private string UserInput { get; set; } = string.Empty; 
     private string ErrorMessage { get; set; } = string.Empty;
@@ -50,7 +47,7 @@ There will be other places where we can improve as well but lets start with this
         } 
         else 
         { 
-            ErrorMessage = "Please enter a valid GUID as Target Itemz Type ID.";
+            ErrorMessage = $"Please enter a valid GUID as {ActionContext} Itemz Type ID.";
         } 
     }
 
