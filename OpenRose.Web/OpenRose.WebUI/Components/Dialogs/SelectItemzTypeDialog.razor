@@ -4,29 +4,24 @@
  * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 *@
 
-@* 
-We currently have many different ItemzType selection dialog box which can be merged into single component here is the list
-of such dialog boxes that can be shared across multiple places. 
-
-OpenRose\OpenRose.Web\OpenRose.WebUI\Components\Dialogs\SelectTargetItemzTypeDialog.razor
-OpenRose\OpenRose.Web\OpenRose.WebUI\Components\Pages\MoveItemz\SelectTargetItemzTypeDialog.razor
-OpenRose\OpenRose.Web\OpenRose.WebUI\Components\Pages\MoveItemzType\SelectTargetItemzTypeDialog.razor
-OpenRose\OpenRose.Web\OpenRose.WebUI\Components\Pages\MoveItemzType\SelectSourceItemzTypeDialog.razor
-
-There will be other places where we can improve as well but lets start with this Requirements Itemz dialog box.
- *@
-
 <MudDialog>
     <TitleContent>
         <MudText Color="Color.Primary">@MudDialog.Title</MudText>
     </TitleContent>
-    <DialogContent>
-        <MudTextField @bind-Value="UserInput" Label="Record ID" Variant="Variant.Text" Immediate="true" /> 
+    <DialogContent>    
+        <MudTextField @bind-Value="UserInput"
+                    Label="Record ID"
+                    OnKeyDown="HandleKeyDown"
+                    Placeholder="e.g. 123e4567-e89b-12d3-a456-426614174000"
+                    Variant="Variant.Text"
+                    Immediate="true"
+                    AutoFocus="true"
+                    @ref="inputRef" />
         <MudText Color="Color.Error" Dense="true">@ErrorMessage</MudText>
     </DialogContent>
     <DialogActions>
-        <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="Submit">Yes</MudButton>
-        <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="Cancel">No</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="Submit">Submit</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="Cancel">Cancel</MudButton>
     </DialogActions>
 </MudDialog>
 
@@ -38,6 +33,8 @@ There will be other places where we can improve as well but lets start with this
 
     private string UserInput { get; set; } = string.Empty; 
     private string ErrorMessage { get; set; } = string.Empty;
+    private MudTextField<string> inputRef;
+
     
 	private void Submit() 
     { 
@@ -52,5 +49,19 @@ There will be other places where we can improve as well but lets start with this
     }
 
     private void Cancel() => MudDialog.Cancel();
-}
 
+    private void HandleKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter") Submit();
+        if (args.Key == "Escape") Cancel();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Task.Delay(100); // Give the dialog time to render
+            await inputRef.FocusAsync();
+        }
+    }
+}
