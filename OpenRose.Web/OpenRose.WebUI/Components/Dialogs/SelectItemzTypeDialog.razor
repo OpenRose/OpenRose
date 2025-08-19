@@ -1,0 +1,67 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+<MudDialog>
+    <TitleContent>
+        <MudText Color="Color.Primary">@MudDialog.Title</MudText>
+    </TitleContent>
+    <DialogContent>    
+        <MudTextField @bind-Value="UserInput"
+                    Label="Record ID"
+                    OnKeyDown="HandleKeyDown"
+                    Placeholder="e.g. 123e4567-e89b-12d3-a456-426614174000"
+                    Variant="Variant.Text"
+                    Immediate="true"
+                    AutoFocus="true"
+                    @ref="inputRef" />
+        <MudText Color="Color.Error" Dense="true">@ErrorMessage</MudText>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="Submit">Submit</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="Cancel">Cancel</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; }
+    
+    [Parameter] public string ActionContext { get; set; } = ""; // Usually "Source" or "Target"
+
+    private string UserInput { get; set; } = string.Empty; 
+    private string ErrorMessage { get; set; } = string.Empty;
+    private MudTextField<string> inputRef;
+
+    
+	private void Submit() 
+    { 
+        if (Guid.TryParse(UserInput, out Guid inputItemzTypeId))
+        { 
+            MudDialog.Close(DialogResult.Ok(inputItemzTypeId));
+        } 
+        else 
+        { 
+            ErrorMessage = $"Please enter a valid GUID as {ActionContext} Itemz Type ID.";
+        } 
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private void HandleKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter") Submit();
+        if (args.Key == "Escape") Cancel();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Task.Delay(100); // Give the dialog time to render
+            await inputRef.FocusAsync();
+        }
+    }
+}

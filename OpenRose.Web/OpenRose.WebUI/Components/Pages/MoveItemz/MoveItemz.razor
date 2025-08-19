@@ -10,6 +10,7 @@
 @using OpenRose.WebUI.Client.Services.ItemzType
 @using OpenRose.WebUI.Components.Pages.Common
 @using OpenRose.WebUI.Services
+@using OpenRose.WebUI.Components.Dialogs
 @inject IDialogService DialogService
 @inject NavigationManager NavManager
 @inject ConfigurationService ConfigurationService
@@ -248,9 +249,12 @@
 
 	public async Task selectTargetItemzType()
 	{
-		var parameters = new DialogParameters();
+		var parameters = new DialogParameters
+		{
+			{ "ActionContext", "Target" }
+		};
 		var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-		var dialog = DialogService.Show<SelectTargetItemzTypeDialog>("Enter Target ItemzType Record ID", parameters, options);
+		var dialog = DialogService.Show<SelectItemzTypeDialog>("Enter Target ItemzType Record ID", parameters, options);
 		var result = await dialog.Result;
 		if (!result.Canceled && result.Data is Guid inputTargetItemzTypeId)
 		{

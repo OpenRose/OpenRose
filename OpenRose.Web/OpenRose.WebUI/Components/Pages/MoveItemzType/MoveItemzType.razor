@@ -160,9 +160,12 @@
 
 	public async Task selectSourceItemzType()
 	{
-		var parameters = new DialogParameters();
+		var parameters = new DialogParameters
+		{
+			{ "ActionContext", "Source" }
+		};
 		var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-		var dialog = DialogService.Show<SelectSourceItemzTypeDialog>("Enter Source ItemzType Record ID", parameters, options);
+		var dialog = DialogService.Show<SelectItemzTypeDialog>("Enter Source ItemzType Record ID", parameters, options);
 		var result = await dialog.Result;
 		if (!result.Canceled && result.Data is Guid inputSourceItemzTypeId)
 		{
