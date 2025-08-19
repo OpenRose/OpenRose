@@ -18,7 +18,8 @@ There will be other places where we can improve as well but lets start with this
 
 <MudDialog>
     <TitleContent>
-        <MudText Color="Color.Primary">@DialogTitle</MudText>
+        @* <MudText Color="Color.Primary">@DialogTitle</MudText> *@
+        <MudText Color="Color.Primary">@MudDialog.Title</MudText>
     </TitleContent>
     <DialogContent>
         <MudTextField @bind-Value="UserInput" Label="Record ID" Variant="Variant.Text" Immediate="true" /> 
