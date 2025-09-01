@@ -40,10 +40,13 @@ BUT primarily, **Itemz** is nothing but Requirements / Needs / Wants / Notes / F
 
 ## Overview of Current State
 
-Latest released version 0.2.0-32
+Latest released version 0.2.0-69
 
 Main New Feature
+ - Import Requirements Data - [Demo](https://www.youtube.com/watch?v=TAXf8oQlvC8)
+ - Import Baseline Data - [Demo](https://www.youtube.com/watch?v=Xq2rQMxb_Io)
 
+version 0.2.0-32
  - Export Requirements Data - [Demo](https://www.youtube.com/watch?v=1Y9MAcyOjWg)
 
 version 0.1.2-243
@@ -52,12 +55,15 @@ version 0.1.2-243
 Feature list
 
  - Project
- - Itemz Type
- - Itemz Hierarchy structure
- - Itemz Traceability
- - Itemz ChangeLog
+ - Custom Requirements Itemz Type
+ - Requirements Itemz Hierarchy structure
+ - Requirements Itemz Traceability
+ - Requirements Itemz ChangeLog
  - Baseline / Snapshots
- - Itemz Inclusion and exclusion from Baseline
- - Orphan Itemz 
+ - Requirements Itemz Inclusion and exclusion from Baseline
+ - Orphan Requirements Itemz
+ - Parking Lot
+ - Export Requirements Data into JSON format (AI engines can process it easily)
+ - Import Requirements Data including Baseline Data (Enables many scenarios including sharing of requirements)
 
 **Your contributions as well as direction / support from community and users is much appreciated.**
