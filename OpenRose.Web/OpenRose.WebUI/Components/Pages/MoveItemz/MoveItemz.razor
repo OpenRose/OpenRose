@@ -176,9 +176,12 @@
 
 	public async Task selectSourceItemz()
 	{
-		var parameters = new DialogParameters();
+		var parameters = new DialogParameters
+		{
+			{ "ActionContext", "Source" }
+		};
 		var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-		var dialog = DialogService.Show<SelectSourceItemzDialog>("Enter Source Itemz Record ID", parameters, options);
+		var dialog = DialogService.Show<SelectItemzDialog>("Enter Source Itemz Record ID", parameters, options);
 		var result = await dialog.Result;
 		if (!result.Canceled && result.Data is Guid inputSourceItemzId)
 		{
@@ -208,9 +211,12 @@
 
 	public async Task selectTargetItemz()
 	{
-		var parameters = new DialogParameters();
+		var parameters = new DialogParameters       
+		{
+			{ "ActionContext", "Target" }
+		};
 		var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-		var dialog = DialogService.Show<SelectTargetItemzDialog>("Enter Target Itemz Record ID", parameters, options);
+		var dialog = DialogService.Show<SelectItemzDialog>("Enter Target Itemz Record ID", parameters, options);
 		var result = await dialog.Result;
 		if (!result.Canceled && result.Data is Guid inputTargetItemzId)
 		{
