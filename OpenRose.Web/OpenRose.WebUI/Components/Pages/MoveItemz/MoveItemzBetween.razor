@@ -63,7 +63,7 @@
 	<MudPaper Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3" style="padding: 16px;">
 		<div class="d-flex flex-column align-items-center justify-center w-100 h-100">
 			<MudStack Row="true" Spacing="2">
-				<MudTooltip Text="Step 2 is to select Target First and Second Itemz move between">
+				<MudTooltip Text="Step 2 is to select Target First and Second Itemz to move between">
 					<MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success"> STEP 2 </MudChip>
 				</MudTooltip>
 				<MudButton @onclick="async _ => await selectTargetItemz()" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Primary"> Select Target First Itemz </MudButton>
@@ -194,7 +194,7 @@
 			{ "ActionContext", "Target" }
 		};
 		var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-		var dialog = DialogService.Show<SelectItemzDialog>("Enter Target Itemz Record ID", parameters, options);
+		var dialog = DialogService.Show<SelectItemzDialog>("Enter Target First Itemz Record ID", parameters, options);
 		var result = await dialog.Result;
 		if (!result.Canceled && result.Data is Guid inputTargetItemzId)
 		{
