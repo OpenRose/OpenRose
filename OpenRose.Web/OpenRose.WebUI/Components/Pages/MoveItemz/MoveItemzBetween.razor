@@ -10,6 +10,7 @@
 @using OpenRose.WebUI.Client.Services.Hierarchy
 @using OpenRose.WebUI.Components.Pages.Common
 @using OpenRose.WebUI.Services
+@using OpenRose.WebUI.Components.Dialogs
 @inject IDialogService DialogService
 @inject NavigationManager NavManager
 @inject ConfigurationService ConfigurationService
@@ -151,9 +152,12 @@
 
 	public async Task selectSourceItemz()
 	{
-		var parameters = new DialogParameters();
+		var parameters = new DialogParameters
+		{
+			{ "ActionContext", "Source" }
+		};
 		var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-		var dialog = DialogService.Show<SelectSourceItemzDialog>("Enter Source Itemz Record ID", parameters, options);
+		var dialog = DialogService.Show<SelectItemzDialog>("Enter Source Itemz Record ID", parameters, options);
 		var result = await dialog.Result;
 		if (!result.Canceled && result.Data is Guid inputSourceItemzId)
 		{
@@ -185,9 +189,12 @@
 	{
 		targetFirstItemz = new(); // CLEAR OUT SELF.
 		targetSecondItemz = new(); // CLEAR OUT SELF.
-		var parameters = new DialogParameters();
+		var parameters = new DialogParameters
+		{
+			{ "ActionContext", "Target" }
+		};
 		var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-		var dialog = DialogService.Show<SelectTargetItemzDialog>("Enter Target Itemz Record ID", parameters, options);
+		var dialog = DialogService.Show<SelectItemzDialog>("Enter Target Itemz Record ID", parameters, options);
 		var result = await dialog.Result;
 		if (!result.Canceled && result.Data is Guid inputTargetItemzId)
 		{
