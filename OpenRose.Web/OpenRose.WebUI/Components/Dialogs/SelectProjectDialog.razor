@@ -9,7 +9,7 @@
 
 <MudDialog>
     <TitleContent>
-        <MudText Color="Color.Primary">Select Target Project</MudText>
+        <MudText Color="Color.Primary">@MudDialog.Title</MudText>
     </TitleContent>
     <DialogContent>
         <MudSelect @bind-Value="UserInput"
@@ -33,6 +33,8 @@
 @code {
     [CascadingParameter]
     private IMudDialogInstance MudDialog { get; set; }
+
+    [Parameter] public string ActionContext { get; set; } = ""; // Usually "Source" or "Target"
 
     [Inject]
     public IProjectService ProjectService { get; set; }
@@ -66,7 +68,7 @@
         } 
         else 
         { 
-            ErrorMessage = "Please select Target Project from the selection Listbox.";
+            ErrorMessage = $"Please select {ActionContext} Project from the selection Listbox.";
         } 
     }
 

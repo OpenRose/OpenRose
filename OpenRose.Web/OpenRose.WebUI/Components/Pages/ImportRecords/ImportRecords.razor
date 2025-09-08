@@ -843,9 +843,12 @@
 
     public async Task selectTargetProject()
     {
-        var parameters = new DialogParameters();
+        var parameters = new DialogParameters
+        {
+            { "ActionContext", "Target" }
+        };
         var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-        var dialog = DialogService.Show<SelectTargetProjectDialog>("Select Target Project", parameters, options);
+        var dialog = DialogService.Show<SelectProjectDialog>("Select Target Project", parameters, options);
         var result = await dialog.Result;
         if (!result.Canceled && result.Data is Guid inputTargetProjectId)
         {
