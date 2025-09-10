@@ -252,14 +252,32 @@
 
     public async Task SelectSourceRecord()
     {
-        var parameters = new DialogParameters { ["RecordType"] = recordType };
-        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-        var dialog = DialogService.Show<SelectSourceRecordDialog>("Enter Source Record ID", parameters, options);
-        var result = await dialog.Result;
-        if (!result.Canceled && result.Data is Guid inputRecordId)
+        if (recordType == "Project")
         {
-            selectedRecordId = inputRecordId;
-            await FetchRecordDetails(recordType, inputRecordId);
+            var parameters = new DialogParameters
+            {
+                { "ActionContext", "Source" }
+            };
+            var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+            var dialog = DialogService.Show<SelectProjectDialog>("Select Source Project", parameters, options);
+            var result = await dialog.Result;
+            if (!result.Canceled && result.Data is Guid inputTargetProjectId)
+            {
+                selectedRecordId = inputTargetProjectId;
+                await FetchRecordDetails(recordType, inputTargetProjectId);
+            }
+        }
+        else
+        {
+            var parameters = new DialogParameters { ["RecordType"] = recordType };
+            var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+            var dialog = DialogService.Show<SelectSourceRecordDialog>("Enter Source Record ID", parameters, options);
+            var result = await dialog.Result;
+            if (!result.Canceled && result.Data is Guid inputRecordId)
+            {
+                selectedRecordId = inputRecordId;
+                await FetchRecordDetails(recordType, inputRecordId);
+            }
         }
     }
 
