@@ -1,0 +1,77 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * Export Records UI with details preview for all 6 record types.
+*@
+
+@page "/goto"
+@using MudBlazor
+@inject NavigationManager NavManager
+
+<MudPaper Class="pa-3 mb-3 align-start d-flex" Style="width: auto " Outlined="false">
+    <MudStack Row="true" Spacing="3">
+        <MudIcon Icon="@Icons.Material.Filled.Search" Size="Size.Large" />
+        <MudText Typo="Typo.h5" Align="Align.Left">Go To Record</MudText>
+        <MudSpacer />
+        <MudText Class="mt-3" Typo="Typo.caption">
+            Quickly navigate to any record in the hierarchy by pasting its GUID. Choose "TreeView" to see the full structure or "Detail View" for focused details and breadcrumbs.
+        </MudText>
+    </MudStack>
+</MudPaper>
+
+<MudItem xs="12" Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3">
+    <MudPaper Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3" Style="padding: 16px;">
+        <MudStack Row="false" Spacing="3" AlignItems="AlignItems.Center" JustifyContent="Justify.Center" Class="w-100">
+            <MudText Align="Align.Center" Typo="Typo.body1">
+                Enter the GUID of the record you want to navigate to:
+            </MudText>
+            <MudTextField @bind-Value="targetGuidText"
+                          Placeholder="Paste or enter GUID here"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Normal"
+                          Style="min-width: 420px"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Keyboard" />
+
+            <MudRadioGroup T="string" @bind-SelectedOption="selectedViewOption" Row="true">
+                <MudRadio Value="@("TreeView")" Color="Color.Primary">TreeView</MudRadio>
+                <MudRadio Value="@("DetailView")" Color="Color.Primary">Detail View</MudRadio>
+            </MudRadioGroup>
+
+            <MudButton Variant="Variant.Filled"
+                       Size="Size.Medium"
+                       Color="Color.Primary"
+                       Disabled="@(!IsGuidInputValid())"
+                       OnClick="GoToRecord">
+                Go To
+            </MudButton>
+        </MudStack>
+    </MudPaper>
+</MudItem>
+
+@code 
+{
+    private string targetGuidText { get; set; } = string.Empty;
+    private string selectedViewOption { get; set; } = "TreeView";
+
+    private bool IsGuidInputValid()
+        => Guid.TryParse(targetGuidText, out _);
+
+    private void GoToRecord()
+    {
+        if (!IsGuidInputValid())
+            return;
+
+        var guid = targetGuidText.Trim();
+        if (selectedViewOption == "TreeView")
+        {
+            // TODO: Replace with actual navigation logic to TreeView with this GUID
+            NavManager.NavigateTo($"/treeview?recordId={guid}");
+        }
+        else if (selectedViewOption == "DetailView")
+        {
+            // TODO: Replace with actual navigation logic to Detail View with this GUID
+            NavManager.NavigateTo($"/detailview?recordId={guid}");
+        }
+    }
+}
