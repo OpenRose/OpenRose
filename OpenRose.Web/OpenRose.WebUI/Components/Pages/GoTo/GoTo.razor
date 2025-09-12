@@ -65,12 +65,14 @@
         var guid = targetGuidText.Trim();
         if (selectedViewOption == "TreeView")
         {
-            // TODO: Replace with actual navigation logic to TreeView with this GUID
+            // TODO: Currently in application we allow moving from DetailView into TreeView.
+            // As part of this enhancement request, we should try and utilize similar logic.
             NavManager.NavigateTo($"/treeview?recordId={guid}");
         }
         else if (selectedViewOption == "DetailView")
         {
-            // TODO: Replace with actual navigation logic to Detail View with this GUID
+            // TODO: Currently in application we allow moving from TreeView into DetailView.
+            // As part of this enhancement request, we should try and utilize similar logic.
             NavManager.NavigateTo($"/detailview?recordId={guid}");
         }
     }
