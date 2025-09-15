@@ -67,12 +67,14 @@
         {
             // TODO: Currently in application we allow moving from DetailView into TreeView.
             // As part of this enhancement request, we should try and utilize similar logic.
+            // For example, if we are already in TreeView and the record is visible, we should highlight it.
             NavManager.NavigateTo($"/treeview?recordId={guid}");
         }
         else if (selectedViewOption == "DetailView")
         {
             // TODO: Currently in application we allow moving from TreeView into DetailView.
             // As part of this enhancement request, we should try and utilize similar logic.
+            // For example, if we are already in DetailView and the record is visible, we should highlight it.
             NavManager.NavigateTo($"/detailview?recordId={guid}");
         }
     }
