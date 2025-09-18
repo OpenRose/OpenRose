@@ -59,6 +59,10 @@
 
     private void GoToRecord()
     {
+        // TODO: We have to check that provided GUID exists in the system and it's one of the following types:
+        // Project, ItemzType, Itemz, Baseline, BaselineItemzType, BaselineItemz
+        // We allow users to navigate to any of these record types from this page.
+
         if (!IsGuidInputValid())
             return;
 
