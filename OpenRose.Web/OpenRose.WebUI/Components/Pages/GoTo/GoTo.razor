@@ -82,4 +82,78 @@
             NavManager.NavigateTo($"/detailview?recordId={guid}");
         }
     }
+
+    // private async Task GoToRecord()
+    // {
+    //     if (!IsGuidInputValid(targetGuidText))
+    //         return;
+
+    //     var guid = Guid.Parse(targetGuidText.Trim());
+
+    //     // 1. Query hierarchy for record type
+    //     var record = await HierarchyService.GetHierarchyByIdAsync(guid); // Calls /api/Hierarchy/{guid}
+    //     if (record == null || string.IsNullOrWhiteSpace(record.RecordType))
+    //     {
+    //         await DialogService.ShowMessageBox("ERROR", markupMessage: new MarkupString("Record not found."), yesText: "OK");
+    //         return;
+    //     }
+
+    //     string url = null;
+
+    //     // 2. Determine navigation based on record type + view
+    //     switch (record.RecordType)
+    //     {
+    //         case "Project":
+    //             url = selectedViewOption == "TreeView"
+    //                 ? $"/projectTreeView/{guid}"
+    //                 : $"/project/{guid}";
+    //             break;
+
+    //         case "ItemzType":
+    //             // Get parents to find ProjectId (level 1)
+    //             var parents = await HierarchyService.GetAllParentsAsync(guid); // Calls /api/Hierarchy/GetAllParents/{guid}
+    //             var project = parents?.FirstOrDefault(p => p.Level == 1 && p.RecordType == "Project");
+    //             if (project != null)
+    //             {
+    //                 url = selectedViewOption == "TreeView"
+    //                     ? $"/projectTreeView/{project.RecordId}" // Show full tree for Project context
+    //                     : $"/itemzType/{guid}";
+    //             }
+    //             break;
+
+    //         case "Itemz":
+    //             // Get parents to find ProjectId (level 1)
+    //             var itemzParents = await HierarchyService.GetAllParentsAsync(guid);
+    //             var itemzProject = itemzParents?.FirstOrDefault(p => p.Level == 1 && p.RecordType == "Project");
+    //             if (itemzProject != null)
+    //             {
+    //                 url = selectedViewOption == "TreeView"
+    //                     ? $"/projectTreeView/{itemzProject.RecordId}" // Show full tree for Project
+    //                     : $"/itemz/{guid}";
+    //             }
+    //             break;
+
+    //         // Repeat similar logic for Baseline, BaselineItemzType, BaselineItemz
+    //         // Example for BaselineItemz:
+    //         case "BaselineItemz":
+    //             var baselineParents = await HierarchyService.GetAllParentsAsync(guid);
+    //             var baselineProject = baselineParents?.FirstOrDefault(p => p.Level == 1 && p.RecordType == "Project");
+    //             if (baselineProject != null)
+    //             {
+    //                 url = selectedViewOption == "TreeView"
+    //                     ? $"/projectTreeView/{baselineProject.RecordId}" // Or specialized baseline tree view if exists
+    //                     : $"/baselineItemz/{guid}";
+    //             }
+    //             break;
+
+    //         default:
+    //             await DialogService.ShowMessageBox("ERROR", markupMessage: new MarkupString("Unsupported record type."), yesText: "OK");
+    //             return;
+    //     }
+
+    //     if (url != null)
+    //         NavManager.NavigateTo(url);
+    //     else
+    //         await DialogService.ShowMessageBox("ERROR", markupMessage: new MarkupString("Could not determine navigation path."), yesText: "OK");
+    // }
 }
