@@ -9,13 +9,13 @@ namespace ItemzApp.API.Models
 	public class GoToResolutionDTO
 	{
 		public Guid RecordId { get; set; }
-		public string RecordType { get; set; }
-		public string Name { get; set; }
-		public string RecordHierarchyId { get; set; }
-		public int RecordHierarchyLevel { get; set; }
+		public string? RecordType { get; set; }
+		public string? Name { get; set; }
+		public string? RecordHierarchyId { get; set; }
+		public int? RecordHierarchyLevel { get; set; }
 		public Guid? ProjectId { get; set; }
-		public string ProjectName { get; set; }
-		public string ProjectHierarchyId { get; set; }
-		public int ProjectHierarchyLevel { get; set; }
+		public string? ProjectName { get; set; }
+		public string? ProjectHierarchyId { get; set; }
+		public int? ProjectHierarchyLevel { get; set; }
 	}
 }
