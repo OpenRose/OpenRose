@@ -39,7 +39,17 @@ namespace ItemzApp.API.Controllers
 		public async Task<ActionResult<GoToResolutionDTO>> GetGoToAsync(Guid recordId)
 		{
 			// Try HierarchyRepository (Projects/ItemzTypes/Itemz)
-			var hierarchyRecord = await _hierarchyRepository.GetHierarchyRecordDetailsByID(recordId);
+			//var hierarchyRecord = await _hierarchyRepository.GetHierarchyRecordDetailsByID(recordId);
+			HierarchyIdRecordDetailsDTO? hierarchyRecord = null;
+			try
+			{
+				hierarchyRecord = await _hierarchyRepository.GetHierarchyRecordDetailsByID(recordId);
+			}
+			catch (ApplicationException ex)
+			{
+				// Log and ignore; try Baseline repository next
+				_logger.LogDebug("Record with ID {recordId} Not found in HierarchyRepository: {Message}", recordId.ToString(), ex.Message);
+			}
 			if (hierarchyRecord != null && !string.IsNullOrWhiteSpace(hierarchyRecord.RecordType))
 			{
 				// Get Project context
@@ -87,7 +97,17 @@ namespace ItemzApp.API.Controllers
 			}
 
 			// Try BaselineHierarchyRepository (Baseline, BaselineItemzType, BaselineItemz)
-			var baselineHierarchyRecord = await _baselineHierarchyRepository.GetBaselineHierarchyRecordDetailsByID(recordId);
+			// var baselineHierarchyRecord = await _baselineHierarchyRepository.GetBaselineHierarchyRecordDetailsByID(recordId);
+
+			BaselineHierarchyIdRecordDetailsDTO? baselineHierarchyRecord = null;
+			try
+			{
+				baselineHierarchyRecord = await _baselineHierarchyRepository.GetBaselineHierarchyRecordDetailsByID(recordId);
+			}
+			catch (ApplicationException ex)
+			{
+				_logger.LogDebug("Record with ID {recordId} Not found in BaselineHierarchyRepository: {Message}", recordId.ToString(), ex.Message);
+			}  
 			if (baselineHierarchyRecord != null && !string.IsNullOrWhiteSpace(baselineHierarchyRecord.RecordType))
 			{
 				// Get Project context via parent chain
