@@ -411,58 +411,58 @@ namespace ItemzApp.API.Controllers
         }
 
 
-		[HttpGet("GoTo/{recordId:Guid}")]
-		public async Task<ActionResult<GoToResolutionDTO>> GetGoToAsync(Guid recordId)
-		{
-			// Step 1: Get the hierarchy record for the GUID
-			var hierarchyRecord = await _hierarchyRepository.GetHierarchyRecordDetailsByID(recordId);
-			if (hierarchyRecord == null)
-				return NotFound(new { error = "Record not found." });
+		//[HttpGet("GoTo/{recordId:Guid}")]
+		//public async Task<ActionResult<GoToResolutionDTO>> GetGoToAsync(Guid recordId)
+		//{
+		//	// Step 1: Get the hierarchy record for the GUID
+		//	var hierarchyRecord = await _hierarchyRepository.GetHierarchyRecordDetailsByID(recordId);
+		//	if (hierarchyRecord == null)
+		//		return NotFound(new { error = "Record not found." });
 
-			// Step 2: If record is not a Project, get the project's details via parent chain
-			Guid? projectId = null;
-			string? projectName = null;
-			string? projectHierarchyId = null;
-			int? projectHierarchyLevel = 0;
+		//	// Step 2: If record is not a Project, get the project's details via parent chain
+		//	Guid? projectId = null;
+		//	string? projectName = null;
+		//	string? projectHierarchyId = null;
+		//	int? projectHierarchyLevel = 0;
 
-			if (!string.Equals(hierarchyRecord.RecordType, "Project", StringComparison.OrdinalIgnoreCase))
-			{
-				var parentRecords = await _hierarchyRepository.GetAllParentsOfItemzHierarchy(recordId);
-				var projectParent = parentRecords.AllRecords.FirstOrDefault(p =>
-					string.Equals(p.RecordType, "Project", StringComparison.OrdinalIgnoreCase)
-				);
-				if (projectParent != null)
-				{
-					projectId = projectParent.RecordId;
-					projectName = projectParent.Name;
-					projectHierarchyId = projectParent.HierarchyId;
-					projectHierarchyLevel = projectParent.Level;
-				}
-			}
-			else
-			{
-				projectId = hierarchyRecord.RecordId;
-				projectName = hierarchyRecord.Name;
-				projectHierarchyId = hierarchyRecord.HierarchyId;
-				projectHierarchyLevel = hierarchyRecord.Level;
-			}
+		//	if (!string.Equals(hierarchyRecord.RecordType, "Project", StringComparison.OrdinalIgnoreCase))
+		//	{
+		//		var parentRecords = await _hierarchyRepository.GetAllParentsOfItemzHierarchy(recordId);
+		//		var projectParent = parentRecords.AllRecords.FirstOrDefault(p =>
+		//			string.Equals(p.RecordType, "Project", StringComparison.OrdinalIgnoreCase)
+		//		);
+		//		if (projectParent != null)
+		//		{
+		//			projectId = projectParent.RecordId;
+		//			projectName = projectParent.Name;
+		//			projectHierarchyId = projectParent.HierarchyId;
+		//			projectHierarchyLevel = projectParent.Level;
+		//		}
+		//	}
+		//	else
+		//	{
+		//		projectId = hierarchyRecord.RecordId;
+		//		projectName = hierarchyRecord.Name;
+		//		projectHierarchyId = hierarchyRecord.HierarchyId;
+		//		projectHierarchyLevel = hierarchyRecord.Level;
+		//	}
 
-			// Step 3: Build DTO
-			var dto = new GoToResolutionDTO
-			{
-				RecordId = hierarchyRecord.RecordId,
-				RecordType = hierarchyRecord.RecordType,
-				Name = hierarchyRecord.Name,
-				RecordHierarchyId = hierarchyRecord.HierarchyId,
-				RecordHierarchyLevel = hierarchyRecord.Level,
-				ProjectId = projectId,
-				ProjectName = projectName,
-				ProjectHierarchyId = projectHierarchyId,
-				ProjectHierarchyLevel = projectHierarchyLevel
-			};
+		//	// Step 3: Build DTO
+		//	var dto = new GoToResolutionDTO
+		//	{
+		//		RecordId = hierarchyRecord.RecordId,
+		//		RecordType = hierarchyRecord.RecordType,
+		//		Name = hierarchyRecord.Name,
+		//		RecordHierarchyId = hierarchyRecord.HierarchyId,
+		//		RecordHierarchyLevel = hierarchyRecord.Level,
+		//		ProjectId = projectId,
+		//		ProjectName = projectName,
+		//		ProjectHierarchyId = projectHierarchyId,
+		//		ProjectHierarchyLevel = projectHierarchyLevel
+		//	};
 
-			return Ok(dto);
-		}
+		//	return Ok(dto);
+		//}
 
 		// We have configured in startup class our own custom implementation of 
 		// problem Details. Now we are overriding ValidationProblem method that is defined in ControllerBase
