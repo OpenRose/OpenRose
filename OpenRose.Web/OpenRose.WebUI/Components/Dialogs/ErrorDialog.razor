@@ -1,12 +1,13 @@
-﻿@*
+﻿﻿@*
  * OpenRose - Requirements Management
  * Licensed under the Apache License, Version 2.0.
  * Export Records UI with details preview for all 6 record types.
 *@
 
 @using MudBlazor
+@using Microsoft.AspNetCore.Components.Web
 
-<MudDialog>
+<MudDialog @onkeydown="HandleKeyDown">
     <DialogContent>
         <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
             <MudIcon Icon="@Icons.Material.Filled.Error" Color="Color.Error" Size="Size.Large" />
@@ -14,7 +15,7 @@
         </MudStack>
     </DialogContent>
     <DialogActions>
-        <MudButton Color="Color.Error" OnClick="@Close">OK</MudButton>
+        <MudButton Color="Color.Error" OnClick="@Close" AutoFocus="true">OK</MudButton>
     </DialogActions>
 </MudDialog>
 
@@ -23,4 +24,12 @@
     [Parameter] public required string Message { get; set; }
 
     private void Close() => MudDialog.Close();
+
+    private void HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" || e.Code == "NumpadEnter")
+        {
+            Close();
+        }
+    }
 }
