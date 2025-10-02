@@ -2,10 +2,11 @@
 // Licensed under the Apache License, Version 2.0. 
 // See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using ItemzApp.API.Models;
 using ItemzApp.API.Services;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -31,15 +32,19 @@ namespace ItemzApp.API.Controllers
 		}
 
 		/// <summary>
-		/// Universal GoTo endpoint for resolving record navigation context for Project, ItemzType, Itemz, Baseline, BaselineItemzType, and BaselineItemz.
+		/// Universal GoTo endpoint for resolving record navigation context for supported record types.
 		/// </summary>
-		/// <param name="recordId">GUID for the record</param>
-		/// <returns>GoToResolutionDTO with all navigation context</returns>
-		[HttpGet("{recordId:Guid}")]
+		/// <param name="recordId">GUID representing a unique ID of any supported record type</param>
+		/// <returns>GoToResolutionDTO containing navigation and hierarchy context for the record</returns>
+		/// <response code="200">GoToResolutionDTO with navigation details for the specified record ID</response>
+		/// <response code="404">Record not found for the specified GUID</response>
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		[ProducesResponseType(StatusCodes.Status200OK, Type = typeof(GoToResolutionDTO))]
+		[HttpGet("{recordId:Guid}", Name = "__Get_GoTo_Details_By_GUID__")] // e.g. http://HOST:PORT/api/GoTo/42f62a6c-fcda-4dac-a06c-406ac1c17770
+		[HttpHead("{recordId:Guid}", Name = "__HEAD_GoTo_Details_By_GUID__")]
 		public async Task<ActionResult<GoToResolutionDTO>> GetGoToAsync(Guid recordId)
 		{
 			// Try HierarchyRepository (Projects/ItemzTypes/Itemz)
-			//var hierarchyRecord = await _hierarchyRepository.GetHierarchyRecordDetailsByID(recordId);
 			HierarchyIdRecordDetailsDTO? hierarchyRecord = null;
 			try
 			{
@@ -97,7 +102,6 @@ namespace ItemzApp.API.Controllers
 			}
 
 			// Try BaselineHierarchyRepository (Baseline, BaselineItemzType, BaselineItemz)
-			// var baselineHierarchyRecord = await _baselineHierarchyRepository.GetBaselineHierarchyRecordDetailsByID(recordId);
 
 			BaselineHierarchyIdRecordDetailsDTO? baselineHierarchyRecord = null;
 			try
