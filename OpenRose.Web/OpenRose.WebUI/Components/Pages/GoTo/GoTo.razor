@@ -4,9 +4,16 @@
  * Export Records UI with details preview for all 6 record types.
 *@
 
+
 @page "/goto"
 @using MudBlazor
+@using OpenRose.WebUI.Client.SharedModels
+@using OpenRose.WebUI.Client.Services.GoTo
+@using OpenRose.WebUI.Components.Dialogs
+@inject IGoToService GoToService
 @inject NavigationManager NavManager
+@inject IDialogService DialogService
+@inject IJSRuntime JS
 
 <MudPaper Class="pa-3 mb-3 align-start d-flex" Style="width: auto " Outlined="false">
     <MudStack Row="true" Spacing="3">
@@ -14,7 +21,7 @@
         <MudText Typo="Typo.h5" Align="Align.Left">Go To Record</MudText>
         <MudSpacer />
         <MudText Class="mt-3" Typo="Typo.caption">
-            Quickly navigate to any record in the hierarchy by pasting its GUID. Choose "TreeView" to see the full structure or "Detail View" for focused details and breadcrumbs.
+            Quickly navigate to any record in the repository by pasting its GUID. Choose "TreeView" to see the full structure or "Detail View" for focused details and breadcrumbs.
         </MudText>
     </MudStack>
 </MudPaper>
@@ -31,129 +38,143 @@
                           Margin="Margin.Normal"
                           Style="min-width: 420px"
                           Adornment="Adornment.Start"
-                          AdornmentIcon="@Icons.Material.Filled.Keyboard" />
+                          AdornmentIcon="@Icons.Material.Filled.Keyboard"
+                          Immediate="true"
+                          OnKeyDown="@(e => { if (e.Key == "Enter" && IsGuidInputValid()) { GoToRecordAsync(); } })" />
 
-            <MudRadioGroup T="string" @bind-SelectedOption="selectedViewOption" Row="true">
-                <MudRadio Value="@("TreeView")" Color="Color.Primary">TreeView</MudRadio>
+            <MudRadioGroup T="string" @bind-Value="selectedViewOption" Row="true">
                 <MudRadio Value="@("DetailView")" Color="Color.Primary">Detail View</MudRadio>
+                <MudRadio Value="@("TreeView")" Color="Color.Primary">TreeView</MudRadio>
             </MudRadioGroup>
 
             <MudButton Variant="Variant.Filled"
                        Size="Size.Medium"
                        Color="Color.Primary"
-                       Disabled="@(!IsGuidInputValid())"
-                       OnClick="GoToRecord">
-                Go To
+                       Disabled="!IsGuidInputValid() || loading"
+                       OnClick="GoToRecordAsync">
+                @if (loading)
+                {
+                    <MudProgressCircular Indeterminate="true" Size="Size.Large" />
+                }
+                else
+                {
+                    <span>Go To</span>
+                }
             </MudButton>
         </MudStack>
     </MudPaper>
 </MudItem>
 
-@code 
-{
+
+@code {
     private string targetGuidText { get; set; } = string.Empty;
-    private string selectedViewOption { get; set; } = "TreeView";
+    private string selectedViewOption { get; set; } = "DetailView";
+    private bool loading = false;
 
-    private bool IsGuidInputValid()
-        => Guid.TryParse(targetGuidText, out _);
+    private bool IsGuidInputValid() => Guid.TryParse(targetGuidText, out _);
 
-    private void GoToRecord()
+    private async Task GoToRecordAsync()
     {
-        // TODO: We have to check that provided GUID exists in the system and it's one of the following types:
-        // Project, ItemzType, Itemz, Baseline, BaselineItemzType, BaselineItemz
-        // We allow users to navigate to any of these record types from this page.
-
         if (!IsGuidInputValid())
             return;
 
-        var guid = targetGuidText.Trim();
-        if (selectedViewOption == "TreeView")
+        loading = true;
+        StateHasChanged();
+
+        try
         {
-            // TODO: Currently in application we allow moving from DetailView into TreeView.
-            // As part of this enhancement request, we should try and utilize similar logic.
-            // For example, if we are already in TreeView and the record is visible, we should highlight it.
-            NavManager.NavigateTo($"/treeview?recordId={guid}");
+            Guid guid = Guid.Parse(targetGuidText.Trim());
+            GoToResolutionDTO? result = null;
+            try
+            {
+                result = await GoToService.__Get_GoTo_Details_By_GUID__(guid);
+            }
+            catch
+            {
+                // ignore, handled below.
+            }
+
+            if (result == null || string.IsNullOrWhiteSpace(result.RecordType))
+            {
+                // await DialogService.ShowMessageBox("ERROR", markupMessage: new MarkupString("Record not found."), yesText: "OK");
+                await ShowError($"Record not found for the provided RecordID.");
+                return;
+            }
+
+            string url = null;
+
+            switch (result.RecordType.ToLowerInvariant())
+            {
+                case "project":
+                    url = selectedViewOption == "TreeView"
+                        ? $"/ProjectTreeView/{result.RecordId}"
+                        : $"/project/{result.RecordId}";
+                    break;
+
+                case "itemztype":
+                    if (selectedViewOption == "TreeView" && result.ProjectId.HasValue)
+                        url = $"/ProjectTreeView/{result.ProjectId}?autoSelectedRecordId={result.RecordId}";
+                    else
+                        url = $"/itemztype/{result.RecordId}";
+                    break;
+
+                case "itemz":
+                    if (selectedViewOption == "TreeView" && result.ProjectId.HasValue)
+                        url = $"/ProjectTreeView/{result.ProjectId}?autoSelectedRecordId={result.RecordId}";
+                    else
+                        url = $"/itemz/{result.RecordId}";
+                    break;
+
+                case "baseline":
+                    url = selectedViewOption == "TreeView"
+                        ? $"/BaselineTreeView/{result.RecordId}"
+                        : $"/baseline/{result.RecordId}";
+                    break;
+
+                case "baselineitemztype":
+                    if (selectedViewOption == "TreeView" && result.ProjectId.HasValue)
+                        url = $"/BaselineTreeView/{result.ProjectId}?autoSelectedRecordId={result.RecordId}";
+                    else
+                        url = $"/baselineitemztype/{result.RecordId}";
+                    break;
+
+                case "baselineitemz":
+                    if (selectedViewOption == "TreeView" && result.ProjectId.HasValue)
+                        url = $"/BaselineTreeView/{result.ProjectId}?autoSelectedRecordId={result.RecordId}";
+                    else
+                        url = $"/baselineitemz/{result.RecordId}";
+                    break;
+
+                default:
+                    // await DialogService.ShowMessageBox("ERROR", markupMessage: new MarkupString("Unsupported record type."), yesText: "OK");
+                    await ShowError($"Unsupported record type '{result.RecordType.ToUpper()}'");
+                    return;
+            }
+
+            if (url != null)
+            {
+                await JS.InvokeVoidAsync("open", url, "_blank");
+             }
+            else
+            {
+                // await DialogService.ShowMessageBox("ERROR", markupMessage: new MarkupString("Could not determine navigation path."), yesText: "OK");
+
+                await ShowError($"Could not determine navigation path");
+            }
         }
-        else if (selectedViewOption == "DetailView")
+        finally
         {
-            // TODO: Currently in application we allow moving from TreeView into DetailView.
-            // As part of this enhancement request, we should try and utilize similar logic.
-            // For example, if we are already in DetailView and the record is visible, we should highlight it.
-            NavManager.NavigateTo($"/detailview?recordId={guid}");
+            loading = false;
+            StateHasChanged();
         }
     }
 
-    // private async Task GoToRecord()
-    // {
-    //     if (!IsGuidInputValid(targetGuidText))
-    //         return;
-
-    //     var guid = Guid.Parse(targetGuidText.Trim());
-
-    //     // 1. Query hierarchy for record type
-    //     var record = await HierarchyService.GetHierarchyByIdAsync(guid); // Calls /api/Hierarchy/{guid}
-    //     if (record == null || string.IsNullOrWhiteSpace(record.RecordType))
-    //     {
-    //         await DialogService.ShowMessageBox("ERROR", markupMessage: new MarkupString("Record not found."), yesText: "OK");
-    //         return;
-    //     }
-
-    //     string url = null;
-
-    //     // 2. Determine navigation based on record type + view
-    //     switch (record.RecordType)
-    //     {
-    //         case "Project":
-    //             url = selectedViewOption == "TreeView"
-    //                 ? $"/projectTreeView/{guid}"
-    //                 : $"/project/{guid}";
-    //             break;
-
-    //         case "ItemzType":
-    //             // Get parents to find ProjectId (level 1)
-    //             var parents = await HierarchyService.GetAllParentsAsync(guid); // Calls /api/Hierarchy/GetAllParents/{guid}
-    //             var project = parents?.FirstOrDefault(p => p.Level == 1 && p.RecordType == "Project");
-    //             if (project != null)
-    //             {
-    //                 url = selectedViewOption == "TreeView"
-    //                     ? $"/projectTreeView/{project.RecordId}" // Show full tree for Project context
-    //                     : $"/itemzType/{guid}";
-    //             }
-    //             break;
-
-    //         case "Itemz":
-    //             // Get parents to find ProjectId (level 1)
-    //             var itemzParents = await HierarchyService.GetAllParentsAsync(guid);
-    //             var itemzProject = itemzParents?.FirstOrDefault(p => p.Level == 1 && p.RecordType == "Project");
-    //             if (itemzProject != null)
-    //             {
-    //                 url = selectedViewOption == "TreeView"
-    //                     ? $"/projectTreeView/{itemzProject.RecordId}" // Show full tree for Project
-    //                     : $"/itemz/{guid}";
-    //             }
-    //             break;
-
-    //         // Repeat similar logic for Baseline, BaselineItemzType, BaselineItemz
-    //         // Example for BaselineItemz:
-    //         case "BaselineItemz":
-    //             var baselineParents = await HierarchyService.GetAllParentsAsync(guid);
-    //             var baselineProject = baselineParents?.FirstOrDefault(p => p.Level == 1 && p.RecordType == "Project");
-    //             if (baselineProject != null)
-    //             {
-    //                 url = selectedViewOption == "TreeView"
-    //                     ? $"/projectTreeView/{baselineProject.RecordId}" // Or specialized baseline tree view if exists
-    //                     : $"/baselineItemz/{guid}";
-    //             }
-    //             break;
-
-    //         default:
-    //             await DialogService.ShowMessageBox("ERROR", markupMessage: new MarkupString("Unsupported record type."), yesText: "OK");
-    //             return;
-    //     }
-
-    //     if (url != null)
-    //         NavManager.NavigateTo(url);
-    //     else
-    //         await DialogService.ShowMessageBox("ERROR", markupMessage: new MarkupString("Could not determine navigation path."), yesText: "OK");
-    // }
+    private async Task ShowError(string message)
+    {
+        var parameters = new DialogParameters { ["Message"] = message };
+        var options = new DialogOptions { CloseButton = false, MaxWidth = MaxWidth.Small, FullWidth = true };
+        await DialogService.ShowAsync<ErrorDialog>("", parameters, options);
+    }
 }
+
+
