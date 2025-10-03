@@ -6,6 +6,8 @@
 
 
 @page "/goto"
+@*  Support for /goto?recordId=... as well as /goto/{RecordId} *@
+@page "/goto/{RecordId:guid}" 
 @using MudBlazor
 @using OpenRose.WebUI.Client.SharedModels
 @using OpenRose.WebUI.Client.Services.GoTo
@@ -51,7 +53,7 @@
                        Size="Size.Medium"
                        Color="Color.Primary"
                        Disabled="!IsGuidInputValid() || loading"
-                       OnClick="GoToRecordAsync">
+                       OnClick="async () => await GoToRecordAsync(false)">
                 @if (loading)
                 {
                     <MudProgressCircular Indeterminate="true" Size="Size.Large" />
@@ -67,13 +69,39 @@
 
 
 @code {
+    [Parameter] public Guid? RecordId { get; set; }
     private string targetGuidText { get; set; } = string.Empty;
     private string selectedViewOption { get; set; } = "DetailView";
     private bool loading = false;
 
     private bool IsGuidInputValid() => Guid.TryParse(targetGuidText, out _);
 
-    private async Task GoToRecordAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Support for /goto?recordId=... as well as /goto/{RecordId}
+            var uri = NavManager.ToAbsoluteUri(NavManager.Uri);
+            var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+            if (RecordId == null && query.TryGetValue("recordId", out var queryRecordId))
+            {
+                if (Guid.TryParse(queryRecordId, out var parsed))
+                {
+                    RecordId = parsed;
+                }
+            }
+
+            if (RecordId != null && RecordId != Guid.Empty)
+            {
+                //selectedViewOption = "DetailView";
+                targetGuidText = RecordId.ToString();
+                await GoToRecordAsync(true); // true = auto mode, so don't open new tab
+            }
+        }
+    }
+
+
+    private async Task GoToRecordAsync(bool autoFromUrl = false)
     {
         if (!IsGuidInputValid())
             return;
@@ -91,12 +119,12 @@
             }
             catch
             {
-                // ignore, handled below.
+                // TODO :: decide if we want to handle any exception being 
+                // thrown by GoTo service that interacts with GoToController behind the sceen.
             }
 
             if (result == null || string.IsNullOrWhiteSpace(result.RecordType))
             {
-                // await DialogService.ShowMessageBox("ERROR", markupMessage: new MarkupString("Record not found."), yesText: "OK");
                 await ShowError($"Record not found for the provided RecordID.");
                 return;
             }
@@ -146,19 +174,22 @@
                     break;
 
                 default:
-                    // await DialogService.ShowMessageBox("ERROR", markupMessage: new MarkupString("Unsupported record type."), yesText: "OK");
                     await ShowError($"Unsupported record type '{result.RecordType.ToUpper()}'");
                     return;
             }
 
             if (url != null)
             {
-                await JS.InvokeVoidAsync("open", url, "_blank");
-             }
+                // EXPLANATION :: If launched from URL by passing in the RecordID as parameter then 
+                // we just redirect in-place without opening a new separate tab
+
+                if (autoFromUrl)
+                    NavManager.NavigateTo(url);
+                else
+                    await JS.InvokeVoidAsync("open", url, "_blank");
+            }
             else
             {
-                // await DialogService.ShowMessageBox("ERROR", markupMessage: new MarkupString("Could not determine navigation path."), yesText: "OK");
-
                 await ShowError($"Could not determine navigation path");
             }
         }
