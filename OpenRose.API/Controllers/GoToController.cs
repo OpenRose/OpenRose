@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -119,6 +120,7 @@ namespace ItemzApp.API.Controllers
 				string? projectName = null;
 				string? projectHierarchyId = null;
 				int? projectHierarchyLevel = null;
+				Guid? baselineId = null;
 
 				var parentRecords = await _baselineHierarchyRepository.GetAllParentsOfBaselineItemzHierarchy(recordId);
 				var projectParent = parentRecords.AllRecords.FirstOrDefault(p =>
@@ -132,6 +134,15 @@ namespace ItemzApp.API.Controllers
 					projectHierarchyLevel = projectParent.Level;
 				}
 
+
+				var baselineParent = FindFirstBaselineRecord(parentRecords.AllRecords);
+
+
+				if (baselineParent != null)
+				{
+					baselineId = baselineParent.RecordId;
+				}
+
 				var dto = new GoToResolutionDTO
 				{
 					RecordId = baselineHierarchyRecord.RecordId,
@@ -142,7 +153,8 @@ namespace ItemzApp.API.Controllers
 					ProjectId = projectId,
 					ProjectName = projectName,
 					ProjectHierarchyId = projectHierarchyId,
-					ProjectHierarchyLevel = projectHierarchyLevel ?? 0
+					ProjectHierarchyLevel = projectHierarchyLevel ?? 0,
+					BaselineId = baselineId
 				};
 
 				return Ok(dto);
@@ -150,6 +162,26 @@ namespace ItemzApp.API.Controllers
 
 			// Not found in either repository
 			return NotFound(new { error = "Record not found." });
+		}
+
+		private NestedBaselineHierarchyIdRecordDetailsDTO? FindFirstBaselineRecord(IEnumerable<NestedBaselineHierarchyIdRecordDetailsDTO>? records)
+		{
+			if (records == null) return null;
+
+			foreach (var record in records)
+			{
+				if (string.Equals(record.RecordType, "Baseline", StringComparison.OrdinalIgnoreCase))
+				{
+					return record;
+				}
+				// Search children recursively
+				var resultInChildren = FindFirstBaselineRecord(record.Children);
+				if (resultInChildren != null)
+				{
+					return resultInChildren;
+				}
+			}
+			return null;
 		}
 	}
 }
