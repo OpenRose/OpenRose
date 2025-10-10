@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. 
 // See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 
+using ItemzApp.API.Entities;
 using ItemzApp.API.Models;
 using ItemzApp.API.Services;
 using Microsoft.AspNetCore.Http;
@@ -20,15 +21,18 @@ namespace ItemzApp.API.Controllers
 	{
 		private readonly IHierarchyRepository _hierarchyRepository;
 		private readonly IBaselineHierarchyRepository _baselineHierarchyRepository;
+		private readonly IItemzRepository _itemzRepository;
 		private readonly ILogger<GoToController> _logger;
 
 		public GoToController(
 			IHierarchyRepository hierarchyRepository,
 			IBaselineHierarchyRepository baselineHierarchyRepository,
+			IItemzRepository itemzRepository,
 			ILogger<GoToController> logger)
 		{
 			_hierarchyRepository = hierarchyRepository ?? throw new ArgumentNullException(nameof(hierarchyRepository));
 			_baselineHierarchyRepository = baselineHierarchyRepository ?? throw new ArgumentNullException(nameof(baselineHierarchyRepository));
+			_itemzRepository = itemzRepository ?? throw new ArgumentNullException(nameof(itemzRepository));
 			_logger = logger ?? throw new ArgumentNullException(nameof(logger));
 		}
 
@@ -155,6 +159,31 @@ namespace ItemzApp.API.Controllers
 					ProjectHierarchyId = projectHierarchyId,
 					ProjectHierarchyLevel = projectHierarchyLevel ?? 0,
 					BaselineId = baselineId
+				};
+
+				return Ok(dto);
+			}
+
+			// Try to look for Orphaned Itemz
+			Itemz? itemzRecord = null;
+			try
+			{
+				itemzRecord = await _itemzRepository.GetItemzAsync(recordId);
+			}
+			catch (ApplicationException ex)
+			{
+				// Log and ignore; try Baseline repository next
+				_logger.LogDebug("Record with ID {recordId} Not found in ItemzRepository: {Message}", recordId.ToString(), ex.Message);
+			}
+			if (itemzRecord != null)
+			{
+
+				var dto = new GoToResolutionDTO
+				{
+					RecordId = itemzRecord.Id,
+					RecordType = "Orphaned", // TODO: Consider using constants instead of hardcoded strings
+					Name = itemzRecord.Name
+
 				};
 
 				return Ok(dto);
