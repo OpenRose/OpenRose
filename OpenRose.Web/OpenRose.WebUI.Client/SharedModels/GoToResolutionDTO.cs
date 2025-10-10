@@ -17,5 +17,7 @@ namespace OpenRose.WebUI.Client.SharedModels
 		public string? ProjectName { get; set; }
 		public string? ProjectHierarchyId { get; set; }
 		public int? ProjectHierarchyLevel { get; set; }
+		public Guid? BaselineId { get; set; }
+
 	}
 }

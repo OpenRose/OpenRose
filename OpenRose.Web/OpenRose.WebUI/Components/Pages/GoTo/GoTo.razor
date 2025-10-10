@@ -161,14 +161,14 @@
 
                 case "baselineitemztype":
                     if (selectedViewOption == "TreeView" && result.ProjectId.HasValue)
-                        url = $"/BaselineTreeView/{result.ProjectId}?autoSelectedRecordId={result.RecordId}";
+                        url = $"/BaselineTreeView/{result.BaselineId}?autoSelectedRecordId={result.RecordId}";
                     else
                         url = $"/baselineitemztype/{result.RecordId}";
                     break;
 
                 case "baselineitemz":
                     if (selectedViewOption == "TreeView" && result.ProjectId.HasValue)
-                        url = $"/BaselineTreeView/{result.ProjectId}?autoSelectedRecordId={result.RecordId}";
+                        url = $"/BaselineTreeView/{result.BaselineId}?autoSelectedRecordId={result.RecordId}";
                     else
                         url = $"/baselineitemz/{result.RecordId}";
                     break;
