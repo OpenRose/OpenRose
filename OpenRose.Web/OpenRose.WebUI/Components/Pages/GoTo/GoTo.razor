@@ -172,6 +172,15 @@
                     else
                         url = $"/baselineitemz/{result.RecordId}";
                     break;
+                
+                case "orphaned":
+
+                    // EXPLANATION :: Orphaned records are always ItemZ records that have lost their parent
+                    // Thats why it will not have any tree view option. Even though user has selected tree view
+                    // they will be taken to the detail view of the orphaned record.
+
+                    url = $"/itemz/{result.RecordId}";  
+                    break;
 
                 default:
                     await ShowError($"Unsupported record type '{result.RecordType.ToUpper()}'");
