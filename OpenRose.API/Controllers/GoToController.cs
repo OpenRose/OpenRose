@@ -62,7 +62,12 @@ namespace ItemzApp.API.Controllers
 			}
 			if (hierarchyRecord != null && !string.IsNullOrWhiteSpace(hierarchyRecord.RecordType))
 			{
-				// Get Project context
+				// EXPLANATION :: Because we support hierarchy strucutre like Project, Requirement Type,
+				// Requirement, Sub Requirement and further Sub Requirements, we have to make sure that
+				// we obtain Project context for any record type that is not Project. So, we are checking
+				// if the record type is Project then we can use it directly otherwise we have to
+				// traverse up the parent chain to find the Project record.
+
 				Guid? projectId = null;
 				string? projectName = null;
 				string? projectHierarchyId = null;
@@ -119,7 +124,13 @@ namespace ItemzApp.API.Controllers
 			}  
 			if (baselineHierarchyRecord != null && !string.IsNullOrWhiteSpace(baselineHierarchyRecord.RecordType))
 			{
-				// Get Project context via parent chain
+				// EXPLANATION :: Because we support hierarchy information like Project, Baseline, Baseline Requirement Type,
+				// Baseline Requirement, Sub Baseline Requirement and further Sub Baseline Requirements, we have to make sure that
+				// we obtain Project context for any record type that is not Project. So, we are checking
+				// for information about project context via parent chain. As far as Baseline context is concerned,
+				// we expect that found record should be associated with one and only one Project. This is how we know that 
+				// we will always find Project Context via parent chain.
+
 				Guid? projectId = null;
 				string? projectName = null;
 				string? projectHierarchyId = null;
@@ -127,9 +138,8 @@ namespace ItemzApp.API.Controllers
 				Guid? baselineId = null;
 
 				var parentRecords = await _baselineHierarchyRepository.GetAllParentsOfBaselineItemzHierarchy(recordId);
-				var projectParent = parentRecords.AllRecords.FirstOrDefault(p =>
-					string.Equals(p.RecordType, "Project", StringComparison.OrdinalIgnoreCase)
-				);
+				var projectParent = FindFirstRecordByType(parentRecords.AllRecords, "Project");
+
 				if (projectParent != null)
 				{
 					projectId = projectParent.RecordId;
@@ -139,7 +149,7 @@ namespace ItemzApp.API.Controllers
 				}
 
 
-				var baselineParent = FindFirstBaselineRecord(parentRecords.AllRecords);
+				var baselineParent = FindFirstRecordByType(parentRecords.AllRecords, "Baseline");
 
 
 				if (baselineParent != null)
@@ -193,24 +203,39 @@ namespace ItemzApp.API.Controllers
 			return NotFound(new { error = "Record not found." });
 		}
 
-		private NestedBaselineHierarchyIdRecordDetailsDTO? FindFirstBaselineRecord(IEnumerable<NestedBaselineHierarchyIdRecordDetailsDTO>? records)
+
+		/// <summary>
+		/// Searches for the first record in the specified collection, or its descendants, that matches the given record type.
+		/// </summary>
+		/// <remarks>This method performs a recursive search through the provided collection and its child records. 
+		/// The comparison of record types is case-insensitive.</remarks>
+		/// <param name="records">The collection of records to search. Can be <see langword="null"/>.</param>
+		/// <param name="recordType">The type of record to search for. Cannot be <see langword="null"/> or empty.</param>
+		/// <returns>The first <see cref="NestedBaselineHierarchyIdRecordDetailsDTO"/> that matches the specified record type,  or <see
+		/// langword="null"/> if no matching record is found.</returns>
+		private NestedBaselineHierarchyIdRecordDetailsDTO? FindFirstRecordByType(
+			IEnumerable<NestedBaselineHierarchyIdRecordDetailsDTO>? records,
+			string recordType)
 		{
-			if (records == null) return null;
+			if (records == null || string.IsNullOrWhiteSpace(recordType)) return null;
 
 			foreach (var record in records)
 			{
-				if (string.Equals(record.RecordType, "Baseline", StringComparison.OrdinalIgnoreCase))
+				if (string.Equals(record.RecordType, recordType, StringComparison.OrdinalIgnoreCase))
 				{
 					return record;
 				}
+
 				// Search children recursively
-				var resultInChildren = FindFirstBaselineRecord(record.Children);
+				var resultInChildren = FindFirstRecordByType(record.Children, recordType);
 				if (resultInChildren != null)
 				{
 					return resultInChildren;
 				}
 			}
+
 			return null;
 		}
+
 	}
 }
