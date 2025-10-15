@@ -410,11 +410,11 @@ namespace ItemzApp.API.Controllers
             }
         }
 
-        // We have configured in startup class our own custom implementation of 
-        // problem Details. Now we are overriding ValidationProblem method that is defined in ControllerBase
-        // class to make sure that we use that custom problem details builder. 
-        // Instead of passing 400 it will pass back 422 code with more details.
-        public override ActionResult ValidationProblem([ActionResultObjectValue] ModelStateDictionary modelStateDictionary)
+		// We have configured in startup class our own custom implementation of 
+		// problem Details. Now we are overriding ValidationProblem method that is defined in ControllerBase
+		// class to make sure that we use that custom problem details builder. 
+		// Instead of passing 400 it will pass back 422 code with more details.
+		public override ActionResult ValidationProblem([ActionResultObjectValue] ModelStateDictionary modelStateDictionary)
         {
             var options = HttpContext.RequestServices
                 .GetRequiredService<IOptions<ApiBehaviorOptions>>();

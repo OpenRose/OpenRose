@@ -2,30 +2,31 @@
 // Licensed under the Apache License, Version 2.0. 
 // See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 
-using OpenRose.WebUI.Client.Services.Project;
-using OpenRose.WebUI.Client.Services.ItemzType;
-using OpenRose.WebUI.Client.Services.ItemzTypeItemzsService;
-using OpenRose.WebUI.Client.Services.Itemz;
-using OpenRose.WebUI.Client.Services.Hierarchy;
-using OpenRose.WebUI.Client.Services.ItemzCollection;
-using OpenRose.WebUI.Client.Services.ItemzChangeHistory;
-using OpenRose.WebUI.Client.Services.ItemzTrace;
-using OpenRose.WebUI.Client.Services.Baselines;
+using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using MudBlazor.Services;
+using MudExtensions.Services;
 using OpenRose.WebUI.Client.Services.BaselineHierarchy;
-using OpenRose.WebUI.Client.Services.BaselineItemzTypes;
 using OpenRose.WebUI.Client.Services.BaselineItemz;
 using OpenRose.WebUI.Client.Services.BaselineItemzCollection;
 using OpenRose.WebUI.Client.Services.BaselineItemzTrace;
+using OpenRose.WebUI.Client.Services.BaselineItemzTypes;
+using OpenRose.WebUI.Client.Services.Baselines;
+using OpenRose.WebUI.Client.Services.Export;
+using OpenRose.WebUI.Client.Services.GoTo;
+using OpenRose.WebUI.Client.Services.Hierarchy;
+using OpenRose.WebUI.Client.Services.Import;
+using OpenRose.WebUI.Client.Services.Itemz;
+using OpenRose.WebUI.Client.Services.ItemzChangeHistory;
+using OpenRose.WebUI.Client.Services.ItemzCollection;
+using OpenRose.WebUI.Client.Services.ItemzTrace;
+using OpenRose.WebUI.Client.Services.ItemzType;
+using OpenRose.WebUI.Client.Services.ItemzTypeItemzsService;
+using OpenRose.WebUI.Client.Services.Project;
 using OpenRose.WebUI.Components;
 using OpenRose.WebUI.Components.EventServices;
 using OpenRose.WebUI.Components.FindServices;
 using OpenRose.WebUI.Configuration;
 using OpenRose.WebUI.Services;
-using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using MudBlazor.Services;
-using MudExtensions.Services;
-using OpenRose.WebUI.Client.Services.Export;
-using OpenRose.WebUI.Client.Services.Import;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -153,6 +154,10 @@ else
 		client.BaseAddress = new Uri(apiSettings!.BaseUrl);
 	});
 	builder.Services.AddHttpClient<IImportService, ImportService>(client =>
+	{
+		client.BaseAddress = new Uri(apiSettings!.BaseUrl);
+	});
+	builder.Services.AddHttpClient<IGoToService, GoToService>(client =>
 	{
 		client.BaseAddress = new Uri(apiSettings!.BaseUrl);
 	});

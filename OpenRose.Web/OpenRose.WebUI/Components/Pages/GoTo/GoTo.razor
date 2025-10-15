@@ -1,0 +1,220 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * Export Records UI with details preview for all 6 record types.
+*@
+
+
+@page "/goto"
+@*  Support for /goto?recordId=... as well as /goto/{RecordId} *@
+@page "/goto/{RecordId:guid}" 
+@using MudBlazor
+@using OpenRose.WebUI.Client.SharedModels
+@using OpenRose.WebUI.Client.Services.GoTo
+@using OpenRose.WebUI.Components.Dialogs
+@inject IGoToService GoToService
+@inject NavigationManager NavManager
+@inject IDialogService DialogService
+@inject IJSRuntime JS
+
+<MudPaper Class="pa-3 mb-3 align-start d-flex" Style="width: auto " Outlined="false">
+    <MudStack Row="true" Spacing="3">
+        <MudIcon Icon="@Icons.Material.Filled.Search" Size="Size.Large" />
+        <MudText Typo="Typo.h5" Align="Align.Left">Go To Record</MudText>
+        <MudSpacer />
+        <MudText Class="mt-3" Typo="Typo.caption">
+            Quickly navigate to any record in the repository by pasting its GUID. Choose "TreeView" to see the full structure or "Detail View" for focused details and breadcrumbs.
+        </MudText>
+    </MudStack>
+</MudPaper>
+
+<MudItem xs="12" Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3">
+    <MudPaper Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3" Style="padding: 16px;">
+        <MudStack Row="false" Spacing="3" AlignItems="AlignItems.Center" JustifyContent="Justify.Center" Class="w-100">
+            <MudText Align="Align.Center" Typo="Typo.body1">
+                Enter the GUID of the record you want to navigate to:
+            </MudText>
+            <MudTextField @bind-Value="targetGuidText"
+                          Placeholder="Paste or enter GUID here"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Normal"
+                          Style="min-width: 420px"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Keyboard"
+                          Immediate="true"
+                          OnKeyDown="@(e => { if (e.Key == "Enter" && IsGuidInputValid()) { GoToRecordAsync(); } })" />
+
+            <MudRadioGroup T="string" @bind-Value="selectedViewOption" Row="true">
+                <MudRadio Value="@("DetailView")" Color="Color.Primary">Detail View</MudRadio>
+                <MudRadio Value="@("TreeView")" Color="Color.Primary">TreeView</MudRadio>
+            </MudRadioGroup>
+
+            <MudButton Variant="Variant.Filled"
+                       Size="Size.Medium"
+                       Color="Color.Primary"
+                       Disabled="!IsGuidInputValid() || loading"
+                       OnClick="async () => await GoToRecordAsync(false)">
+                @if (loading)
+                {
+                    <MudProgressCircular Indeterminate="true" Size="Size.Large" />
+                }
+                else
+                {
+                    <span>Go To</span>
+                }
+            </MudButton>
+        </MudStack>
+    </MudPaper>
+</MudItem>
+
+
+@code {
+    [Parameter] public Guid? RecordId { get; set; }
+    private string targetGuidText { get; set; } = string.Empty;
+    private string selectedViewOption { get; set; } = "DetailView";
+    private bool loading = false;
+
+    private bool IsGuidInputValid() => Guid.TryParse(targetGuidText, out _);
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Support for /goto?recordId=... as well as /goto/{RecordId}
+            var uri = NavManager.ToAbsoluteUri(NavManager.Uri);
+            var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+            if (RecordId == null && query.TryGetValue("recordId", out var queryRecordId))
+            {
+                if (Guid.TryParse(queryRecordId, out var parsed))
+                {
+                    RecordId = parsed;
+                }
+            }
+
+            if (RecordId != null && RecordId != Guid.Empty)
+            {
+                //selectedViewOption = "DetailView";
+                targetGuidText = RecordId.ToString();
+                await GoToRecordAsync(true); // true = auto mode, so don't open new tab
+            }
+        }
+    }
+
+
+    private async Task GoToRecordAsync(bool autoFromUrl = false)
+    {
+        if (!IsGuidInputValid())
+            return;
+
+        loading = true;
+        StateHasChanged();
+
+        try
+        {
+            Guid guid = Guid.Parse(targetGuidText.Trim());
+            GoToResolutionDTO? result = null;
+            try
+            {
+                result = await GoToService.__Get_GoTo_Details_By_GUID__(guid);
+            }
+            catch
+            {
+                // TODO :: decide if we want to handle any exception being 
+                // thrown by GoTo service that interacts with GoToController behind the sceen.
+            }
+
+            if (result == null || string.IsNullOrWhiteSpace(result.RecordType))
+            {
+                await ShowError($"Record not found for the provided RecordID.");
+                return;
+            }
+
+            string url = null;
+
+            switch (result.RecordType.ToLowerInvariant())
+            {
+                case "project":
+                    url = selectedViewOption == "TreeView"
+                        ? $"/ProjectTreeView/{result.RecordId}"
+                        : $"/project/{result.RecordId}";
+                    break;
+
+                case "itemztype":
+                    if (selectedViewOption == "TreeView" && result.ProjectId.HasValue)
+                        url = $"/ProjectTreeView/{result.ProjectId}?autoSelectedRecordId={result.RecordId}";
+                    else
+                        url = $"/itemztype/{result.RecordId}";
+                    break;
+
+                case "itemz":
+                    if (selectedViewOption == "TreeView" && result.ProjectId.HasValue)
+                        url = $"/ProjectTreeView/{result.ProjectId}?autoSelectedRecordId={result.RecordId}";
+                    else
+                        url = $"/itemz/{result.RecordId}";
+                    break;
+
+                case "baseline":
+                    url = selectedViewOption == "TreeView"
+                        ? $"/BaselineTreeView/{result.RecordId}"
+                        : $"/baseline/{result.RecordId}";
+                    break;
+
+                case "baselineitemztype":
+                    if (selectedViewOption == "TreeView" && result.ProjectId.HasValue)
+                        url = $"/BaselineTreeView/{result.BaselineId}?autoSelectedRecordId={result.RecordId}";
+                    else
+                        url = $"/baselineitemztype/{result.RecordId}";
+                    break;
+
+                case "baselineitemz":
+                    if (selectedViewOption == "TreeView" && result.ProjectId.HasValue)
+                        url = $"/BaselineTreeView/{result.BaselineId}?autoSelectedRecordId={result.RecordId}";
+                    else
+                        url = $"/baselineitemz/{result.RecordId}";
+                    break;
+                
+                case "orphaned":
+
+                    // EXPLANATION :: Orphaned records are always ItemZ records that have lost their parent
+                    // Thats why it will not have any tree view option. Even though user has selected tree view
+                    // they will be taken to the detail view of the orphaned record.
+
+                    url = $"/itemz/{result.RecordId}";  
+                    break;
+
+                default:
+                    await ShowError($"Unsupported record type '{result.RecordType.ToUpper()}'");
+                    return;
+            }
+
+            if (url != null)
+            {
+                // EXPLANATION :: If launched from URL by passing in the RecordID as parameter then 
+                // we just redirect in-place without opening a new separate tab
+
+                if (autoFromUrl)
+                    NavManager.NavigateTo(url);
+                else
+                    await JS.InvokeVoidAsync("open", url, "_blank");
+            }
+            else
+            {
+                await ShowError($"Could not determine navigation path");
+            }
+        }
+        finally
+        {
+            loading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ShowError(string message)
+    {
+        var parameters = new DialogParameters { ["Message"] = message };
+        var options = new DialogOptions { CloseButton = false, MaxWidth = MaxWidth.Small, FullWidth = true };
+        await DialogService.ShowAsync<ErrorDialog>("", parameters, options);
+    }
+}
+
+
