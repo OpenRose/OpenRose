@@ -40,9 +40,12 @@ BUT primarily, **Itemz** is nothing but Requirements / Needs / Wants / Notes / F
 
 ## Overview of Current State
 
-Latest released version 0.2.0-69
+Latest released version 0.2.0-120
 
 Main New Feature
+ - GoTo Navigation Links - [Demo](https://www.youtube.com/watch?v=DuJJl_uzPoc)
+
+version 0.2.0-69
  - Import Requirements Data - [Demo](https://www.youtube.com/watch?v=TAXf8oQlvC8)
  - Import Baseline Data - [Demo](https://www.youtube.com/watch?v=Xq2rQMxb_Io)
 
