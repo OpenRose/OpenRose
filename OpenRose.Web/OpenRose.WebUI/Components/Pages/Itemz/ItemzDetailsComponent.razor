@@ -105,7 +105,7 @@
 				}
 				@if (CalledFrom == nameof(ItemzDetails))
 				{
-					if (ParentId != Guid.Empty) // Orphand Itemz will not have ParentId
+					if (ParentId != Guid.Empty) // Orphaned Itemz will not have ParentId
 					{
 						<MudButton Variant="Variant.Filled" Color="Color.Primary"
 									Size="Size.Large"
@@ -187,7 +187,7 @@
 			</MudTabPanel>
 			@if (ParentId != Guid.Empty) // Itemz is not Orphaned
 			{
-			<MudTabPanel Icon="@Icons.Material.Filled.Hub" Text="Treaceability">
+			<MudTabPanel Icon="@Icons.Material.Filled.Hub" Text="Traceability">
 				<MudItem xs="12" sm="12" md="12" lg="12">
 					<MudPaper Class="pa-4 mud-height-full" Width="100%">
 						<TraceabilityComponent ItemzId="@ItemzId" CalledFrom="@CalledFrom" /> @* // TODO :: Perhaps we can change @nameof with Cascading Parameter in future *@
@@ -215,7 +215,7 @@
 							</div>
 						</TitleContent>
 						<ChildContent>
-							<MudText Typo="Typo.body1" Color="Color.Error">Deleting Itemz means loosing all it's data including all Child Itemz Tree Nodes. </MudText>
+							<MudText Typo="Typo.body1" Color="Color.Error">Deleting Itemz means losing all it's data including all Child Itemz Tree Nodes. </MudText>
 							<MudText Typo="Typo.body1" Color="Color.Error">This is <STRONG>IRREVERSIBLE</STRONG> operation.</MudText>
 							<MudButton @onclick="OpenDeleteConfirmationDialogAsync" Variant="Variant.Filled"
 								Disabled="@(disableUpdateItemzDetailsButton)"
@@ -273,6 +273,9 @@
 	public bool initializingPage { get; set; } = false;
 	private bool deletingItemz { get; set; } = false;
 	private bool hasFormFieldChanged { get; set; } = false;
+
+	// New flag to indicate orphaned Itemz (no parent -> no children expected)
+	private bool isOrphaned { get; set; } = false;
 
 
 	// private string _Content = string.Empty;
@@ -386,11 +389,14 @@
 			// Now even if user decides to Delete this Itemz Record then also we can go back to it's 
 			// Parent ItemzType post completing deletion operation. 
 			var httpResponse = await hierarchyService.__Get_Hierarchy_Record_Details_By_GUID__Async(ItemzId);
-			if (httpResponse != null) // Orphand Itemz will not have any Hierarchy records.
+			if (httpResponse != null) // Orphaned Itemz will not have any Hierarchy records.
 			{
 				ParentId = httpResponse.ParentRecordId;
 				ParentRecordType = httpResponse.ParentRecordType;
 			}
+
+			// Determine orphaned state (no parent -> we don't expect children)
+			isOrphaned = (httpResponse == null) || (httpResponse.ParentRecordId == Guid.Empty);
 
 			await ConvertMarkdownToHtml(singleItemz.Description);
 
@@ -464,15 +470,28 @@
 	private async Task OpenDeleteConfirmationDialogAsync()
 	{
 		int allChildrenCount = 0;
-		try
+
+		// EXPLANATION :: If item is orphaned we don't expect child or parent records; skip the child count call
+		if (!isOrphaned)
 		{
-			allChildrenCount = await hierarchyService.__Get_All_Children_Hierarchy_Count_By_GUID__Async(singleItemz.Id);
+			try
+			{
+				allChildrenCount = await hierarchyService.__Get_All_Children_Hierarchy_Count_By_GUID__Async(singleItemz.Id);
+			}
+			catch
+			{
+				// Show an explicit error, and bail out because we could not determine children safely.
+				await DialogService.ShowMessageBox("ERROR", markupMessage: new
+									MarkupString($"<p style=\"color: red; \">Issue encountered while trying to obtain all children count for the current Itemz. Delete operation has been cancelled to avoid accidental data loss.</p>"), yesText: "OK");
+				return;
+			}
 		}
-		catch
+		else
 		{
-			await DialogService.ShowMessageBox("ERROR", markupMessage: new
-								MarkupString($"<p style=\"color: red; \">Issue encountered while trying to obtain All Children Count for current Itemz.</p>"), yesText: "OK");
+			// EXPLANATION :: for Orphaned item -> no children expected, so that is why keep allChildrenCount as 0
+			allChildrenCount = 0;
 		}
+
 		var options = new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, Position = DialogPosition.Center };
 		var dialogParameters = new DialogParameters { { "AllChildrenCount", allChildrenCount } };
 		var dialogref = await DialogService.ShowAsync<ItemzDeletionConfirmDialog>(title: "CONFIRM", parameters: dialogParameters , options: options);
@@ -514,7 +533,7 @@
 	{
 		@if (CalledFrom == nameof(ItemzDetails)) 
 		{
-			if (ParentId != Guid.Empty) // Orphand Itemz will not have ParentId
+			if (ParentId != Guid.Empty) // Orphaned Itemz will not have ParentId
 			{
 				if (ParentRecordType.ToLower() == "itemztype")
 				{
@@ -527,7 +546,7 @@
 			}
 			else
 			{
-				// Orphand Itemz when deleted then go back to Project's list.
+				// Orphaned Itemz when deleted then go back to Project's list.
 				NavManager.NavigateTo($"/projects/");
 			}
 
@@ -535,7 +554,7 @@
 		@if(CalledFrom == nameof(ProjectTreeView))
 		{
 			TreeNodeItemzSelectionService.DeletedTreeNodeItemz(ItemzId);
-			if (ParentId != Guid.Empty) // Orphand Itemz will not have ParentId
+			if (ParentId != Guid.Empty) // Orphaned Itemz will not have ParentId
 			{
 				TreeNodeItemzSelectionService.SelectTreeNodeItemz(ParentId);
 			}
