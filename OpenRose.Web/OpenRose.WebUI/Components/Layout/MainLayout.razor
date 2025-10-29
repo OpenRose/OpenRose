@@ -11,24 +11,7 @@
 <MudDialogProvider />
 <MudSnackbarProvider />
 
-@* 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
 
-    <main>
-         <article class="content px-4">
-            @Body
-        </article>
- 
-        <MudLayout>
-            <MudMainContent>
-                @Body
-            </MudMainContent>
-        </MudLayout>
-    </main>
-</div> *@
 <MudLayout>
 	<MudAppBar Elevation="1" Bottom="false" Dense="true">
 		<MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@ToggleDrawer" />
