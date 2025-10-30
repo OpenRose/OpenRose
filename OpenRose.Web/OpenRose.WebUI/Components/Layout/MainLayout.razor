@@ -11,28 +11,27 @@
 <MudDialogProvider />
 <MudSnackbarProvider />
 
-@* 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+<style>
+	.product-title-link {
+		transition: font-size 0.2s ease, transform 0.2s;
+		font-weight: 500;
+		color: #fff !important;
+		display: inline-block;
+	}
 
-    <main>
-         <article class="content px-4">
-            @Body
-        </article>
- 
-        <MudLayout>
-            <MudMainContent>
-                @Body
-            </MudMainContent>
-        </MudLayout>
-    </main>
-</div> *@
+		.product-title-link:hover {
+			transform: scale(1.08);
+			cursor: pointer;
+			color: #fff !important;
+		}
+</style>
+
 <MudLayout>
 	<MudAppBar Elevation="1" Bottom="false" Dense="true">
 		<MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@ToggleDrawer" />
-		@CurrentPageTitle
+		<MudLink Href="/" Class="product-title-link">
+			@CurrentPageTitle
+		</MudLink>
 		<MudSpacer />
 		<MudIconButton Icon="@Icons.Custom.Brands.GitHub" Color="Color.Inherit" Href="https://github.com/OpenRose/OpenRose" Target="_blank" />
 	</MudAppBar>
