@@ -193,6 +193,10 @@ namespace ItemzApp.API.Services
                     Value = updateBaselineItemz.SingleNodeInclusion,
                     SqlDbType = System.Data.SqlDbType.Bit,
                 },
+
+		        // TODO :: For the following SqlParameter for type VARCHAR(MAX) supports ASCII and not unicode.
+		        // To support unicode we have to change it to NVARCHAR(MAX) or NVARCHAR(n) with specified length. 
+
                 new SqlParameter
                 {
                     ParameterName = "BaselineItemzIds",

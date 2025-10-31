@@ -33,6 +33,9 @@ namespace ItemzApp.API.Entities
         [MaxLength(128)]
         public string? Name { get; set; }
 
+		// TODO :: For the following Description field with type VARCHAR(MAX) supports ASCII and not unicode.
+		// To support unicode we have to change it to NVARCHAR(MAX) or NVARCHAR(n) with specified length. 
+
 		/// <summary>
 		/// Description of the Baseline
 		/// </summary>
