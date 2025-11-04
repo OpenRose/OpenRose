@@ -15,6 +15,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -49,7 +50,7 @@ namespace ItemzApp.API.Controllers
 			try
 			{
 				using var stream = form.File.OpenReadStream();
-				using var reader = new StreamReader(stream);
+				using var reader = new StreamReader(stream, Encoding.UTF8); // EXPLICITE UTF8 Encoding
 				var jsonText = await reader.ReadToEndAsync();
 
 				var schemaJson = await System.IO.File.ReadAllTextAsync("Schemas/OpenRose.Export.schema.1.0.json");
