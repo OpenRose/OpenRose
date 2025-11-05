@@ -226,7 +226,8 @@ namespace ItemzApp.API.Controllers
 
 				var content = System.Text.Encoding.UTF8.GetBytes(json);
 				var fileName = $"OpenRose_Export_{recordType}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.json";
-				return File(content, "application/json", fileName);
+				Response.Headers.Append("Content-Disposition", $"attachment; filename=\"{fileName}\"");
+				return File(content, "application/json; charset=utf-8", fileName);
 			}
 			catch (Exception ex)
 			{
