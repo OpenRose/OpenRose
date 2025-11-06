@@ -25,7 +25,11 @@ namespace ItemzApp.API.Entities
         [MaxLength(64)]
         public string? Status { get; set; }
 
-		[Column(TypeName = "VARCHAR(MAX)")]
+
+		// TODO :: For the following Description field with type VARCHAR(MAX) supports ASCII and not unicode.
+		// To support unicode we have to change it to NVARCHAR(MAX) or NVARCHAR(n) with specified length. 
+
+		[Column(TypeName = "NVARCHAR(MAX)")]
 		public string? Description { get; set; }
 
         //[Required]
