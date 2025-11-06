@@ -24,6 +24,9 @@
 
 	<ItemGroup>
 	  <None Remove="DbContexts\UserStoredProcedure\userProcCopyRecordWithChildrenByRecordID_202503221207.sql" />
+	  <None Remove="DbContexts\UserStoredProcedure\userProcCreateBaselineByExistingBaselineID_202511051622.sql" />
+	  <None Remove="DbContexts\UserStoredProcedure\userProcCreateBaselineByItemzTypeID_202505111625.sql" />
+	  <None Remove="DbContexts\UserStoredProcedure\userProcCreateBaselineByProjectID_202511051626.sql" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -34,9 +37,12 @@
 
 	<ItemGroup>
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcCopyRecordWithChildrenByRecordID_202503221207.sql" />
-		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcCreateBaselineByExistingBaselineID_202410300246.sql" />
-		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcCreateBaselineByItemzTypeID_202410300238.sql" />
-		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcCreateBaselineByProjectID_202410300219.sql" />
+		<EmbeddedResource Include="DbContexts\UserStoredProcedure\Old\userProcCreateBaselineByExistingBaselineID_202410300246.sql" />
+		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcCreateBaselineByExistingBaselineID_202511051622.sql" />
+		<EmbeddedResource Include="DbContexts\UserStoredProcedure\Old\userProcCreateBaselineByItemzTypeID_202410300238.sql" />
+		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcCreateBaselineByItemzTypeID_202505111625.sql" />
+		<EmbeddedResource Include="DbContexts\UserStoredProcedure\Old\userProcCreateBaselineByProjectID_202410300219.sql" />
+		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcCreateBaselineByProjectID_202511051626.sql" />
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcDeleteAllOrphanedBaselineItemz_202407251305.sql" />
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcDeleteItemzHierarchyRecordsByItemzTypeId_202412091028.sql" />
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcDeleteItemzHierarchyRecordsByProjectId_202412090713.sql" />

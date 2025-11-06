@@ -4,6 +4,7 @@ using ItemzApp.API.DbContexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Microsoft.SqlServer.Types;
 
@@ -12,9 +13,11 @@ using Microsoft.SqlServer.Types;
 namespace OpenRose.API.Migrations
 {
     [DbContext(typeof(ItemzContext))]
-    partial class ItemzContextModelSnapshot : ModelSnapshot
+    [Migration("20251105175133_AddingSupportForUnicodeDescriptionFields")]
+    partial class AddingSupportForUnicodeDescriptionFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

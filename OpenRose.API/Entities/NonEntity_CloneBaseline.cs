@@ -39,7 +39,7 @@ namespace ItemzApp.API.Entities
 		/// <summary>
 		/// Description of the Baseline
 		/// </summary>
-		[Column(TypeName = "VARCHAR(MAX)")]
+		[Column(TypeName = "NVARCHAR(MAX)")]
 		public string? Description { get; set; }
 
     }
