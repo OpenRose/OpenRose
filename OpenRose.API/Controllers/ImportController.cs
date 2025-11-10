@@ -72,6 +72,7 @@ namespace ItemzApp.API.Controllers
 				{
 					return BadRequest("Could not parse the uploaded file as a valid OpenRose export.");
 				}
+
 			}
 			catch (Exception ex)
 			{
@@ -112,6 +113,17 @@ namespace ItemzApp.API.Controllers
 			if (string.IsNullOrEmpty(detectedType))
 			{
 				return BadRequest("Could not detect record type from the uploaded file.");
+			}
+
+			var traceValidationErrors = ImportDataTraceValidator.ValidateTraceLinks(repositoryExportDto, detectedType);
+			if (traceValidationErrors.Any())
+			{
+				_logger.LogWarning("Trace validation failed: {Errors}", string.Join("; ", traceValidationErrors));
+				return BadRequest(new
+				{
+					error = "Invalid traceability links detected.",
+					details = traceValidationErrors
+				});
 			}
 
 			var placementDto = new ImportDataPlacementDTO
