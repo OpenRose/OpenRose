@@ -132,8 +132,6 @@ namespace ItemzApp.API.Controllers
 				return BadRequest(tempMessage);
 			}
 
-			//if (!(immediateChildrenBaselineHierarchyRecords.IsNullOrEmpty()))
-
 			if (immediateChildrenBaselineHierarchyRecords != null && immediateChildrenBaselineHierarchyRecords.Any())
 
 			{
