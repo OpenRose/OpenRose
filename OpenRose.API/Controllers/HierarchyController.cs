@@ -177,7 +177,7 @@ namespace ItemzApp.API.Controllers
 				return BadRequest(tempMessage);
 			}
 
-			if (!(immediateChildrenhierarchyRecords.IsNullOrEmpty()))
+			if (immediateChildrenhierarchyRecords!= null && immediateChildrenhierarchyRecords.Any())
 			{
 				_logger.LogDebug("{FormattedControllerAndActionNames} Returning {hirarchyChildRecordCount} Immediate Children Hierarchy Records for ID {RecordId} ",
 					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),

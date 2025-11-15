@@ -691,7 +691,7 @@ namespace ItemzApp.API.Services
             }
             else
             {
-                if (!(movingItemzName.IsNullOrEmpty()))
+                if (!(string.IsNullOrWhiteSpace(movingItemzName)))
                 {
                     movingItemzHierarchyRecord = new Entities.ItemzHierarchy
                     {

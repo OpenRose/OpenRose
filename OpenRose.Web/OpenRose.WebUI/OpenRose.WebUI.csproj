@@ -14,11 +14,11 @@
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\OpenRose.WebUI.Client\OpenRose.WebUI.Client.csproj" />
-		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="9.0.1" />
-		<PackageReference Include="Microsoft.Extensions.Http" Version="9.0.1" />
-		<PackageReference Include="MudBlazor" Version="8.2.0" />
-		<PackageReference Include="CodeBeam.MudBlazor.Extensions" Version="8.0.0" />
-		<PackageReference Include="PSC.Blazor.Components.MarkdownEditor" Version="8.0.5" />
+		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="9.0.10" />
+		<PackageReference Include="Microsoft.Extensions.Http" Version="9.0.10" />
+		<PackageReference Include="MudBlazor" Version="8.14.0" />
+		<PackageReference Include="CodeBeam.MudBlazor.Extensions" Version="8.2.5" />
+		<PackageReference Include="PSC.Blazor.Components.MarkdownEditor" Version="8.0.8" />
 	</ItemGroup>
 	<ItemGroup>
 		<Folder Include="Components\Pages\BaselineItemz\BaselineTraceability\" />

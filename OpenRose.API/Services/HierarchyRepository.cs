@@ -663,7 +663,7 @@ namespace ItemzApp.API.Services
 				throw new ArgumentNullException(nameof(recordId));
 			}
 
-			if(newItemzName.IsNullOrEmpty())
+			if(string.IsNullOrWhiteSpace(newItemzName))
 			{
 				throw new ArgumentNullException(nameof(newItemzName));
 			}

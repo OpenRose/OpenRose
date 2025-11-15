@@ -132,12 +132,13 @@ namespace ItemzApp.API.Controllers
 				return BadRequest(tempMessage);
 			}
 
-			if (!(immediateChildrenBaselineHierarchyRecords.IsNullOrEmpty()))
+			if (immediateChildrenBaselineHierarchyRecords != null && immediateChildrenBaselineHierarchyRecords.Any())
+
 			{
 				_logger.LogDebug("{FormattedControllerAndActionNames} Returning {baselineHirarchyChildRecordCount} Immediate Children Baseline Hierarchy Records for ID {RecordId} ",
-					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-					immediateChildrenBaselineHierarchyRecords.Count(),
-					RecordId);
+				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+				immediateChildrenBaselineHierarchyRecords.Count(),
+				RecordId);
 			}
 			else
 			{
