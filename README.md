@@ -18,6 +18,10 @@ Click on image below to watch OpenRose Introduction Video.
 
 Please refer to ![OpenRose Wiki](https://github.com/OpenRose/OpenRose/wiki) for documentation. 
 
+## OpenRose Product Review
+
+[![https://crozdesk.com/it/requirements-management/openrose](https://embed.crozdesk.com/badges/v2/rating/openrose)](https://crozdesk.com/it/requirements-management/openrose)
+
 ## Purpose
 
 OpenRose is developed with focus on ease of defining, maintaining, sharing and reporting on different types of Requirements (also known as Itemz).
