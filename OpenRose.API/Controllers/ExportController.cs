@@ -33,18 +33,18 @@ namespace ItemzApp.API.Controllers
 		private readonly IMapper _mapper;
 		private readonly ILogger<ExportController> _logger;
 
-		public ExportController(IBaselineHierarchyRepository baselineHierarchyRepository, 
+		public ExportController(IBaselineHierarchyRepository baselineHierarchyRepository,
 								IBaselineItemzTraceExportService baselineItemzTraceExportService,
 								IItemzTraceExportService itemzTraceExportService,
-								IExportNodeMapper exportNodeMapper, 
-								IProjectRepository projectRepository, 
+								IExportNodeMapper exportNodeMapper,
+								IProjectRepository projectRepository,
 								IHierarchyRepository hierarchyRepository,
 								IMapper mapper,
 								ILogger<ExportController> logger)
 		{
 			_baselineHierarchyRepository = baselineHierarchyRepository ?? throw
 				new ArgumentNullException(nameof(baselineHierarchyRepository));
-			_baselineItemzTraceExportService = baselineItemzTraceExportService ?? throw 
+			_baselineItemzTraceExportService = baselineItemzTraceExportService ?? throw
 				new ArgumentNullException(nameof(baselineItemzTraceExportService));
 			_itemzTraceExportService = itemzTraceExportService ?? throw new ArgumentNullException(nameof(itemzTraceExportService));
 			_exportNodeMapper = exportNodeMapper ?? throw new ArgumentNullException(nameof(exportNodeMapper));
@@ -65,7 +65,7 @@ namespace ItemzApp.API.Controllers
 		[ProducesResponseType(StatusCodes.Status200OK)]
 		[Produces("application/json")]
 		[HttpGet("ExportHierarchy", Name = "__Export_Hierarchy__")]
-		public async Task<IActionResult> ExportHierarchy( [FromQuery] Guid exportRecordId,
+		public async Task<IActionResult> ExportHierarchy([FromQuery] Guid exportRecordId,
 										[FromQuery] bool exportIncludedBaselineItemzOnly = false)
 		{
 			_logger.LogDebug("{FormattedControllerAndActionNames} Processing request to export hierarchy as RepositoryExportDTO. Id: {ExportRecordId}, exportIncludedBaselineItemzOnly: {ExportIncludedBaselineItemzOnly}",
@@ -296,6 +296,21 @@ namespace ItemzApp.API.Controllers
 			Traverse(node);
 			return ids;
 		}
+
+		// TODO :: Like we have 'ExportHierarchy' implemented in this controller, similartly we should also support exporting 
+		// Mermaid Flow Chart Diagram text for 
+		//  - Project
+		//	 - ItemzType
+		//	 - Itemz
+		//	 - Baseline
+		//	 - BaselineItemzType
+		//	 - BaselineItemz
+		//	We should process all the required data on the server side and then return finalized 
+		// Mermaid Flow Chart Diagram text to the calling client!  
+		// This way all the heavy lifting work can be perform on the server side and in the future
+		// this activity could also be offloaded to a distributed containerized worker service if needed!
+		// For now, there is no need to create a separate controller for this functionality as this can be
+		// easily handled in this existing ExportController itself!
 
 	}
 }
