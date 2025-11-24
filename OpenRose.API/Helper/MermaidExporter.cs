@@ -56,18 +56,23 @@ namespace ItemzApp.API.Helper
 												Guid rootId,
 												int indentLevel)
 		{
-			if (node.Children == null || node.Children.Count == 0) return;
-
 			string parent = RenderNode(node.RecordId, node.RecordType, node.Name, node.RecordId == rootId);
 			string indent = new string(' ', indentLevel * 4);
 
-			foreach (var child in node.Children)
+			// Always emit the node itself
+			sb.AppendLine($"{indent}{parent}");
+
+			if (node.Children != null && node.Children.Count > 0)
 			{
-				string childText = RenderNode(child.RecordId, child.RecordType, child.Name, child.RecordId == rootId);
-				sb.AppendLine($"{indent}{parent} --> {childText}");
-				EmitHierarchyInline(child, sb, rootId, indentLevel + 1);
+				foreach (var child in node.Children)
+				{
+					string childText = RenderNode(child.RecordId, child.RecordType, child.Name, child.RecordId == rootId);
+					sb.AppendLine($"{indent}{parent} --> {childText}");
+					EmitHierarchyInline(child, sb, rootId, indentLevel + 1);
+				}
 			}
 		}
+
 
 		// Emit baseline hierarchy edges inline with indentation
 		private static void EmitBaselineHierarchyInline(NestedBaselineHierarchyIdRecordDetailsDTO node,
@@ -75,18 +80,23 @@ namespace ItemzApp.API.Helper
 														Guid rootId,
 														int indentLevel)
 		{
-			if (node.Children == null || node.Children.Count == 0) return;
-
 			string parent = RenderNode(node.RecordId, node.RecordType, node.Name, node.RecordId == rootId);
 			string indent = new string(' ', indentLevel * 4);
 
-			foreach (var child in node.Children)
+			// Always emit the node itself
+			sb.AppendLine($"{indent}{parent}");
+
+			if (node.Children != null && node.Children.Count > 0)
 			{
-				string childText = RenderNode(child.RecordId, child.RecordType, child.Name, child.RecordId == rootId);
-				sb.AppendLine($"{indent}{parent} --> {childText}");
-				EmitBaselineHierarchyInline(child, sb, rootId, indentLevel + 1);
+				foreach (var child in node.Children)
+				{
+					string childText = RenderNode(child.RecordId, child.RecordType, child.Name, child.RecordId == rootId);
+					sb.AppendLine($"{indent}{parent} --> {childText}");
+					EmitBaselineHierarchyInline(child, sb, rootId, indentLevel + 1);
+				}
 			}
 		}
+
 
 		// Render node with correct shape and prefix
 		private static string RenderNode(Guid id, string? recordType, string? name, bool isRoot)
