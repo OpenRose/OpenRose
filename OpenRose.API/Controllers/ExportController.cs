@@ -297,7 +297,10 @@ namespace ItemzApp.API.Controllers
 			return ids;
 		}
 
-		// TODO :: Like we have 'ExportHierarchy' implemented in this controller, similartly we should also support exporting 
+
+		#region START ExportMermaidFlowChart
+
+		// EXPLANATION :: Like we have 'ExportHierarchy' implemented in this controller, similartly we should also support exporting 
 		// Mermaid Flow Chart Diagram text for 
 		//  - Project
 		//	 - ItemzType
@@ -311,6 +314,117 @@ namespace ItemzApp.API.Controllers
 		// this activity could also be offloaded to a distributed containerized worker service if needed!
 		// For now, there is no need to create a separate controller for this functionality as this can be
 		// easily handled in this existing ExportController itself!
+
+
+		/// <summary>
+		/// Provide Mermaid Flow Chart Diagram text for the given RecordId along with it's hierarchy breakdown structure and traceability
+		/// </summary>
+		/// <param name="exportRecordId">Record ID for the main record for generating Mermaid Flow Chart Diagram text</param>
+		/// <param name="exportIncludedBaselineItemzOnly">Boolean value to decide if excluded BaselineItemz should be exported or not</param>/// 
+		/// <returns></returns>
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		[ProducesResponseType(StatusCodes.Status200OK)]
+		[Produces("text/plain")]
+		[HttpGet("ExportMermaidFlowChart", Name = "__Export_Mermaid_FlowChart__")]
+		public async Task<IActionResult> ExportMermaidFlowChart([FromQuery] Guid exportRecordId,
+																[FromQuery] bool exportIncludedBaselineItemzOnly = false)
+		{
+			if (exportRecordId == Guid.Empty)
+			{
+				return BadRequest("ExportRecordId must be a valid GUID.");
+			}
+
+			try
+			{
+				// --- LIVE hierarchy branch ---
+				HierarchyIdRecordDetailsDTO? parentHierarchyRecord = null;
+				try
+				{
+					parentHierarchyRecord = await _hierarchyRepository.GetHierarchyRecordDetailsByID(exportRecordId);
+				}
+				catch (Exception ex)
+				{
+					// If repository throws "Expected 1 record but found 0", treat as not found
+					_logger.LogWarning("Live hierarchy record not found for ID {ExportRecordId}: {Message}", exportRecordId, ex.Message);
+					parentHierarchyRecord = null;
+				}
+
+				if (parentHierarchyRecord != null)
+				{
+					var hierarchyTree = await _hierarchyRepository.GetAllChildrenOfItemzHierarchy(exportRecordId);
+
+					var rootNode = new NestedHierarchyIdRecordDetailsDTO
+					{
+						RecordId = parentHierarchyRecord.RecordId,
+						HierarchyId = parentHierarchyRecord.HierarchyId,
+						Level = parentHierarchyRecord.Level,
+						RecordType = parentHierarchyRecord.RecordType,
+						Name = parentHierarchyRecord.Name,
+						Children = (List<NestedHierarchyIdRecordDetailsDTO>)hierarchyTree.AllRecords
+					};
+
+					var exportedItemzIds = CollectExportedIdsByType(rootNode, "Itemz");
+					var itemzTraces = await _itemzTraceExportService.GetTracesForExportAsync(exportedItemzIds);
+
+					var mermaidText = MermaidExporter.Generate(rootNode, itemzTraces, exportRecordId);
+					return Content(mermaidText, "text/plain");
+				}
+
+				// --- BASELINE hierarchy branch ---
+				BaselineHierarchyIdRecordDetailsDTO? baselineHierarchyRecord = null;
+				try
+				{
+					baselineHierarchyRecord = await _baselineHierarchyRepository.GetBaselineHierarchyRecordDetailsByID(exportRecordId);
+				}
+				catch (Exception ex)
+				{
+					_logger.LogWarning("Baseline hierarchy record not found for ID {ExportRecordId}: {Message}", exportRecordId, ex.Message);
+					baselineHierarchyRecord = null;
+				}
+
+				if (baselineHierarchyRecord != null)
+				{
+					var rootRecordType = baselineHierarchyRecord.RecordType?.ToLowerInvariant();
+
+					if (rootRecordType == "baselineitemz"
+						&& exportIncludedBaselineItemzOnly
+						&& baselineHierarchyRecord.IsIncluded == false)
+					{
+						return NotFound($"Requested BaselineItemz (ID: {exportRecordId}) is excluded.");
+					}
+
+					var baselineHierarchyTree = await _baselineHierarchyRepository.GetAllChildrenOfBaselineItemzHierarchy(
+						exportRecordId, exportIncludedBaselineItemzOnly);
+
+					var rootNode = new NestedBaselineHierarchyIdRecordDetailsDTO
+					{
+						RecordId = baselineHierarchyRecord.RecordId,
+						BaselineHierarchyId = baselineHierarchyRecord.BaselineHierarchyId,
+						Level = baselineHierarchyRecord.Level,
+						RecordType = baselineHierarchyRecord.RecordType,
+						Name = baselineHierarchyRecord.Name,
+						isIncluded = baselineHierarchyRecord.IsIncluded,
+						Children = (List<NestedBaselineHierarchyIdRecordDetailsDTO>)baselineHierarchyTree.AllRecords
+					};
+
+					var exportedBaselineItemzIds = CollectExportedIdsByType(rootNode, "BaselineItemz");
+					var baselineItemzTraces = await _baselineItemzTraceExportService.GetTracesForExportAsync(exportedBaselineItemzIds);
+
+					var mermaidText = MermaidExporter.GenerateBaseline(rootNode, baselineItemzTraces, exportRecordId);
+					return Content(mermaidText, "text/plain");
+				}
+
+				// --- Neither hierarchy found ---
+				return NotFound($"Record with ID '{exportRecordId}' not found across Itemz OR Baseline Hierarchy data.");
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError("Exception during Mermaid export: {Message}", ex.Message);
+				return StatusCode(StatusCodes.Status500InternalServerError, "Error exporting Mermaid flowchart.");
+			}
+		}
+
+		#endregion END ExportMermaidFlowChart
 
 	}
 }
