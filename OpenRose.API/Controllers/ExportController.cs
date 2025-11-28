@@ -315,13 +315,49 @@ namespace ItemzApp.API.Controllers
 		// For now, there is no need to create a separate controller for this functionality as this can be
 		// easily handled in this existing ExportController itself!
 
-
 		/// <summary>
-		/// Provide Mermaid Flow Chart Diagram text for the given RecordId along with it's hierarchy breakdown structure and traceability
+		/// Exports a Mermaid flowchart diagram (in plain text format) that represents the hierarchy
+		/// of a record identified by <paramref name="exportRecordId"/>. The diagram includes
+		/// parent-child relationships and traceability information for Itemz or BaselineItemz records.
 		/// </summary>
-		/// <param name="exportRecordId">Record ID for the main record for generating Mermaid Flow Chart Diagram text</param>
-		/// <param name="exportIncludedBaselineItemzOnly">Boolean value to decide if excluded BaselineItemz should be exported or not</param>/// 
-		/// <returns></returns>
+		/// <remarks>
+		/// This endpoint attempts to locate the record in two possible hierarchies:
+		/// <list type="bullet">
+		///   <item>
+		///     <description><b>Live hierarchy</b> – Standard Itemz records and their children.</description>
+		///   </item>
+		///   <item>
+		///     <description><b>Baseline hierarchy</b> – BaselineItemz records, which may be marked as included or excluded.</description>
+		///   </item>
+		/// </list>
+		/// If found, the hierarchy is traversed, traceability data is collected, and Mermaid diagram text
+		/// is generated. The response is returned as <c>text/plain</c>.
+		/// </remarks>
+		/// <param name="exportRecordId">
+		/// The unique identifier (<see cref="Guid"/>) of the record to export.
+		/// Must be a non-empty GUID. If empty, the request will return <c>400 Bad Request</c>.
+		/// </param>
+		/// <param name="exportIncludedBaselineItemzOnly">
+		/// When <c>true</c>, only BaselineItemz records marked as "included" will be exported.
+		/// When <c>false</c>, both included and excluded BaselineItemz records are considered.
+		/// </param>
+		/// <returns>
+		/// An <see cref="IActionResult"/> representing one of the following outcomes:
+		/// <list type="bullet">
+		///   <item>
+		///     <description><c>200 OK</c> – Mermaid diagram text is successfully generated and returned as <c>text/plain</c>.</description>
+		///   </item>
+		///   <item>
+		///     <description><c>400 Bad Request</c> – The provided <paramref name="exportRecordId"/> is empty or invalid.</description>
+		///   </item>
+		///   <item>
+		///     <description><c>404 Not Found</c> – No matching record exists in either hierarchy, or the requested BaselineItemz is excluded.</description>
+		///   </item>
+		///   <item>
+		///     <description><c>500 Internal Server Error</c> – An unexpected error occurred during export.</description>
+		///   </item>
+		/// </list>
+		/// </returns>
 		[ProducesResponseType(StatusCodes.Status404NotFound)]
 		[ProducesResponseType(StatusCodes.Status200OK)]
 		[Produces("text/plain")]
@@ -345,7 +381,7 @@ namespace ItemzApp.API.Controllers
 				catch (Exception ex)
 				{
 					// If repository throws "Expected 1 record but found 0", treat as not found
-					_logger.LogWarning("Live hierarchy record not found for ID {ExportRecordId}: {Message}", exportRecordId, ex.Message);
+					_logger.LogDebug("Live hierarchy record not found for ID {ExportRecordId}: {Message}", exportRecordId, ex.Message);
 					parentHierarchyRecord = null;
 				}
 
@@ -378,7 +414,7 @@ namespace ItemzApp.API.Controllers
 				}
 				catch (Exception ex)
 				{
-					_logger.LogWarning("Baseline hierarchy record not found for ID {ExportRecordId}: {Message}", exportRecordId, ex.Message);
+					_logger.LogDebug("Baseline hierarchy record not found for ID {ExportRecordId}: {Message}", exportRecordId, ex.Message);
 					baselineHierarchyRecord = null;
 				}
 
