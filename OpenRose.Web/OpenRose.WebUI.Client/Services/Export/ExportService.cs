@@ -2,10 +2,12 @@
 // Licensed under the Apache License, Version 2.0. 
 // See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 
+using OpenRose.WebUI.Client.Utilities;
 using System;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -68,5 +70,87 @@ namespace OpenRose.WebUI.Client.Services.Export
 
 			return (fileContent, fileName);
 		}
+
+
+		/// <inheritdoc/>
+		public async Task<string> __GET_MermaidFlowChart_By_GUID_ID__Async(
+			Guid exportRecordId,
+			bool exportIncludedBaselineItemzOnly,
+			CancellationToken cancellationToken = default)
+		{
+			try
+			{
+				// TODO :: Utilize urlBuilder more consistently across services
+				var urlBuilder_ = new StringBuilder();
+				urlBuilder_.Append("/api/export/ExportMermaidFlowChart");
+				urlBuilder_.Append('?');
+
+				if (exportRecordId == Guid.Empty)
+				{
+					throw new ArgumentNullException(nameof(exportRecordId),
+						"ExportRecordId must be a valid GUID.");
+				}
+
+				urlBuilder_.Append($"exportRecordId={exportRecordId}");
+
+				if (exportIncludedBaselineItemzOnly)
+				{
+					urlBuilder_.Append("&exportIncludedBaselineItemzOnly=true");
+				}
+
+				// urlBuilder_.Length--; // cleanup if trailing ? or & is left
+
+				var request = new HttpRequestMessage(HttpMethod.Get, urlBuilder_.ToString());
+				request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/plain"));
+
+				var httpResponseMessage = await _httpClient.SendAsync(
+					request,
+					HttpCompletionOption.ResponseHeadersRead,
+					cancellationToken);
+
+				// Explicit error handling using helper
+				if (HttpStatusCodesHelper.ErrorStatusCodes.Contains(httpResponseMessage.StatusCode))
+				{
+					var _errorContent = await httpResponseMessage.Content.ReadAsStringAsync(cancellationToken);
+
+					// TODO :: Use MudBlazor Snackbar to show the message
+					// TODO :: Decide if server error message should be passed directly to UI
+					throw new ApplicationException($"FAILED : {_errorContent}");
+				}
+
+				httpResponseMessage.EnsureSuccessStatusCode();
+
+				string responseContent = await httpResponseMessage.Content.ReadAsStringAsync(cancellationToken);
+
+				if (string.IsNullOrWhiteSpace(responseContent))
+				{
+					return default;
+				}
+
+				// Server returns plain text Mermaid diagram, no deserialization needed
+				return responseContent;
+			}
+			catch (HttpRequestException httpEx)
+			{
+				// Handle HTTP-specific exceptions (e.g., 404, 500)
+				throw new Exception($"HTTP error occurred: {httpEx.Message}");
+			}
+			catch (ArgumentNullException argEx)
+			{
+				throw new Exception($"Argument Null Exception: {argEx.Message}");
+			}
+			catch (Exception)
+			{
+				// Re-throw to preserve stack trace
+				throw;
+			}
+		}
+
+
+
+
+
+
+
 	}
 }

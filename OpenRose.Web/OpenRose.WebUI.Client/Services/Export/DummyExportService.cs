@@ -19,5 +19,10 @@ namespace OpenRose.WebUI.Client.Services.Export
 		{
 			throw new InvalidOperationException("OpenRose API base URL is not configured. Please provide a valid URL in the configuration file.");
 		}
+
+		public async Task<string> __GET_MermaidFlowChart_By_GUID_ID__Async(Guid exportRecordId, bool exportIncludedBaselineItemzOnly, CancellationToken cancellationToken = default)
+		{
+			throw new NotImplementedException();
+		}
 	}
 }
