@@ -97,8 +97,10 @@ namespace ItemzApp.API.Helper
 			string parent = RenderNode(node.RecordId, node.RecordType, node.Name, node.RecordId == rootId);
 			string indent = new string(' ', indentLevel * 4);
 
-			// Always emit the node itself
-			sb.AppendLine($"{indent}{parent}");
+			if (node.RecordId == rootId)
+			{
+				sb.AppendLine($"{indent}{parent}");
+			}
 
 			if (node.Children != null && node.Children.Count > 0)
 			{
@@ -122,7 +124,10 @@ namespace ItemzApp.API.Helper
 			string parent = RenderNode(node.RecordId, node.RecordType, node.Name, node.RecordId == rootId);
 			string indent = new string(' ', indentLevel * 4);
 
-			sb.AppendLine($"{indent}{parent}");
+			if(node.RecordId == rootId)
+			{
+				sb.AppendLine($"{indent}{parent}");
+			}
 
 			if (node.Children != null && node.Children.Count > 0)
 			{
@@ -149,20 +154,46 @@ namespace ItemzApp.API.Helper
 		{
 			string label = recordType?.ToLowerInvariant() switch
 			{
-				"project" => $"Project :: {name}",
-				"itemztype" => $"ItemzType :: {name}",
-				"baseline" => $"Baseline :: {name}",
-				"baselineitemztype" => $"BaselineItemzType :: {name}",
-				"itemz" => $"{name}",
-				"baselineitemz" => $"{name}",
-				_ => $"{name}"
+				"project" => TransformLabelForMermaid($"Project :: {name}"),
+				"itemztype" => TransformLabelForMermaid($"ItemzType :: {name}"),
+				"baseline" => TransformLabelForMermaid($"Baseline :: {name}"),
+				"baselineitemztype" => TransformLabelForMermaid($"BaselineItemzType :: {name}"),
+				"itemz" => TransformLabelForMermaid(name),
+				"baselineitemz" => TransformLabelForMermaid(name),
+				_ => TransformLabelForMermaid(name)
 			};
 
-			if (isRoot)
-			{
-				return $"{id}(({label}))"; // circle for root
-			}
-			return $"{id}[{label}]"; // rectangle for others
+			return isRoot
+				? $"{id}(({label}))"   // circle for root
+				: $"{id}[{label}]";    // rectangle for others
 		}
+
+		/// <summary>
+		/// Transforms a raw label string into a Mermaid-safe format.
+		/// Mermaid diagrams break if labels contain certain special characters,
+		/// so we sanitize them by replacing or escaping problematic symbols.
+		/// </summary>
+		/// <param name="input">The raw label text to be transformed.</param>
+		/// <returns>A sanitized label string wrapped in double quotes.</returns>
+		private static string TransformLabelForMermaid(string? input)
+		{
+			if (string.IsNullOrEmpty(input)) return "\"\"";
+
+			string transformed = input
+				.Replace("\"", "'")   // replace double quotes with single quotes
+				.Replace("&", "and")  // replace ampersand with 'and'
+				.Replace("<", "(")    // replace < with (
+				.Replace(">", ")")   // replace > with )
+				.Replace("%", "percent") // percent sign → word "percent"
+				.Replace("end", "END")   // lowercase "end" → uppercase
+				.Replace("[", "(")       // square bracket → parenthesis
+				.Replace("]", ")")       // square bracket → parenthesis
+				.Replace("{", "(")       // curly brace → parenthesis
+				.Replace("}", ")");      // curly brace → parenthesis
+
+			// Wrap the whole label in double quotes
+			return $"\"{transformed}\"";
+		}
+
 	}
 }
