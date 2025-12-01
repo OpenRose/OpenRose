@@ -142,7 +142,8 @@ namespace ItemzApp.API
 
             services.AddTransient<IPropertyMappingService, PropertyMappingService>();
 
-			services.AddAutoMapper(cfg => { }, AppDomain.CurrentDomain.GetAssemblies());
+			services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+			//services.AddAutoMapper(cfg => { }, AppDomain.CurrentDomain.GetAssemblies());
 
 			services.AddScoped<IItemzRepository, ItemzRepository>();
             services.AddScoped<IProjectRepository, ProjectRepository>();
