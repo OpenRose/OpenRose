@@ -31,18 +31,32 @@ namespace ItemzApp.API.Helper
 		/// <returns>
 		/// A string containing Mermaid.js flowchart syntax representing the hierarchy and traces.
 		/// </returns>
+
 		public static string Generate(NestedHierarchyIdRecordDetailsDTO root,
-									  IEnumerable<ItemzTraceDTO> traces,
-									  Guid rootId)
+							  IEnumerable<ItemzTraceDTO> traces,
+							  Guid rootId)
 		{
 			var sb = new StringBuilder();
 			sb.AppendLine("flowchart TD");
 
 			EmitHierarchyInline(root, sb, rootId, 1);
 
-			// Emit trace links (dotted)
+			// Build lookup dictionary from hierarchy
+			var idToName = BuildIdToNameMap(root);
+
+			// Emit trace links (dotted) with optional comments
 			foreach (var t in traces)
 			{
+				if (idToName.TryGetValue(t.FromTraceItemzId, out var fromName) &&
+					idToName.TryGetValue(t.ToTraceItemzId, out var toName))
+				{
+					// Apply TransformLabelForMermaid to both sides
+					var fromLabel = TransformLabelForMermaid(fromName);
+					var toLabel = TransformLabelForMermaid(toName);
+
+					sb.AppendLine($"    %% {fromLabel} -.-> {toLabel}");
+				}
+
 				sb.AppendLine($"    {t.FromTraceItemzId} -.-> {t.ToTraceItemzId}");
 			}
 
@@ -74,13 +88,29 @@ namespace ItemzApp.API.Helper
 
 			EmitBaselineHierarchyInline(root, sb, rootId, 1);
 
+			// Build lookup dictionary from baseline hierarchy
+			var idToName = BuildBaselineIdToNameMap(root);
+
+			// Emit trace links (dotted) with optional comments
 			foreach (var t in traces)
 			{
+				if (idToName.TryGetValue(t.FromTraceBaselineItemzId, out var fromName) &&
+					idToName.TryGetValue(t.ToTraceBaselineItemzId, out var toName))
+				{
+
+					// Apply TransformLabelForMermaid to both sides
+					var fromLabel = TransformLabelForMermaid(fromName);
+					var toLabel = TransformLabelForMermaid(toName);
+
+					sb.AppendLine($"    %% {fromLabel} -.-> {toLabel}");
+				}
+
 				sb.AppendLine($"    {t.FromTraceBaselineItemzId} -.-> {t.ToTraceBaselineItemzId}");
 			}
 
 			return sb.ToString();
 		}
+
 
 		/// <summary>
 		/// Recursively emits nodes and edges for a live hierarchy into the StringBuilder.
@@ -195,5 +225,106 @@ namespace ItemzApp.API.Helper
 			return $"\"{transformed}\"";
 		}
 
+		#region Itemz lookup dictionary
+
+		/// <summary>
+		/// Builds a lookup dictionary mapping Itemz hierarchy node IDs to their display names.
+		/// </summary>
+		/// <remarks>
+		/// - Starts traversal from the given root node.
+		/// - Recursively walks the hierarchy using <see cref="TraverseHierarchy"/>.
+		/// - Ensures each Guid is mapped to a non-null string (empty if name is missing).
+		/// </remarks>
+		/// <param name="root">Root node of the Itemz hierarchy.</param>
+		/// <returns>
+		/// Dictionary where keys are node GUIDs and values are node names.
+		/// </returns>
+		private static Dictionary<Guid, string> BuildIdToNameMap(NestedHierarchyIdRecordDetailsDTO root)
+		{
+			var map = new Dictionary<Guid, string>();
+			TraverseHierarchy(root, map);
+			return map;
+		}
+
+		/// <summary>
+		/// Recursively traverses an Itemz hierarchy to populate the ID-to-name dictionary.
+		/// </summary>
+		/// <remarks>
+		/// - Adds the current node’s Guid and name if not already present.
+		/// - Recursively processes all child nodes.
+		/// - Guarantees that every reachable node is included in the dictionary.
+		/// </remarks>
+		/// <param name="node">Current hierarchy node being visited.</param>
+		/// <param name="map">Dictionary being populated with node IDs and names.</param>
+
+		private static void TraverseHierarchy(NestedHierarchyIdRecordDetailsDTO node, Dictionary<Guid, string> map)
+		{
+			if (!map.ContainsKey(node.RecordId))
+			{
+				map[node.RecordId] = node.Name ?? string.Empty;
+			}
+
+			if (node.Children != null)
+			{
+				foreach (var child in node.Children)
+				{
+					TraverseHierarchy(child, map);
+				}
+			}
+		}
+
+		#endregion
+
+		#region Baseline lookup dictionary
+		/// <summary>
+		/// Builds a lookup dictionary mapping baseline hierarchy node IDs to their display names.
+		/// </summary>
+		/// <remarks>
+		/// - Starts traversal from the given baseline root node.
+		/// - Recursively walks the baseline hierarchy using <see cref="TraverseBaselineHierarchy"/>.
+		/// - Ensures each Guid is mapped to a non-null string (empty if name is missing).
+		/// </remarks>
+		/// <param name="root">Root node of the baseline hierarchy.</param>
+		/// <returns>
+		/// Dictionary where keys are baseline node GUIDs and values are baseline node names.
+		/// </returns>
+
+		private static Dictionary<Guid, string> BuildBaselineIdToNameMap(NestedBaselineHierarchyIdRecordDetailsDTO root)
+		{
+			var map = new Dictionary<Guid, string>();
+			TraverseBaselineHierarchy(root, map);
+			return map;
+		}
+
+
+		/// <summary>
+		/// Recursively traverses a baseline hierarchy to populate the ID-to-name dictionary.
+		/// </summary>
+		/// <remarks>
+		/// - Adds the current baseline node’s Guid and name if not already present.
+		/// - Recursively processes all child nodes.
+		/// - Guarantees that every reachable baseline node is included in the dictionary.
+		/// </remarks>
+		/// <param name="node">Current baseline hierarchy node being visited.</param>
+		/// <param name="map">Dictionary being populated with baseline node IDs and names.</param>
+
+		private static void TraverseBaselineHierarchy(NestedBaselineHierarchyIdRecordDetailsDTO node,
+													  Dictionary<Guid, string> map)
+		{
+			if (!map.ContainsKey(node.RecordId))
+			{
+				map[node.RecordId] = node.Name ?? string.Empty;
+			}
+
+			if (node.Children != null)
+			{
+				foreach (var child in node.Children)
+				{
+					TraverseBaselineHierarchy(child, map);
+				}
+			}
+		}
+
+		#endregion 
 	}
 }
