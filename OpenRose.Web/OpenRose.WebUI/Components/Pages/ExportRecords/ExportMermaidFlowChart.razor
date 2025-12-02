@@ -10,6 +10,7 @@
 @using OpenRose.WebUI.Components.Dialogs
 @inject IExportService ExportService
 @inject IDialogService DialogService
+@inject NavigationManager NavigationManager
 @inject IJSRuntime JS
 
 <MudPaper Class="pa-3 mb-3 align-start d-flex" Outlined="false">
@@ -166,8 +167,14 @@
         {
             Guid guid = Guid.Parse(targetGuidText.Trim());
             loading = true;
+
+            var clientBaseUrl = NavigationManager.BaseUri.TrimEnd('/');
+
             mermaidText = await ExportService.__GET_MermaidFlowChart_By_GUID_ID__Async(
-                guid, exportIncludedBaselineItemzOnly);
+                                                guid, 
+                                                exportIncludedBaselineItemzOnly,
+                                                clientBaseUrl);
+
             loading = false;
 
             if (string.IsNullOrWhiteSpace(mermaidText))

@@ -37,6 +37,7 @@ namespace OpenRose.WebUI.Client.Services.Export
 		/// </returns>
 		Task<string> __GET_MermaidFlowChart_By_GUID_ID__Async(Guid exportRecordId,
 																bool exportIncludedBaselineItemzOnly,
+																string baseUrl,
 																CancellationToken cancellationToken = default);
 	}
 
