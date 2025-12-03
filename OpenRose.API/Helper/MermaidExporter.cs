@@ -34,12 +34,13 @@ namespace ItemzApp.API.Helper
 
 		public static string Generate(NestedHierarchyIdRecordDetailsDTO root,
 							  IEnumerable<ItemzTraceDTO> traces,
-							  Guid rootId)
+							  Guid rootId,
+							  string? baseUrl)
 		{
 			var sb = new StringBuilder();
 			sb.AppendLine("flowchart TD");
 
-			EmitHierarchyInline(root, sb, rootId, 1);
+			EmitHierarchyInline(root, sb, rootId, 1 , baseUrl);
 
 			// Build lookup dictionary from hierarchy
 			var idToName = BuildIdToNameMap(root);
@@ -79,29 +80,28 @@ namespace ItemzApp.API.Helper
 		/// <returns>
 		/// A string containing Mermaid.js flowchart syntax representing the baseline hierarchy and traces.
 		/// </returns>
-		public static string GenerateBaseline(NestedBaselineHierarchyIdRecordDetailsDTO root,
-											  IEnumerable<BaselineItemzTraceDTO> traces,
-											  Guid rootId)
+		public static string GenerateBaseline(
+			NestedBaselineHierarchyIdRecordDetailsDTO root,
+			IEnumerable<BaselineItemzTraceDTO> traces,
+			Guid rootId,
+			string? baseUrl = null)
 		{
 			var sb = new StringBuilder();
 			sb.AppendLine("flowchart TD");
 
-			EmitBaselineHierarchyInline(root, sb, rootId, 1);
+			EmitBaselineHierarchyInline(root, sb, rootId, 1, baseUrl);
 
 			// Build lookup dictionary from baseline hierarchy
 			var idToName = BuildBaselineIdToNameMap(root);
-
 			// Emit trace links (dotted) with optional comments
 			foreach (var t in traces)
 			{
 				if (idToName.TryGetValue(t.FromTraceBaselineItemzId, out var fromName) &&
 					idToName.TryGetValue(t.ToTraceBaselineItemzId, out var toName))
 				{
-
 					// Apply TransformLabelForMermaid to both sides
 					var fromLabel = TransformLabelForMermaid(fromName);
 					var toLabel = TransformLabelForMermaid(toName);
-
 					sb.AppendLine($"    %% {fromLabel} -.-> {toLabel}");
 				}
 
@@ -122,7 +122,8 @@ namespace ItemzApp.API.Helper
 		private static void EmitHierarchyInline(NestedHierarchyIdRecordDetailsDTO node,
 												StringBuilder sb,
 												Guid rootId,
-												int indentLevel)
+												int indentLevel,
+												string? baseUrl = null)
 		{
 			string parent = RenderNode(node.RecordId, node.RecordType, node.Name, node.RecordId == rootId);
 			string indent = new string(' ', indentLevel * 4);
@@ -130,6 +131,12 @@ namespace ItemzApp.API.Helper
 			if (node.RecordId == rootId)
 			{
 				sb.AppendLine($"{indent}{parent}");
+				if (!string.IsNullOrWhiteSpace(baseUrl))
+				{
+					var gotoUrl = $"{baseUrl}/GoTo/{node.RecordId}";
+					var safeLabel = TransformLabelForMermaid(node.Name);
+					sb.AppendLine($"{indent}click {node.RecordId} href \"{gotoUrl}\"");
+				}
 			}
 
 			if (node.Children != null && node.Children.Count > 0)
@@ -138,7 +145,16 @@ namespace ItemzApp.API.Helper
 				{
 					string childText = RenderNode(child.RecordId, child.RecordType, child.Name, child.RecordId == rootId);
 					sb.AppendLine($"{indent}{parent} --> {childText}");
-					EmitHierarchyInline(child, sb, rootId, indentLevel + 1);
+
+					// Add click directive if baseUrl is provided
+					if (!string.IsNullOrWhiteSpace(baseUrl))
+					{
+						var gotoUrl = $"{baseUrl}/GoTo/{child.RecordId}";
+						var safeLabel = TransformLabelForMermaid(child.Name);
+						sb.AppendLine($"{indent}click {child.RecordId} href \"{gotoUrl}\"");
+					}
+
+					EmitHierarchyInline(child, sb, rootId, indentLevel + 1, baseUrl);
 				}
 			}
 		}
@@ -149,23 +165,39 @@ namespace ItemzApp.API.Helper
 		private static void EmitBaselineHierarchyInline(NestedBaselineHierarchyIdRecordDetailsDTO node,
 														StringBuilder sb,
 														Guid rootId,
-														int indentLevel)
+														int indentLevel,
+														string? baseUrl = null)
 		{
 			string parent = RenderNode(node.RecordId, node.RecordType, node.Name, node.RecordId == rootId);
 			string indent = new string(' ', indentLevel * 4);
 
-			if(node.RecordId == rootId)
+			// Root node
+			if (node.RecordId == rootId)
 			{
 				sb.AppendLine($"{indent}{parent}");
+
+				if (!string.IsNullOrWhiteSpace(baseUrl))
+				{
+					var gotoUrl = $"{baseUrl}/GoTo/{node.RecordId}";
+					sb.AppendLine($"{indent}click {node.RecordId} href \"{gotoUrl}\"");
+				}
 			}
 
+			// Children
 			if (node.Children != null && node.Children.Count > 0)
 			{
 				foreach (var child in node.Children)
 				{
 					string childText = RenderNode(child.RecordId, child.RecordType, child.Name, child.RecordId == rootId);
 					sb.AppendLine($"{indent}{parent} --> {childText}");
-					EmitBaselineHierarchyInline(child, sb, rootId, indentLevel + 1);
+
+					if (!string.IsNullOrWhiteSpace(baseUrl))
+					{
+						var gotoUrl = $"{baseUrl}/GoTo/{child.RecordId}";
+						sb.AppendLine($"{indent}click {child.RecordId} href \"{gotoUrl}\"");
+					}
+
+					EmitBaselineHierarchyInline(child, sb, rootId, indentLevel + 1, baseUrl);
 				}
 			}
 		}

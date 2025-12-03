@@ -363,12 +363,17 @@ namespace ItemzApp.API.Controllers
 		[Produces("text/plain")]
 		[HttpGet("ExportMermaidFlowChart", Name = "__Export_Mermaid_FlowChart__")]
 		public async Task<IActionResult> ExportMermaidFlowChart([FromQuery] Guid exportRecordId,
-																[FromQuery] bool exportIncludedBaselineItemzOnly = false)
+																[FromQuery] bool exportIncludedBaselineItemzOnly = false,
+																[FromQuery] string? baseUrl = null)
 		{
 			if (exportRecordId == Guid.Empty)
 			{
 				return BadRequest("ExportRecordId must be a valid GUID.");
 			}
+
+
+			baseUrl = string.IsNullOrWhiteSpace(baseUrl) ? null : baseUrl.TrimEnd('/');
+
 
 			try
 			{
@@ -402,7 +407,7 @@ namespace ItemzApp.API.Controllers
 					var exportedItemzIds = CollectExportedIdsByType(rootNode, "Itemz");
 					var itemzTraces = await _itemzTraceExportService.GetTracesForExportAsync(exportedItemzIds);
 
-					var mermaidText = MermaidExporter.Generate(rootNode, itemzTraces, exportRecordId);
+					var mermaidText = MermaidExporter.Generate(rootNode, itemzTraces, exportRecordId, baseUrl);
 					return Content(mermaidText, "text/plain");
 				}
 
@@ -446,7 +451,7 @@ namespace ItemzApp.API.Controllers
 					var exportedBaselineItemzIds = CollectExportedIdsByType(rootNode, "BaselineItemz");
 					var baselineItemzTraces = await _baselineItemzTraceExportService.GetTracesForExportAsync(exportedBaselineItemzIds);
 
-					var mermaidText = MermaidExporter.GenerateBaseline(rootNode, baselineItemzTraces, exportRecordId);
+					var mermaidText = MermaidExporter.GenerateBaseline(rootNode, baselineItemzTraces, exportRecordId, baseUrl);
 					return Content(mermaidText, "text/plain");
 				}
 

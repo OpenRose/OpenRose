@@ -76,6 +76,7 @@ namespace OpenRose.WebUI.Client.Services.Export
 		public async Task<string> __GET_MermaidFlowChart_By_GUID_ID__Async(
 			Guid exportRecordId,
 			bool exportIncludedBaselineItemzOnly,
+			string baseUrl,
 			CancellationToken cancellationToken = default)
 		{
 			try
@@ -92,6 +93,7 @@ namespace OpenRose.WebUI.Client.Services.Export
 				}
 
 				urlBuilder_.Append($"exportRecordId={exportRecordId}");
+				urlBuilder_.Append($"&baseUrl={Uri.EscapeDataString(baseUrl)}");
 
 				if (exportIncludedBaselineItemzOnly)
 				{
