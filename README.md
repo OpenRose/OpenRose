@@ -44,9 +44,14 @@ BUT primarily, **Itemz** is nothing but Requirements / Needs / Wants / Notes / F
 
 ## Overview of Current State
 
-Latest released version 0.2.0-120
+Latest release [version 0.2.0-161](https://github.com/OpenRose/OpenRose/releases/tag/v0.2.0-161)
 
 Main New Feature
+
+- Generating Mermaid FlowChart diagram text - [Demo](https://www.youtube.com/watch?v=DFF0bJ5y1p4)
+- Multilingual Title and Description - Support for Unicode - [Demo](https://www.youtube.com/shorts/hFAA9wb3kns)
+
+ version 0.2.0-120
  - GoTo Navigation Links - [Demo](https://www.youtube.com/watch?v=DuJJl_uzPoc)
 
 version 0.2.0-69
