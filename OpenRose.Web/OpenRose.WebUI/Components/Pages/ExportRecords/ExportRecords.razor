@@ -259,7 +259,7 @@
                 { "ActionContext", "Source" }
             };
             var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-            var dialog = DialogService.Show<SelectProjectDialog>("Select Source Project", parameters, options);
+            var dialog = await DialogService.ShowAsync<SelectProjectDialog>("Select Source Project", parameters, options);
             var result = await dialog.Result;
             if (!result.Canceled && result.Data is Guid inputTargetProjectId)
             {
@@ -271,7 +271,7 @@
         {
             var parameters = new DialogParameters { ["RecordType"] = recordType };
             var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-            var dialog = DialogService.Show<SelectSourceRecordDialog>("Enter Source Record ID", parameters, options);
+            var dialog = await DialogService.ShowAsync<SelectSourceRecordDialog>("Enter Source Record ID", parameters, options);
             var result = await dialog.Result;
             if (!result.Canceled && result.Data is Guid inputRecordId)
             {
@@ -385,7 +385,7 @@
     {
         var parameters = new DialogParameters { ["Message"] = message };
         var options = new DialogOptions { CloseButton = false, MaxWidth = MaxWidth.Small, FullWidth = true };
-        var dialogRef = DialogService.Show<ErrorDialog>("Error", parameters, options);
+        var dialogRef = await DialogService.ShowAsync<ErrorDialog>("Error", parameters, options);
         await dialogRef.Result;
     }
 

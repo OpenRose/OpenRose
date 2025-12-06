@@ -848,7 +848,7 @@
             { "ActionContext", "Target" }
         };
         var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-        var dialog = DialogService.Show<SelectProjectDialog>("Select Target Project", parameters, options);
+        var dialog = await DialogService.ShowAsync<SelectProjectDialog>("Select Target Project", parameters, options);
         var result = await dialog.Result;
         if (!result.Canceled && result.Data is Guid inputTargetProjectId)
         {
@@ -892,7 +892,7 @@
             { "ActionContext", "Target" }
         };
         var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-        var dialog = DialogService.Show<SelectItemzTypeDialog>("Enter Target First ItemzType Record ID", parameters, options);
+        var dialog = await DialogService.ShowAsync<SelectItemzTypeDialog>("Enter Target First ItemzType Record ID", parameters, options);
         var result = await dialog.Result;
         if (!result.Canceled && result.Data is Guid inputTargetItemzTypeId)
         {
@@ -949,7 +949,7 @@
             { "ActionContext", "Target" }
         };
         var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-        var dialog = DialogService.Show<SelectItemzTypeDialog>("Enter Target ItemzType Record ID", parameters, options);
+        var dialog = await DialogService.ShowAsync<SelectItemzTypeDialog>("Enter Target ItemzType Record ID", parameters, options);
         var result = await dialog.Result;
         if (!result.Canceled && result.Data is Guid inputTargetItemzTypeId)
         {
@@ -996,7 +996,7 @@
             { "ActionContext", "Target" }
         };
         var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-        var dialog = DialogService.Show<SelectItemzDialog>("Enter Target First Itemz Record ID", parameters, options);
+        var dialog = await DialogService.ShowAsync<SelectItemzDialog>("Enter Target First Itemz Record ID", parameters, options);
         var result = await dialog.Result;
         if (!result.Canceled && result.Data is Guid inputTargetItemzId)
         {
@@ -1055,7 +1055,7 @@
             { "ActionContext", "Target" }
         };
         var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-        var dialog = DialogService.Show<SelectItemzDialog>("Enter Target Itemz Record ID", parameters, options);
+        var dialog = await DialogService.ShowAsync<SelectItemzDialog>("Enter Target Itemz Record ID", parameters, options);
         var result = await dialog.Result;
         if (!result.Canceled && result.Data is Guid inputTargetItemzId)
         {

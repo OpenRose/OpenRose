@@ -155,7 +155,7 @@
 			{ "ActionContext", "Source" }
 		}; 
 		var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-		var dialog = DialogService.Show<SelectItemzTypeDialog>("Enter Source ItemzType Record ID", parameters, options);
+		var dialog = await DialogService.ShowAsync<SelectItemzTypeDialog>("Enter Source ItemzType Record ID", parameters, options);
 		var result = await dialog.Result;
 		if (!result.Canceled && result.Data is Guid inputSourceItemzTypeId)
 		{
@@ -194,7 +194,7 @@
 			{ "ActionContext", "Target" }
 		}; 
 		var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-		var dialog = DialogService.Show<SelectItemzTypeDialog>("Enter Target First ItemzType Record ID", parameters, options);
+		var dialog = await DialogService.ShowAsync<SelectItemzTypeDialog>("Enter Target First ItemzType Record ID", parameters, options);
 		var result = await dialog.Result;
 		if (!result.Canceled && result.Data is Guid inputTargetItemzTypeId)
 		{
