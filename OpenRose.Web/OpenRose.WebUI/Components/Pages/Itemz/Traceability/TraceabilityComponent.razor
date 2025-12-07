@@ -223,7 +223,7 @@
 	{
 		var parameters = new DialogParameters(); 
 		var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true }; 
-		var dialog = DialogService.Show<CreateParentTraceabilityDialog>("Enter Parent Record ID", parameters, options);
+		var dialog = await DialogService.ShowAsync<CreateParentTraceabilityDialog>("Enter Parent Record ID", parameters, options);
 		var result = await dialog.Result; 
 		if (!result.Canceled && result.Data is Guid inputParentItemzId)
 		{ 
@@ -285,7 +285,7 @@
 	{
 		var parameters = new DialogParameters();
 		var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-		var dialog = DialogService.Show<CreateChildTraceabilityDialog>("Enter Child Record ID", parameters, options);
+		var dialog = await DialogService.ShowAsync<CreateChildTraceabilityDialog>("Enter Child Record ID", parameters, options);
 		var result = await dialog.Result;
 		if (!result.Canceled && result.Data is Guid inputChildItemzId)
 		{
