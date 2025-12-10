@@ -5,18 +5,16 @@
 using AutoMapper;
 using ItemzApp.API.Helper;
 using ItemzApp.API.Models;
-using ItemzApp.API.Models.BetweenControllerAndRepository;
 using ItemzApp.API.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Schema;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace ItemzApp.API.Controllers
 {
@@ -364,7 +362,8 @@ namespace ItemzApp.API.Controllers
 		[HttpGet("ExportMermaidFlowChart", Name = "__Export_Mermaid_FlowChart__")]
 		public async Task<IActionResult> ExportMermaidFlowChart([FromQuery] Guid exportRecordId,
 																[FromQuery] bool exportIncludedBaselineItemzOnly = false,
-																[FromQuery] string? baseUrl = null)
+																[FromQuery] string? baseUrl = null,
+																[FromQuery] bool showTraceabilityOnly = false)
 		{
 			if (exportRecordId == Guid.Empty)
 			{
@@ -407,7 +406,63 @@ namespace ItemzApp.API.Controllers
 					var exportedItemzIds = CollectExportedIdsByType(rootNode, "Itemz");
 					var itemzTraces = await _itemzTraceExportService.GetTracesForExportAsync(exportedItemzIds);
 
-					var mermaidText = MermaidExporter.Generate(rootNode, itemzTraces, exportRecordId, baseUrl);
+
+					//var tracedIds = new HashSet<Guid>(
+					//	itemzTraces.SelectMany(t => new[] { t.FromTraceItemzId, t.ToTraceItemzId }));
+
+
+					//var rootNodeToExport = showTraceabilityOnly
+					//	? FilterForTraceability(rootNode, tracedIds) ?? rootNode
+					//	: rootNode;
+
+
+					//NestedHierarchyIdRecordDetailsDTO rootNodeToExport;
+
+					//if (showTraceabilityOnly)
+					//{
+					//	var tracedIds = new HashSet<Guid>(
+					//		itemzTraces.SelectMany(t => new[] { t.FromTraceItemzId, t.ToTraceItemzId }));
+
+					//	rootNodeToExport = FilterForTraceability(rootNode, tracedIds) ?? rootNode;
+					//}
+					//else
+					//{
+					//	rootNodeToExport = rootNode;
+					//}
+
+					NestedHierarchyIdRecordDetailsDTO rootNodeToExport;
+
+					if (showTraceabilityOnly)
+					{
+						var tracedIds = new HashSet<Guid>(
+							itemzTraces.SelectMany(t => new[] { t.FromTraceItemzId, t.ToTraceItemzId }));
+
+						if (tracedIds.Count > 0)
+						{
+							rootNodeToExport = FilterForTraceability(rootNode, tracedIds) ?? rootNode;
+						}
+						else
+						{
+							// No trace entries found, export only the root node without children
+							rootNodeToExport = new NestedHierarchyIdRecordDetailsDTO
+							{
+								RecordId = rootNode.RecordId,
+								HierarchyId = rootNode.HierarchyId,
+								Level = rootNode.Level,
+								RecordType = rootNode.RecordType,
+								Name = rootNode.Name,
+								Children = new List<NestedHierarchyIdRecordDetailsDTO>() // empty
+							};
+						}
+					}
+					else
+					{
+						rootNodeToExport = rootNode;
+					}
+
+					var mermaidText = MermaidExporter.Generate(rootNodeToExport, itemzTraces, exportRecordId, baseUrl);
+
+					// var mermaidText = MermaidExporter.Generate(rootNode, itemzTraces, exportRecordId, baseUrl);
 					return Content(mermaidText, "text/plain");
 				}
 
@@ -451,7 +506,58 @@ namespace ItemzApp.API.Controllers
 					var exportedBaselineItemzIds = CollectExportedIdsByType(rootNode, "BaselineItemz");
 					var baselineItemzTraces = await _baselineItemzTraceExportService.GetTracesForExportAsync(exportedBaselineItemzIds);
 
-					var mermaidText = MermaidExporter.GenerateBaseline(rootNode, baselineItemzTraces, exportRecordId, baseUrl);
+					//NestedBaselineHierarchyIdRecordDetailsDTO rootNodeToExport;
+
+					//if (showTraceabilityOnly)
+					//{
+					//	var tracedBaselineIds = new HashSet<Guid>(
+					//			baselineItemzTraces.SelectMany(t => new[] { t.FromTraceBaselineItemzId, t.ToTraceBaselineItemzId}));
+
+					//	rootNodeToExport = FilterBaselineForTraceability(rootNode, tracedBaselineIds) ?? rootNode;
+					//}
+					//else
+					//{
+					//	rootNodeToExport = rootNode;
+					//}
+
+					//var mermaidText = MermaidExporter.GenerateBaseline(rootNodeToExport, baselineItemzTraces, exportRecordId, baseUrl);
+
+
+					NestedBaselineHierarchyIdRecordDetailsDTO rootNodeToExport;
+
+					if (showTraceabilityOnly)
+					{
+						var tracedBaselineIds = new HashSet<Guid>(
+							baselineItemzTraces.SelectMany(t => new[] { t.FromTraceBaselineItemzId, t.ToTraceBaselineItemzId }));
+
+						if (tracedBaselineIds.Count > 0)
+						{
+							rootNodeToExport = FilterBaselineForTraceability(rootNode, tracedBaselineIds) ?? rootNode;
+						}
+						else
+						{
+							// No trace entries found, export only the root node without children
+							rootNodeToExport = new NestedBaselineHierarchyIdRecordDetailsDTO
+							{
+								RecordId = rootNode.RecordId,
+								BaselineHierarchyId = rootNode.BaselineHierarchyId,
+								Level = rootNode.Level,
+								RecordType = rootNode.RecordType,
+								Name = rootNode.Name,
+								isIncluded = rootNode.isIncluded,
+								Children = new List<NestedBaselineHierarchyIdRecordDetailsDTO>() // empty
+							};
+						}
+					}
+					else
+					{
+						rootNodeToExport = rootNode;
+					}
+
+					var mermaidText = MermaidExporter.GenerateBaseline(rootNodeToExport, baselineItemzTraces, exportRecordId, baseUrl);
+
+
+					//var mermaidText = MermaidExporter.GenerateBaseline(rootNode, baselineItemzTraces, exportRecordId, baseUrl);
 					return Content(mermaidText, "text/plain");
 				}
 
@@ -466,6 +572,144 @@ namespace ItemzApp.API.Controllers
 		}
 
 		#endregion END ExportMermaidFlowChart
+
+
+		#region FilterForTraceability
+
+		// EXPLANATION :: This helper method is used to filter the live hierarchy tree so that only records
+		// which are part of traceability links are included in the final export. A record is retained if it
+		// is directly traced or if it is an ancestor of a traced record. Children are checked recursively
+		// and if any child is kept then its parent is also kept. Records that are neither traced nor ancestors
+		// of traced records are excluded. This ensures that when the ShowTraceabilityOnly option is enabled
+		// the exported Mermaid diagram remains focused on traceability relationships while still preserving
+		// the necessary parent chain for context.
+
+		/// <summary>
+		/// Filters the live hierarchy tree to include only nodes that are part of traceability links.
+		/// </summary>
+		/// <remarks>
+		/// A node is retained if it is directly traced or if it is an ancestor of a traced node.
+		/// Children are processed recursively, and if any child is retained then its parent is also retained.
+		/// Nodes that are neither traced nor ancestors of traced nodes are excluded.
+		/// </remarks>
+		/// <param name="node">
+		/// The current hierarchy node being evaluated. This node may represent a Project, ItemzType, or Itemz.
+		/// </param>
+		/// <param name="tracedIds">
+		/// A set of unique identifiers (<see cref="Guid"/>) representing all Itemz records that are part of
+		/// traceability links. These identifiers are used to determine which nodes should be retained.
+		/// </param>
+		/// <returns>
+		/// A <see cref="NestedHierarchyIdRecordDetailsDTO"/> representing the filtered node and its children
+		/// if the node is retained, or <c>null</c> if the node is excluded.
+		/// </returns>
+		private NestedHierarchyIdRecordDetailsDTO? FilterForTraceability(
+			NestedHierarchyIdRecordDetailsDTO node,
+			HashSet<Guid> tracedIds)
+		{
+			bool keepThis = tracedIds.Contains(node.RecordId);
+			var keptChildren = new List<NestedHierarchyIdRecordDetailsDTO>();
+
+			if (node.Children != null)
+			{
+				foreach (var child in node.Children)
+				{
+					var filteredChild = FilterForTraceability(child, tracedIds);
+					if (filteredChild != null)
+					{
+						keptChildren.Add(filteredChild);
+						keepThis = true; // parent must be kept if child is kept
+					}
+				}
+			}
+
+			if (keepThis)
+			{
+				return new NestedHierarchyIdRecordDetailsDTO
+				{
+					RecordId = node.RecordId,
+					HierarchyId = node.HierarchyId,
+					Level = node.Level,
+					RecordType = node.RecordType,
+					Name = node.Name,
+					Children = keptChildren
+				};
+			}
+
+			return null; // drop this node entirely
+		}
+
+		#endregion
+
+
+		#region FilterBaselineForTraceability
+
+		// EXPLANATION :: This helper method is used to filter the baseline hierarchy tree so that only records
+		// which are part of traceability links are included in the final export. A record is retained if it
+		// is directly traced or if it is an ancestor of a traced record. Children are checked recursively
+		// and if any child is kept then its parent is also kept. Records that are neither traced nor ancestors
+		// of traced records are excluded. This ensures that when the ShowTraceabilityOnly option is enabled
+		// the exported Mermaid diagram remains focused on traceability relationships while still preserving
+		// the necessary parent chain for context in baseline hierarchies.
+
+		/// <summary>
+		/// Filters the baseline hierarchy tree to include only nodes that are part of traceability links.
+		/// </summary>
+		/// <remarks>
+		/// A node is retained if it is directly traced or if it is an ancestor of a traced node.
+		/// Children are processed recursively, and if any child is retained then its parent is also retained.
+		/// Nodes that are neither traced nor ancestors of traced nodes are excluded.
+		/// </remarks>
+		/// <param name="node">
+		/// The current hierarchy node being evaluated. This node may represent a Baseline, BaselineItemzType,
+		/// or BaselineItemz record.
+		/// </param>
+		/// <param name="tracedIds">
+		/// A set of unique identifiers (<see cref="Guid"/>) representing all BaselineItemz records that are part
+		/// of traceability links. These identifiers are used to determine which nodes should be retained.
+		/// </param>
+		/// <returns>
+		/// A <see cref="NestedBaselineHierarchyIdRecordDetailsDTO"/> representing the filtered node and its children
+		/// if the node is retained, or <c>null</c> if the node is excluded.
+		/// </returns>
+		private NestedBaselineHierarchyIdRecordDetailsDTO? FilterBaselineForTraceability(
+			NestedBaselineHierarchyIdRecordDetailsDTO node,
+			HashSet<Guid> tracedIds)
+		{
+			bool keepThis = tracedIds.Contains(node.RecordId);
+			var keptChildren = new List<NestedBaselineHierarchyIdRecordDetailsDTO>();
+
+			if (node.Children != null)
+			{
+				foreach (var child in node.Children)
+				{
+					var filteredChild = FilterBaselineForTraceability(child, tracedIds);
+					if (filteredChild != null)
+					{
+						keptChildren.Add(filteredChild);
+						keepThis = true;
+					}
+				}
+			}
+
+			if (keepThis)
+			{
+				return new NestedBaselineHierarchyIdRecordDetailsDTO
+				{
+					RecordId = node.RecordId,
+					BaselineHierarchyId = node.BaselineHierarchyId,
+					Level = node.Level,
+					RecordType = node.RecordType,
+					Name = node.Name,
+					isIncluded = node.isIncluded,
+					Children = keptChildren
+				};
+			}
+
+			return null;
+		}
+
+		#endregion
 
 	}
 }

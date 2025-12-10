@@ -53,6 +53,10 @@
             <MudCheckBox @bind-Value="exportIncludedBaselineItemzOnly"
                          Label="Only export BaselineItemz marked for Inclusion" />
 
+            <MudCheckBox Label="Show only traced records (Traceability Only)"
+                         Value="showTraceabilityOnly"
+                         ValueChanged="@((bool x) => OnTraceabilityOnlyChanged(x))" />
+
             <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
                 <MudButton Variant="Variant.Filled"
                            Size="Size.Medium"
@@ -73,7 +77,6 @@
                     Reset
                 </MudButton>
             </MudStack>
-
         </MudStack>
     </MudPaper>
 </MudItem>
@@ -144,6 +147,7 @@
 
     private string targetGuidText { get; set; } = string.Empty;
     private bool exportIncludedBaselineItemzOnly { get; set; } = false;
+    private bool showTraceabilityOnly { get; set; } = false;
     private string mermaidText { get; set; } = string.Empty;
     private bool loading { get; set; } = false;
 
@@ -173,6 +177,7 @@
             mermaidText = await ExportService.__GET_MermaidFlowChart_By_GUID_ID__Async(
                                                 guid, 
                                                 exportIncludedBaselineItemzOnly,
+                                                showTraceabilityOnly,
                                                 clientBaseUrl);
 
             loading = false;
@@ -224,6 +229,13 @@
         targetGuidText = newValue;   // keep the field in sync
         mermaidText = string.Empty;  // clear old flowchart text
     }
+
+    private void OnTraceabilityOnlyChanged(bool newValue)
+    {
+        showTraceabilityOnly = newValue;
+        mermaidText = string.Empty;  // clear old flowchart text
+    }
+
 
     private async Task ShowErrorMessage(string message)
     {
