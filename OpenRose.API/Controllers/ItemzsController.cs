@@ -559,114 +559,113 @@ namespace ItemzApp.API.Controllers
             //    _mapper.Map<GetItemzDTO>(itemzEntity) // Converting to DTO as this is going out to the consumer
             //    );
         }
+		/// <summary>
+		/// Updating existing Itemz based on Itemz Id (GUID)
+		/// </summary>
+		/// <param name="itemzId">GUID representing an unique ID of the Itemz that you want to get</param>
+		/// <param name="itemzToBeUpdated">required Itemz properties to be updated</param>
+		/// <returns>No contents are returned but only Status 204 indicating that Item was updated successfully </returns>
+		/// <response code="204">No content are returned but status of 204 indicated that item was successfully updated</response>
+		/// <response code="404">Itemz based on itemzId was not found</response>
+		[HttpPut("{itemzId}", Name = "__PUT_Update_Itemz_By_GUID_ID__ ")]
+		[ProducesResponseType(StatusCodes.Status204NoContent)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		[ProducesDefaultResponseType]
+		public async Task<ActionResult> UpdateItemzPutAsync(Guid itemzId, UpdateItemzDTO itemzToBeUpdated)
+		{
+			// Check if Itemz exists
+			if (!(await _itemzRepository.ItemzExistsAsync(itemzId)))
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Update request for Itemz for ID {ItemzId} could not be found",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					itemzId);
+				return NotFound();
+			}
 
-        /// <summary>
-        /// Updating exsting Itemz based on Itemz Id (GUID)
-        /// </summary>
-        /// <param name="itemzId">GUID representing an unique ID of the Itemz that you want to get</param>
-        /// <param name="itemzToBeUpdated">required Itemz properties to be updated</param>
-        /// <returns>No contents are returned but only Status 204 indicating that Item was updated successfully </returns>
-        /// <response code="204">No content are returned but status of 204 indicated that item was successfully updated</response>
-        /// <response code="404">Itemz based on itemzId was not found</response>
+			// Load Itemz for update
+			var itemzFromRepo = await _itemzRepository.GetItemzForUpdatingAsync(itemzId);
 
-        [HttpPut("{itemzId}", Name = "__PUT_Update_Itemz_By_GUID_ID__ ")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesDefaultResponseType]
-        public async Task<ActionResult> UpdateItemzPutAsync(Guid itemzId, UpdateItemzDTO itemzToBeUpdated)
-        {
-            if (!(await _itemzRepository.ItemzExistsAsync(itemzId)))
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Update request for Itemz for ID {ItemzId} could not be found",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    itemzId);
-                return NotFound();
-            }
+			if (itemzFromRepo == null)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Update request for Itemz for ID {ItemzId} could not be found in the Repository",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					itemzId);
+				return NotFound();
+			}
 
-            var itemzFromRepo = await _itemzRepository.GetItemzForUpdatingAsync(itemzId);
-
-            if (itemzFromRepo == null)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Update request for Itemz for ID {ItemzId} could not be found in the Repository",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    itemzId);
-                return NotFound();
-            }
-            try
-            {
-                _mapper.Map(itemzToBeUpdated, itemzFromRepo);
-            }
-            catch (AutoMapper.AutoMapperMappingException amm_ex)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Could not update Itemz for ID {ItemzId} due to issue with value provided for {fieldname}",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    itemzId, amm_ex.MemberMap.DestinationName);
-                return ValidationProblem();
-            }
-
-            _itemzRepository.UpdateItemz(itemzFromRepo);
-			await _itemzRepository.SaveAsync();
-
-
+			// Map incoming DTO to tracked entity
+			try
+			{
+				_mapper.Map(itemzToBeUpdated, itemzFromRepo);
+			}
+			catch (AutoMapper.AutoMapperMappingException amm_ex)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Could not update Itemz for ID {ItemzId} due to issue with value provided for {fieldname}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					itemzId, amm_ex.MemberMap.DestinationName);
+				return ValidationProblem();
+			}
 
 			// EXPLANATION :: as part of updating Itemz record, we are making sure that Itemz name is updated in two places.
 			// First in the Itemz record itself and secondly within ItemzHierarchy record as well. We are not going to update
 			// BaselineItemzHierarchy record with updated Itemz name as it's a snapshot of data from a given point in time.
 
-			// TODO :: We should update Itemz and ItemzHierarchy together rather then two separate transactions
-
+			// ✅ FIXED: Update ItemzHierarchy using the SAME DbContext and SAME transaction
 			try
 			{
-				var _discard = _hierarchyRepository.UpdateHierarchyRecordNameByID(itemzFromRepo.Id, itemzFromRepo.Name ?? "");
+				var hierarchyRecord = await _hierarchyRepository.GetHierarchyRecordForUpdateAsync(itemzId);
+
+				if (hierarchyRecord == null)
+				{
+					return Conflict($"Hierarchy record for Itemz with ID {itemzId} could not be found.");
+				}
+
+				hierarchyRecord.Name = itemzFromRepo.Name ?? "";
 			}
-			catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
+			catch (Exception ex)
 			{
-				_logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to update Itemz name in ItemzHierarchy :" + dbUpdateException.InnerException,
-					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
-					);
-				return Conflict($"Name of ItemzHierarchy record for Itemz with ID {itemzFromRepo.Id} could not be updated.");
-			}
-			catch (Exception)
-			{
-				_logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to update Itemz name in ItemzHierarchy :",
-					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
-					);
-				return Conflict($"Name of ItemzHierarchy record for Itemz with ID {itemzFromRepo.Id} could not be updated.");
+				_logger.LogDebug("{FormattedControllerAndActionNames}Exception occurred while preparing ItemzHierarchy update: {Exception}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					ex.Message);
+				return Conflict($"Name of ItemzHierarchy record for Itemz with ID {itemzId} could not be updated.");
 			}
 
+			// ✅ ONE SaveChangesAsync() — atomic update
+			await _itemzRepository.SaveAsync();
 
 			_logger.LogDebug("{FormattedControllerAndActionNames}Update request for Itemz for ID {ItemzId} processed successfully",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    itemzId);
-            return NoContent(); // This indicates that update was successfully saved in the DB.
+				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+				itemzId);
 
-        }
+			return NoContent(); // This indicates that update was successfully saved in the DB.
+		}
 
 
-        /// <summary>
-        /// Partially updating a single **Itemz**
-        /// </summary>
-        /// <param name="itemzId">Id of the Itemz representated by a GUID.</param>
-        /// <param name="itemzPatchDocument">The set of operations to apply to the Itemz via JsonPatchDocument</param>
-        /// <returns>an ActionResult of type Itemz</returns>
-        /// <response code="204">No content are returned but status of 204 indicated that itemz was successfully updated</response>
-        /// <response code="404">Itemz based on itemzId was not found</response>
-        /// <response code="422">Validation problems occured during analyzing validation rules for the JsonPatchDocument </response>
-        /// <remarks> Sample request (this request updates an **Itemz's name**)   
-        /// Documentation regarding JSON Patch can be found at 
-        /// *[ASP.NET Core - JSON Patch Operations](https://docs.microsoft.com/en-us/aspnet/core/web-api/jsonpatch?view=aspnetcore-3.1#operations)* 
-        /// 
-        ///     PATCH /api/Itemzs/{id}  
-        ///     [  
-        ///	        {   
-        ///             "op": "replace",   
-        ///             "path": "/name",   
-        ///             "value": "PATCH Updated Name field"  
-        ///	        }   
-        ///     ]
-        /// </remarks>
 
-        [HttpPatch("{itemzId}",Name = "__PATCH_Update_Itemz_By_GUID_ID")]
+		/// <summary>
+		/// Partially updating a single **Itemz**
+		/// </summary>
+		/// <param name="itemzId">Id of the Itemz representated by a GUID.</param>
+		/// <param name="itemzPatchDocument">The set of operations to apply to the Itemz via JsonPatchDocument</param>
+		/// <returns>an ActionResult of type Itemz</returns>
+		/// <response code="204">No content are returned but status of 204 indicated that itemz was successfully updated</response>
+		/// <response code="404">Itemz based on itemzId was not found</response>
+		/// <response code="422">Validation problems occured during analyzing validation rules for the JsonPatchDocument </response>
+		/// <remarks> Sample request (this request updates an **Itemz's name**)   
+		/// Documentation regarding JSON Patch can be found at 
+		/// *[ASP.NET Core - JSON Patch Operations](https://docs.microsoft.com/en-us/aspnet/core/web-api/jsonpatch?view=aspnetcore-3.1#operations)* 
+		/// 
+		///     PATCH /api/Itemzs/{id}  
+		///     [  
+		///	        {   
+		///             "op": "replace",   
+		///             "path": "/name",   
+		///             "value": "PATCH Updated Name field"  
+		///	        }   
+		///     ]
+		/// </remarks>
+
+		[HttpPatch("{itemzId}",Name = "__PATCH_Update_Itemz_By_GUID_ID")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesDefaultResponseType]

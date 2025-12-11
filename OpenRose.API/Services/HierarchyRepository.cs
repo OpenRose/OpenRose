@@ -656,6 +656,23 @@ namespace ItemzApp.API.Services
 		////	return lastRecord;
 		////}
 
+
+		public async Task<ItemzHierarchy?> GetHierarchyRecordForUpdateAsync(Guid recordId)
+		{
+			if (recordId == Guid.Empty)
+			{
+				throw new ArgumentNullException(nameof(recordId));
+			}
+
+			// EXPLANATION :: We use SingleOrDefaultAsync to ensure exactly one record is returned.
+			// This avoids running Count() + FirstOrDefault() which executes two SQL queries.
+			var hierarchyRecord = await _context.ItemzHierarchy!
+				.SingleOrDefaultAsync(ih => ih.Id == recordId);
+
+			return hierarchyRecord;
+		}
+
+
 		public async Task<bool> UpdateHierarchyRecordNameByID(Guid recordId, string newItemzName)
 		{
 			if (recordId == Guid.Empty)

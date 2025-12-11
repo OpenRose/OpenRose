@@ -15,162 +15,94 @@ using Microsoft.Extensions.Logging;
 
 namespace ItemzApp.API.DbContexts.Interceptors
 {
-    public class ItemzContexInterceptor : ISaveChangesInterceptor
-    {
-        private IList<ItemzChangeHistory>? itemzChangeHistory;
+	public class ItemzContexInterceptor : ISaveChangesInterceptor
+	{
+		private readonly ILogger<ItemzContexInterceptor> _logger;
 
-        public readonly ItemzChangeHistoryContext _injectedItemzChangeHistoryContext;
-        private readonly ILogger<ItemzContexInterceptor> _logger;
+		public ItemzContexInterceptor(ILogger<ItemzContexInterceptor> logger)
+		{
+			_logger = logger ?? throw new ArgumentNullException(nameof(logger));
+		}
 
-        public ItemzContexInterceptor(ItemzChangeHistoryContext InjectedItemzChangeHistoryContext,
-            ILogger<ItemzContexInterceptor> logger)
-        {
-            _injectedItemzChangeHistoryContext = InjectedItemzChangeHistoryContext ?? throw new ArgumentNullException(nameof(InjectedItemzChangeHistoryContext));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        }
+		void ISaveChangesInterceptor.SaveChangesFailed(DbContextErrorEventData eventData) { }
 
-        void ISaveChangesInterceptor.SaveChangesFailed(DbContextErrorEventData eventData)
-        {
-           
-        }
+		Task ISaveChangesInterceptor.SaveChangesFailedAsync(DbContextErrorEventData eventData, CancellationToken cancellationToken)
+			=> Task.CompletedTask;
 
-        Task ISaveChangesInterceptor.SaveChangesFailedAsync(DbContextErrorEventData eventData, CancellationToken cancellationToken)
-        {
-            return Task.CompletedTask;
-        }
+		int ISaveChangesInterceptor.SavedChanges(SaveChangesCompletedEventData eventData, int result)
+		{
+			// Nothing to do here anymore — audit entries are saved together
+			return result;
+		}
 
-        int ISaveChangesInterceptor.SavedChanges(SaveChangesCompletedEventData eventData, int result)
-        {
-            if (itemzChangeHistory != null && itemzChangeHistory.Any()) 
-            {
-                foreach (var ich in itemzChangeHistory)
-                {
-                    _injectedItemzChangeHistoryContext.Add(ich);
-                }
-                _injectedItemzChangeHistoryContext.SaveChanges();
-                _logger.LogDebug("{ITEMZ_CONTEX_INTERCEPTOR}Saved {NumberOfChanges} Change History Records in the database", "::ITEMZ_CONTEX_INTERCEPTOR:: ", itemzChangeHistory.Count());
-                itemzChangeHistory.Clear();
-            }
-            return result;
-        }
+		ValueTask<int> ISaveChangesInterceptor.SavedChangesAsync(SaveChangesCompletedEventData eventData, int result, CancellationToken cancellationToken)
+			=> new ValueTask<int>(result);
 
-        async ValueTask<int> ISaveChangesInterceptor.SavedChangesAsync(SaveChangesCompletedEventData eventData, int result, CancellationToken cancellationToken)
-        {
-            //if (itemzChangeHistory.Any())
-            if ( itemzChangeHistory != null && itemzChangeHistory.Any())
-            {
-                foreach (var ich in itemzChangeHistory)
-                {
-                    _injectedItemzChangeHistoryContext.Add(ich);
-                }
-                _injectedItemzChangeHistoryContext.SaveChanges();
-                _logger.LogDebug("{ITEMZ_CONTEX_INTERCEPTOR}Saved {NumberOfChanges} Change History Records in the database", "::ITEMZ_CONTEX_INTERCEPTOR:: ", itemzChangeHistory.Count());
-                itemzChangeHistory.Clear();
-            }
-            return result;
-        }
+		InterceptionResult<int> ISaveChangesInterceptor.SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
+		{
+			AddAuditEntries(eventData.Context);
+			return result;
+		}
 
-        InterceptionResult<int> ISaveChangesInterceptor.SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
-        {
-            itemzChangeHistory = CreateItemzChangeHistory(eventData.Context);
-            return result;
-        }
+		ValueTask<InterceptionResult<int>> ISaveChangesInterceptor.SavingChangesAsync(
+			DbContextEventData eventData,
+			InterceptionResult<int> result,
+			CancellationToken cancellationToken)
+		{
+			AddAuditEntries(eventData.Context);
+			return new ValueTask<InterceptionResult<int>>(result);
+		}
 
-        async ValueTask<InterceptionResult<int>> ISaveChangesInterceptor.SavingChangesAsync(DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken)
-        {
-            itemzChangeHistory = CreateItemzChangeHistory(eventData.Context);
-            return result;
-        }
+		private void AddAuditEntries(DbContext context)
+		{
+			context.ChangeTracker.DetectChanges();
 
-        #region CreateItemzChangeHistory
-        private static IList<ItemzChangeHistory> CreateItemzChangeHistory(DbContext context)
-        {
-            context.ChangeTracker.DetectChanges();
+			var auditEntries = new List<ItemzChangeHistory>();
 
-            IList<ItemzChangeHistory> listOfItemzChangeHistory = new List<ItemzChangeHistory>();
+			foreach (var entry in context.ChangeTracker.Entries<Itemz>())
+			{
+				if (entry.State == EntityState.Added)
+				{
+					var history = new ItemzChangeHistory
+					{
+						ChangeEvent = nameof(EntityState.Added),
+						CreatedDate = (DateTimeOffset)entry.Property("CreatedDate").CurrentValue!,
+						ItemzId = (Guid)entry.Property("Id").CurrentValue!,
+						NewValues = CreateAddedChanges(entry)
+					};
+					auditEntries.Add(history);
+				}
+				else if (entry.State == EntityState.Modified)
+				{
+					var history = new ItemzChangeHistory
+					{
+						ChangeEvent = nameof(EntityState.Modified),
+						CreatedDate = DateTimeOffset.UtcNow,
+						ItemzId = (Guid)entry.Property("Id").CurrentValue!,
+						OldValues = CreateOldValueModifiedChanges(entry),
+						NewValues = CreateNewValueModifiedChanges(entry)
+					};
+					auditEntries.Add(history);
+				}
+			}
 
-            foreach (var entry in context.ChangeTracker.Entries().Where(e => e.State != EntityState.Deleted))
-            {
-                if (!entry.Entity.GetType().Equals(typeof(Itemz)))
-                {
-                    continue;
-                }
-                else if (entry.State != EntityState.Added && entry.State != EntityState.Modified)
-                {
-                    continue;
-                }
+			if (auditEntries.Any())
+			{
+				context.Set<ItemzChangeHistory>().AddRange(auditEntries);
+				_logger.LogDebug("::ITEMZ_CONTEX_INTERCEPTOR:: Prepared {Count} change history records", auditEntries.Count);
+			}
+		}
 
-                var itemzChangeHistory = new ItemzChangeHistory
-                {
-                    CreatedDate = DateTimeOffset.UtcNow,
-                    ItemzId = (Guid)entry.Properties.Where(property => property.Metadata.IsPrimaryKey()).First().CurrentValue
-                };
+		private static string CreateAddedChanges(EntityEntry entry) =>
+			entry.Properties.Where(p => !p.Metadata.IsPrimaryKey() && p.Metadata.Name != "CreatedDate")
+				.Aggregate("", (audit, p) => audit + $"{p.Metadata.Name}: '{p.CurrentValue}'{Environment.NewLine}");
 
-                switch (entry.State)
-                {
-                    //case EntityState.Deleted:
-                    //    itemzChangeHistory.ChangeEvent = nameof(EntityState.Deleted);
-                    //    itemzChangeHistory.OldValues= CreateDeletedChanges(entry);
-                    //    break;
-                    case EntityState.Added:
-                        itemzChangeHistory.ChangeEvent = nameof(EntityState.Added);
-                        itemzChangeHistory.CreatedDate = (DateTimeOffset) entry.Properties.Where(property => property.Metadata.Name == "CreatedDate").First().CurrentValue;
-                        itemzChangeHistory.NewValues = CreateAddedChanges(entry);
-                        listOfItemzChangeHistory.Add(itemzChangeHistory);
-                        break;
-                    case EntityState.Modified:
-                        itemzChangeHistory.ChangeEvent = nameof(EntityState.Modified);
-                        itemzChangeHistory.OldValues = CreateOldValueModifiedChanges(entry);
-                        itemzChangeHistory.NewValues = CreateNewValueModifiedChanges(entry);
-                        listOfItemzChangeHistory.Add(itemzChangeHistory);
-                        break;
-                    default:
-                        break;
-                }
-            }
+		private static string CreateOldValueModifiedChanges(EntityEntry entry) =>
+			entry.Properties.Where(p => p.IsModified)
+				.Aggregate("", (audit, p) => audit + $"{p.Metadata.Name}: '{p.OriginalValue}'{Environment.NewLine}");
 
-            return listOfItemzChangeHistory;
-
-            string CreateAddedChanges(EntityEntry entry)
-                => entry.Properties.Where(property => !property.Metadata.IsPrimaryKey()
-                        && property.Metadata.Name != "CreatedDate")
-                   .Aggregate(
-                    "",
-                    (auditString, property) => 
-                            auditString + 
-                            $"{property.Metadata.Name}: '{property.CurrentValue}' " + 
-                            Environment.NewLine + Environment.NewLine);
-
-            string CreateOldValueModifiedChanges(EntityEntry entry)
-                => entry.Properties.Where(property => property.IsModified )
-                    .Aggregate(
-                    "",
-                    (auditString, property) =>
-                            auditString +
-                            $"{property.Metadata.Name}: '{property.OriginalValue}' " +
-                            Environment.NewLine + Environment.NewLine);
-
-            string CreateNewValueModifiedChanges(EntityEntry entry)
-                => entry.Properties.Where(property => property.IsModified)
-                    .Aggregate(
-                    "",
-                    (auditString, property) => 
-                            auditString + 
-                            $"{property.Metadata.Name}: '{property.CurrentValue}' " + 
-                            Environment.NewLine + Environment.NewLine);
-
-            //string CreateDeletedChanges(EntityEntry entry)
-            //    => entry.Properties.Where(property => !property.Metadata.IsPrimaryKey()
-            //            && property.Metadata.Name != "CreatedDate"
-            //            && property.Metadata.Name != "CreatedBy")
-            //        .Aggregate(
-            //        "",
-            //        (auditString, property) => 
-            //                auditString + 
-            //                $"{property.Metadata.Name}: '{property.CurrentValue}' " + 
-            //                Environment.NewLine + Environment.NewLine);
-        }
-        #endregion CreateItemzChangeHistory
-
-    }
+		private static string CreateNewValueModifiedChanges(EntityEntry entry) =>
+			entry.Properties.Where(p => p.IsModified)
+				.Aggregate("", (audit, p) => audit + $"{p.Metadata.Name}: '{p.CurrentValue}'{Environment.NewLine}");
+	}
 }
