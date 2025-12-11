@@ -27,7 +27,9 @@ namespace ItemzApp.API.Services
 
 		public Task<int> GetAllChildrenCountOfItemzHierarchy(Guid recordId);
 
-        public Task<bool> UpdateHierarchyRecordNameByID(Guid recordId, string name);
+		public Task<ItemzHierarchy?> GetHierarchyRecordForUpdateAsync(Guid recordId);
+
+		public Task<bool> UpdateHierarchyRecordNameByID(Guid recordId, string name);
 
 	}
 }
