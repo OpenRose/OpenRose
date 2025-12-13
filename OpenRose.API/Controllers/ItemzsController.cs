@@ -559,6 +559,8 @@ namespace ItemzApp.API.Controllers
             //    _mapper.Map<GetItemzDTO>(itemzEntity) // Converting to DTO as this is going out to the consumer
             //    );
         }
+
+
 		/// <summary>
 		/// Updating existing Itemz based on Itemz Id (GUID)
 		/// </summary>
@@ -593,6 +595,11 @@ namespace ItemzApp.API.Controllers
 				return NotFound();
 			}
 
+			// Track whether Name actually changed to decide if we need to update ItemzHierarchy.
+			// NOTE :: We use StringComparison.Ordinal to ensure case-sensitive comparison.
+			// This means "ItemA" vs "itema" will be treated as different and trigger hierarchy update.
+			var nameChanged = !string.Equals(itemzFromRepo.Name, itemzToBeUpdated.Name, StringComparison.Ordinal);
+
 			// Map incoming DTO to tracked entity
 			try
 			{
@@ -613,14 +620,21 @@ namespace ItemzApp.API.Controllers
 			// ✅ FIXED: Update ItemzHierarchy using the SAME DbContext and SAME transaction
 			try
 			{
-				var hierarchyRecord = await _hierarchyRepository.GetHierarchyRecordForUpdateAsync(itemzId);
+				_itemzRepository.UpdateItemz(itemzFromRepo);
 
-				if (hierarchyRecord == null)
+				if (nameChanged)
 				{
-					return Conflict($"Hierarchy record for Itemz with ID {itemzId} could not be found.");
+					// Atomic update: update ItemzHierarchy name in the same DbContext before saving
+					var hierarchyRecord = await _hierarchyRepository.GetHierarchyRecordForUpdateAsync(itemzId);
+					if (hierarchyRecord == null)
+					{
+						return Conflict($"Hierarchy record for Itemz with ID {itemzId} could not be found.");
+					}
+					hierarchyRecord.Name = itemzFromRepo.Name ?? "";
 				}
 
-				hierarchyRecord.Name = itemzFromRepo.Name ?? "";
+				// ✅ ONE SaveChangesAsync() — atomic update
+				await _itemzRepository.SaveAsync();
 			}
 			catch (Exception ex)
 			{
@@ -629,9 +643,6 @@ namespace ItemzApp.API.Controllers
 					ex.Message);
 				return Conflict($"Name of ItemzHierarchy record for Itemz with ID {itemzId} could not be updated.");
 			}
-
-			// ✅ ONE SaveChangesAsync() — atomic update
-			await _itemzRepository.SaveAsync();
 
 			_logger.LogDebug("{FormattedControllerAndActionNames}Update request for Itemz for ID {ItemzId} processed successfully",
 				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),

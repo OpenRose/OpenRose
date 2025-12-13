@@ -238,6 +238,7 @@ namespace ItemzApp.API.Controllers
                 _mapper.Map<GetItemzTypeDTO>(ItemzTypeEntity) // Converting to DTO as this is going out to the consumer
                 );
         }
+
 		/// <summary>
 		/// Updating existing ItemzType based on ItemzType Id (GUID)
 		/// </summary>
@@ -292,6 +293,11 @@ namespace ItemzApp.API.Controllers
 				return Conflict($"ItemzType with name '{ItemzTypeToBeUpdated.Name}' already exists in the project with Id '{ItemzTypeFromRepo.ProjectId}'");
 			}
 
+			// Track whether Name actually changed to decide if we need to update ItemzHierarchy.
+			// NOTE :: We use StringComparison.Ordinal to ensure case-sensitive comparison.
+			// This means "ItemzTypeX" vs "itemztypex" will be treated as different and trigger hierarchy update.
+			var nameChanged = !string.Equals(ItemzTypeFromRepo.Name, ItemzTypeToBeUpdated.Name, StringComparison.Ordinal);
+
 			// Map incoming DTO to tracked entity
 			_mapper.Map(ItemzTypeToBeUpdated, ItemzTypeFromRepo);
 
@@ -302,14 +308,17 @@ namespace ItemzApp.API.Controllers
 			// ✅ FIXED: Update ItemzType and ItemzHierarchy together in one transaction
 			try
 			{
-				var hierarchyRecord = await _hierarchyRepository.GetHierarchyRecordForUpdateAsync(ItemzTypeFromRepo.Id);
+				_ItemzTypeRepository.UpdateItemzType(ItemzTypeFromRepo);
 
-				if (hierarchyRecord == null)
+				if (nameChanged)
 				{
-					return Conflict($"Hierarchy record for ItemzType with ID {ItemzTypeFromRepo.Id} could not be found.");
+					var hierarchyRecord = await _hierarchyRepository.GetHierarchyRecordForUpdateAsync(ItemzTypeFromRepo.Id);
+					if (hierarchyRecord == null)
+					{
+						return Conflict($"Hierarchy record for ItemzType with ID {ItemzTypeFromRepo.Id} could not be found.");
+					}
+					hierarchyRecord.Name = ItemzTypeFromRepo.Name ?? "";
 				}
-
-				hierarchyRecord.Name = ItemzTypeFromRepo.Name ?? "";
 
 				// ✅ ONE SaveChangesAsync — atomic update
 				await _ItemzTypeRepository.SaveAsync();
@@ -328,6 +337,9 @@ namespace ItemzApp.API.Controllers
 
 			return NoContent(); // This indicates that update was successfully saved in the DB.
 		}
+
+
+
 		/// <summary>
 		/// Partially updating a single **ItemzType**
 		/// </summary>
@@ -341,15 +353,15 @@ namespace ItemzApp.API.Controllers
 		/// <response code="422">Validation problems occured during analyzing validation rules for the JsonPatchDocument </response>
 		/// <remarks> Sample request (this request updates an **ItemzType's name**)   
 		/// Documentation regarding JSON Patch can be found at 
-        /// *[ASP.NET Core - JSON Patch Operations](https://docs.microsoft.com/en-us/aspnet/core/web-api/jsonpatch?view=aspnetcore-3.1#operations)* 
+		/// *[ASP.NET Core - JSON Patch Operations](https://docs.microsoft.com/en-us/aspnet/core/web-api/jsonpatch?view=aspnetcore-3.1#operations)* 
 		/// 
 		///     PATCH /api/ItemzTypes/{id}  
 		///     [  
-        ///	        {   
-        ///             "op": "replace",   
-        ///             "path": "/name",   
-        ///             "value": "PATCH Updated Name field"  
-        ///	        }   
+		///	        {   
+		///             "op": "replace",   
+		///             "path": "/name",   
+		///             "value": "PATCH Updated Name field"  
+		///	        }   
 		///     ]
 		/// </remarks>
 		[HttpPatch("{ItemzTypeId}", Name = "__PATCH_Update_ItemzType_By_GUID_ID")]

@@ -274,6 +274,10 @@ namespace ItemzApp.API.Controllers
 				return Conflict($"Project with name '{projectToBeUpdated.Name}' already exists in the repository");
 			}
 
+			// Track whether Name actually changed to decide if we need to update ItemzHierarchy.
+			var nameChanged = !string.Equals(projectFromRepo.Name, projectToBeUpdated.Name, StringComparison.Ordinal);
+
+
 			// Map incoming DTO to tracked entity
 			_mapper.Map(projectToBeUpdated, projectFromRepo);
 
@@ -286,13 +290,17 @@ namespace ItemzApp.API.Controllers
 			{
 				_projectRepository.UpdateProject(projectFromRepo);
 
-				// Atomic update: update ItemzHierarchy name in the same DbContext before saving
-				var hierarchyRecord = await _hierarchyRepository.GetHierarchyRecordForUpdateAsync(projectFromRepo.Id);
-				if (hierarchyRecord == null)
-				{
-					return Conflict($"Name of ItemzHierarchy record for Project with ID {projectFromRepo.Id} could not be updated.");
-				}
-				hierarchyRecord.Name = projectFromRepo.Name ?? "";
+
+                if (nameChanged)
+                {
+                    // Atomic update: update ItemzHierarchy name in the same DbContext before saving
+                    var hierarchyRecord = await _hierarchyRepository.GetHierarchyRecordForUpdateAsync(projectFromRepo.Id);
+                    if (hierarchyRecord == null)
+                    {
+                        return Conflict($"Name of ItemzHierarchy record for Project with ID {projectFromRepo.Id} could not be updated.");
+                    }
+                    hierarchyRecord.Name = projectFromRepo.Name ?? "";
+                }
 
 				// Single SaveChangesAsync — commits Project and ItemzHierarchy together
 				await _projectRepository.SaveAsync();

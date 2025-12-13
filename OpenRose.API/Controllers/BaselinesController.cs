@@ -341,27 +341,34 @@ namespace ItemzApp.API.Controllers
 				return Conflict($"Baseline with name '{baselineToBeUpdated.Name}' already exists in the project with Id '{baselineFromRepo.ProjectId}'");
 			}
 
+			// Track whether Name actually changed to decide if we need to update BaselineItemzHierarchy.
+			// NOTE :: We use StringComparison.Ordinal to ensure case-sensitive comparison.
+			// This means "BaselineX" vs "baselinex" will be treated as different and trigger hierarchy update.
+			var nameChanged = !string.Equals(baselineFromRepo.Name, baselineToBeUpdated.Name, StringComparison.Ordinal);
+
 			// Map incoming DTO to tracked entity
 			_mapper.Map(baselineToBeUpdated, baselineFromRepo);
 
 			// EXPLANATION :: as part of updating Baseline record, we are making sure that baseline name is updated in two places.
 			// First in the Baseline record itself and secondly within BaselineItemzHierarchy record as well. 
-			
+
 			try
 			{
 				_baselineRepository.UpdateBaseline(baselineFromRepo);
 
-				// Atomic update: update BaselineItemzHierarchy name in the same DbContext before saving
-				var hierarchyRecord = await _baselineRepository.GetBaselineHierarchyRecordForUpdateAsync(baselineFromRepo.Id);
-				if (hierarchyRecord == null)
+				if (nameChanged)
 				{
-					return Conflict($"Name of BaselineItemzHierarchy record for Baseline with ID {baselineFromRepo.Id} could not be updated.");
+					// Atomic update: update BaselineItemzHierarchy name in the same DbContext before saving
+					var hierarchyRecord = await _baselineRepository.GetBaselineHierarchyRecordForUpdateAsync(baselineFromRepo.Id);
+					if (hierarchyRecord == null)
+					{
+						return Conflict($"Name of BaselineItemzHierarchy record for Baseline with ID {baselineFromRepo.Id} could not be updated.");
+					}
+					hierarchyRecord.Name = baselineFromRepo.Name ?? "";
 				}
-				hierarchyRecord.Name = baselineFromRepo.Name ?? "";
 
 				// Single SaveChangesAsync — commits Baseline and BaselineItemzHierarchy together
 				await _baselineRepository.SaveAsync();
-
 			}
 			catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
 			{
@@ -376,6 +383,7 @@ namespace ItemzApp.API.Controllers
 				baselineId);
 			return NoContent(); // This indicates that update was successfully saved in the DB.
 		}
+
 
 
 		/// <summary>
