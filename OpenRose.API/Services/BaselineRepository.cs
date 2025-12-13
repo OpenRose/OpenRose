@@ -294,7 +294,38 @@ namespace ItemzApp.API.Services
             // there is no code in this implementation. 
         }
 
-        public void DeleteBaseline(Baseline baseline)
+		public async Task<BaselineItemzHierarchy?> GetBaselineHierarchyRecordForUpdateAsync(Guid baselineId)
+		{
+			if (baselineId == Guid.Empty)
+			{
+				throw new ArgumentNullException(nameof(baselineId));
+			}
+
+			// Single query to fetch the hierarchy record
+			var hierarchyRecord = await _baselineContext.BaselineItemzHierarchy!
+				.SingleOrDefaultAsync(bih => bih.Id == baselineId);
+
+			if (hierarchyRecord == null)
+			{
+				return null; // Controller can handle not found
+			}
+
+			// Prevent updates to repository root records
+			if (hierarchyRecord.RecordType.Equals("repository", StringComparison.OrdinalIgnoreCase)) // TODO :: Use Constants instead of Text
+			{
+				throw new ApplicationException($"Can not update name of the Repository Root Baseline Hierarchy Record with ID {baselineId}");
+			}
+
+			if (hierarchyRecord.BaselineItemzHierarchyId!.GetLevel() == 0) // TODO :: Use Constants instead of Text
+			{
+				throw new ApplicationException($"Can not update name of the Repository Root Baseline Hierarchy Record with ID {baselineId}");
+			}
+
+			return hierarchyRecord;
+		}
+
+
+		public void DeleteBaseline(Baseline baseline)
         {
             _baselineContext.Baseline!.Remove(baseline);
   

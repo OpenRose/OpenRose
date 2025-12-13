@@ -231,79 +231,86 @@ namespace ItemzApp.API.Controllers
                 );
         }
 
-        /// <summary>
-        /// Updating exsting Project based on Project Id (GUID)
-        /// </summary>
-        /// <param name="projectId">GUID representing an unique ID of the Project that you want to get</param>
-        /// <param name="projectToBeUpdated">required Project properties to be updated</param>
-        /// <returns>No contents are returned but only Status 204 indicating that Project was updated successfully </returns>
-        /// <response code="204">No content are returned but status of 204 indicated that Project was successfully updated</response>
-        /// <response code="404">Project based on projectId was not found</response>
-        /// <response code="409">Project with updated name already exists in the repository</response>
+		/// <summary>
+		/// Updating exsting Project based on Project Id (GUID)
+		/// </summary>
+		/// <param name="projectId">GUID representing an unique ID of the Project that you want to get</param>
+		/// <param name="projectToBeUpdated">required Project properties to be updated</param>
+		/// <returns>No contents are returned but only Status 204 indicating that Project was updated successfully </returns>
+		/// <response code="204">No content are returned but status of 204 indicated that Project was successfully updated</response>
+		/// <response code="404">Project based on projectId was not found</response>
+		/// <response code="409">Project with updated name already exists in the repository</response>
 
-        [HttpPut("{projectId}", Name = "__PUT_Update_Project_By_GUID_ID")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status409Conflict)]
-        [ProducesDefaultResponseType]
-        public async Task<ActionResult> UpdateProjectPutAsync(Guid projectId, UpdateProjectDTO projectToBeUpdated)
-        {
-            if (!(await _projectRepository.ProjectExistsAsync(projectId)))
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Update request for Project for ID {ProjectId} could not be found",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext), 
-                    projectId);
-                return NotFound();
-            }
+		[HttpPut("{projectId}", Name = "__PUT_Update_Project_By_GUID_ID")]
+		[ProducesResponseType(StatusCodes.Status204NoContent)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		[ProducesResponseType(StatusCodes.Status409Conflict)]
+		[ProducesDefaultResponseType]
+		public async Task<ActionResult> UpdateProjectPutAsync(Guid projectId, UpdateProjectDTO projectToBeUpdated)
+		{
+			if (!(await _projectRepository.ProjectExistsAsync(projectId)))
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Update request for Project for ID {ProjectId} could not be found",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					projectId);
+				return NotFound();
+			}
 
-            var projectFromRepo = await _projectRepository.GetProjectForUpdateAsync(projectId);
+			var projectFromRepo = await _projectRepository.GetProjectForUpdateAsync(projectId);
 
-            if (projectFromRepo == null)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Update request for Project for ID {ProjectId} could not be found in the Repository",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext), 
-                    projectId);
-                return NotFound();
-            }
+			if (projectFromRepo == null)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Update request for Project for ID {ProjectId} could not be found in the Repository",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					projectId);
+				return NotFound();
+			}
 
-            if (await _projectRules.UniqueProjectNameRuleAsync(projectToBeUpdated.Name!, projectFromRepo.Name))
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Project with name {projectToBeUpdated_Name} already exists in the repository",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    projectToBeUpdated.Name);
-                return Conflict($"Project with name '{projectToBeUpdated.Name}' already exists in the repository");
-            }
+			if (await _projectRules.UniqueProjectNameRuleAsync(projectToBeUpdated.Name!, projectFromRepo.Name))
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Project with name {projectToBeUpdated_Name} already exists in the repository",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					projectToBeUpdated.Name);
+				return Conflict($"Project with name '{projectToBeUpdated.Name}' already exists in the repository");
+			}
 
-            _mapper.Map(projectToBeUpdated, projectFromRepo);
-            try 
-            { 
-            _projectRepository.UpdateProject(projectFromRepo);
-            await _projectRepository.SaveAsync();
-            }
-            catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
-            {
-				_logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to add new project:" + dbUpdateException.InnerException,
+			// Track whether Name actually changed to decide if we need to update ItemzHierarchy.
+			var nameChanged = !string.Equals(projectFromRepo.Name, projectToBeUpdated.Name, StringComparison.Ordinal);
+
+
+			// Map incoming DTO to tracked entity
+			_mapper.Map(projectToBeUpdated, projectFromRepo);
+
+			// EXPLANATION :: as part of updating Project record, we are making sure that project name is updated in two places.
+			// First in the project record itself and secondly within ItemzHierarchy record as well. We are not going to update
+			// BaselineItemzHierarchy record with updated project name as it's a snapshot of data from a given point in time.
+			// TODO :: We should update Project and ItemzHierarchy together rather then two separate transactions
+
+			try
+			{
+				_projectRepository.UpdateProject(projectFromRepo);
+
+
+                if (nameChanged)
+                {
+                    // Atomic update: update ItemzHierarchy name in the same DbContext before saving
+                    var hierarchyRecord = await _hierarchyRepository.GetHierarchyRecordForUpdateAsync(projectFromRepo.Id);
+                    if (hierarchyRecord == null)
+                    {
+                        return Conflict($"Name of ItemzHierarchy record for Project with ID {projectFromRepo.Id} could not be updated.");
+                    }
+                    hierarchyRecord.Name = projectFromRepo.Name ?? "";
+                }
+
+				// Single SaveChangesAsync — commits Project and ItemzHierarchy together
+				await _projectRepository.SaveAsync();
+			}
+			catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to update project and ItemzHierarchy :" + dbUpdateException.InnerException,
 					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
 					);
 				return Conflict($"Project with name '{projectToBeUpdated.Name}' already exists in the repository");
-            }
-
-            // EXPLANATION :: as part of updating Project record, we are making sure that project name is updated in two places.
-            // First in the project record itself and secondly within ItemzHierarchy record as well. We are not going to update
-            // BaselineItemzHierarchy record with updated project name as it's a snapshot of data from a given point in time.
-            
-            // TODO :: We should update Project and ItemzHierarchy together rather then two separate transactions
-
-            try
-            {
-               var _discard = _hierarchyRepository.UpdateHierarchyRecordNameByID(projectFromRepo.Id, projectFromRepo.Name ?? "");
-			}
-            catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
-			{
-				_logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to update project name in ItemzHierarchy :" + dbUpdateException.InnerException,
-					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
-					);
-				return Conflict($"Name of ItemzHierarchy record for Project with ID {projectFromRepo.Id} could not be updated.");
 			}
 
 			_logger.LogDebug("{FormattedControllerAndActionNames}Update request for Project for ID {ProjectId} processed successfully",
@@ -311,123 +318,130 @@ namespace ItemzApp.API.Controllers
 				projectId);
 
 			return NoContent(); // This indicates that update was successfully saved in the DB.
-        }
+		}
 
-        /// <summary>
-        /// Partially updating a single **Project**
-        /// </summary>
-        /// <param name="projectId">Id of the Project representated by a GUID.</param>
-        /// <param name="projectPatchDocument">The set of operations to apply to the Project via JsonPatchDocument</param>
-        /// <returns>an ActionResult of type Project</returns>
-        /// <response code="204">No content are returned but status of 204 indicated that Project was successfully updated</response>
-        /// <response code="404">Project based on projectId was not found</response>
-        /// <response code="409">Project with updated name already exists in the repository</response>
-        /// <response code="422">Validation problems occured during analyzing validation rules for the JsonPatchDocument </response>
-        /// <remarks> Sample request (this request updates an **Project's name**)   
-        /// Documentation regarding JSON Patch can be found at 
-        /// *[ASP.NET Core - JSON Patch Operations](https://docs.microsoft.com/en-us/aspnet/core/web-api/jsonpatch?view=aspnetcore-3.1#operations)* 
-        /// 
-        ///     PATCH /api/Projects/{id}  
-        ///     [  
-        ///	        {   
-        ///             "op": "replace",   
-        ///             "path": "/name",   
-        ///             "value": "PATCH Updated Name field"  
-        ///	        }   
-        ///     ]
-        /// </remarks>
 
-        [HttpPatch("{projectId}", Name = "__PATCH_Update_Project_By_GUID_ID")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status409Conflict)]
-        [ProducesDefaultResponseType]
-        public async Task<ActionResult> UpdateProjectPatchAsync(Guid projectId, JsonPatchDocument<UpdateProjectDTO> projectPatchDocument)
-        {
-            if (!(await _projectRepository.ProjectExistsAsync(projectId)))
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Update request for Project for ID {ProjectId} could not be found",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext), 
-                    projectId);
-                return NotFound();
-            }
+		/// <summary>
+		/// Partially updating a single **Project**
+		/// </summary>
+		/// <param name="projectId">Id of the Project representated by a GUID.</param>
+		/// <param name="projectPatchDocument">The set of operations to apply to the Project via JsonPatchDocument</param>
+		/// <returns>an ActionResult of type Project</returns>
+		/// <response code="204">No content are returned but status of 204 indicated that Project was successfully updated</response>
+		/// <response code="404">Project based on projectId was not found</response>
+		/// <response code="409">Project with updated name already exists in the repository</response>
+		/// <response code="422">Validation problems occured during analyzing validation rules for the JsonPatchDocument </response>
+		/// <remarks> Sample request (this request updates an **Project's name**)   
+		/// Documentation regarding JSON Patch can be found at 
+		/// *[ASP.NET Core - JSON Patch Operations](https://docs.microsoft.com/en-us/aspnet/core/web-api/jsonpatch?view=aspnetcore-3.1#operations)* 
+		/// 
+		///     PATCH /api/Projects/{id}  
+		///     [  
+		///         {   
+		///             "op": "replace",   
+		///             "path": "/name",   
+		///             "value": "PATCH Updated Name field"  
+		///         }   
+		///     ]
+		/// </remarks>
+		[HttpPatch("{projectId}", Name = "__PATCH_Update_Project_By_GUID_ID")]
+		[ProducesResponseType(StatusCodes.Status204NoContent)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		[ProducesResponseType(StatusCodes.Status409Conflict)]
+		[ProducesDefaultResponseType]
+		public async Task<ActionResult> UpdateProjectPatchAsync(Guid projectId, JsonPatchDocument<UpdateProjectDTO> projectPatchDocument)
+		{
+			if (!(await _projectRepository.ProjectExistsAsync(projectId)))
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Update request for Project for ID {ProjectId} could not be found",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					projectId);
+				return NotFound();
+			}
 
-            var projectFromRepo = await _projectRepository.GetProjectForUpdateAsync(projectId);
+			var projectFromRepo = await _projectRepository.GetProjectForUpdateAsync(projectId);
 
-            if (projectFromRepo == null)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Update request for Project for ID {ProjectId} could not be found in the Repository",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext), 
-                    projectId);
-                return NotFound();
-            }
+			if (projectFromRepo == null)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Update request for Project for ID {ProjectId} could not be found in the Repository",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					projectId);
+				return NotFound();
+			}
 
-            var projectToPatch = _mapper.Map<UpdateProjectDTO>(projectFromRepo);
+			var projectToPatch = _mapper.Map<UpdateProjectDTO>(projectFromRepo);
 
-            projectPatchDocument.ApplyTo(projectToPatch, ModelState);
+			projectPatchDocument.ApplyTo(projectToPatch, ModelState);
 
-            // Validating Project patch document and verifying that it meets all the 
-            // validation rules as expected. This will check if the data passed in the Patch Document
-            // is ready to be saved in the db.
+			// Validating Project patch document and verifying that it meets all the 
+			// validation rules as expected. This will check if the data passed in the Patch Document
+			// is ready to be saved in the db.
 
-            if (!TryValidateModel(projectToPatch))
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Project Properties did not pass defined Validation Rules for ID {ProjectId}",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext), 
-                    projectId);
-                return ValidationProblem(ModelState);
-            }
-            if (await _projectRules.UniqueProjectNameRuleAsync(projectToPatch.Name!, projectFromRepo.Name))
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Project with name {projectToPatch_Name} already exists in the repository",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    projectToPatch.Name);
-                return Conflict($"Project with name '{projectToPatch.Name}' already exists in the repository");
-            }
+			if (!TryValidateModel(projectToPatch))
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Project Properties did not pass defined Validation Rules for ID {ProjectId}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					projectId);
+				return ValidationProblem(ModelState);
+			}
 
-            _mapper.Map(projectToPatch, projectFromRepo);
-            try
-            {
-                _projectRepository.UpdateProject(projectFromRepo);
-                await _projectRepository.SaveAsync();
-            }
-            catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to add new project:" + dbUpdateException.InnerException,
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
-                    );
-                return Conflict($"Project with name '{projectToPatch.Name}' already exists in the repository");
-            }
+			// Track whether Name actually changed to decide if we need to update ItemzHierarchy.
+			var nameChanged = !string.Equals(projectFromRepo.Name, projectToPatch.Name, StringComparison.Ordinal);
+
+			if (nameChanged)
+			{
+				if (await _projectRules.UniqueProjectNameRuleAsync(projectToPatch.Name!, projectFromRepo.Name))
+				{
+					_logger.LogDebug("{FormattedControllerAndActionNames}Project with name {projectToPatch_Name} already exists in the repository",
+						ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+						projectToPatch.Name);
+					return Conflict($"Project with name '{projectToPatch.Name}' already exists in the repository");
+				}
+			}
+
+			_mapper.Map(projectToPatch, projectFromRepo);
 
 			// EXPLANATION :: as part of updating Project record, we are making sure that project name is updated in two places.
 			// First in the project record itself and secondly within ItemzHierarchy record as well. We are not going to update
 			// BaselineItemzHierarchy record with updated project name as it's a snapshot of data from a given point in time.
-
 			// TODO :: We should update Project and ItemzHierarchy together rather then two separate transactions
 
 			try
 			{
-				var _discard = _hierarchyRepository.UpdateHierarchyRecordNameByID(projectFromRepo.Id, projectFromRepo.Name ?? "");
+				_projectRepository.UpdateProject(projectFromRepo);
+
+				if (nameChanged)
+				{
+					var hierarchyRecord = await _hierarchyRepository.GetHierarchyRecordForUpdateAsync(projectFromRepo.Id);
+					if (hierarchyRecord == null)
+					{
+						return Conflict($"Name of ItemzHierarchy record for Project with ID {projectFromRepo.Id} could not be updated.");
+					}
+					hierarchyRecord.Name = projectFromRepo.Name ?? "";
+				}
+
+				// Single SaveChangesAsync — commits Project and ItemzHierarchy together
+				await _projectRepository.SaveAsync();
 			}
 			catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
 			{
-				_logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to update project name in ItemzHierarchy :" + dbUpdateException.InnerException,
+				_logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to update project and ItemzHierarchy :" + dbUpdateException.InnerException,
 					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
 					);
-				return Conflict($"Name of ItemzHierarchy record for Project with ID {projectFromRepo.Id} could not be updated.");
+				return Conflict($"Project with name '{projectToPatch.Name}' already exists in the repository");
 			}
 
 			_logger.LogDebug("{FormattedControllerAndActionNames}Update request for Project for ID {ProjectId} processed successfully",
-                ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext), 
-                projectId);
-            return NoContent();
-        }
+				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+				projectId);
+			return NoContent();
+		}
 
-        // We have configured in startup class our own custom implementation of 
-        // problem Details. Now we are overriding ValidationProblem method that is defined in ControllerBase
-        // class to make sure that we use that custom problem details builder. 
-        // Instead of passing 400 it will pass back 422 code with more details.
-        public override ActionResult ValidationProblem([ActionResultObjectValue] ModelStateDictionary modelStateDictionary)
+		// We have configured in startup class our own custom implementation of 
+		// problem Details. Now we are overriding ValidationProblem method that is defined in ControllerBase
+		// class to make sure that we use that custom problem details builder. 
+		// Instead of passing 400 it will pass back 422 code with more details.
+		public override ActionResult ValidationProblem([ActionResultObjectValue] ModelStateDictionary modelStateDictionary)
         {
             var options = HttpContext.RequestServices
                 .GetRequiredService<IOptions<ApiBehaviorOptions>>();

@@ -559,6 +559,8 @@ namespace ItemzApp.API.Controllers
             //    _mapper.Map<GetItemzDTO>(itemzEntity) // Converting to DTO as this is going out to the consumer
             //    );
         }
+
+
 		/// <summary>
 		/// Updating existing Itemz based on Itemz Id (GUID)
 		/// </summary>
@@ -593,6 +595,11 @@ namespace ItemzApp.API.Controllers
 				return NotFound();
 			}
 
+			// Track whether Name actually changed to decide if we need to update ItemzHierarchy.
+			// NOTE :: We use StringComparison.Ordinal to ensure case-sensitive comparison.
+			// This means "ItemA" vs "itema" will be treated as different and trigger hierarchy update.
+			var nameChanged = !string.Equals(itemzFromRepo.Name, itemzToBeUpdated.Name, StringComparison.Ordinal);
+
 			// Map incoming DTO to tracked entity
 			try
 			{
@@ -613,14 +620,21 @@ namespace ItemzApp.API.Controllers
 			// ✅ FIXED: Update ItemzHierarchy using the SAME DbContext and SAME transaction
 			try
 			{
-				var hierarchyRecord = await _hierarchyRepository.GetHierarchyRecordForUpdateAsync(itemzId);
+				_itemzRepository.UpdateItemz(itemzFromRepo);
 
-				if (hierarchyRecord == null)
+				if (nameChanged)
 				{
-					return Conflict($"Hierarchy record for Itemz with ID {itemzId} could not be found.");
+					// Atomic update: update ItemzHierarchy name in the same DbContext before saving
+					var hierarchyRecord = await _hierarchyRepository.GetHierarchyRecordForUpdateAsync(itemzId);
+					if (hierarchyRecord == null)
+					{
+						return Conflict($"Hierarchy record for Itemz with ID {itemzId} could not be found.");
+					}
+					hierarchyRecord.Name = itemzFromRepo.Name ?? "";
 				}
 
-				hierarchyRecord.Name = itemzFromRepo.Name ?? "";
+				// ✅ ONE SaveChangesAsync() — atomic update
+				await _itemzRepository.SaveAsync();
 			}
 			catch (Exception ex)
 			{
@@ -629,9 +643,6 @@ namespace ItemzApp.API.Controllers
 					ex.Message);
 				return Conflict($"Name of ItemzHierarchy record for Itemz with ID {itemzId} could not be updated.");
 			}
-
-			// ✅ ONE SaveChangesAsync() — atomic update
-			await _itemzRepository.SaveAsync();
 
 			_logger.LogDebug("{FormattedControllerAndActionNames}Update request for Itemz for ID {ItemzId} processed successfully",
 				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
@@ -657,105 +668,118 @@ namespace ItemzApp.API.Controllers
 		/// 
 		///     PATCH /api/Itemzs/{id}  
 		///     [  
-		///	        {   
+		///         {   
 		///             "op": "replace",   
 		///             "path": "/name",   
 		///             "value": "PATCH Updated Name field"  
-		///	        }   
+		///         }   
 		///     ]
 		/// </remarks>
+		[HttpPatch("{itemzId}", Name = "__PATCH_Update_Itemz_By_GUID_ID")]
+		[ProducesResponseType(StatusCodes.Status204NoContent)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		[ProducesDefaultResponseType]
+		public async Task<ActionResult> UpdateItemzPatchAsync(Guid itemzId, JsonPatchDocument<UpdateItemzDTO> itemzPatchDocument)
+		{
+			if (!(await _itemzRepository.ItemzExistsAsync(itemzId)))
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Update request for Itemz for ID {ItemzId} could not be found",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					itemzId);
+				return NotFound();
+			}
 
-		[HttpPatch("{itemzId}",Name = "__PATCH_Update_Itemz_By_GUID_ID")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesDefaultResponseType]
-        public async Task<ActionResult> UpdateItemzPatchAsync(Guid itemzId, JsonPatchDocument<UpdateItemzDTO> itemzPatchDocument)
-        {
-            if (!(await _itemzRepository.ItemzExistsAsync(itemzId)))
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Update request for Itemz for ID {ItemzId} could not be found",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    itemzId);
-                return NotFound();
-            }
+			var itemzFromRepo = await _itemzRepository.GetItemzForUpdatingAsync(itemzId);
 
-            var itemzFromRepo = await _itemzRepository.GetItemzForUpdatingAsync(itemzId);
+			if (itemzFromRepo == null)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Update request for Itemz for ID {ItemzId} could not be found in the Repository",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					itemzId);
+				return NotFound();
+			}
 
-            if (itemzFromRepo == null)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Update request for Itemz for ID {ItemzId} could not be found in the Repository",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    itemzId);
-                return NotFound();
-            }
+			var itemzToPatch = _mapper.Map<UpdateItemzDTO>(itemzFromRepo);
 
-            var itemzToPatch = _mapper.Map<UpdateItemzDTO>(itemzFromRepo);
+			itemzPatchDocument.ApplyTo(itemzToPatch, ModelState);
 
-            itemzPatchDocument.ApplyTo(itemzToPatch, ModelState);
+			// Validating Itemz patch document and verifying that it meets all the 
+			// validation rules as expected. This will check if the data passed in the Patch Document
+			// is ready to be saved in the db.
 
-            // Validating Itemz patch document and verifying that it meets all the 
-            // validation rules as expected. This will check if the data passed in the Patch Document
-            // is ready to be saved in the db.
+			if (!TryValidateModel(itemzToPatch))
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Itemz Properties did not pass defined Validation Rules for ID {ItemzId}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					itemzId);
+				return ValidationProblem(ModelState);
+			}
 
-            if (!TryValidateModel(itemzToPatch))
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Itemz Properties did not pass defined Validation Rules for ID {ItemzId}",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    itemzId);
-                return ValidationProblem(ModelState);
-            }
+			// Track whether Name actually changed to decide if we need to update ItemzHierarchy.
+			var nameChanged = !string.Equals(itemzFromRepo.Name, itemzToPatch.Name, StringComparison.Ordinal);
 
-            try
-            {
-                _mapper.Map(itemzToPatch, itemzFromRepo);
-            }
-            catch (AutoMapper.AutoMapperMappingException amm_ex)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Could not update Itemz for ID {ItemzId} due to issue with value provided for {fieldname}",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    itemzId, amm_ex.MemberMap.DestinationName);
-                return ValidationProblem();
-            }
+			try
+			{
+				_mapper.Map(itemzToPatch, itemzFromRepo);
+			}
+			catch (AutoMapper.AutoMapperMappingException amm_ex)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Could not update Itemz for ID {ItemzId} due to issue with value provided for {fieldname}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					itemzId, amm_ex.MemberMap.DestinationName);
+				return ValidationProblem();
+			}
 
-            _itemzRepository.UpdateItemz(itemzFromRepo);
-            await _itemzRepository.SaveAsync();
+			_itemzRepository.UpdateItemz(itemzFromRepo);
 
 			// EXPLANATION :: as part of updating Itemz record, we are making sure that Itemz name is updated in two places.
 			// First in the Itemz record itself and secondly within ItemzHierarchy record as well. We are not going to update
 			// BaselineItemzHierarchy record with updated Itemz name as it's a snapshot of data from a given point in time.
 
 			// TODO :: We should update Itemz and ItemzHierarchy together rather then two separate transactions
+			// Atomic update: only touch ItemzHierarchy when Name actually changed; save both in one transaction.
+			if (nameChanged)
+			{
+				try
+				{
+					var hierarchyRecord = await _hierarchyRepository.GetHierarchyRecordForUpdateAsync(itemzFromRepo.Id);
+					if (hierarchyRecord == null)
+					{
+						return Conflict($"Name of ItemzHierarchy record for Itemz with ID {itemzFromRepo.Id} could not be updated.");
+					}
+					hierarchyRecord.Name = itemzFromRepo.Name ?? "";
+				}
+				catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
+				{
+					_logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to update Itemz name in ItemzHierarchy :" + dbUpdateException.InnerException,
+						ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
+						);
+					return Conflict($"Name of ItemzHierarchy record for Itemz with ID {itemzFromRepo.Id} could not be updated.");
+				}
+				catch (Exception)
+				{
+					_logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to update Itemz name in ItemzHierarchy :",
+						ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
+						);
+					return Conflict($"Name of ItemzHierarchy record for Itemz with ID {itemzFromRepo.Id} could not be updated.");
+				}
+			}
 
-			try
-			{
-				var _discard = _hierarchyRepository.UpdateHierarchyRecordNameByID(itemzFromRepo.Id, itemzFromRepo.Name ?? "");
-			}
-			catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
-			{
-				_logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to update Itemz name in ItemzHierarchy :" + dbUpdateException.InnerException,
-					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
-					);
-				return Conflict($"Name of ItemzHierarchy record for Itemz with ID {itemzFromRepo.Id} could not be updated.");
-			}
-			catch (Exception)
-			{
-				_logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to update Itemz name in ItemzHierarchy :",
-					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
-					);
-				return Conflict($"Name of ItemzHierarchy record for Itemz with ID {itemzFromRepo.Id} could not be updated.");
-			}
+			// Single SaveChangesAsync — commits Itemz and (if applicable) ItemzHierarchy together.
+			await _itemzRepository.SaveAsync();
 
 			_logger.LogDebug("{FormattedControllerAndActionNames}Update request for Itemz for ID {ItemzId} processed successfully",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    itemzId);
-            return NoContent();
-        }
+				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+				itemzId);
+			return NoContent();
+		}
 
-        // We have configured in startup class our own custom implementation of 
-        // problem Details. Now we are overriding ValidationProblem method that is defined in ControllerBase
-        // class to make sure that we use that custom problem details builder. 
-        // Instead of passing 400 it will pass back 422 code with more details.
-        public override ActionResult ValidationProblem([ActionResultObjectValue] ModelStateDictionary modelStateDictionary)
+
+		// We have configured in startup class our own custom implementation of 
+		// problem Details. Now we are overriding ValidationProblem method that is defined in ControllerBase
+		// class to make sure that we use that custom problem details builder. 
+		// Instead of passing 400 it will pass back 422 code with more details.
+		public override ActionResult ValidationProblem([ActionResultObjectValue] ModelStateDictionary modelStateDictionary)
         {
             var options = HttpContext.RequestServices
                 .GetRequiredService<IOptions<ApiBehaviorOptions>>();
