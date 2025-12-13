@@ -238,244 +238,239 @@ namespace ItemzApp.API.Controllers
                 _mapper.Map<GetItemzTypeDTO>(ItemzTypeEntity) // Converting to DTO as this is going out to the consumer
                 );
         }
+		/// <summary>
+		/// Updating existing ItemzType based on ItemzType Id (GUID)
+		/// </summary>
+		/// <param name="ItemzTypeId">GUID representing an unique ID of the ItemzType that you want to get</param>
+		/// <param name="ItemzTypeToBeUpdated">required ItemzType properties to be updated</param>
+		/// <returns>No contents are returned but only Status 204 indicating that ItemzType was updated successfully </returns>
+		/// <response code="204">No content are returned but status of 204 indicated that ItemzType was successfully updated</response>
+		/// <response code="404">ItemzType based on ItemzTypeId was not found</response>
+		/// <response code="405">ItemzType is not allowed to be modified. example, ItemzType is a System one.</response>
+		/// <response code="409">ItemzType with the same name already exists in the target Project</response>
+		[HttpPut("{ItemzTypeId}", Name = "__PUT_Update_ItemzType_By_GUID_ID")]
+		[ProducesResponseType(StatusCodes.Status204NoContent)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		[ProducesResponseType(StatusCodes.Status405MethodNotAllowed)]
+		[ProducesResponseType(StatusCodes.Status409Conflict)]
+		[ProducesDefaultResponseType]
+		public async Task<ActionResult> UpdateItemzTypePutAsync(Guid ItemzTypeId, UpdateItemzTypeDTO ItemzTypeToBeUpdated)
+		{
+			if (!(await _ItemzTypeRepository.ItemzTypeExistsAsync(ItemzTypeId)))
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Update request for ItemzType for ID {ItemzTypeId} could not be found",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					ItemzTypeId);
+				return NotFound();
+			}
 
+			var ItemzTypeFromRepo = await _ItemzTypeRepository.GetItemzTypeForUpdateAsync(ItemzTypeId);
 
-        /// <summary>
-        /// Updating exsting ItemzType based on ItemzType Id (GUID)
-        /// </summary>
-        /// <param name="ItemzTypeId">GUID representing an unique ID of the ItemzType that you want to get</param>
-        /// <param name="ItemzTypeToBeUpdated">required ItemzType properties to be updated</param>
-        /// <returns>No contents are returned but only Status 204 indicating that ItemzType was updated successfully </returns>
-        /// <response code="204">No content are returned but status of 204 indicated that ItemzType was successfully updated</response>
-        /// <response code="404">ItemzType based on ItemzTypeId was not found</response>
-        /// <response code="405">ItemzType is not allowed to be modified. example, ItemzType is a System one.</response>
-        /// <response code="409">ItemzType with the same name already exists in the target Project</response>
+			if (ItemzTypeFromRepo == null)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Update request for ItemzType for ID {ItemzTypeId} could not be found in the Repository",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					ItemzTypeId);
+				return NotFound();
+			}
 
-        [HttpPut("{ItemzTypeId}", Name = "__PUT_Update_ItemzType_By_GUID_ID")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status405MethodNotAllowed)]
-        [ProducesResponseType(StatusCodes.Status409Conflict)]
-        [ProducesDefaultResponseType]
-        public async Task<ActionResult> UpdateItemzTypePutAsync(Guid ItemzTypeId, UpdateItemzTypeDTO ItemzTypeToBeUpdated)
-        {
-            if (!(await _ItemzTypeRepository.ItemzTypeExistsAsync(ItemzTypeId)))
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Update request for ItemzType for ID {ItemzTypeId} could not be found",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    ItemzTypeId);
-                return NotFound();
-            }
+			if (ItemzTypeFromRepo.IsSystem == true)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}System ItemzType with name {ItemzTypeName} and Id {ItemzTypeId} is NOT ALLOWED to be modified",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					ItemzTypeFromRepo.Name, ItemzTypeFromRepo.Id);
+				return StatusCode(StatusCodes.Status405MethodNotAllowed,
+					$"System ItemzType with name '{ItemzTypeFromRepo.Name}' and Id '{ItemzTypeFromRepo.Id}' is NOT ALLOWED to be modified");
+			}
 
-            var ItemzTypeFromRepo = await _ItemzTypeRepository.GetItemzTypeForUpdateAsync(ItemzTypeId);
+			if (await _itemzTypeRules.UniqueItemzTypeNameRuleAsync(ItemzTypeFromRepo.ProjectId, ItemzTypeToBeUpdated.Name!, ItemzTypeFromRepo.Name))
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}ItemzType with name {ItemzTypeToBeUpdated_Name} already exists in the project with Id {ItemzTypeFromRepo_ProjectId}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					ItemzTypeToBeUpdated.Name,
+					ItemzTypeFromRepo.ProjectId);
+				return Conflict($"ItemzType with name '{ItemzTypeToBeUpdated.Name}' already exists in the project with Id '{ItemzTypeFromRepo.ProjectId}'");
+			}
 
-            if (ItemzTypeFromRepo == null)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Update request for ItemzType for ID {ItemzTypeId} could not be found in the Repository",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    ItemzTypeId);
-                return NotFound();
-            }
-
-            if (ItemzTypeFromRepo.IsSystem == true)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}System ItemzType with name {ItemzTypeName} and Id {ItemzTypeId} is NOT ALLOWED to be modified",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    ItemzTypeFromRepo.Name, ItemzTypeFromRepo.Id);
-                return StatusCode(
-                        Microsoft.AspNetCore.Http.StatusCodes.Status405MethodNotAllowed,
-                        $"System ItemzType with name '{ItemzTypeFromRepo.Name}' and Id '{ItemzTypeFromRepo.Id}' is NOT ALLOWED to be modified" 
-                    );
-            }
-
-            if (await _itemzTypeRules.UniqueItemzTypeNameRuleAsync(ItemzTypeFromRepo.ProjectId, ItemzTypeToBeUpdated.Name!, ItemzTypeFromRepo.Name))
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}ItemzType with name {ItemzTypeToBeUpdated_Name} already exists in the project with Id {ItemzTypeFromRepo_ProjectId}",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    ItemzTypeToBeUpdated.Name,
-                    ItemzTypeFromRepo.ProjectId);
-                return Conflict($"ItemzType with name '{ItemzTypeToBeUpdated.Name}' already exists in the project with Id '{ItemzTypeFromRepo.ProjectId}'");
-            }
-
-            _mapper.Map(ItemzTypeToBeUpdated, ItemzTypeFromRepo);
-
-            try
-            {
-                _ItemzTypeRepository.UpdateItemzType(ItemzTypeFromRepo);
-                await _ItemzTypeRepository.SaveAsync();
-            }
-            catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Exception occured while trying to add new itemzType:" + dbUpdateException.InnerException,
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
-                    );
-                return Conflict($"ItemzType with name '{ItemzTypeToBeUpdated.Name}' already exists in the project with Id '{ItemzTypeFromRepo.ProjectId}'");
-            }
-
+			// Map incoming DTO to tracked entity
+			_mapper.Map(ItemzTypeToBeUpdated, ItemzTypeFromRepo);
 
 			// EXPLANATION :: as part of updating ItemzType record, we are making sure that ItemzType name is updated in two places.
 			// First in the ItemzType record itself and secondly within ItemzHierarchy record as well. We are not going to update
 			// BaselineItemzHierarchy record with updated ItemzType name as it's a snapshot of data from a given point in time.
 
-			// TODO :: We should update ItemzType and ItemzHierarchy together rather then two separate transactions
-
+			// ✅ FIXED: Update ItemzType and ItemzHierarchy together in one transaction
 			try
 			{
-				var _discard = _hierarchyRepository.UpdateHierarchyRecordNameByID(ItemzTypeFromRepo.Id, ItemzTypeFromRepo.Name ?? "");
+				var hierarchyRecord = await _hierarchyRepository.GetHierarchyRecordForUpdateAsync(ItemzTypeFromRepo.Id);
+
+				if (hierarchyRecord == null)
+				{
+					return Conflict($"Hierarchy record for ItemzType with ID {ItemzTypeFromRepo.Id} could not be found.");
+				}
+
+				hierarchyRecord.Name = ItemzTypeFromRepo.Name ?? "";
+
+				// ✅ ONE SaveChangesAsync — atomic update
+				await _ItemzTypeRepository.SaveAsync();
 			}
 			catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
 			{
-				_logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to update ItemzType name in ItemzHierarchy :" + dbUpdateException.InnerException,
-					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
-					);
-				return Conflict($"Name of ItemzHierarchy record for ItemzType with ID {ItemzTypeFromRepo.Id} could not be updated.");
+				_logger.LogDebug("{FormattedControllerAndActionNames}Exception occurred while trying to update ItemzType and ItemzHierarchy: {Exception}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					dbUpdateException.InnerException?.Message);
+				return Conflict($"ItemzType with name '{ItemzTypeToBeUpdated.Name}' already exists in the project with Id '{ItemzTypeFromRepo.ProjectId}'");
 			}
 
-
 			_logger.LogDebug("{FormattedControllerAndActionNames}Update request for ItemzType for ID {ItemzTypeId} processed successfully",
-                ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                ItemzTypeId);
-            return NoContent(); // This indicates that update was successfully saved in the DB.
+				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+				ItemzTypeId);
 
-        }
-
-        /// <summary>
-        /// Partially updating a single **ItemzType**
-        /// </summary>
-        /// <param name="ItemzTypeId">Id of the ItemzType representated by a GUID.</param>
-        /// <param name="ItemzTypePatchDocument">The set of operations to apply to the ItemzType via JsonPatchDocument</param>
-        /// <returns>an ActionResult of type ItemzType</returns>
-        /// <response code="204">No content are returned but status of 204 indicated that ItemzType was successfully updated</response>
-        /// <response code="404">ItemzType based on ItemzTypeId was not found</response>
-        /// <response code="405">ItemzType is not allowed to be modified. example, ItemzType is a System one.</response>
-        /// <response code="409">ItemzType with the same name already exists in the target Project</response>
-        /// <response code="422">Validation problems occured during analyzing validation rules for the JsonPatchDocument </response>
-        /// <remarks> Sample request (this request updates an **ItemzType's name**)   
-        /// Documentation regarding JSON Patch can be found at 
+			return NoContent(); // This indicates that update was successfully saved in the DB.
+		}
+		/// <summary>
+		/// Partially updating a single **ItemzType**
+		/// </summary>
+		/// <param name="ItemzTypeId">Id of the ItemzType representated by a GUID.</param>
+		/// <param name="ItemzTypePatchDocument">The set of operations to apply to the ItemzType via JsonPatchDocument</param>
+		/// <returns>an ActionResult of type ItemzType</returns>
+		/// <response code="204">No content are returned but status of 204 indicated that ItemzType was successfully updated</response>
+		/// <response code="404">ItemzType based on ItemzTypeId was not found</response>
+		/// <response code="405">ItemzType is not allowed to be modified. example, ItemzType is a System one.</response>
+		/// <response code="409">ItemzType with the same name already exists in the target Project</response>
+		/// <response code="422">Validation problems occured during analyzing validation rules for the JsonPatchDocument </response>
+		/// <remarks> Sample request (this request updates an **ItemzType's name**)   
+		/// Documentation regarding JSON Patch can be found at 
         /// *[ASP.NET Core - JSON Patch Operations](https://docs.microsoft.com/en-us/aspnet/core/web-api/jsonpatch?view=aspnetcore-3.1#operations)* 
-        /// 
-        ///     PATCH /api/ItemzTypes/{id}  
-        ///     [  
+		/// 
+		///     PATCH /api/ItemzTypes/{id}  
+		///     [  
         ///	        {   
         ///             "op": "replace",   
         ///             "path": "/name",   
         ///             "value": "PATCH Updated Name field"  
         ///	        }   
-        ///     ]
-        /// </remarks>
+		///     ]
+		/// </remarks>
+		[HttpPatch("{ItemzTypeId}", Name = "__PATCH_Update_ItemzType_By_GUID_ID")]
+		[ProducesResponseType(StatusCodes.Status204NoContent)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		[ProducesResponseType(StatusCodes.Status405MethodNotAllowed)]
+		[ProducesResponseType(StatusCodes.Status409Conflict)]
+		[ProducesDefaultResponseType]
+		public async Task<ActionResult> UpdateItemzTypePatchAsync(Guid ItemzTypeId, JsonPatchDocument<UpdateItemzTypeDTO> ItemzTypePatchDocument)
+		{
+			if (!(await _ItemzTypeRepository.ItemzTypeExistsAsync(ItemzTypeId)))
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Update request for ItemzType for ID {ItemzTypeId} could not be found",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					ItemzTypeId);
+				return NotFound();
+			}
 
-        [HttpPatch("{ItemzTypeId}", Name = "__PATCH_Update_ItemzType_By_GUID_ID")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status405MethodNotAllowed)]
-        [ProducesResponseType(StatusCodes.Status409Conflict)]
-        [ProducesDefaultResponseType]
-        public async Task<ActionResult> UpdateItemzTypePatchAsync(Guid ItemzTypeId, JsonPatchDocument<UpdateItemzTypeDTO> ItemzTypePatchDocument)
-        {
-            if (!(await _ItemzTypeRepository.ItemzTypeExistsAsync(ItemzTypeId)))
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Update request for ItemzType for ID {ItemzTypeId} could not be found",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    ItemzTypeId);
-                return NotFound();
-            }
+			var ItemzTypeFromRepo = await _ItemzTypeRepository.GetItemzTypeForUpdateAsync(ItemzTypeId);
 
-            var ItemzTypeFromRepo = await _ItemzTypeRepository.GetItemzTypeForUpdateAsync(ItemzTypeId);
+			if (ItemzTypeFromRepo == null)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Update request for ItemzType for ID {ItemzTypeId} could not be found in the Repository",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					ItemzTypeId);
+				return NotFound();
+			}
 
-            if (ItemzTypeFromRepo == null)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Update request for ItemzType for ID {ItemzTypeId} could not be found in the Repository",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    ItemzTypeId);
-                return NotFound();
-            }
-
-            if (ItemzTypeFromRepo.IsSystem == true)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}System ItemzType with name {ItemzTypeName} and Id {ItemzTypeId} is NOT ALLOWED to be modified",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    ItemzTypeFromRepo.Name, ItemzTypeFromRepo.Id);
+			if (ItemzTypeFromRepo.IsSystem == true)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}System ItemzType with name {ItemzTypeName} and Id {ItemzTypeId} is NOT ALLOWED to be modified",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					ItemzTypeFromRepo.Name, ItemzTypeFromRepo.Id);
                 return StatusCode(
                         Microsoft.AspNetCore.Http.StatusCodes.Status405MethodNotAllowed,
                         $"System ItemzType with name '{ItemzTypeFromRepo.Name}' and Id '{ItemzTypeFromRepo.Id}' is NOT ALLOWED to be modified"
                     );
-            }
+			}
 
-            var ItemzTypeToPatch = _mapper.Map<UpdateItemzTypeDTO>(ItemzTypeFromRepo);
+			// Prepare a DTO snapshot to apply the patch safely.
+			var ItemzTypeToPatch = _mapper.Map<UpdateItemzTypeDTO>(ItemzTypeFromRepo);
 
-            ItemzTypePatchDocument.ApplyTo(ItemzTypeToPatch, ModelState);
+			// Apply JSON Patch and validate the result.
+			ItemzTypePatchDocument.ApplyTo(ItemzTypeToPatch, ModelState);
 
             // Validating ItemzType patch document and verifying that it meets all the 
             // validation rules as expected. This will check if the data passed in the Patch Document
             // is ready to be saved in the db.
 
-            if (!TryValidateModel(ItemzTypeToPatch))
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}ItemzType Properties did not pass defined Validation Rules for ID {ItemzTypeId}",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    ItemzTypeId);
-                return ValidationProblem(ModelState);
-            }
+			if (!TryValidateModel(ItemzTypeToPatch))
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}ItemzType Properties did not pass defined Validation Rules for ID {ItemzTypeId}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					ItemzTypeId);
+				return ValidationProblem(ModelState);
+			}
 
-            if (await _itemzTypeRules.UniqueItemzTypeNameRuleAsync(ItemzTypeFromRepo.ProjectId, ItemzTypeToPatch.Name!, ItemzTypeFromRepo.Name))
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}ItemzType with name {ItemzTypeToPatch_Name} already exists in the project with Id {ItemzTypeFromRepo_ProjectId}",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    ItemzTypeToPatch.Name,
-                    ItemzTypeFromRepo.ProjectId);
-                return Conflict($"ItemzType with name '{ItemzTypeToPatch.Name}' already exists in the project with Id '{ItemzTypeFromRepo.ProjectId}'");
-            }
-           
-            _mapper.Map(ItemzTypeToPatch, ItemzTypeFromRepo);
+			// Only run uniqueness rule if Name actually changed.
+			var nameChanged = !string.Equals(ItemzTypeFromRepo.Name, ItemzTypeToPatch.Name, StringComparison.Ordinal);
+			if (nameChanged)
+			{
+				if (await _itemzTypeRules.UniqueItemzTypeNameRuleAsync(ItemzTypeFromRepo.ProjectId, ItemzTypeToPatch.Name!, ItemzTypeFromRepo.Name))
+				{
+					_logger.LogDebug("{FormattedControllerAndActionNames}ItemzType with name {ItemzTypeToPatch_Name} already exists in the project with Id {ItemzTypeFromRepo_ProjectId}",
+						ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+						ItemzTypeToPatch.Name,
+						ItemzTypeFromRepo.ProjectId);
+					return Conflict($"ItemzType with name '{ItemzTypeToPatch.Name}' already exists in the project with Id '{ItemzTypeFromRepo.ProjectId}'");
+				}
+			}
 
-            try
-            {
-                _ItemzTypeRepository.UpdateItemzType(ItemzTypeFromRepo);
-                await _ItemzTypeRepository.SaveAsync();
-            }
-            catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Exception occured while trying to add new itemzType:" + dbUpdateException.InnerException,
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
-                    );
-                return Conflict($"ItemzType with name '{ItemzTypeToPatch.Name}' already exists in the project with Id '{ItemzTypeFromRepo.ProjectId}'");
-            }
+			// Map patched values into the tracked entity.
+			_mapper.Map(ItemzTypeToPatch, ItemzTypeFromRepo);
 
 			// EXPLANATION :: as part of updating ItemzType record, we are making sure that ItemzType name is updated in two places.
 			// First in the ItemzType record itself and secondly within ItemzHierarchy record as well. We are not going to update
 			// BaselineItemzHierarchy record with updated ItemzType name as it's a snapshot of data from a given point in time.
 
-			// TODO :: We should update ItemzType and ItemzHierarchy together rather then two separate transactions
+			// ✅ Atomic: update ItemzHierarchy name only if Name actually changed; same DbContext, single SaveChanges.
+			if (nameChanged)
+			{
+				var hierarchyRecord = await _hierarchyRepository.GetHierarchyRecordForUpdateAsync(ItemzTypeFromRepo.Id);
+				if (hierarchyRecord == null)
+				{
+					return Conflict($"Hierarchy record for ItemzType with ID {ItemzTypeFromRepo.Id} could not be found.");
+				}
+				hierarchyRecord.Name = ItemzTypeFromRepo.Name ?? "";
+			}
 
 			try
 			{
-				var _discard = _hierarchyRepository.UpdateHierarchyRecordNameByID(ItemzTypeFromRepo.Id, ItemzTypeFromRepo.Name ?? "");
+				// ✅ ONE SaveChangesAsync — commits ItemzType + (maybe) ItemzHierarchy together
+				await _ItemzTypeRepository.SaveAsync();
 			}
 			catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
 			{
-				_logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to update ItemzType name in ItemzHierarchy :" + dbUpdateException.InnerException,
-					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
-					);
-				return Conflict($"Name of ItemzHierarchy record for ItemzType with ID {ItemzTypeFromRepo.Id} could not be updated.");
+				_logger.LogDebug("{FormattedControllerAndActionNames}Exception occurred while trying to update ItemzType and ItemzHierarchy: {Exception}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					dbUpdateException.InnerException?.Message ?? dbUpdateException.Message);
+				// Keep your existing conflict message semantics.
+				return Conflict($"ItemzType with name '{ItemzTypeToPatch.Name}' already exists in the project with Id '{ItemzTypeFromRepo.ProjectId}'");
 			}
 
-
 			_logger.LogDebug("{FormattedControllerAndActionNames}Update request for ItemzType for ID {ItemzTypeId} processed successfully",
-                ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                ItemzTypeId);
-            return NoContent();
-        }
+				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+				ItemzTypeId);
 
-        /// <summary>
-        /// Move ItemzType to a new project in the repository including all its sub-Itemz
-        /// </summary>
-        /// <param name="MovingItemzTypeId">GUID representing an unique ID of the moving ItemzType</param>
-        /// <param name="TargetProjectId">Details about target Project ID under which ItemzType will be moving</param>
-        /// <param name="AtBottomOfChildNodes">Boolean value where by true means at the bottom of the existing nodes and false means at the top</param>
-        /// <returns>No contents are returned when ItemzType gets moved to its new desired location</returns>
-        /// <response code="204">No content are returned but status of 204 indicating that ItemzType has successfully moved to its desired location</response>
-        /// <response code="404">Either moving ItemzType or target Project was not found</response>
-        [HttpPost("{MovingItemzTypeId}", Name = "__POST_Move_ItemzType__")]
+			return NoContent();
+		}
+
+
+		/// <summary>
+		/// Move ItemzType to a new project in the repository including all its sub-Itemz
+		/// </summary>
+		/// <param name="MovingItemzTypeId">GUID representing an unique ID of the moving ItemzType</param>
+		/// <param name="TargetProjectId">Details about target Project ID under which ItemzType will be moving</param>
+		/// <param name="AtBottomOfChildNodes">Boolean value where by true means at the bottom of the existing nodes and false means at the top</param>
+		/// <returns>No contents are returned when ItemzType gets moved to its new desired location</returns>
+		/// <response code="204">No content are returned but status of 204 indicating that ItemzType has successfully moved to its desired location</response>
+		/// <response code="404">Either moving ItemzType or target Project was not found</response>
+		[HttpPost("{MovingItemzTypeId}", Name = "__POST_Move_ItemzType__")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesDefaultResponseType]
