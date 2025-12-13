@@ -669,8 +669,25 @@ namespace ItemzApp.API.Services
 			var hierarchyRecord = await _context.ItemzHierarchy!
 				.SingleOrDefaultAsync(ih => ih.Id == recordId);
 
+			if (hierarchyRecord == null)
+			{
+				return null; // Controller can handle not found
+			}
+
+			// Prevent updates to repository root records
+			if (hierarchyRecord.RecordType.Equals("repository", StringComparison.OrdinalIgnoreCase)) // TODO :: Use Constants instead of Text
+			{
+				throw new ApplicationException($"Can not update name of the Repository Root Hierarchy Record with ID {recordId}");
+			}
+
+			if (hierarchyRecord.ItemzHierarchyId!.GetLevel() == 0) // TODO :: Use Constants instead of Text
+			{
+				throw new ApplicationException($"Can not update name of the Repository Root Hierarchy Record with ID {recordId}");
+			}
+
 			return hierarchyRecord;
 		}
+
 
 
 		public async Task<bool> UpdateHierarchyRecordNameByID(Guid recordId, string newItemzName)

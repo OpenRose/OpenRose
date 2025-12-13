@@ -33,7 +33,9 @@ namespace ItemzApp.API.Services
 
         public void UpdateBaseline(Baseline baseline);
 
-        public void DeleteBaseline(Baseline baseline);
+        public Task<BaselineItemzHierarchy?> GetBaselineHierarchyRecordForUpdateAsync(Guid baselineId);
+
+		public void DeleteBaseline(Baseline baseline);
 
         Task<int> GetBaselineItemzCountByBaselineAsync(Guid BaselineId);
 

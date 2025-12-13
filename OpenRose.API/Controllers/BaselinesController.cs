@@ -298,65 +298,167 @@ namespace ItemzApp.API.Controllers
                 );
         }
 
-        /// <summary>
-        /// Updating exsting Baseline based on Baseline Id (GUID)
-        /// </summary>
-        /// <param name="baselineId">GUID representing an unique ID of the Baseline that you want to update</param>
-        /// <param name="baselineToBeUpdated">required Baseline properties to be updated</param>
-        /// <returns>No content are returned but only Status 204 indicating that Baseline was updated successfully </returns>
-        /// <response code="204">No content are returned but status of 204 indicated that Baseline was successfully updated</response>
-        /// <response code="404">Baseline based on baselineId was not found</response>
-        /// <response code="409">Baseline with updated name already exists in the repository</response>
+		/// <summary>
+		/// Updating exsting Baseline based on Baseline Id (GUID)
+		/// </summary>
+		/// <param name="baselineId">GUID representing an unique ID of the Baseline that you want to update</param>
+		/// <param name="baselineToBeUpdated">required Baseline properties to be updated</param>
+		/// <returns>No content are returned but only Status 204 indicating that Baseline was updated successfully </returns>
+		/// <response code="204">No content are returned but status of 204 indicated that Baseline was successfully updated</response>
+		/// <response code="404">Baseline based on baselineId was not found</response>
+		/// <response code="409">Baseline with updated name already exists in the repository</response>
+		[HttpPut("{baselineId}", Name = "__PUT_Update_Baseline_By_GUID_ID")]
+		[ProducesResponseType(StatusCodes.Status204NoContent)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		[ProducesResponseType(StatusCodes.Status409Conflict)]
+		[ProducesDefaultResponseType]
+		public async Task<ActionResult> UpdateBaselinePutAsync(Guid baselineId, UpdateBaselineDTO baselineToBeUpdated)
+		{
+			if (!(await _baselineRepository.BaselineExistsAsync(baselineId)))
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Update request for Baseline for ID {BaselineId} could not be found",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					baselineId);
+				return NotFound();
+			}
 
-        [HttpPut("{baselineId}", Name = "__PUT_Update_Baseline_By_GUID_ID")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status409Conflict)]
-        [ProducesDefaultResponseType]
-        public async Task<ActionResult> UpdateBaselinePutAsync(Guid baselineId, UpdateBaselineDTO baselineToBeUpdated)
-        {
-            if (!(await _baselineRepository.BaselineExistsAsync(baselineId)))
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Update request for Baseline for ID {BaselineId} could not be found",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext), 
-                    baselineId);
-                return NotFound();
-            }
+			var baselineFromRepo = await _baselineRepository.GetBaselineForUpdateAsync(baselineId);
 
-            var baselineFromRepo = await _baselineRepository.GetBaselineForUpdateAsync(baselineId);
+			if (baselineFromRepo == null)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Update request for Baseline for ID {BaselineId} could not be found in the Repository",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					baselineId);
+				return NotFound();
+			}
 
-            if (baselineFromRepo == null)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Update request for Baseline for ID {BaselineId} could not be found in the Repository",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext), 
-                    baselineId);
-                return NotFound();
-            }
+			if (await _baselineRules.UniqueBaselineNameRuleAsync(baselineFromRepo.ProjectId, baselineToBeUpdated.Name!, baselineFromRepo.Name))
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Baseline with name {baselineToBeUpdated_Name} already exists in the project with Id {baselineFromRepo_ProjectId}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					baselineToBeUpdated.Name,
+					baselineFromRepo.ProjectId);
+				return Conflict($"Baseline with name '{baselineToBeUpdated.Name}' already exists in the project with Id '{baselineFromRepo.ProjectId}'");
+			}
 
-            if (await _baselineRules.UniqueBaselineNameRuleAsync(baselineFromRepo.ProjectId, baselineToBeUpdated.Name!, baselineFromRepo.Name))
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Baseline with name {baselineToBeUpdated_Name} already exists in the project with Id {baselineFromRepo_ProjectId}",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    baselineToBeUpdated.Name,
-                    baselineFromRepo.ProjectId);
-                return Conflict($"Baseline with name '{baselineToBeUpdated.Name}' already exists in the project with Id '{baselineFromRepo.ProjectId}'");
-            }
+			// Map incoming DTO to tracked entity
+			_mapper.Map(baselineToBeUpdated, baselineFromRepo);
 
-            _mapper.Map(baselineToBeUpdated, baselineFromRepo);
-            try 
-            { 
-            _baselineRepository.UpdateBaseline(baselineFromRepo);
-            await _baselineRepository.SaveAsync();
+			// EXPLANATION :: as part of updating Baseline record, we are making sure that baseline name is updated in two places.
+			// First in the Baseline record itself and secondly within BaselineItemzHierarchy record as well. 
+			
+			try
+			{
+				_baselineRepository.UpdateBaseline(baselineFromRepo);
 
-            }
-            catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to add new baseline:" + dbUpdateException.InnerException,
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
-                    );
-                return Conflict($"Baseline with name '{baselineToBeUpdated.Name}' already exists in the project with Id '{baselineFromRepo.ProjectId}'. DB Error reported, check the log file.");
-            }
+				// Atomic update: update BaselineItemzHierarchy name in the same DbContext before saving
+				var hierarchyRecord = await _baselineRepository.GetBaselineHierarchyRecordForUpdateAsync(baselineFromRepo.Id);
+				if (hierarchyRecord == null)
+				{
+					return Conflict($"Name of BaselineItemzHierarchy record for Baseline with ID {baselineFromRepo.Id} could not be updated.");
+				}
+				hierarchyRecord.Name = baselineFromRepo.Name ?? "";
 
+				// Single SaveChangesAsync — commits Baseline and BaselineItemzHierarchy together
+				await _baselineRepository.SaveAsync();
+
+			}
+			catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to update baseline and BaselineItemzHierarchy :" + dbUpdateException.InnerException,
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
+					);
+				return Conflict($"Baseline with name '{baselineToBeUpdated.Name}' already exists in the project with Id '{baselineFromRepo.ProjectId}'. DB Error reported, check the log file.");
+			}
+
+			_logger.LogDebug("{FormattedControllerAndActionNames}Update request for Baseline for ID {BaselineId} processed successfully",
+				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+				baselineId);
+			return NoContent(); // This indicates that update was successfully saved in the DB.
+		}
+
+
+		/// <summary>
+		/// Partially updating a single **Baseline**
+		/// </summary>
+		/// <param name="baselineId">Id of the Baseline representated by a GUID.</param>
+		/// <param name="baselinePatchDocument">The set of operations to apply to the Baseline via JsonPatchDocument</param>
+		/// <returns>an ActionResult of type Baseline</returns>
+		/// <response code="204">No content are returned but status of 204 indicated that Baseline was successfully updated</response>
+		/// <response code="404">Baseline based on baselineId was not found</response>
+		/// <response code="409">Baseline with updated name already exists in the repository</response>
+		/// <response code="422">Validation problems occured during analyzing validation rules for the JsonPatchDocument </response>
+		/// <remarks> Sample request (this request updates an **Baseline's name**)   
+		/// Documentation regarding JSON Patch can be found at 
+		/// *[ASP.NET Core - JSON Patch Operations](https://docs.microsoft.com/en-us/aspnet/core/web-api/jsonpatch?view=aspnetcore-3.1#operations)* 
+		/// 
+		///     PATCH /api/Baselines/{id}  
+		///     [  
+		///         {   
+		///             "op": "replace",   
+		///             "path": "/name",   
+		///             "value": "PATCH Updated Name field"  
+		///         }   
+		///     ]
+		/// </remarks>
+
+		[HttpPatch("{baselineId}", Name = "__PATCH_Update_Baseline_By_GUID_ID")]
+		[ProducesResponseType(StatusCodes.Status204NoContent)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		[ProducesResponseType(StatusCodes.Status409Conflict)]
+		[ProducesDefaultResponseType]
+		public async Task<ActionResult> UpdateBaselinePatchAsync(Guid baselineId, JsonPatchDocument<UpdateBaselineDTO> baselinePatchDocument)
+		{
+			if (!(await _baselineRepository.BaselineExistsAsync(baselineId)))
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Update request for Baseline for ID {BaselineId} could not be found",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					baselineId);
+				return NotFound();
+			}
+
+			var baselineFromRepo = await _baselineRepository.GetBaselineForUpdateAsync(baselineId);
+
+			if (baselineFromRepo == null)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Update request for Baseline for ID {BaselineId} could not be found in the Repository",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					baselineId);
+				return NotFound();
+			}
+
+			var baselineToPatch = _mapper.Map<UpdateBaselineDTO>(baselineFromRepo);
+
+			baselinePatchDocument.ApplyTo(baselineToPatch, ModelState);
+
+			// Validating Baseline patch document and verifying that it meets all the 
+			// validation rules as expected. This will check if the data passed in the Patch Document
+			// is ready to be saved in the db.
+
+			if (!TryValidateModel(baselineToPatch))
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Baseline Properties did not pass defined Validation Rules for ID {BaselineId}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					baselineId);
+				return ValidationProblem(ModelState);
+			}
+
+			// Track whether Name actually changed to decide if we need to update BaselineItemzHierarchy.
+			var nameChanged = !string.Equals(baselineFromRepo.Name, baselineToPatch.Name, StringComparison.Ordinal);
+
+			if (nameChanged)
+			{
+				if (await _baselineRules.UniqueBaselineNameRuleAsync(baselineFromRepo.ProjectId, baselineToPatch.Name!, baselineFromRepo.Name))
+				{
+					_logger.LogDebug("{FormattedControllerAndActionNames}Baseline with name {baselineToPatch_Name} already exists in the project with Id {BaselineFromRepo_ProjectId}",
+						ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+						baselineToPatch.Name,
+						baselineFromRepo.ProjectId);
+					return Conflict($"Baseline with name '{baselineToPatch.Name}' already exists in the project with Id '{baselineFromRepo.ProjectId}'");
+				}
+			}
+
+			_mapper.Map(baselineToPatch, baselineFromRepo);
 
 			// EXPLANATION :: as part of updating Baseline record, we are making sure that baseline name is updated in two places.
 			// First in the Baseline record itself and secondly within BaselineItemzHierarchy record as well. 
@@ -365,138 +467,42 @@ namespace ItemzApp.API.Controllers
 
 			try
 			{
-				var _discard = _baselineHierarchyRepository.UpdateBaselineHierarchyRecordNameByID(baselineFromRepo.Id, baselineFromRepo.Name ?? "");
+				_baselineRepository.UpdateBaseline(baselineFromRepo);
+
+				if (nameChanged)
+				{
+					var hierarchyRecord = await _baselineRepository.GetBaselineHierarchyRecordForUpdateAsync(baselineFromRepo.Id);
+					if (hierarchyRecord == null)
+					{
+						return Conflict($"Name of BaselineItemzHierarchy record for Baseline with ID {baselineFromRepo.Id} could not be updated.");
+					}
+					hierarchyRecord.Name = baselineFromRepo.Name ?? "";
+				}
+
+				// Single SaveChangesAsync — commits Baseline and BaselineItemzHierarchy together
+				await _baselineRepository.SaveAsync();
+
 			}
 			catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
 			{
-				_logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to update Baseline name in BaselineItemzHierarchy :" + dbUpdateException.InnerException,
+				_logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to update baseline and BaselineItemzHierarchy :" + dbUpdateException.InnerException,
 					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
 					);
-				return Conflict($"Name of BaselineItemzHierarchy record for Baseline with ID {baselineFromRepo.Id} could not be updated.");
+				return Conflict($"Baseline with name '{baselineToPatch.Name}' already exists in the project with Id '{baselineFromRepo.ProjectId}'. DB Error reported, check the log file.");
 			}
 
 			_logger.LogDebug("{FormattedControllerAndActionNames}Update request for Baseline for ID {BaselineId} processed successfully",
-                ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext), 
-                baselineId);
-            return NoContent(); // This indicates that update was successfully saved in the DB.
-        }
-
-        /// <summary>
-        /// Partially updating a single **Baseline**
-        /// </summary>
-        /// <param name="baselineId">Id of the Baseline representated by a GUID.</param>
-        /// <param name="baselinePatchDocument">The set of operations to apply to the Baseline via JsonPatchDocument</param>
-        /// <returns>an ActionResult of type Baseline</returns>
-        /// <response code="204">No content are returned but status of 204 indicated that Baseline was successfully updated</response>
-        /// <response code="404">Baseline based on baselineId was not found</response>
-        /// <response code="409">Baseline with updated name already exists in the repository</response>
-        /// <response code="422">Validation problems occured during analyzing validation rules for the JsonPatchDocument </response>
-        /// <remarks> Sample request (this request updates an **Baseline's name**)   
-        /// Documentation regarding JSON Patch can be found at 
-        /// *[ASP.NET Core - JSON Patch Operations](https://docs.microsoft.com/en-us/aspnet/core/web-api/jsonpatch?view=aspnetcore-3.1#operations)* 
-        /// 
-        ///     PATCH /api/Baselines/{id}  
-        ///     [  
-        ///	        {   
-        ///             "op": "replace",   
-        ///             "path": "/name",   
-        ///             "value": "PATCH Updated Name field"  
-        ///	        }   
-        ///     ]
-        /// </remarks>
-
-        [HttpPatch("{baselineId}", Name = "__PATCH_Update_Baseline_By_GUID_ID")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status409Conflict)]
-        [ProducesDefaultResponseType]
-        public async Task<ActionResult> UpdateBaselinePatchAsync(Guid baselineId, JsonPatchDocument<UpdateBaselineDTO> baselinePatchDocument)
-        {
-            if (!(await _baselineRepository.BaselineExistsAsync(baselineId)))
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Update request for Baseline for ID {BaselineId} could not be found",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext), 
-                    baselineId);
-                return NotFound();
-            }
-
-            var baselineFromRepo = await _baselineRepository.GetBaselineForUpdateAsync(baselineId);
-
-            if (baselineFromRepo == null)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Update request for Baseline for ID {BaselineId} could not be found in the Repository",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext), 
-                    baselineId);
-                return NotFound();
-            }
-
-            var baselineToPatch = _mapper.Map<UpdateBaselineDTO>(baselineFromRepo);
-
-            baselinePatchDocument.ApplyTo(baselineToPatch, ModelState);
-
-            // Validating Baseline patch document and verifying that it meets all the 
-            // validation rules as expected. This will check if the data passed in the Patch Document
-            // is ready to be saved in the db.
-
-            if (!TryValidateModel(baselineToPatch))
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Baseline Properties did not pass defined Validation Rules for ID {BaselineId}",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext), 
-                    baselineId);
-                return ValidationProblem(ModelState);
-            }
-            if (await _baselineRules.UniqueBaselineNameRuleAsync(baselineFromRepo.ProjectId, baselineToPatch.Name!, baselineFromRepo.Name))
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Baseline with name {baselineToPatch_Name} already exists in the project with Id {BaselineFromRepo_ProjectId}",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    baselineToPatch.Name,
-                    baselineFromRepo.ProjectId);
-                return Conflict($"Baseline with name '{baselineToPatch.Name}' already exists in the project with Id '{baselineFromRepo.ProjectId}'");
-            }
-
-            _mapper.Map(baselineToPatch, baselineFromRepo);
-            try
-            {
-                _baselineRepository.UpdateBaseline(baselineFromRepo);
-                await _baselineRepository.SaveAsync();
-            }
-            catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to add new baseline:" + dbUpdateException.InnerException,
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
-                    );
-                return Conflict($"Baseline with name '{baselineToPatch.Name}' already exists in the project with Id '{baselineFromRepo.ProjectId}'. DB Error reported, check the log file.");
-            }
+				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+				baselineId);
+			return NoContent();
+		}
 
 
-			// EXPLANATION :: as part of updating Baseline record, we are making sure that baseline name is updated in two places.
-			// First in the Baseline record itself and secondly within BaselineItemzHierarchy record as well. 
-
-			// TODO :: We should update Baseline and BaselineItemzHierarchy together rather then two separate transactions
-
-			try
-			{
-				var _discard = _baselineHierarchyRepository.UpdateBaselineHierarchyRecordNameByID(baselineFromRepo.Id, baselineFromRepo.Name ?? "");
-			}
-			catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
-			{
-				_logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to update Baseline name in BaselineItemzHierarchy :" + dbUpdateException.InnerException,
-					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
-					);
-				return Conflict($"Name of BaselineItemzHierarchy record for Baseline with ID {baselineFromRepo.Id} could not be updated.");
-			}
-
-			_logger.LogDebug("{FormattedControllerAndActionNames}Update request for Baseline for ID {BaselineId} processed successfully",
-                ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext), 
-                baselineId);
-            return NoContent();
-        }
-
-        // We have configured in startup class our own custom implementation of 
-        // problem Details. Now we are overriding ValidationProblem method that is defined in ControllerBase
-        // class to make sure that we use that custom problem details builder. 
-        // Instead of passing 400 it will pass back 422 code with more details.
-        public override ActionResult ValidationProblem([ActionResultObjectValue] ModelStateDictionary modelStateDictionary)
+		// We have configured in startup class our own custom implementation of 
+		// problem Details. Now we are overriding ValidationProblem method that is defined in ControllerBase
+		// class to make sure that we use that custom problem details builder. 
+		// Instead of passing 400 it will pass back 422 code with more details.
+		public override ActionResult ValidationProblem([ActionResultObjectValue] ModelStateDictionary modelStateDictionary)
         {
             var options = HttpContext.RequestServices
                 .GetRequiredService<IOptions<ApiBehaviorOptions>>();
