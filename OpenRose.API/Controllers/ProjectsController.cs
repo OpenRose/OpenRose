@@ -2,24 +2,25 @@
 // Licensed under the Apache License, Version 2.0. 
 // See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using AutoMapper;
+using ItemzApp.API.BusinessRules.Project;
+using ItemzApp.API.Helper;
 using ItemzApp.API.Models;
 using ItemzApp.API.ResourceParameters;
 using ItemzApp.API.Services;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.JsonPatch;
-using Microsoft.Extensions.Options;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
-using ItemzApp.API.BusinessRules.Project;
-using ItemzApp.API.Helper;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Transactions;
 
 namespace ItemzApp.API.Controllers
 {
@@ -32,20 +33,23 @@ namespace ItemzApp.API.Controllers
     public class ProjectsController : ControllerBase
     {
         private readonly IProjectRepository _projectRepository;
+		private readonly IBaselineRepository _baselineRepository;
 		private readonly IHierarchyRepository _hierarchyRepository;
 		private readonly IMapper _mapper;
         // private readonly IPropertyMappingService _propertyMappingService;
         private readonly ILogger<ProjectsController> _logger;
         private readonly IProjectRules _projectRules;
         public ProjectsController(IProjectRepository projectRepository,
-                                 IHierarchyRepository hierarchyRepository,
+								 IBaselineRepository baselineRepository,
+								 IHierarchyRepository hierarchyRepository,
                                  IMapper mapper,
                                  //IPropertyMappingService propertyMappingService,
                                  ILogger<ProjectsController> logger,
                                  IProjectRules projectRules)
         {
             _projectRepository = projectRepository ?? throw new ArgumentNullException(nameof(projectRepository));
-            _hierarchyRepository = hierarchyRepository ?? throw new ArgumentNullException(nameof(hierarchyRepository));
+			_baselineRepository = baselineRepository ?? throw new ArgumentNullException(nameof(baselineRepository));
+			_hierarchyRepository = hierarchyRepository ?? throw new ArgumentNullException(nameof(hierarchyRepository));
 			_mapper = mapper ??
                 throw new ArgumentNullException(nameof(mapper));
             //_propertyMappingService = propertyMappingService ??
@@ -277,7 +281,6 @@ namespace ItemzApp.API.Controllers
 			// Track whether Name actually changed to decide if we need to update ItemzHierarchy.
 			var nameChanged = !string.Equals(projectFromRepo.Name, projectToBeUpdated.Name, StringComparison.Ordinal);
 
-
 			// Map incoming DTO to tracked entity
 			_mapper.Map(projectToBeUpdated, projectFromRepo);
 
@@ -288,22 +291,36 @@ namespace ItemzApp.API.Controllers
 
 			try
 			{
-				_projectRepository.UpdateProject(projectFromRepo);
+				// Added support for Transaction Scope to make sure that we update Project, ItemzHierarchy and BaselineItemzHierarchy
+				// atomically. This will make sure that if any of the update fails then all the updates are rolled back.
 
+				using (var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled))
+				{
+					_projectRepository.UpdateProject(projectFromRepo);
 
-                if (nameChanged)
-                {
-                    // Atomic update: update ItemzHierarchy name in the same DbContext before saving
-                    var hierarchyRecord = await _hierarchyRepository.GetHierarchyRecordForUpdateAsync(projectFromRepo.Id);
-                    if (hierarchyRecord == null)
-                    {
-                        return Conflict($"Name of ItemzHierarchy record for Project with ID {projectFromRepo.Id} could not be updated.");
-                    }
-                    hierarchyRecord.Name = projectFromRepo.Name ?? "";
-                }
+					if (nameChanged)
+					{
+						// Atomic update: update ItemzHierarchy name in the same DbContext before saving
+						var hierarchyRecord = await _hierarchyRepository.GetHierarchyRecordForUpdateAsync(projectFromRepo.Id);
+						if (hierarchyRecord == null)
+						{
+							return Conflict($"Name of ItemzHierarchy record for Project with ID {projectFromRepo.Id} could not be updated.");
+						}
+						hierarchyRecord.Name = projectFromRepo.Name ?? "";
 
-				// Single SaveChangesAsync — commits Project and ItemzHierarchy together
-				await _projectRepository.SaveAsync();
+						// NEW: also update BaselineItemzHierarchy record for this Project
+						var baselineHierarchyRecord = await _baselineRepository.GetBaselineHierarchyRecordForUpdateAsync(projectFromRepo.Id);
+						if (baselineHierarchyRecord != null)
+						{
+							baselineHierarchyRecord.Name = projectFromRepo.Name ?? "";
+						}
+					}
+
+					// Commit both contexts atomically
+					await _projectRepository.SaveAsync();    // commits Project + ItemzHierarchy
+					await _baselineRepository.SaveAsync();   // commits BaselineItemzHierarchy
+					scope.Complete();
+				}
 			}
 			catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
 			{
@@ -319,6 +336,7 @@ namespace ItemzApp.API.Controllers
 
 			return NoContent(); // This indicates that update was successfully saved in the DB.
 		}
+
 
 
 		/// <summary>
