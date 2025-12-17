@@ -19,6 +19,9 @@
 @inject TreeNodeItemzSelectionService TreeNodeItemzSelectionService
 @inject IJSRuntime JS
 
+
+<NavigationLock ConfirmExternalNavigation="true" OnBeforeInternalNavigation="((x) => ConfirmNavigation(x))" />
+
 <MudPaper Class="pa-4 mb-5 align-start d-flex" Style="width: auto" Outlined="false">
 	<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Class="w-100">
 		<MudText Typo="Typo.h6" Align="Align.Left">Project Details</MudText>
@@ -132,7 +135,21 @@
 						<!-- Ensure this div applies the custom class to the Markdown content -->
 						<MudText><strong>Description : </strong></MudText>
 						<div class="custom-markdown-editor">
-							<MarkdownEditor @bind-Value="@MyContent" HideIcons="@(["mde-tb-image"])" />
+							
+							<MarkdownEditor Value="@MyContent"
+											ValueChanged="@(async (string newValue) =>
+																{
+																	MyContent = newValue;
+
+																	// Only mark dirty if user changed from original
+																	if (newValue != _originalDescription)
+																	{
+																		await formFieldChanged();
+																	}
+																})"
+										HideIcons="@(["mde-tb-image"])" />
+
+
 							<MudPaper Class="pa-4 mb-5" Style="background-color: #f5f5f5;">
 								@if (!string.IsNullOrEmpty(convertedMarkdown.Value))
 								{
@@ -219,6 +236,7 @@
 	private bool updateProjectButtonClicked = false;
 
 	public GetProjectDTO singleProject { get; set; } = new();
+	private string _originalDescription;
 	public bool initializingPage { get; set; } = false;
 	private bool deletingProject { get; set; } = false;
 	private bool hasFormFieldChanged { get; set; } = false;
@@ -230,7 +248,7 @@
 		set
 		{
 			// _Content = value;
-			hasFormFieldChanged = true;
+			// hasFormFieldChanged = true;
 			singleProject.Description = value;
 			ConvertMarkdownToHtml(singleProject.Description);
 			ContentChanged.InvokeAsync(value);
@@ -291,6 +309,8 @@
 			if (singleProject != null)
 			{
 				TreeNodeItemzSelectionService.UpdateTreeNodeItemzName(ProjectId, singleProject.Name!);
+				_originalDescription = singleProject.Description ?? string.Empty;
+				MyContent = _originalDescription;
 			}
 
 			if (form != null)
@@ -338,6 +358,7 @@
 			{
 				var updatedResult = await ProjectService.__PUT_Update_Project_By_GUID_ID__Async(ProjectId, singleProject);
 				TreeNodeItemzSelectionService.UpdateTreeNodeItemzName(ProjectId, singleProject.Name!);
+                hasFormFieldChanged = false;
 				// Thread.Sleep(800);
 			}
 		}
@@ -467,5 +488,22 @@
 	{
 		var url = $"/ProjectTreeView/{ProjectId}";
 		await JS.InvokeVoidAsync("openInNewTab", url);
+	}
+
+	private async Task ConfirmNavigation(LocationChangingContext context)
+	{
+		if (hasFormFieldChanged)
+		{
+			bool? result = await DialogService.ShowMessageBox(
+				"Unsaved Changes",
+				"You have unsaved changes. Do you really want to leave?",
+				yesText: "Leave",
+				noText: "Stay");
+
+			if (result == false)
+			{
+				context.PreventNavigation();
+			}
+		}
 	}
 }
