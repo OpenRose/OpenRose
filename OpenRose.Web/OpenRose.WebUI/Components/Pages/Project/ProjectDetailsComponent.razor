@@ -117,7 +117,8 @@
 
 						<MudTextField T="string" Label="Name" Required="true" RequiredError="Name is required!"
 										@bind-Value="singleProject.Name"
-										For="@(() => singleProject.Name)" />
+										For="@(() => singleProject.Name)"
+										Immediate="true"/>
 						<MudSelect @bind-Value="singleProject.Status"
 									For="@(() => singleProject.Status)"
 									Required ="true"
@@ -272,7 +273,7 @@
 
 	//MudForm related fields
 	bool success = true;
-	bool disableUpdateProjectDetailsButton = false;
+	bool disableUpdateProjectDetailsButton = true;
 	string[] errors = { };
 	MudForm form;
 	MudTabs projectTabs;
@@ -316,14 +317,8 @@
 			if (form != null)
 			{
 				await form.Validate();
-				if (form.IsValid)
-				{
-					disableUpdateProjectDetailsButton = false;
-				}
-				else
-				{
-					disableUpdateProjectDetailsButton = true;
-				}
+				// Always keep Save disabled on first render.
+				disableUpdateProjectDetailsButton = true;
 			}
 			initializingPage = false;
 
@@ -359,6 +354,7 @@
 				var updatedResult = await ProjectService.__PUT_Update_Project_By_GUID_ID__Async(ProjectId, singleProject);
 				TreeNodeItemzSelectionService.UpdateTreeNodeItemzName(ProjectId, singleProject.Name!);
                 hasFormFieldChanged = false;
+				disableUpdateProjectDetailsButton = true;
 				// Thread.Sleep(800);
 			}
 		}
