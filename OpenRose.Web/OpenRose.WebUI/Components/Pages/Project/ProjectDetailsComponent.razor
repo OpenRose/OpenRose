@@ -102,11 +102,12 @@
 										OnClick="(() => HandleGoToTreeView())">
 								<MudText>Tree View</MudText>
 							</MudButton>
-							<MudButton Variant="Variant.Filled" Color="Color.Warning" Size="Size.Large"
-										OnClick="(() => goBackToProject())">
-								<MudText>Cancel</MudText>
-							</MudButton>
 						}
+						<MudButton Variant="Variant.Filled" Color="Color.Warning" Disabled="@(disableUpdateProjectDetailsButton)" 
+									Size="Size.Large"
+									OnClick="(async () => await goBackToProject())">
+							<MudText>Cancel</MudText>
+						</MudButton>
 						</MudStack>
 					</MudCardActions>
 					<MudCardContent>
@@ -302,6 +303,13 @@
 	{
 		if (firstRender)
 		{
+			await LoadDataAsync();
+		}
+	}
+
+
+	private async Task LoadDataAsync()
+	{
 			initializingPage = true;
 			StateHasChanged();
 			//Thread.Sleep(300);
@@ -337,12 +345,9 @@
 
 			await ConvertMarkdownToHtml(singleProject.Description);
 
-			// Apply fullscreen styles
-			// await Task.Delay(1000);
-			// await JS.InvokeVoidAsync("applyMarkdownEditorFullscreenStyles");
 
 			StateHasChanged();
-		}
+
 	}
 	public async Task HandleProjectDetailsPatchSubmission()
 	{
@@ -370,7 +375,7 @@
 		}
 
 		// TODO :: IF IT UPDATES THE PROJECT THEN DISABLE SUBMIT BUTTON AND CONFIRM ON SCREEN THAT IT'S NOW UPDATED SUCCESSFULLY
-		goBackToProject();
+		await goBackToProject();
 	}
 
 	private async Task formFieldChanged()
@@ -466,11 +471,15 @@
 		}
 	}
 
-	public void goBackToProject()
+	public async Task goBackToProject()
 	{
 		if (CalledFrom == nameof(ProjectDetails))
 		{
 			NavManager.NavigateTo($"/project/{ProjectId.ToString()}");
+		}
+		else if (CalledFrom == nameof(ProjectTreeView))
+		{
+			await LoadDataAsync();
 		}
 	}
 
