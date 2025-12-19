@@ -345,7 +345,8 @@
 
 			await ConvertMarkdownToHtml(singleProject.Description);
 
-
+			hasFormFieldChanged = false;
+			disableUpdateProjectDetailsButton = true;
 			StateHasChanged();
 
 	}
@@ -479,6 +480,7 @@
 		}
 		else if (CalledFrom == nameof(ProjectTreeView))
 		{
+
 			await LoadDataAsync();
 		}
 	}
