@@ -175,6 +175,8 @@ builder.Services.AddScoped<TreeNodeItemzSelectionService>(); // Register the ser
 builder.Services.AddScoped<BaselineTreeNodeItemzSelectionService>(); // Register the service
 builder.Services.AddScoped<BaselineBreadcrumsService>(); // Register the service
 builder.Services.AddScoped<BreadcrumsService>(); // Register the service
+builder.Services.AddScoped<FormStateService>(); // Register the service
+
 
 builder.Services.AddSingleton<AssemblyInfoService>(); // Register the service
 

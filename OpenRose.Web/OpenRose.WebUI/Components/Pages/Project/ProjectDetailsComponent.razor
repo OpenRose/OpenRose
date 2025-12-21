@@ -31,6 +31,7 @@
 			<MudButton Variant="Variant.Filled" Color="Color.Success"
 					   Size="Size.Medium"
 					   style="margin: 10px"
+					   Disabled="FormStateService.IsDirty(ProjectId)"
 					   OnClick="(async () => await HandleCreateTreeViewChildItemzTypeClicked())">
 				<MudText>Create Child ItemzType</MudText>
 			</MudButton>
@@ -80,10 +81,11 @@
 				<MudPaper Class="pa-4 mb-5 mud-height-full mud-width-full">
 				<MudForm Model="@singleProject" @ref="form" @bind-IsValid="@success" @bind-Errors="@errors" FieldChanged="formFieldChanged" >
 					<MudCardActions>
-						<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Class="w-100"> 					
-						<MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(disableUpdateProjectDetailsButton)"
-									Size="Size.Large"
-									OnClick="(() => HandleProjectDetailsPatchSubmission())">
+						<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Class="w-100">
+									<MudButton Variant="Variant.Filled" Color="Color.Primary" 
+										Disabled="!FormStateService.IsDirty(ProjectId)"
+										Size="Size.Large"
+										OnClick="(() => HandleProjectDetailsPatchSubmission())">
 							<MudText>Save</MudText>
 						</MudButton>
 						@if (CalledFrom == nameof(ProjectTreeView))
@@ -103,7 +105,8 @@
 								<MudText>Tree View</MudText>
 							</MudButton>
 						}
-						<MudButton Variant="Variant.Filled" Color="Color.Warning" Disabled="@(disableUpdateProjectDetailsButton)" 
+						<MudButton Variant="Variant.Filled" Color="Color.Warning"
+									Disabled="!FormStateService.IsDirty(ProjectId)"
 									Size="Size.Large"
 									OnClick="(async () => await goBackToProject())">
 							<MudText>Cancel</MudText>
@@ -233,6 +236,10 @@
 	[Inject]
 	public IItemzTypeService ItemzTypeService { get; set; }
 
+	[Inject]
+	public FormStateService FormStateService { get; set; }
+
+
 	// public Guid displayOnlyProjectID = Guid.Empty ;
 	private bool showDeleteConfirmation = false;
 	private bool updateProjectButtonClicked = false;
@@ -310,44 +317,47 @@
 
 	private async Task LoadDataAsync()
 	{
-			initializingPage = true;
-			StateHasChanged();
-			//Thread.Sleep(300);
-			singleProject = await ProjectService.__Single_Project_By_GUID_ID__Async(ProjectId);
+		initializingPage = true;
+		StateHasChanged();
+		//Thread.Sleep(300);
+		singleProject = await ProjectService.__Single_Project_By_GUID_ID__Async(ProjectId);
 
-			if (singleProject != null)
-			{
-				TreeNodeItemzSelectionService.UpdateTreeNodeItemzName(ProjectId, singleProject.Name!);
-				_originalDescription = singleProject.Description ?? string.Empty;
-				MyContent = _originalDescription;
-			}
+		if (singleProject != null)
+		{
+			TreeNodeItemzSelectionService.UpdateTreeNodeItemzName(ProjectId, singleProject.Name!);
+			_originalDescription = singleProject.Description ?? string.Empty;
+			MyContent = _originalDescription;
+		}
 
-			if (form != null)
-			{
-				await form.Validate();
-				// Always keep Save disabled on first render.
-				disableUpdateProjectDetailsButton = true;
-			}
-			initializingPage = false;
-
-			// EXPLANATION :: First we create string list and then just call ToArray() for producing required string array
-			List<string> tempList = new List<string>();
-			foreach (var _projectStatusValue in Enum.GetValues<ProjectStatus>())
-			{
-				tempList.Add(_projectStatusValue.ToString().Trim());
-			}
-			_stringProjectStatusValues = tempList.ToArray();
-
-			if (ShowBaselineTab == true)
-			{
-				activeIndex = 1;
-			}
-
-			await ConvertMarkdownToHtml(singleProject.Description);
-
-			hasFormFieldChanged = false;
+		if (form != null)
+		{
+			await form.Validate();
+			// Always keep Save disabled on first render.
 			disableUpdateProjectDetailsButton = true;
-			StateHasChanged();
+		}
+		initializingPage = false;
+
+		// EXPLANATION :: First we create string list and then just call ToArray() for producing required string array
+		List<string> tempList = new List<string>();
+		foreach (var _projectStatusValue in Enum.GetValues<ProjectStatus>())
+		{
+			tempList.Add(_projectStatusValue.ToString().Trim());
+		}
+		_stringProjectStatusValues = tempList.ToArray();
+
+		if (ShowBaselineTab == true)
+		{
+			activeIndex = 1;
+		}
+
+		await ConvertMarkdownToHtml(singleProject.Description);
+
+		// Reset dirty state
+		hasFormFieldChanged = false;
+		disableUpdateProjectDetailsButton = true;
+		FormStateService.SetDirty(singleProject.Id, false);
+
+		StateHasChanged();
 
 	}
 	public async Task HandleProjectDetailsPatchSubmission()
@@ -359,8 +369,14 @@
 			{
 				var updatedResult = await ProjectService.__PUT_Update_Project_By_GUID_ID__Async(ProjectId, singleProject);
 				TreeNodeItemzSelectionService.UpdateTreeNodeItemzName(ProjectId, singleProject.Name!);
-                hasFormFieldChanged = false;
-				disableUpdateProjectDetailsButton = true;
+				// hasFormFieldChanged = false;
+				// disableUpdateProjectDetailsButton = true;
+
+				if (FormStateService.IsDirty(ProjectId))
+				{
+					// Save logic...
+					FormStateService.SetDirty(ProjectId, false);
+				}
 				// Thread.Sleep(800);
 			}
 		}
@@ -381,20 +397,21 @@
 
 	private async Task formFieldChanged()
 	{
+		// Mark this component as dirty in the shared service
+		FormStateService.SetDirty(ProjectId, true);
+
+		// Keep your local flag for compatibility if needed
 		hasFormFieldChanged = true;
+
 		if (form != null)
 		{
 			await form.Validate();
-			if (form.IsValid)
-			{
-				disableUpdateProjectDetailsButton = false;
-			}
-			else
-			{
-				disableUpdateProjectDetailsButton = true;
-			}
+
+			// Enable/disable Save button based on form validity
+			disableUpdateProjectDetailsButton = form.IsValid ? false : true;
 		}
 	}
+
 
 	public async Task deleteProject()
 	{
@@ -445,15 +462,26 @@
 
 	public async Task HandleCreateTreeViewChildItemzTypeClicked()
 	{
-		// TODO :: Create new Itemz through EndPoint API call and then Notify MudTreeView component to update itself.
+		// 🔑 First check if the project record is dirty
+		bool canProceed = await FormStateService.ConfirmDiscardChangesAsync(ProjectId);
+		if (!canProceed)
+		{
+			// User cancelled → do nothing
+			return;
+		}
 
-		var newChildItemzType = new CreateItemzTypeDTO();
-		newChildItemzType.ProjectId = ProjectId;
-		newChildItemzType.Name = "New ItemzType" 
-								+ " RandomNumber - " 
-								+ RandomNumberGeneratorHelper.GenerateRandomNumber().ToString();
-		newChildItemzType.Status = "New";
-		newChildItemzType.Description = "New ItemzType Description";
+		// If user confirmed discard, clear dirty state
+		FormStateService.SetDirty(ProjectId, false);
+
+		// Now safe to create new ItemzType
+		var newChildItemzType = new CreateItemzTypeDTO
+		{
+			ProjectId = ProjectId,
+			Name = "New ItemzType RandomNumber - " + RandomNumberGeneratorHelper.GenerateRandomNumber(),
+			Status = "New",
+			Description = "New ItemzType Description"
+		};
+
 		try
 		{
 			var newlyCreatedSiblingItemzType = await ItemzTypeService.__POST_Create_ItemzType__Async(newChildItemzType);
@@ -464,16 +492,23 @@
 		}
 		catch (Exception ex)
 		{
-			await DialogService.ShowMessageBox("WARNING", markupMessage: new MarkupString($"<p style=\"color: red; \">{ex.Message}</p>"), yesText: "OK");
+			await DialogService.ShowMessageBox(
+				"WARNING",
+				markupMessage: new MarkupString($"<p style=\"color: red; \">{ex.Message}</p>"),
+				yesText: "OK"
+			);
 		}
 		finally
 		{
-			// Add any clean-up code here.
+			// Add any clean-up code here if needed
 		}
 	}
 
+
 	public async Task goBackToProject()
 	{
+		FormStateService.SetDirty(ProjectId, false);
+
 		if (CalledFrom == nameof(ProjectDetails))
 		{
 			NavManager.NavigateTo($"/project/{ProjectId.ToString()}");
@@ -499,18 +534,19 @@
 
 	private async Task ConfirmNavigation(LocationChangingContext context)
 	{
-		if (hasFormFieldChanged)
-		{
-			bool? result = await DialogService.ShowMessageBox(
-				"Unsaved Changes",
-				"You have unsaved changes. Do you really want to leave?",
-				yesText: "Leave",
-				noText: "Stay");
+		// Use FormStateService instead of local flag
+		bool canLeave = await FormStateService.ConfirmDiscardChangesAsync(ProjectId);
 
-			if (result == false)
-			{
-				context.PreventNavigation();
-			}
+		if (!canLeave)
+		{
+			// User chose "Stay" → cancel navigation
+			context.PreventNavigation();
+		}
+		else
+		{
+			// User confirmed discard → clear dirty state
+			FormStateService.SetDirty(ProjectId, false);
 		}
 	}
+
 }
