@@ -255,7 +255,6 @@
 	private string _originalDescription = string.Empty;
 	public bool initializingPage { get; set; } = false;
 	private bool deletingItemzType { get; set; } = false;
-	private bool hasFormFieldChanged { get; set; } = false;
 
 
 	// private string _Content = string.Empty;
@@ -265,7 +264,6 @@
 		set
 		{
 			// _Content = value;
-			// hasFormFieldChanged = true;
 			// FormStateService.SetDirty(ItemzTypeId, true);
 
 			singleItemzType.Description = value;
@@ -379,7 +377,7 @@
 		updateItemzTypeButtonClicked = true;
 		try
 		{
-			if (hasFormFieldChanged)
+			if (FormStateService.IsDirty(ItemzTypeId))
 			{
 				var updateItemzTypeDTO = new UpdateItemzTypeDTO();
 				updateItemzTypeDTO.Name = singleItemzType.Name;
@@ -409,7 +407,6 @@
 
 	private async Task formFieldChanged()
 	{
-		hasFormFieldChanged = true;
 		FormStateService.SetDirty(ItemzTypeId, true);
 
 		if (form != null)

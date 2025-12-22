@@ -248,7 +248,6 @@
 	private string _originalDescription;
 	public bool initializingPage { get; set; } = false;
 	private bool deletingProject { get; set; } = false;
-	private bool hasFormFieldChanged { get; set; } = false;
 
 	// private string _Content = string.Empty;
 	private string MyContent
@@ -257,7 +256,6 @@
 		set
 		{
 			// _Content = value;
-			// hasFormFieldChanged = true;
 			// FormStateService.SetDirty(ProjectId, true);
 
 			singleProject.Description = value;
@@ -355,7 +353,6 @@
 		await ConvertMarkdownToHtml(singleProject.Description);
 
 		// Reset dirty state
-		hasFormFieldChanged = false;
 		disableUpdateProjectDetailsButton = true;
 		FormStateService.SetDirty(singleProject.Id, false);
 
@@ -367,11 +364,10 @@
 		updateProjectButtonClicked = true;
 		try
 		{
-			if (hasFormFieldChanged)
+			if (FormStateService.IsDirty(ProjectId))
 			{
 				var updatedResult = await ProjectService.__PUT_Update_Project_By_GUID_ID__Async(ProjectId, singleProject);
 				TreeNodeItemzSelectionService.UpdateTreeNodeItemzName(ProjectId, singleProject.Name!);
-				// hasFormFieldChanged = false;
 				// disableUpdateProjectDetailsButton = true;
 
 				if (FormStateService.IsDirty(ProjectId))
@@ -401,9 +397,6 @@
 	{
 		// Mark this component as dirty in the shared service
 		FormStateService.SetDirty(ProjectId, true);
-
-		// Keep your local flag for compatibility if needed
-		hasFormFieldChanged = true;
 
 		if (form != null)
 		{

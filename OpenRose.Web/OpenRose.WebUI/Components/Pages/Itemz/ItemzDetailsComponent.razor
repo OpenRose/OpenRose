@@ -298,7 +298,6 @@
 	private string _originalDescription = string.Empty;
 	public bool initializingPage { get; set; } = false;
 	private bool deletingItemz { get; set; } = false;
-	private bool hasFormFieldChanged { get; set; } = false;
 
 	// New flag to indicate orphaned Itemz (no parent -> no children expected)
 	private bool isOrphaned { get; set; } = false;
@@ -311,7 +310,6 @@
 		set
 		{
 			// _Content = value;
-			hasFormFieldChanged = true;
 			singleItemz.Description = value;
 			ConvertMarkdownToHtml(singleItemz.Description);
 			ContentChanged.InvokeAsync(value);
@@ -436,7 +434,6 @@
 		await ConvertMarkdownToHtml(singleItemz.Description);
 
 		// Reset dirty state
-		hasFormFieldChanged = false;
 		FormStateService.SetDirty(ItemzId, false);
 
 		initializingPage = false;
@@ -448,7 +445,7 @@
 		updateItemzButtonClicked = true;
 		try
 		{
-			if (hasFormFieldChanged)
+			if (FormStateService.IsDirty(ItemzId))
 			{
 				var updateItemzDTO = new UpdateItemzDTO();
 				updateItemzDTO.Name = String.IsNullOrEmpty(singleItemz.Name)? "" : singleItemz.Name;
@@ -480,7 +477,6 @@
 
 	private async Task formFieldChanged()
 	{
-		hasFormFieldChanged = true;
 		FormStateService.SetDirty(ItemzId, true);
 		if (form != null)
 		{
