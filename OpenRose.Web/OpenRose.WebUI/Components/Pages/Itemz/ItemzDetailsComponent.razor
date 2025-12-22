@@ -25,9 +25,11 @@
 @inject IJSRuntime JS
 @inject IServiceProvider serviceProvider
 
-<NavigationLock ConfirmExternalNavigation="true"
-				OnBeforeInternalNavigation="((x) => ConfirmNavigation(x))" />
-
+@if (FormStateService.IsDirty(ItemzId))
+{
+	<NavigationLock ConfirmExternalNavigation="true"
+					OnBeforeInternalNavigation="((x) => ConfirmNavigation(x))" />
+}
 
 @if (CalledFrom == nameof(ItemzDetails))
 {

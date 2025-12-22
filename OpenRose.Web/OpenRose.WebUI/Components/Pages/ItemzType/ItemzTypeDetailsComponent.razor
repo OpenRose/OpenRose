@@ -31,8 +31,10 @@
 	}
 }
 
-<NavigationLock ConfirmExternalNavigation="true" OnBeforeInternalNavigation="((x) => ConfirmNavigation(x))" />
-
+@if (FormStateService.IsDirty(ItemzTypeId))
+{
+	<NavigationLock ConfirmExternalNavigation="true" OnBeforeInternalNavigation="((x) => ConfirmNavigation(x))" />
+}
 
 <MudPaper Class="pa-4 mb-5 align-start d-flex" Style="width: auto" Outlined="false">
 	<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Class="w-100">
