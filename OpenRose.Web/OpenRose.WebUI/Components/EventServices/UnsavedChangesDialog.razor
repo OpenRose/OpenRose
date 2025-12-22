@@ -1,0 +1,34 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+
+<MudDialog>
+    <TitleContent>
+        <MudText Color="Color.Error">Unsaved Changes</MudText>
+    </TitleContent>
+
+    <DialogContent>
+        <MudText>You have unsaved changes. Do you want to leave this page?</MudText>
+    </DialogContent>
+
+    <DialogActions>
+        <!-- Leave Page = DISCARD -->
+        <MudButton Variant="Variant.Filled" Color="Color.Error"
+                   OnClick="LeavePage">Leave Page</MudButton>
+
+        <!-- Stay on Page = CANCEL -->
+        <MudButton Variant="Variant.Filled" Color="Color.Success"
+                   OnClick="StayOnPage" >Stay on Page</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; }
+
+    private void LeavePage() => MudDialog.Close(DialogResult.Ok(true));
+    private void StayOnPage() => MudDialog.Close(DialogResult.Cancel());
+}

@@ -40,16 +40,15 @@ namespace OpenRose.WebUI.Components.EventServices
 			if (!IsDirty(recordId))
 				return true; // nothing dirty, safe to proceed
 
-			var result = await _dialogService.ShowMessageBox(
-				"Unsaved Changes",
-				"You have unsaved changes. Do you want to discard them?",
-				yesText: "Discard",
-				cancelText: "Cancel"
-			);
+			var parameters = new DialogParameters();
+			var options = new DialogOptions { CloseOnEscapeKey = true, BackdropClick = true };
 
-			return result == true;
+			var dialog = await _dialogService.ShowAsync<UnsavedChangesDialog>("Unsaved Changes", parameters, options);
+			var result = await dialog.Result;
+
+			// Leave Page = Ok(true), Stay on Page = Cancel
+			return result.Canceled == false && result.Data is bool b && b;
 		}
+
 	}
-
-
 }
