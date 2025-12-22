@@ -18,11 +18,21 @@ namespace OpenRose.WebUI.Components.EventServices
 		// Existing dirty state tracking...
 		private readonly Dictionary<Guid, bool> _dirtyRecords = new();
 
-		public bool IsDirty(Guid recordId) =>
-			_dirtyRecords.TryGetValue(recordId, out var isDirty) && isDirty;
+		public bool IsDirty(Guid recordId) => _dirtyRecords.ContainsKey(recordId);
 
-		public void SetDirty(Guid recordId, bool isDirty) =>
-			_dirtyRecords[recordId] = isDirty;
+		public void SetDirty(Guid recordId, bool isDirty)
+		{
+			if (isDirty)
+			{
+				_dirtyRecords[recordId] = true;
+			}
+			else
+			{
+				_dirtyRecords.Remove(recordId);
+			}
+		}
+		public IEnumerable<Guid> GetDirtyRecords() => _dirtyRecords.Keys;
+		public void ClearAll() => _dirtyRecords.Clear();
 
 		// 🔑 New helper: standard unsaved changes dialog
 		public async Task<bool> ConfirmDiscardChangesAsync(Guid recordId)
