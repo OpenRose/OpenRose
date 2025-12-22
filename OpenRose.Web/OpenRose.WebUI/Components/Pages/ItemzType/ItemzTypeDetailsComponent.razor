@@ -137,14 +137,16 @@
 						</MudStack>
 						<br />
 						<MudTextField T="string" Label="Name" Required="true" RequiredError="Name is required!"
-										@bind-Value="singleItemzType.Name"
-										For="@(() => singleItemzType.Name)"
-										Immediate="true" />
+							@bind-Value="singleItemzType.Name"
+							For="@(() => singleItemzType.Name)"
+							Immediate="true"
+							Disabled="@singleItemzType.IsSystem" />
 						<MudSelect @bind-Value="singleItemzType.Status"
 									For="@(() => singleItemzType.Status)"
 									Required ="true"
 									RequiredError="Status is required!"
-									Label="Status">
+									Label="Status"
+									Disabled="@singleItemzType.IsSystem">
 							@foreach (var _stringItemzTypeStatusValue in _stringItemzTypeStatusValues)
 							{
 								<MudSelectItem T="string" Value="_stringItemzTypeStatusValue">@_stringItemzTypeStatusValue</MudSelectItem>
@@ -155,29 +157,37 @@
 							For="@(() => singleItemzType.Description)" /> *@
 						
 						<!-- Ensure this div applies the custom class to the Markdown content -->
-						<MudText><strong>Description : </strong></MudText>
-						<div class="custom-markdown-editor">
-						<MarkdownEditor Value="@MyContent"
-										ValueChanged="@(async (string newValue) =>
+						@if (singleItemzType.IsSystem)
+						{
+							<MudPaper Class="pa-4 mb-5" Style="background-color: #f5f5f5;">
+								<MudText><strong>Description : </strong></MudText>
+								<div class="markdown-body">@((MarkupString)convertedMarkdown)</div>
+							</MudPaper>
+						}
+						else
+						{
+							<MudText><strong>Description : </strong></MudText>
+							<div class="custom-markdown-editor">
+							<MarkdownEditor Value="@MyContent"
+								ValueChanged="@(async (string newValue) =>
+								{
+									MyContent = newValue;
+									if (newValue != _originalDescription)
 									{
-										MyContent = newValue;
-										// Only mark dirty if user changed from original
-										if (newValue != _originalDescription)
-										{
-											await formFieldChanged();
-										}
-									})"
-									HideIcons="@(["mde-tb-image"])" />
-
-
+										await formFieldChanged();
+									}
+								})"
+								HideIcons="@(["mde-tb-image"])" />
 							<MudPaper Class="pa-4 mb-5" Style="background-color: #f5f5f5;">
 								@if (!string.IsNullOrEmpty(convertedMarkdown.Value))
-								{
-									<h3>Preview</h3>
-									<div class="markdown-body">@((MarkupString)convertedMarkdown)</div>
-								}
+										{
+											<h3>Preview</h3>
+											<div class="markdown-body">@((MarkupString)convertedMarkdown)</div>
+										}
 							</MudPaper>
-						</div>
+							</div>
+						}
+
 					</MudCardContent>
 				</MudForm>
 				</MudPaper>
@@ -416,6 +426,7 @@
 			await form.Validate();
 			if (form.IsValid)
 			{
+				// Allow saving for system ItemzTypes, except the Name field is disabled anyway
 				disableUpdateItemzTypeDetailsButton = false;
 				if (singleItemzType != null)
 				{
@@ -432,6 +443,7 @@
 			}
 		}
 	}
+
 
 	public async Task deleteItemzType()
 	{
