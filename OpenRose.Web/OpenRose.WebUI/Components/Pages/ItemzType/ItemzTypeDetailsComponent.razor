@@ -199,7 +199,7 @@
 						<ChildContent>
 							<MudText Typo="Typo.body1" Color="Color.Error">Deleting itemzType means loosing all it's data. This is <STRONG>IRREVERSIBLE</STRONG> operation.</MudText>
 							<MudButton @onclick="OpenDeleteConfirmationDialogAsync" Variant="Variant.Filled"
-								Disabled="@(disableUpdateItemzTypeDetailsButton || !FormStateService.IsDirty(ItemzTypeId))"
+								Disabled="@(disableUpdateItemzTypeDetailsButton || FormStateService.IsDirty(ItemzTypeId))"
 								Color="Color.Error" Size="Size.Large" style="align-items: center; margin-top : 10px">
 							Delete ItemzType
 							</MudButton>
@@ -404,7 +404,7 @@
 
 		// TODO :: IF IT UPDATES THE PROJECT THEN DISABLE SUBMIT BUTTON AND CONFIRM ON SCREEN THAT IT'S NOW UPDATED SUCCESSFULLY
 
-		goBackToItemzType();
+		await goBackToItemzType();
 	}
 
 	private async Task formFieldChanged()
