@@ -82,12 +82,12 @@
 				<MudForm Model="@singleProject" @ref="form" @bind-IsValid="@success" @bind-Errors="@errors" FieldChanged="formFieldChanged" >
 					<MudCardActions>
 						<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Class="w-100">
-									<MudButton Variant="Variant.Filled" Color="Color.Primary" 
-										Disabled="!FormStateService.IsDirty(ProjectId)"
+									<MudButton Variant="Variant.Filled" Color="Color.Primary"
+									    Disabled="@(disableUpdateProjectDetailsButton || !FormStateService.IsDirty(ProjectId))"
 										Size="Size.Large"
 										OnClick="(() => HandleProjectDetailsPatchSubmission())">
-							<MudText>Save</MudText>
-						</MudButton>
+										<MudText>Save</MudText>
+									</MudButton>
 						@if (CalledFrom == nameof(ProjectTreeView))
 						{
 							<MudButton Variant="Variant.Filled" Color="Color.Primary"
@@ -258,6 +258,8 @@
 		{
 			// _Content = value;
 			// hasFormFieldChanged = true;
+			// FormStateService.SetDirty(ProjectId, true);
+
 			singleProject.Description = value;
 			ConvertMarkdownToHtml(singleProject.Description);
 			ContentChanged.InvokeAsync(value);
