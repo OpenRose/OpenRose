@@ -419,7 +419,7 @@
 
         BaselineItemzSelectionService.OnBaselineTreeNodeItemzSelected += async (itemzId) =>
         {
-            await HandleItemzSelected(itemzId);
+            await HandleItemzSelectedAsync(itemzId);
         };
         BaselineItemzSelectionService.OnBaselineTreeNodeItemzNameUpdated += NOT_IN_USE_HandleTreeNodeItemzNameUpdated;
         BaselineItemzSelectionService.OnLoadingOfBaselineItemzTreeViewComponent += HandleLoadingOfBaselineItemzTreeViewComponent;
@@ -456,7 +456,7 @@
                 // rendering which could take some time for large project.
                 // await Task.Delay(500);
 
-                await HandleItemzSelected(AutoSelectedRecordId.Value);
+                await HandleItemzSelectedAsync(AutoSelectedRecordId.Value);
                 AutoSelectedRecordId = null;
             }
 
@@ -466,7 +466,7 @@
     }
 
 
-    private async Task HandleItemzSelected(Guid itemzId)
+    private async Task HandleItemzSelectedAsync(Guid itemzId)
     {
         // Update the SelectedValue to select the node
         // SelectedValue = itemzId;

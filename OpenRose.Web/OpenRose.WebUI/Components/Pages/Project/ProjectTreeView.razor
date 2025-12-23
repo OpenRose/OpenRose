@@ -136,7 +136,7 @@
     bool _marginEnabled = true;
     bool _borderedEnabled = false;
     bool _doubleClickEnabled = true;
-    
+
     // Varibale related to selecting node in treeview
     private bool _suppressSelectionChanged;
 
@@ -399,17 +399,20 @@
             NavManager.NavigateTo("/");
             return;
         }
-        ItemzSelectionService.OnTreeNodeItemzSelected += HandleItemzSelected;
+        ItemzSelectionService.OnTreeNodeItemzSelected += async (itemzId) =>
+            {
+                await HandleItemzSelectedAsync(itemzId);
+            };
         ItemzSelectionService.OnTreeNodeItemzNameUpdated += HandleTreeNodeItemzNameUpdated;
         ItemzSelectionService.OnCreatedNewItemz += async (recordId, itemz) =>
             {
-                await HandleCreatedNewItemz(recordId, itemz);
+                await HandleCreatedNewItemzAsync(recordId, itemz);
             };
         ItemzSelectionService.OnScrollToTreeViewNode += HandleScrollToTreeViewNode;
         ItemzSelectionService.OnTreeNodeItemzDeleted += HandleItemzDeleted;
         ItemzSelectionService.OnCreatedNewItemzType += async (recordId, itemzType) =>
         {
-            await HandleCreatedNewItemzType(recordId, itemzType);
+            await HandleCreatedNewItemzTypeAsync(recordId, itemzType);
         };
     }
 
@@ -441,7 +444,7 @@
                 // rendering which could take some time for large project.
                 // await Task.Delay(500);
 
-                HandleItemzSelected(AutoSelectedRecordId.Value);
+                await HandleItemzSelectedAsync(AutoSelectedRecordId.Value);
                 AutoSelectedRecordId = null;
             }
 
@@ -450,7 +453,7 @@
         }
     }
 
-    private async void HandleItemzSelected(Guid itemzId)
+    private async Task HandleItemzSelectedAsync(Guid itemzId)
     {
         await TryUpdateSelectedItemAsync(itemzId);
     }
@@ -519,7 +522,7 @@
     }
 
     // Handle name updates for tree items
-    private async Task HandleCreatedNewItemz(Guid recordId, GetItemzDTO newlyCreatedSiblingItemz)
+    private async Task HandleCreatedNewItemzAsync(Guid recordId, GetItemzDTO newlyCreatedSiblingItemz)
     {
         var item = InitialTreeItems.Flatten().FirstOrDefault(i => i.Value == recordId) as TreeItemPresenter;
         if (item != null)
@@ -555,7 +558,7 @@
         await JS.InvokeVoidAsync("scrollToElementById", elementId);
     }
 
-    private async Task HandleCreatedNewItemzType(Guid recordId, GetItemzTypeDTO newlyCreatedSiblingItemzType)
+    private async Task HandleCreatedNewItemzTypeAsync(Guid recordId, GetItemzTypeDTO newlyCreatedSiblingItemzType)
     {
         var parentItem = InitialTreeItems.Flatten()
                                          .OfType<TreeItemPresenter>()
