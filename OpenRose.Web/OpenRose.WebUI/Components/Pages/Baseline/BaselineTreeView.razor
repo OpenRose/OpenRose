@@ -23,6 +23,8 @@
 @inject BaselineTreeNodeItemzSelectionService BaselineItemzSelectionService
 @inject IJSRuntime JS
 @inject ConfigurationService ConfigurationService
+@inject FormStateService FormStateService
+
 
 <MudExtensions.MudSplitter @bind-Dimension="@_percentage"
                             OnDoubleClicked="@OnDoubleClicked"
@@ -46,7 +48,7 @@
                          Hover="true"
                          ExpandOnDoubleClick="true"
                          Class="full-width"
-                         @bind-SelectedValue="SelectedValue"
+                         SelectedValue="@SelectedValue"
                          AutoExpand="true">
                 <ItemTemplate>
                     @{
@@ -57,6 +59,7 @@
                     <MudTreeViewItem Value="@context.Value"
                                      Id="@($"tree-node-{context.Value}")"
                                      Text="@context.Text"
+                                     @bind-Selected="presenter.IsSelected"
                                      Icon="@((((TreeItemPresenter)context).IsIncluded) ? context.Icon : Icons.Material.Filled.Close)"
                                      IconColor=" (((TreeItemPresenter)context).IsIncluded) ? Color.Inherit : Color.Error "
                                      ExpandButtonIconColor="(((TreeItemPresenter)context).IsIncluded) ? Color.Inherit : Color.Error"
@@ -152,22 +155,37 @@
         return Task.CompletedTask;
     }
 
-    private Guid selectedValue;
+    private Guid _selectedValue;
 
     private Guid SelectedValue
     {
-        get => selectedValue;
+        get => _selectedValue;
         set
         {
-            if (selectedValue != value)
+            if (_selectedValue != value)
             {
-                selectedValue = value;
-                // Update selectedItem when SelectedValue changes
-                UpdateSelectedItem(value);
-                StateHasChanged();
+                _ = TryUpdateSelectedItemAsync(value);
             }
         }
     }
+
+    private async Task TryUpdateSelectedItemAsync(Guid newValue)
+    {
+        bool canChange = await FormStateService.ConfirmDiscardChangesAsync(_selectedValue);
+
+        if (canChange)
+        {
+            // User confirmed discard → clear dirty state for the old record
+            FormStateService.SetDirty(_selectedValue, false);
+
+            _selectedValue = newValue;
+            await UpdateSelectedItem(newValue);
+            StateHasChanged();
+        }
+        // else: user cancelled → do nothing
+        // thanks to @bind-Selected, the old node remains highlighted automatically
+    }
+
 
     private TreeItemPresenter selectedItem;
 
@@ -177,6 +195,7 @@
         public string RecordType { get; set; }
         public int? Level { get; set; }
         public bool IsIncluded { get; set; }
+        public bool IsSelected { get; set; }
 
         public TreeItemPresenter(Guid value, string text, string icon
             , string recordType, int? level, bool expandable, bool isIncluded ) : base(value)
@@ -192,11 +211,52 @@
         }
     }
 
-    private async Task OnItemClick(MudBlazor.TreeItemData<System.Guid> node)
+    private async Task OnItemClick(MudBlazor.TreeItemData<Guid> node)
     {
-        // Handle the clicked node here
-        selectedItem = node as TreeItemPresenter;
+        var presenter = node as TreeItemPresenter;
+        if (presenter is null)
+            return;
+
+        await OnItemClick(presenter); // reuse the strong-typed version
     }
+
+    private async Task OnItemClick(TreeItemPresenter presenter)
+    {
+        if (_selectedValue == presenter.Value)
+            return;
+
+        // Ask FormStateService if we can change away from the current record
+        bool canChange = await FormStateService.ConfirmDiscardChangesAsync(_selectedValue);
+
+        if (!canChange)
+        {
+            // User cancelled → revert highlight back to old node
+            var oldItem = InitialTreeItems.Flatten()
+                                          .OfType<TreeItemPresenter>()
+                                          .FirstOrDefault(i => i.Value == _selectedValue);
+
+            if (oldItem != null)
+            {
+                oldItem.IsSelected = true;
+                baselineMudTreeView.SelectedValue = oldItem.Value; // keep tree in sync
+            }
+
+            presenter.IsSelected = false;
+            StateHasChanged();
+            return;
+        }
+
+        // User confirmed discard → clear dirty state for the old record
+        FormStateService.SetDirty(_selectedValue, false);
+
+        // Accept selection
+        _selectedValue = presenter.Value;
+        presenter.IsSelected = true;
+        baselineMudTreeView.SelectedValue = presenter.Value; // keep tree in sync
+        await UpdateSelectedItem(presenter.Value);
+        StateHasChanged();
+    }
+
 
     public void AddChildrens(TreeItemData<Guid> parentTempTreeViewNode, List<NestedBaselineHierarchyIdRecordDetailsDTO> Children )
     {
@@ -357,7 +417,10 @@
             return;
         }
 
-        BaselineItemzSelectionService.OnBaselineTreeNodeItemzSelected += HandleItemzSelected;
+        BaselineItemzSelectionService.OnBaselineTreeNodeItemzSelected += async (itemzId) =>
+        {
+            await HandleItemzSelected(itemzId);
+        };
         BaselineItemzSelectionService.OnBaselineTreeNodeItemzNameUpdated += NOT_IN_USE_HandleTreeNodeItemzNameUpdated;
         BaselineItemzSelectionService.OnLoadingOfBaselineItemzTreeViewComponent += HandleLoadingOfBaselineItemzTreeViewComponent;
         BaselineItemzSelectionService.OnSingleBaselineItemzIsIncludedChanged += HandleIncludeOnlySingleBaselineItemzNode;
@@ -393,7 +456,7 @@
                 // rendering which could take some time for large project.
                 // await Task.Delay(500);
 
-                HandleItemzSelected(AutoSelectedRecordId.Value);
+                await HandleItemzSelected(AutoSelectedRecordId.Value);
                 AutoSelectedRecordId = null;
             }
 
@@ -403,11 +466,12 @@
     }
 
 
-    private void HandleItemzSelected(Guid itemzId)
+    private async Task HandleItemzSelected(Guid itemzId)
     {
         // Update the SelectedValue to select the node
-        SelectedValue = itemzId;
-        StateHasChanged();
+        // SelectedValue = itemzId;
+        // StateHasChanged();
+        await TryUpdateSelectedItemAsync(itemzId);
     }
 
     private void HandleScrollToTreeViewNode(Guid recordId)
