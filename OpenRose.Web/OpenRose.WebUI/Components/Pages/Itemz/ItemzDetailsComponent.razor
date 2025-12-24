@@ -25,6 +25,12 @@
 @inject IJSRuntime JS
 @inject IServiceProvider serviceProvider
 
+@if (FormStateService.IsDirty(ItemzId))
+{
+	<NavigationLock ConfirmExternalNavigation="true"
+					OnBeforeInternalNavigation="((x) => ConfirmNavigation(x))" />
+}
+
 @if (CalledFrom == nameof(ItemzDetails))
 {
 	@if (BreadcrumsParameter != null)
@@ -40,12 +46,14 @@
 		@if (CalledFrom == nameof(ProjectTreeView))
 		{
 			<MudButton Variant="Variant.Filled" Color="Color.Success"
+					   Disabled="FormStateService.IsDirty(ItemzId)"
 					   Size="Size.Medium"
 					   style="margin: 10px"
 					   OnClick="(async () => await HandleCreateTreeViewSiblingItemzClicked())">
 				<MudText>Create Sibling Itemz</MudText>
 			</MudButton>
 			<MudButton Variant="Variant.Filled" Color="Color.Success"
+					   Disabled="FormStateService.IsDirty(ItemzId)"
 					   Size="Size.Medium"
 					   style="margin: 10px"
 					   OnClick="(async () => await HandleCreateTreeViewChildItemzClicked())">
@@ -88,12 +96,14 @@
 				<MudForm Model="@singleItemz" @ref="form" @bind-IsValid="@success" @bind-Errors="@errors" FieldChanged="formFieldChanged" >
 			<MudCardActions>
 				<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Class="w-100"> 
-				<MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(disableUpdateItemzDetailsButton)"
-					Size="Size.Large"
-					style="gap: 10px; margin : 10px"
-					OnClick="(() => HandleItemzDetailsPatchSubmission())">
-				<MudText>Save</MudText>
+				<MudButton Variant="Variant.Filled" Color="Color.Primary"
+						Disabled="@(disableUpdateItemzDetailsButton || !FormStateService.IsDirty(ItemzId))"
+						Size="Size.Large"
+						style="gap: 10px; margin : 10px"
+						OnClick="(() => HandleItemzDetailsPatchSubmission())">
+					<MudText>Save</MudText>
 				</MudButton>
+
 				@if (CalledFrom == nameof(ProjectTreeView))
 				{
 				<MudButton Variant="Variant.Filled" Color="Color.Primary"
@@ -114,13 +124,14 @@
 							<MudText>Tree View</MudText>
 						</MudButton>
 					}
-				<MudButton Variant="Variant.Filled" Color="Color.Warning" 
-					Size="Size.Large" style="gap: 10px; margin-left : 10px"
-					OnClick="(async () => await goBackToItemz())">
 
+				}
+				<MudButton Variant="Variant.Filled" Color="Color.Warning"
+							Disabled="!FormStateService.IsDirty(ItemzId)"
+							Size="Size.Large" style="gap: 10px; margin-left : 10px"
+							OnClick="(async () => await goBackToItemz())">
 					<MudText>Cancel</MudText>
 				</MudButton>
-				}
 				</MudStack>
 			</MudCardActions>
 			<MudCardContent>
@@ -131,7 +142,8 @@
 				<br />
 				<MudTextField T="string" Label="Name" Required="true" RequiredError="Name is required!"
 					@bind-Value="singleItemz.Name"
-					For="@(() => singleItemz.Name)" FullWidth="true" />
+					For="@(() => singleItemz.Name)" FullWidth="true" 
+					Immediate=true/>
 				<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Start" Class="w-100">
 				<MudSelect @bind-Value="singleItemz.Status"
 							For="@(() => singleItemz.Status)"
@@ -171,7 +183,19 @@
 				<!-- Ensure this div applies the custom class to the Markdown content -->
 				<MudText><strong>Description : </strong></MudText>
 				<div class="custom-markdown-editor">
-					<MarkdownEditor @bind-Value="@MyContent" HideIcons="@(["mde-tb-image"])" />
+					<MarkdownEditor Value="@MyContent"
+									ValueChanged="@(async (string newValue) =>
+									{
+										MyContent = newValue;
+
+										// Only mark dirty if user changed from original
+										if (newValue != _originalDescription)
+										{
+											await formFieldChanged();
+										}
+									})"
+								HideIcons="@(["mde-tb-image"])" />
+
 					<MudPaper Class="pa-4 mb-5" Style="background-color: #f5f5f5;">
 						@if (!string.IsNullOrEmpty(convertedMarkdown.Value))
 						{
@@ -218,7 +242,7 @@
 							<MudText Typo="Typo.body1" Color="Color.Error">Deleting Itemz means losing all it's data including all Child Itemz Tree Nodes. </MudText>
 							<MudText Typo="Typo.body1" Color="Color.Error">This is <STRONG>IRREVERSIBLE</STRONG> operation.</MudText>
 							<MudButton @onclick="OpenDeleteConfirmationDialogAsync" Variant="Variant.Filled"
-								Disabled="@(disableUpdateItemzDetailsButton)"
+								Disabled="@(disableUpdateItemzDetailsButton || FormStateService.IsDirty(ItemzId))"
 								Color="Color.Error" Size="Size.Large" style="align-items: center; margin-top : 10px">
 								Delete Itemz
 							</MudButton>
@@ -263,6 +287,9 @@
 	public IItemzService ItemzService { get; set; }
 	[Inject]
 	public IHierarchyService hierarchyService { get; set; }
+	[Inject]
+	public FormStateService FormStateService { get; set; }
+
 
 	private Guid ParentId { get; set; }
 	private string ParentRecordType { get; set; }
@@ -270,9 +297,9 @@
 	private bool updateItemzButtonClicked = false;
 	public GetItemzDTO singleItemz { get; set; } = new();
 	private ParameterForItemzBreadcrums BreadcrumsParameter;
+	private string _originalDescription = string.Empty;
 	public bool initializingPage { get; set; } = false;
 	private bool deletingItemz { get; set; } = false;
-	private bool hasFormFieldChanged { get; set; } = false;
 
 	// New flag to indicate orphaned Itemz (no parent -> no children expected)
 	private bool isOrphaned { get; set; } = false;
@@ -285,7 +312,6 @@
 		set
 		{
 			// _Content = value;
-			hasFormFieldChanged = true;
 			singleItemz.Description = value;
 			ConvertMarkdownToHtml(singleItemz.Description);
 			ContentChanged.InvokeAsync(value);
@@ -330,85 +356,98 @@
 	{
 		if (firstRender)
 		{
-			initializingPage = true;
-			StateHasChanged();
-			//Thread.Sleep(300);
-			singleItemz = await ItemzService.__Single_Itemz_By_GUID_ID__Async(ItemzId);
-
-			if (singleItemz != null)
-			{
-				BreadcrumsParameter = new ParameterForItemzBreadcrums();
-				BreadcrumsParameter.Id = singleItemz.Id;
-				BreadcrumsParameter.Name = singleItemz.Name;
-				BreadcrumsParameter.RecordType = "itemz"; // TODO :: USE CONSTANT
-
-				TreeNodeItemzSelectionService.UpdateTreeNodeItemzName(ItemzId, singleItemz.Name!);
-				originalItemzName = singleItemz.Name;
-			}
-
-			if (form != null)
-			{
-				await form.Validate();
-				if (form.IsValid)
-				{
-					disableUpdateItemzDetailsButton = false;
-				}
-				else
-				{
-					disableUpdateItemzDetailsButton = true;
-				}
-
-				// EXPLANATION :: First we create string list and then just call ToArray() for producing required string array
-				List<string> tempStatusList = new List<string>();
-				foreach (var _itemzStatusValue in Enum.GetValues<ItemzStatus>())
-				{
-					tempStatusList.Add(_itemzStatusValue.ToString().Trim());
-				}
-				_stringItemzStatusValues = tempStatusList.ToArray();
-
-				// EXPLANATION :: First we create string list and then just call ToArray() for producing required string array
-				List<string> tempPriorityList = new List<string>();
-				foreach (var _itemzPriorityValue in Enum.GetValues<ItemzPriority>())
-				{
-					tempPriorityList.Add(_itemzPriorityValue.ToString().Trim());
-				}
-				_stringItemzPriorityValues = tempPriorityList.ToArray();
-
-				// EXPLANATION :: First we create string list and then just call ToArray() for producing required string array
-				List<string> tempSeverityList = new List<string>();
-				foreach (var _itemzSeverityValue in Enum.GetValues<ItemzSeverity>())
-				{
-					tempSeverityList.Add(_itemzSeverityValue.ToString().Trim());
-				}
-				_stringItemzSeverityValues = tempSeverityList.ToArray();
-
-				initializingPage = false;
-			}
-
-			// EXPLANATION : At the start of initialization process we capture parent record ID. 
-			// Now even if user decides to Delete this Itemz Record then also we can go back to it's 
-			// Parent ItemzType post completing deletion operation. 
-			var httpResponse = await hierarchyService.__Get_Hierarchy_Record_Details_By_GUID__Async(ItemzId);
-			if (httpResponse != null) // Orphaned Itemz will not have any Hierarchy records.
-			{
-				ParentId = httpResponse.ParentRecordId;
-				ParentRecordType = httpResponse.ParentRecordType;
-			}
-
-			// Determine orphaned state (no parent -> we don't expect children)
-			isOrphaned = (httpResponse == null) || (httpResponse.ParentRecordId == Guid.Empty);
-
-			await ConvertMarkdownToHtml(singleItemz.Description);
-
-			StateHasChanged();
+			await LoadDataAsync();
 		}
 	}
+
+	private async Task LoadDataAsync()
+	{
+		initializingPage = true;
+		StateHasChanged();
+		//Thread.Sleep(300);
+		singleItemz = await ItemzService.__Single_Itemz_By_GUID_ID__Async(ItemzId);
+
+		if (singleItemz != null)
+		{
+			BreadcrumsParameter = new ParameterForItemzBreadcrums();
+			BreadcrumsParameter.Id = singleItemz.Id;
+			BreadcrumsParameter.Name = singleItemz.Name;
+			BreadcrumsParameter.RecordType = "itemz"; // TODO :: USE CONSTANT
+
+			TreeNodeItemzSelectionService.UpdateTreeNodeItemzName(ItemzId, singleItemz.Name!);
+			originalItemzName = singleItemz.Name ?? string.Empty;
+
+			_originalDescription = singleItemz.Description ?? string.Empty;
+			MyContent = _originalDescription;
+		}
+
+		if (form != null)
+		{
+			await form.Validate();
+			if (form.IsValid)
+			{
+				disableUpdateItemzDetailsButton = false;
+			}
+			else
+			{
+				disableUpdateItemzDetailsButton = true;
+			}
+
+			// EXPLANATION :: First we create string list and then just call ToArray() for producing required string array
+			List<string> tempStatusList = new List<string>();
+			foreach (var _itemzStatusValue in Enum.GetValues<ItemzStatus>())
+			{
+				tempStatusList.Add(_itemzStatusValue.ToString().Trim());
+			}
+			_stringItemzStatusValues = tempStatusList.ToArray();
+
+			// EXPLANATION :: First we create string list and then just call ToArray() for producing required string array
+			List<string> tempPriorityList = new List<string>();
+			foreach (var _itemzPriorityValue in Enum.GetValues<ItemzPriority>())
+			{
+				tempPriorityList.Add(_itemzPriorityValue.ToString().Trim());
+			}
+			_stringItemzPriorityValues = tempPriorityList.ToArray();
+
+			// EXPLANATION :: First we create string list and then just call ToArray() for producing required string array
+			List<string> tempSeverityList = new List<string>();
+			foreach (var _itemzSeverityValue in Enum.GetValues<ItemzSeverity>())
+			{
+				tempSeverityList.Add(_itemzSeverityValue.ToString().Trim());
+			}
+			_stringItemzSeverityValues = tempSeverityList.ToArray();
+
+			// initializingPage = false;
+		}
+
+		// EXPLANATION : At the start of initialization process we capture parent record ID.
+		// Now even if user decides to Delete this Itemz Record then also we can go back to it's
+		// Parent ItemzType post completing deletion operation.
+		var httpResponse = await hierarchyService.__Get_Hierarchy_Record_Details_By_GUID__Async(ItemzId);
+		if (httpResponse != null) // Orphaned Itemz will not have any Hierarchy records.
+		{
+			ParentId = httpResponse.ParentRecordId;
+			ParentRecordType = httpResponse.ParentRecordType;
+		}
+
+		// Determine orphaned state (no parent -> we don't expect children)
+		isOrphaned = (httpResponse == null) || (httpResponse.ParentRecordId == Guid.Empty);
+
+		await ConvertMarkdownToHtml(singleItemz.Description);
+
+		// Reset dirty state
+		FormStateService.SetDirty(ItemzId, false);
+
+		initializingPage = false;
+		StateHasChanged();
+	}
+
 	public async Task HandleItemzDetailsPatchSubmission()
 	{
 		updateItemzButtonClicked = true;
 		try
 		{
-			if (hasFormFieldChanged)
+			if (FormStateService.IsDirty(ItemzId))
 			{
 				var updateItemzDTO = new UpdateItemzDTO();
 				updateItemzDTO.Name = String.IsNullOrEmpty(singleItemz.Name)? "" : singleItemz.Name;
@@ -419,6 +458,8 @@
 				await ItemzService.__PUT_Update_Itemz_By_GUID_ID__Async(ItemzId, updateItemzDTO);
 				TreeNodeItemzSelectionService.UpdateTreeNodeItemzName(ItemzId, updateItemzDTO.Name);
 				// TODO :: SEND ITEMZ NAME UPDATE TO BREADCRUMS AS WELL.
+
+				FormStateService.SetDirty(ItemzId, false);
 				Thread.Sleep(800);
 				await goBackToItemz();
 			}
@@ -438,7 +479,7 @@
 
 	private async Task formFieldChanged()
 	{
-		hasFormFieldChanged = true;
+		FormStateService.SetDirty(ItemzId, true);
 		if (form != null)
 		{
 			await form.Validate();
@@ -524,9 +565,15 @@
 
 	public async Task goBackToItemz()
 	{
+		FormStateService.SetDirty(ItemzId, false);
+
 		@if (CalledFrom == nameof(ItemzDetails))
 		{
 			NavManager.NavigateTo($"/itemz/{ItemzId.ToString()}");
+		}
+		else if (CalledFrom == nameof(ProjectTreeView))
+		{
+			await LoadDataAsync();
 		}
 	}
 	public async Task goBackToParent()
@@ -565,6 +612,10 @@
 
 	public async Task HandleCreateTreeViewSiblingItemzClicked()
 	{
+		bool canProceed = await FormStateService.ConfirmDiscardChangesAsync(ItemzId);
+		if (!canProceed) return;
+
+		FormStateService.SetDirty(ItemzId, false);
 		// TODO :: Create new Itemz through EndPoint API call and then Notify MudTreeView component to update itself.
 
 		var newSiblingItemz = new CreateItemzDTO();
@@ -594,6 +645,10 @@
 
 	public async Task HandleCreateTreeViewChildItemzClicked()
 	{
+		bool canProceed = await FormStateService.ConfirmDiscardChangesAsync(ItemzId);
+		if (!canProceed) return;
+
+		FormStateService.SetDirty(ItemzId, false);
 		// TODO :: Create new Itemz through EndPoint API call and then Notify MudTreeView component to update itself.
 
 		var newChildItemz = new CreateItemzDTO();
@@ -642,5 +697,17 @@
 			await JS.InvokeVoidAsync("openInNewTab", url);
 		}
 	}
+	private async Task ConfirmNavigation(LocationChangingContext context)
+	{
+		bool canLeave = await FormStateService.ConfirmDiscardChangesAsync(ItemzId);
 
+		if (!canLeave)
+		{
+			context.PreventNavigation();
+		}
+		else
+		{
+			FormStateService.SetDirty(ItemzId, false);
+		}
+	}
 }

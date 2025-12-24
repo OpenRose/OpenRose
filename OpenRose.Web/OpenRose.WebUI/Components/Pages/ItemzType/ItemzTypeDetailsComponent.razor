@@ -31,6 +31,11 @@
 	}
 }
 
+@if (FormStateService.IsDirty(ItemzTypeId))
+{
+	<NavigationLock ConfirmExternalNavigation="true" OnBeforeInternalNavigation="((x) => ConfirmNavigation(x))" />
+}
+
 <MudPaper Class="pa-4 mb-5 align-start d-flex" Style="width: auto" Outlined="false">
 	<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Class="w-100">
 	<MudText Typo="Typo.h6" Align="Align.Left">ItemzType Details</MudText>
@@ -38,6 +43,7 @@
 		@if (CalledFrom == nameof(ProjectTreeView))
 		{
 			<MudButton Variant="Variant.Filled" Color="Color.Success"
+					   Disabled="FormStateService.IsDirty(ItemzTypeId)"
 					   Size="Size.Medium"
 					   style="margin: 10px"
 					   OnClick="(async () => await HandleCreateTreeViewChildItemzClicked())">
@@ -80,10 +86,11 @@
 				<MudForm Model="@singleItemzType" @ref="form" @bind-IsValid="@success" @bind-Errors="@errors" FieldChanged="formFieldChanged" >
 					<MudCardActions>
 						<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Class="w-100"> 
-						<MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(disableUpdateItemzTypeDetailsButton)"
-								   Size="Size.Large"
-								   style="gap: 10px; margin : 10px"
-								   OnClick="(() => HandleItemzTypeDetailsPatchSubmission())">
+						<MudButton Variant="Variant.Filled" Color="Color.Primary"
+								Disabled="@(disableUpdateItemzTypeDetailsButton || !FormStateService.IsDirty(ItemzTypeId))"
+								Size="Size.Large"
+								style="gap: 10px; margin : 10px"
+								OnClick="(() => HandleItemzTypeDetailsPatchSubmission())">
 							<MudText>Save</MudText>
 						</MudButton>
 						@if (CalledFrom == nameof(ProjectTreeView))
@@ -107,11 +114,14 @@
 									<MudText>Tree View</MudText>
 								</MudButton>
 							}
-						<MudButton Variant="Variant.Filled" Color="Color.Warning" Size="Size.Large" style="gap: 10px; margin-left : 10px"
+
+						}
+						<MudButton Variant="Variant.Filled" Color="Color.Warning"
+									Disabled="!FormStateService.IsDirty(ItemzTypeId)"
+									Size="Size.Large" style="gap: 10px; margin-left : 10px"
 									OnClick="(() => goBackToItemzType())">
 							<MudText>Cancel</MudText>
 						</MudButton>
-						}
 						</MudStack>
 					</MudCardActions>
 					<MudCardContent>
@@ -127,13 +137,16 @@
 						</MudStack>
 						<br />
 						<MudTextField T="string" Label="Name" Required="true" RequiredError="Name is required!"
-										@bind-Value="singleItemzType.Name"
-										For="@(() => singleItemzType.Name)" />
+							@bind-Value="singleItemzType.Name"
+							For="@(() => singleItemzType.Name)"
+							Immediate="true"
+							Disabled="@singleItemzType.IsSystem" />
 						<MudSelect @bind-Value="singleItemzType.Status"
 									For="@(() => singleItemzType.Status)"
 									Required ="true"
 									RequiredError="Status is required!"
-									Label="Status">
+									Label="Status"
+									Disabled="@singleItemzType.IsSystem">
 							@foreach (var _stringItemzTypeStatusValue in _stringItemzTypeStatusValues)
 							{
 								<MudSelectItem T="string" Value="_stringItemzTypeStatusValue">@_stringItemzTypeStatusValue</MudSelectItem>
@@ -144,17 +157,37 @@
 							For="@(() => singleItemzType.Description)" /> *@
 						
 						<!-- Ensure this div applies the custom class to the Markdown content -->
-						<MudText><strong>Description : </strong></MudText>
-						<div class="custom-markdown-editor">
-							<MarkdownEditor @bind-Value="@MyContent" HideIcons="@(["mde-tb-image"])" />
+						@if (singleItemzType.IsSystem)
+						{
+							<MudPaper Class="pa-4 mb-5" Style="background-color: #f5f5f5;">
+								<MudText><strong>Description : </strong></MudText>
+								<div class="markdown-body">@((MarkupString)convertedMarkdown)</div>
+							</MudPaper>
+						}
+						else
+						{
+							<MudText><strong>Description : </strong></MudText>
+							<div class="custom-markdown-editor">
+							<MarkdownEditor Value="@MyContent"
+								ValueChanged="@(async (string newValue) =>
+								{
+									MyContent = newValue;
+									if (newValue != _originalDescription)
+									{
+										await formFieldChanged();
+									}
+								})"
+								HideIcons="@(["mde-tb-image"])" />
 							<MudPaper Class="pa-4 mb-5" Style="background-color: #f5f5f5;">
 								@if (!string.IsNullOrEmpty(convertedMarkdown.Value))
-								{
-									<h3>Preview</h3>
-									<div class="markdown-body">@((MarkupString)convertedMarkdown)</div>
-								}
+										{
+											<h3>Preview</h3>
+											<div class="markdown-body">@((MarkupString)convertedMarkdown)</div>
+										}
 							</MudPaper>
-						</div>
+							</div>
+						}
+
 					</MudCardContent>
 				</MudForm>
 				</MudPaper>
@@ -176,13 +209,13 @@
 							</div>
 						</TitleContent>
 						<ChildContent>
-								<MudText Typo="Typo.body1" Color="Color.Error">Deleting itemzType means loosing all it's data. This is <STRONG>IRREVERSIBLE</STRONG> operation.</MudText>
-								<MudButton @onclick="OpenDeleteConfirmationDialogAsync" Variant="Variant.Filled"
-									Disabled="@(disableUpdateItemzTypeDetailsButton)"
-									Color="Color.Error" Size="Size.Large" style="align-items: center; margin-top : 10px">
-								Delete ItemzType
-								</MudButton>
-							</ChildContent>
+							<MudText Typo="Typo.body1" Color="Color.Error">Deleting itemzType means loosing all it's data. This is <STRONG>IRREVERSIBLE</STRONG> operation.</MudText>
+							<MudButton @onclick="OpenDeleteConfirmationDialogAsync" Variant="Variant.Filled"
+								Disabled="@(disableUpdateItemzTypeDetailsButton || FormStateService.IsDirty(ItemzTypeId))"
+								Color="Color.Error" Size="Size.Large" style="align-items: center; margin-top : 10px">
+							Delete ItemzType
+							</MudButton>
+						</ChildContent>
 						</MudExpansionPanel>
 					</MudExpansionPanels>
 				</MudItem>
@@ -223,15 +256,17 @@
 	public IHierarchyService hierarchyService { get; set; }
 	[Inject]
 	public IItemzService ItemzService { get; set; }
+	[Inject]
+	public FormStateService FormStateService { get; set; }
 
 	public Guid ParentId { get; set; }
 	private bool updateItemzTypeButtonClicked = false;
 
 	public GetItemzTypeDTO singleItemzType { get; set; } = new();
 	private ParameterForItemzBreadcrums BreadcrumsParameter;
+	private string _originalDescription = string.Empty;
 	public bool initializingPage { get; set; } = false;
 	private bool deletingItemzType { get; set; } = false;
-	private bool hasFormFieldChanged { get; set; } = false;
 
 
 	// private string _Content = string.Empty;
@@ -241,7 +276,8 @@
 		set
 		{
 			// _Content = value;
-			hasFormFieldChanged = true;
+			// FormStateService.SetDirty(ItemzTypeId, true);
+
 			singleItemzType.Description = value;
 			ConvertMarkdownToHtml(singleItemzType.Description);
 			ContentChanged.InvokeAsync(value);
@@ -279,73 +315,81 @@
 	{
 		if (firstRender)
 		{
-			initializingPage = true;
-			StateHasChanged();
-			//Thread.Sleep(300);
-			singleItemzType = await ItemzTypeService.__Single_ItemzType_By_GUID_ID__Async(ItemzTypeId);
-			if (singleItemzType != null)
-			{
-				BreadcrumsParameter = new ParameterForItemzBreadcrums();
-				BreadcrumsParameter.Id = singleItemzType.Id;
-				BreadcrumsParameter.Name = singleItemzType.Name;
-				BreadcrumsParameter.RecordType = "itemztype"; // TODO :: USE CONSTANT
-
-				TreeNodeItemzSelectionService.UpdateTreeNodeItemzName(ItemzTypeId, singleItemzType.Name!);
-			}
-
-			if (form != null)
-			{
-				await form.Validate();
-				if (form.IsValid)
-				{
-					disableUpdateItemzTypeDetailsButton = false;
-				}
-				else
-				{
-					disableUpdateItemzTypeDetailsButton = true;
-				}
-				initializingPage = false;
-				StateHasChanged();
-
-				// EXPLANATION :: First we create string list and then just call ToArray() for producing required string array
-				List<string> tempList = new List<string>();
-				foreach (var _itemzTypeStatusValue in Enum.GetValues<ItemzTypeStatus>())
-				{
-					tempList.Add(_itemzTypeStatusValue.ToString().Trim());
-				}
-				_stringItemzTypeStatusValues = tempList.ToArray();
-
-				if (singleItemzType != null)
-				{
-					if (singleItemzType.IsSystem )
-					{
-						if (CalledFrom == nameof(ItemzTypeDetails))
-						{
-							await OpenExceptionDialogAsync("System ItemzType can not be edited!");
-						}
-						disableUpdateItemzTypeDetailsButton = true;
-						form.Disabled = true;
-					}
-				}
-			}
-
-			// EXPLANATION : At the start of initialization process we capture parent record ID.
-			// Now even if user decides to Delete this Itemz Record then also we can go back to it's
-			// Parent ItemzType post completing deletion operation.
-			var httpResponse = await hierarchyService.__Get_Hierarchy_Record_Details_By_GUID__Async(ItemzTypeId);
-			ParentId = httpResponse.ParentRecordId;
-
-			await ConvertMarkdownToHtml(singleItemzType.Description);
-
-			StateHasChanged();
+			await LoadDataAsync();
 		}
 	}
+
+	private async Task LoadDataAsync()
+	{
+		initializingPage = true;
+		StateHasChanged();
+		//Thread.Sleep(300);
+		singleItemzType = await ItemzTypeService.__Single_ItemzType_By_GUID_ID__Async(ItemzTypeId);
+		if (singleItemzType != null)
+		{
+			BreadcrumsParameter = new ParameterForItemzBreadcrums();
+			BreadcrumsParameter.Id = singleItemzType.Id;
+			BreadcrumsParameter.Name = singleItemzType.Name;
+			BreadcrumsParameter.RecordType = "itemztype"; // TODO :: USE CONSTANT
+
+			TreeNodeItemzSelectionService.UpdateTreeNodeItemzName(ItemzTypeId, singleItemzType.Name!);
+			_originalDescription = singleItemzType.Description ?? string.Empty;
+			MyContent = _originalDescription;
+		}
+
+		if (form != null)
+		{
+			await form.Validate();
+			if (form.IsValid)
+			{
+				disableUpdateItemzTypeDetailsButton = false;
+			}
+			else
+			{
+				disableUpdateItemzTypeDetailsButton = true;
+			}
+
+			// EXPLANATION :: First we create string list and then just call ToArray() for producing required string array
+			List<string> tempList = new List<string>();
+			foreach (var _itemzTypeStatusValue in Enum.GetValues<ItemzTypeStatus>())
+			{
+				tempList.Add(_itemzTypeStatusValue.ToString().Trim());
+			}
+			_stringItemzTypeStatusValues = tempList.ToArray();
+
+			if (singleItemzType != null)
+			{
+				if (singleItemzType.IsSystem)
+				{
+					if (CalledFrom == nameof(ItemzTypeDetails))
+					{
+						await OpenExceptionDialogAsync("System ItemzType can not be edited!");
+					}
+					disableUpdateItemzTypeDetailsButton = true;
+					form.Disabled = true;
+				}
+			}
+		}
+
+		// EXPLANATION : At the start of initialization process we capture parent record ID.
+		// Now even if user decides to Delete this Itemz Record then also we can go back to it's
+		// Parent ItemzType post completing deletion operation.
+		var httpResponse = await hierarchyService.__Get_Hierarchy_Record_Details_By_GUID__Async(ItemzTypeId);
+		ParentId = httpResponse.ParentRecordId;
+
+		await ConvertMarkdownToHtml(singleItemzType.Description);
+
+		FormStateService.SetDirty(ItemzTypeId, false);
+		initializingPage = false;
+		StateHasChanged();
+	}
+
 	public async Task HandleItemzTypeDetailsPatchSubmission()
 	{
 		updateItemzTypeButtonClicked = true;
 		try
 		{
-			if (hasFormFieldChanged)
+			if (FormStateService.IsDirty(ItemzTypeId))
 			{
 				var updateItemzTypeDTO = new UpdateItemzTypeDTO();
 				updateItemzTypeDTO.Name = singleItemzType.Name;
@@ -353,6 +397,7 @@
 				updateItemzTypeDTO.Description = singleItemzType.Description;
 				var updatedResult = await ItemzTypeService.__PUT_Update_ItemzType_By_GUID_ID__Async(ItemzTypeId, updateItemzTypeDTO);
 				TreeNodeItemzSelectionService.UpdateTreeNodeItemzName(ItemzTypeId, singleItemzType.Name!);
+				FormStateService.SetDirty(ItemzTypeId, false);
 				//Thread.Sleep(800);
 			}
 		}
@@ -369,17 +414,19 @@
 
 		// TODO :: IF IT UPDATES THE PROJECT THEN DISABLE SUBMIT BUTTON AND CONFIRM ON SCREEN THAT IT'S NOW UPDATED SUCCESSFULLY
 
-		goBackToItemzType();
+		await goBackToItemzType();
 	}
 
 	private async Task formFieldChanged()
 	{
-		hasFormFieldChanged = true;
+		FormStateService.SetDirty(ItemzTypeId, true);
+
 		if (form != null)
 		{
 			await form.Validate();
 			if (form.IsValid)
 			{
+				// Allow saving for system ItemzTypes, except the Name field is disabled anyway
 				disableUpdateItemzTypeDetailsButton = false;
 				if (singleItemzType != null)
 				{
@@ -396,6 +443,7 @@
 			}
 		}
 	}
+
 
 	public async Task deleteItemzType()
 	{
@@ -443,16 +491,29 @@
 		// var dialogresult = await dialogref.Result;
 	}
 
-	public void goBackToItemzType()
+	public async Task goBackToItemzType()
 	{
+		FormStateService.SetDirty(ItemzTypeId, false);
+
 		if (CalledFrom == nameof(ItemzTypeDetails))
 		{
-			NavManager.NavigateTo($"/itemztype/{ItemzTypeId.ToString()}");
+			NavManager.NavigateTo($"/itemztype/{ItemzTypeId}");
+		}
+		else if (CalledFrom == nameof(ProjectTreeView))
+		{
+			await LoadDataAsync();
 		}
 	}
 
+
 	public async Task HandleCreateTreeViewChildItemzClicked()
 	{
+		bool canProceed = await FormStateService.ConfirmDiscardChangesAsync(ItemzTypeId);
+		if (!canProceed)
+			return;
+
+		FormStateService.SetDirty(ItemzTypeId, false);
+		
 		// TODO :: Create new Itemz through EndPoint API call and then Notify MudTreeView component to update itself.
 
 		var newChildItemz = new CreateItemzDTO();
@@ -500,4 +561,21 @@
 			await JS.InvokeVoidAsync("openInNewTab", url);
 		}
 	}
+
+	private async Task ConfirmNavigation(LocationChangingContext context)
+	{
+		bool canLeave = await FormStateService.ConfirmDiscardChangesAsync(ItemzTypeId);
+
+		if (!canLeave)
+		{
+			// User chose "Stay" → cancel navigation
+			context.PreventNavigation();
+		}
+		else
+		{
+			// User confirmed discard → clear dirty state
+			FormStateService.SetDirty(ItemzTypeId, false);
+		}
+	}
+
 }
