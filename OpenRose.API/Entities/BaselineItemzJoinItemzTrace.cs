@@ -3,6 +3,7 @@
 // See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 
 using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace ItemzApp.API.Entities
 {
@@ -15,5 +16,8 @@ namespace ItemzApp.API.Entities
         public virtual BaselineItemz? BaselineToItemz { get; set; }
 
         public Guid BaselineId { get; set; }
-    }
+
+		[MaxLength(32)]
+		public string? TraceLabel { get; set; }
+	}
 }
