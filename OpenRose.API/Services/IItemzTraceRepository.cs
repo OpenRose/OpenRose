@@ -42,6 +42,7 @@ namespace ItemzApp.API.Services
 
 		Task<List<ItemzJoinItemzTrace>> GetAllTracesForItemzIdsAsync(IEnumerable<Guid> itemzIds);
 
+        public Task<ItemzJoinItemzTrace?> GetItemzTraceAsync(Guid fromTraceItemzId, Guid toTraceItemzId);
 
 	}
 }
