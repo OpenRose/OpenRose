@@ -40,25 +40,35 @@ namespace ItemzApp.API.Helper
 			var sb = new StringBuilder();
 			sb.AppendLine("flowchart TD");
 
-			EmitHierarchyInline(root, sb, rootId, 1 , baseUrl);
+			EmitHierarchyInline(root, sb, rootId, 1, baseUrl);
 
 			// Build lookup dictionary from hierarchy
 			var idToName = BuildIdToNameMap(root);
 
-			// Emit trace links (dotted) with optional comments
+			// Emit trace links (dotted) with optional comments and optional labels
 			foreach (var t in traces)
 			{
 				if (idToName.TryGetValue(t.FromTraceItemzId, out var fromName) &&
 					idToName.TryGetValue(t.ToTraceItemzId, out var toName))
 				{
-					// Apply TransformLabelForMermaid to both sides
+					// Apply TransformLabelForMermaid to both sides for the comment
 					var fromLabel = TransformLabelForMermaid(fromName);
 					var toLabel = TransformLabelForMermaid(toName);
 
 					sb.AppendLine($"    %% {fromLabel} -.-> {toLabel}");
 				}
 
-				sb.AppendLine($"    {t.FromTraceItemzId} -.-> {t.ToTraceItemzId}");
+				// If a TraceLabel exists include it on the edge (sanitized & truncated)
+				if (!string.IsNullOrWhiteSpace(t.TraceLabel))
+				{
+					var edgeLabel = SanitizeLabelForMermaid(t.TraceLabel);
+					// Use |label| notation between dashes to show a label on the edge.
+					sb.AppendLine($"    {t.FromTraceItemzId} -.{edgeLabel}.-> {t.ToTraceItemzId}");
+				}
+				else
+				{
+					sb.AppendLine($"    {t.FromTraceItemzId} -.-> {t.ToTraceItemzId}");
+				}
 			}
 
 			return sb.ToString();
@@ -93,19 +103,28 @@ namespace ItemzApp.API.Helper
 
 			// Build lookup dictionary from baseline hierarchy
 			var idToName = BuildBaselineIdToNameMap(root);
-			// Emit trace links (dotted) with optional comments
+			// Emit trace links (dotted) with optional comments and labels
 			foreach (var t in traces)
 			{
 				if (idToName.TryGetValue(t.FromTraceBaselineItemzId, out var fromName) &&
 					idToName.TryGetValue(t.ToTraceBaselineItemzId, out var toName))
 				{
-					// Apply TransformLabelForMermaid to both sides
+					// Apply TransformLabelForMermaid to both sides for the comment
 					var fromLabel = TransformLabelForMermaid(fromName);
 					var toLabel = TransformLabelForMermaid(toName);
 					sb.AppendLine($"    %% {fromLabel} -.-> {toLabel}");
 				}
 
-				sb.AppendLine($"    {t.FromTraceBaselineItemzId} -.-> {t.ToTraceBaselineItemzId}");
+				// Add the edge, including label if present
+				if (!string.IsNullOrWhiteSpace(t.TraceLabel))
+				{
+					var edgeLabel = SanitizeLabelForMermaid(t.TraceLabel);
+					sb.AppendLine($"    {t.FromTraceBaselineItemzId} -.{edgeLabel}.-> {t.ToTraceBaselineItemzId}");
+				}
+				else
+				{
+					sb.AppendLine($"    {t.FromTraceBaselineItemzId} -.-> {t.ToTraceBaselineItemzId}");
+				}
 			}
 
 			return sb.ToString();
@@ -257,6 +276,33 @@ namespace ItemzApp.API.Helper
 			return $"\"{transformed}\"";
 		}
 
+		/// <summary>
+		/// Prepare a trace label for use as an edge label in Mermaid flows.
+		/// This returns an unquoted string where characters that break Mermaid are replaced.
+		/// The returned label is trimmed and truncated to 32 chars (if longer).
+		/// </summary>
+		/// <param name="input">Raw trace label.</param>
+		/// <returns>Sanitized, unquoted label suitable for using inside |label| in Mermaid edges.</returns>
+		private static string SanitizeLabelForMermaid(string? input)
+		{
+			if (string.IsNullOrWhiteSpace(input)) return string.Empty;
+
+
+			//TODO :: We should move Normalize Tracelabel  to a helper method
+			//		  so that it can be reused in other places as well.
+			// Trim and truncate to 32 characters (same limit as DB/schema)
+			var label = input.Trim();
+			if (label.Length > 32)
+			{
+				label = label.Substring(0, 32);
+			}
+
+			label = TransformLabelForMermaid(label);
+
+			// Trim again in case replacements added spaces
+			return label.Trim();
+		}
+
 		#region Itemz lookup dictionary
 
 		/// <summary>
@@ -357,6 +403,6 @@ namespace ItemzApp.API.Helper
 			}
 		}
 
-		#endregion 
+		#endregion
 	}
 }
