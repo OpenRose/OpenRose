@@ -75,7 +75,8 @@ namespace ItemzApp.API.Services
             {
                 var tempChildTraceBaselineItemzDTO = new ChildTraceBaselineItemz__DTO();
                 tempChildTraceBaselineItemzDTO.BaselineItemzID = childTraceBaselineItemz.BaselineToItemzId;
-                baselineItemzParentAndChildTraceDTO.BaselineItemz.ChildBaselineItemz.Add(tempChildTraceBaselineItemzDTO);
+                tempChildTraceBaselineItemzDTO.TraceLabel = childTraceBaselineItemz.TraceLabel;
+				baselineItemzParentAndChildTraceDTO.BaselineItemz.ChildBaselineItemz.Add(tempChildTraceBaselineItemzDTO);
             }
 
             var allParentTraceBaselineItemzs = _baselineItemzTraceContext.BaselineItemzJoinItemzTrace!
@@ -86,7 +87,8 @@ namespace ItemzApp.API.Services
             {
                 var tempParentTraceBaselineItemzDTO = new ParentTraceBaselineItemz__DTO();
                 tempParentTraceBaselineItemzDTO.BaselineItemzID = parentTraceBaselineItemz.BaselineFromItemzId;
-                baselineItemzParentAndChildTraceDTO.BaselineItemz.ParentBaselineItemz.Add(tempParentTraceBaselineItemzDTO);
+                tempParentTraceBaselineItemzDTO.TraceLabel = parentTraceBaselineItemz.TraceLabel;
+				baselineItemzParentAndChildTraceDTO.BaselineItemz.ParentBaselineItemz.Add(tempParentTraceBaselineItemzDTO);
             }
 
             return baselineItemzParentAndChildTraceDTO;
@@ -106,38 +108,51 @@ namespace ItemzApp.API.Services
             }
         }
 
-        /// <summary>
-        /// Purpose of this method is to check if Baseline Trace is already found 
-        /// between FromBaselineItemz and ToBaselineItemz
-        /// </summary>
-        /// <param name="baselineItemzTraceDTO"></param>
-        /// <returns></returns>
+        ///// <summary>
+        ///// Purpose of this method is to check if Baseline Trace is already found 
+        ///// between FromBaselineItemz and ToBaselineItemz
+        ///// </summary>
+        ///// <param name="baselineItemzTraceDTO"></param>
+        ///// <returns></returns>
 
-        public async Task<bool> BaselineItemzsTraceExistsAsync(BaselineItemzTraceDTO baselineItemzTraceDTO)
-        {
-            if (baselineItemzTraceDTO.FromTraceBaselineItemzId == Guid.Empty)
-            {
-                throw new ArgumentNullException(nameof(baselineItemzTraceDTO.FromTraceBaselineItemzId));
-            }
+        //public async Task<bool> BaselineItemzsTraceExistsAsync(BaselineItemzTraceDTO baselineItemzTraceDTO)
+        //{
+        //    if (baselineItemzTraceDTO.FromTraceBaselineItemzId == Guid.Empty)
+        //    {
+        //        throw new ArgumentNullException(nameof(baselineItemzTraceDTO.FromTraceBaselineItemzId));
+        //    }
 
-            if (baselineItemzTraceDTO.ToTraceBaselineItemzId == Guid.Empty)
-            {
-                throw new ArgumentNullException(nameof(baselineItemzTraceDTO.ToTraceBaselineItemzId));
-            }
+        //    if (baselineItemzTraceDTO.ToTraceBaselineItemzId == Guid.Empty)
+        //    {
+        //        throw new ArgumentNullException(nameof(baselineItemzTraceDTO.ToTraceBaselineItemzId));
+        //    }
 
-            if (await BaselineItemzExistsAsync(baselineItemzTraceDTO.FromTraceBaselineItemzId) == false ||
-                     await BaselineItemzExistsAsync(baselineItemzTraceDTO.ToTraceBaselineItemzId) == false)
-            {
-                return false;
-            }
+        //    if (await BaselineItemzExistsAsync(baselineItemzTraceDTO.FromTraceBaselineItemzId) == false ||
+        //             await BaselineItemzExistsAsync(baselineItemzTraceDTO.ToTraceBaselineItemzId) == false)
+        //    {
+        //        return false;
+        //    }
 
-            return await _baselineItemzTraceContext.BaselineItemzJoinItemzTrace
-                            .AsNoTracking()
-                            .AnyAsync(bijit => bijit.BaselineFromItemzId == baselineItemzTraceDTO.FromTraceBaselineItemzId
-                                        && bijit.BaselineToItemzId == baselineItemzTraceDTO.ToTraceBaselineItemzId);
-        }
+        //    return await _baselineItemzTraceContext.BaselineItemzJoinItemzTrace
+        //                    .AsNoTracking()
+        //                    .AnyAsync(bijit => bijit.BaselineFromItemzId == baselineItemzTraceDTO.FromTraceBaselineItemzId
+        //                                && bijit.BaselineToItemzId == baselineItemzTraceDTO.ToTraceBaselineItemzId);
+        //}
 
-        public async Task<bool> BaselineItemzExistsAsync(Guid baselineItemzId)
+		public async Task<BaselineItemzJoinItemzTrace?> GetBaselineItemzTraceAsync(Guid fromTraceBaselineItemzId, Guid toTraceBaselineItemzId)
+		{
+			if (fromTraceBaselineItemzId == Guid.Empty) throw new ArgumentNullException(nameof(fromTraceBaselineItemzId));
+			if (toTraceBaselineItemzId == Guid.Empty) throw new ArgumentNullException(nameof(toTraceBaselineItemzId));
+
+			return await _baselineItemzTraceContext.BaselineItemzJoinItemzTrace!
+				.AsNoTracking()
+				.FirstOrDefaultAsync(bijit =>
+					bijit.BaselineFromItemzId == fromTraceBaselineItemzId &&
+					bijit.BaselineToItemzId == toTraceBaselineItemzId);
+		}
+
+
+		public async Task<bool> BaselineItemzExistsAsync(Guid baselineItemzId)
         {
             if (baselineItemzId == Guid.Empty)
             {

@@ -21,7 +21,7 @@ namespace ItemzApp.API.Services
 
         public Task<BaselineItemzParentAndChildTraceDTO> GetAllParentAndChildTracesByBaselineItemzIdAsync(Guid baselineItemzId);
 
-        public Task<bool> BaselineItemzsTraceExistsAsync(BaselineItemzTraceDTO baselineItemzTraceDTO);
+        //public Task<bool> BaselineItemzsTraceExistsAsync(BaselineItemzTraceDTO baselineItemzTraceDTO);
 
         public Task<bool> BaselineItemzExistsAsync(Guid baselineItemzId);
 
@@ -32,5 +32,8 @@ namespace ItemzApp.API.Services
         public Task<int> GetAllFromAndToTracesCountByBaselineItemzIdAsync(Guid baselineItemzId);
 
 		Task<List<BaselineItemzJoinItemzTrace>> GetAllTracesForBaselineItemzIdsAsync(IEnumerable<Guid> baselineItemzIds);
+
+        public Task<BaselineItemzJoinItemzTrace?> GetBaselineItemzTraceAsync(Guid fromTraceBaselineItemzId, Guid toTraceBaselineItemzId);
+
 	}
 }
