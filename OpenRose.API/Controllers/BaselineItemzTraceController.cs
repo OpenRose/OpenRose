@@ -50,49 +50,59 @@ namespace ItemzApp.API.Controllers
 
         }
 
-        /// <summary>
-        /// Check if specific Baseline Itemz Trace association exists
-        /// </summary>
-        /// <param name="fromTraceBaselineItemzId">Provide From Trace Baseline Itemz Id</param>
-        /// <param name="toTraceBaselineItemzId">Provide To Trace Baseline Itemz Id</param>
-        /// <returns>BaselineItemzTraceDTO for the Baseline Itemz that has specified Baseline Itemz Trace</returns>
-        /// <response code="200">Returns BaselineItemzTraceDTO for the From and To Baseline Itemz Trace</response>
-        /// <response code="404">Baseline Itemz Trace was not found</response>
-        [HttpGet("CheckExists/", Name = "__GET_Check_Baseline_Itemz_Trace_Exists__")]
-        [HttpHead("CheckExists/", Name = "__HEAD_Check_Baseline_Itemz_Trace_Exists__")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesDefaultResponseType]
+		/// <summary>
+		/// Check if specific Baseline Itemz Trace association exists
+		/// </summary>
+		/// <param name="fromTraceBaselineItemzId">Provide From Trace Baseline Itemz Id</param>
+		/// <param name="toTraceBaselineItemzId">Provide To Trace Baseline Itemz Id</param>
+		/// <returns>BaselineItemzTraceDTO for the Baseline Itemz that has specified Baseline Itemz Trace</returns>
+		/// <response code="200">Returns BaselineItemzTraceDTO for the From and To Baseline Itemz Trace</response>
+		/// <response code="404">Baseline Itemz Trace was not found</response>
+		[HttpGet("CheckExists/", Name = "__GET_Check_Baseline_Itemz_Trace_Exists__")]
+		[HttpHead("CheckExists/", Name = "__HEAD_Check_Baseline_Itemz_Trace_Exists__")]
+		[ProducesResponseType(StatusCodes.Status200OK)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		[ProducesDefaultResponseType]
+		public async Task<ActionResult<BaselineItemzTraceDTO>> CheckBaselineItemzTraceExistsAsync(
+			[FromQuery] Guid fromTraceBaselineItemzId, Guid toTraceBaselineItemzId)
+		{
+			var trace = await _baselineItemzTraceRepository
+				.GetBaselineItemzTraceAsync(fromTraceBaselineItemzId, toTraceBaselineItemzId);
 
-        public async Task<ActionResult<BaselineItemzTraceDTO>> CheckBaselineItemzTraceExistsAsync([FromQuery] Guid fromTraceBaselineItemzId, Guid toTraceBaselineItemzId) // TODO: Try from Query.
-        {
-            var tempBaselineItemzTraceDTO = new BaselineItemzTraceDTO();
+			if (trace == null)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}From BaselineItemz ID {fromTraceBaselineItemzId} and To BaselineItemz ID {toTraceBaselineItemzId} Trace could not be found",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					fromTraceBaselineItemzId,
+					toTraceBaselineItemzId);
+				return NotFound();
+			}
 
-            tempBaselineItemzTraceDTO.FromTraceBaselineItemzId = fromTraceBaselineItemzId;
-            tempBaselineItemzTraceDTO.ToTraceBaselineItemzId = toTraceBaselineItemzId;
-            if (!(await _baselineItemzTraceRepository.BaselineItemzsTraceExistsAsync(tempBaselineItemzTraceDTO)))  // Check if BaselineItemzTrace association exists or not
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}From BaselineItemz ID {fromTraceBaselineItemzId} and To BaselineItemz ID {toTraceBaselineItemzId} Trace could not be found",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    tempBaselineItemzTraceDTO.FromTraceBaselineItemzId,
-                    tempBaselineItemzTraceDTO.ToTraceBaselineItemzId);
-                return NotFound();
-            }
-            _logger.LogDebug("{FormattedControllerAndActionNames}From Baseline Itemz ID {fromTraceBaselineItemzId} and To Baseline Itemz ID {toTraceBaselineItemzId} Trace was found",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    tempBaselineItemzTraceDTO.FromTraceBaselineItemzId,
-                    tempBaselineItemzTraceDTO.ToTraceBaselineItemzId);
-            return Ok(tempBaselineItemzTraceDTO);
-        }
+			var dto = new BaselineItemzTraceDTO
+			{
+				FromTraceBaselineItemzId = trace.BaselineFromItemzId,
+				ToTraceBaselineItemzId = trace.BaselineToItemzId,
+				TraceLabel = trace.TraceLabel // <-- now included
+			};
 
-        /// <summary>
-        /// Gets collection of Baseline Itemz Traces by Baseline Itemz ID
-        /// </summary>
-        /// <param name="baselineItemzId">Baseline Itemz ID for which Baseline Itemz Traces are queried</param>
-        /// <returns>Collection of Baseline Itemz Traces by Baseline Itemz ID</returns>
-        /// <response code="200">Returns Collection of Baseline Itemz Traces by Baseline Itemz ID</response>
-        /// <response code="404">Either Baseline ItemzID was not found or No Baseline Itemz Traces were found for given BaselineItemzID</response>
-        [HttpGet("{baselineItemzId:Guid}", Name = "__GET_Baseline_Itemz_Traces_By_BaselineItemzID__")]
+			_logger.LogDebug("{FormattedControllerAndActionNames}From Baseline Itemz ID {fromTraceBaselineItemzId} and To Baseline Itemz ID {toTraceBaselineItemzId} Trace was found with label {traceLabel}",
+				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+				dto.FromTraceBaselineItemzId,
+				dto.ToTraceBaselineItemzId,
+				dto.TraceLabel);
+
+			return Ok(dto);
+		}
+
+
+		/// <summary>
+		/// Gets collection of Baseline Itemz Traces by Baseline Itemz ID
+		/// </summary>
+		/// <param name="baselineItemzId">Baseline Itemz ID for which Baseline Itemz Traces are queried</param>
+		/// <returns>Collection of Baseline Itemz Traces by Baseline Itemz ID</returns>
+		/// <response code="200">Returns Collection of Baseline Itemz Traces by Baseline Itemz ID</response>
+		/// <response code="404">Either Baseline ItemzID was not found or No Baseline Itemz Traces were found for given BaselineItemzID</response>
+		[HttpGet("{baselineItemzId:Guid}", Name = "__GET_Baseline_Itemz_Traces_By_BaselineItemzID__")]
         [HttpHead("{baselineItemzId:Guid}", Name = "__HEAD_Baseline_Itemz_Traces_By_BaselineItemzID__")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]

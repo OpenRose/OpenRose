@@ -59,41 +59,50 @@ namespace ItemzApp.API.Controllers
         /// <response code="200">Returns ItemzTraceDTO for the From and To Itemz Trace</response>
         /// <response code="404">Itemz Trace was not found</response>
         [HttpGet("CheckExists/", Name = "__GET_Check_Itemz_Trace_Exists__")]
-        [HttpHead("CheckExists/", Name = "__HEAD_Check_Itemz_Trace_Exists__")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesDefaultResponseType]
+		[HttpHead("CheckExists/", Name = "__HEAD_Check_Itemz_Trace_Exists__")]
+		[ProducesResponseType(StatusCodes.Status200OK)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		[ProducesDefaultResponseType]
+		public async Task<ActionResult<ItemzTraceDTO>> CheckItemzTraceExistsAsync(
+			[FromQuery] Guid fromTraceItemzId, Guid toTraceItemzId)
+		{
+			var trace = await _itemzTraceRepository.GetItemzTraceAsync(fromTraceItemzId, toTraceItemzId);
 
-        public async Task<ActionResult<ItemzTraceDTO>> CheckItemzTraceExistsAsync([FromQuery] Guid fromTraceItemzId, Guid toTraceItemzId) // TODO: Try from Query.
-        {
-            var tempItemzTraceDTO = new ItemzTraceDTO();
+			if (trace == null)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}From Itemz ID {fromTraceItemzId} and To Itemz ID {toTraceItemzId} Trace could not be found",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					fromTraceItemzId,
+					toTraceItemzId);
+				return NotFound();
+			}
 
-            tempItemzTraceDTO.FromTraceItemzId = fromTraceItemzId;
-            tempItemzTraceDTO.ToTraceItemzId = toTraceItemzId;
-            if (!(await _itemzTraceRepository.ItemzsTraceExistsAsync(tempItemzTraceDTO)))  // Check if ItemzTrace association exists or not
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}From Itemz ID {fromTraceItemzId} and To Itemz ID {toTraceItemzId} Trace could not be found",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    tempItemzTraceDTO.FromTraceItemzId,
-                    tempItemzTraceDTO.ToTraceItemzId);
-                return NotFound();
-            }
-            _logger.LogDebug("{FormattedControllerAndActionNames}From Itemz ID {fromTraceItemzId} and To Itemz ID {toTraceItemzId} Trace was found",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    tempItemzTraceDTO.FromTraceItemzId,
-                    tempItemzTraceDTO.ToTraceItemzId);
-            return Ok(tempItemzTraceDTO);
-        }
+			var dto = new ItemzTraceDTO
+			{
+				FromTraceItemzId = trace.FromItemzId,
+				ToTraceItemzId = trace.ToItemzId,
+				TraceLabel = trace.TraceLabel // <-- now included
+			};
+
+			_logger.LogDebug("{FormattedControllerAndActionNames}From Itemz ID {fromTraceItemzId} and To Itemz ID {toTraceItemzId} Trace was found with label {traceLabel}",
+				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+				dto.FromTraceItemzId,
+				dto.ToTraceItemzId,
+				dto.TraceLabel);
+
+			return Ok(dto);
+		}
 
 
-        /// <summary>
-        /// Used for Establishing Trace link between Itemz 
-        /// </summary>
-        /// <param name="itemzTraceDTO">Used for Associating Trace between two Itemz </param>
-        /// <returns>ItemzTraceDTO for the Itemz Trace Association</returns>
-        /// <response code="200">Itemz Trace association was either found or added successfully</response>
-        /// <response code="404">Either FromItemz or ToItemz was not found </response>
-        [HttpPost(Name = "__POST_Establish_Trace_Between_Itemz__")]
+
+		/// <summary>
+		/// Used for Establishing Trace link between Itemz 
+		/// </summary>
+		/// <param name="itemzTraceDTO">Used for Associating Trace between two Itemz </param>
+		/// <returns>ItemzTraceDTO for the Itemz Trace Association</returns>
+		/// <response code="200">Itemz Trace association was either found or added successfully</response>
+		/// <response code="404">Either FromItemz or ToItemz was not found </response>
+		[HttpPost(Name = "__POST_Establish_Trace_Between_Itemz__")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesDefaultResponseType]
