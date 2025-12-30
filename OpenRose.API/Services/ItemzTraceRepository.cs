@@ -69,7 +69,8 @@ namespace ItemzApp.API.Services
             {
                 var tempChildTraceItemzDTO = new ChildTraceItemz__DTO();
                 tempChildTraceItemzDTO.ItemzID = childTraceItemz.ToItemzId;
-                itemzParentAndChildTraceDTO.Itemz.ChildItemz.Add(tempChildTraceItemzDTO);
+				tempChildTraceItemzDTO.TraceLabel = childTraceItemz.TraceLabel;
+				itemzParentAndChildTraceDTO.Itemz.ChildItemz.Add(tempChildTraceItemzDTO);
             }
 
             var allParentTraceItemzs = _itemzTraceContext.ItemzJoinItemzTrace!
@@ -79,7 +80,8 @@ namespace ItemzApp.API.Services
             {
                 var tempParentTraceItemzDTO = new ParentTraceItemz__DTO();
                 tempParentTraceItemzDTO.ItemzID = parentTraceItemz.FromItemzId;
-                itemzParentAndChildTraceDTO.Itemz.ParentItemz.Add(tempParentTraceItemzDTO);
+				tempParentTraceItemzDTO.TraceLabel = parentTraceItemz.TraceLabel;
+				itemzParentAndChildTraceDTO.Itemz.ParentItemz.Add(tempParentTraceItemzDTO);
             }
 
             return itemzParentAndChildTraceDTO;
@@ -123,11 +125,24 @@ namespace ItemzApp.API.Services
                                         && itrace.ToItemzId == itemzTraceDTO.ToTraceItemzId);
         }
 
-        /// <summary>
-        /// Purpose for this method is to allow creating new Itemz Trace and saving it.
-        /// </summary>
-        /// <param name="itemzTraceDTO"></param>
-        public async Task EstablishTraceBetweenItemzAsync(ItemzTraceDTO itemzTraceDTO)
+		public async Task<ItemzJoinItemzTrace?> GetItemzTraceAsync(Guid fromTraceItemzId, Guid toTraceItemzId)
+		{
+			if (fromTraceItemzId == Guid.Empty) throw new ArgumentNullException(nameof(fromTraceItemzId));
+			if (toTraceItemzId == Guid.Empty) throw new ArgumentNullException(nameof(toTraceItemzId));
+
+			return await _itemzTraceContext.ItemzJoinItemzTrace!
+				.AsNoTracking()
+				.FirstOrDefaultAsync(itrace =>
+					itrace.FromItemzId == fromTraceItemzId &&
+					itrace.ToItemzId == toTraceItemzId);
+		}
+
+
+		/// <summary>
+		/// Purpose for this method is to allow creating new Itemz Trace and saving it.
+		/// </summary>
+		/// <param name="itemzTraceDTO"></param>
+		public async Task EstablishTraceBetweenItemzAsync(ItemzTraceDTO itemzTraceDTO)
         {
             if (itemzTraceDTO.FromTraceItemzId == Guid.Empty)
             {
@@ -149,19 +164,28 @@ namespace ItemzApp.API.Services
                 throw new Exception(nameof(itemzTraceDTO.ToTraceItemzId));
             }
 
-            var itrace = await _itemzTraceContext.ItemzJoinItemzTrace!.FindAsync(itemzTraceDTO.FromTraceItemzId, itemzTraceDTO.ToTraceItemzId);
-            if(itrace == null)
-            {
-                var temp_itrace = new ItemzJoinItemzTrace
-                {
-                    FromItemzId = itemzTraceDTO.FromTraceItemzId,
-                    ToItemzId = itemzTraceDTO.ToTraceItemzId
-                };
-                await _itemzTraceContext.ItemzJoinItemzTrace.AddAsync(temp_itrace);
-            }
-        }
+			var itrace = await _itemzTraceContext.ItemzJoinItemzTrace!
+				.FindAsync(itemzTraceDTO.FromTraceItemzId, itemzTraceDTO.ToTraceItemzId);
 
-        public async Task<bool> ItemzExistsAsync(Guid itemzId)
+			if (itrace == null)
+			{
+				var temp_itrace = new ItemzJoinItemzTrace
+				{
+					FromItemzId = itemzTraceDTO.FromTraceItemzId,
+					ToItemzId = itemzTraceDTO.ToTraceItemzId,
+					TraceLabel = itemzTraceDTO.TraceLabel
+				};
+				await _itemzTraceContext.ItemzJoinItemzTrace.AddAsync(temp_itrace);
+			}
+			else
+			{
+				// Update existing trace label
+				itrace.TraceLabel = itemzTraceDTO.TraceLabel;
+				// _itemzTraceContext.ItemzJoinItemzTrace.Update(itrace);
+			}
+		}
+
+		public async Task<bool> ItemzExistsAsync(Guid itemzId)
         {
             if (itemzId == Guid.Empty)
             {

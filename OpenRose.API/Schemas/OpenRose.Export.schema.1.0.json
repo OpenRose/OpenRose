@@ -246,6 +246,11 @@
         "ToTraceItemzId": {
           "type": "string",
           "format": "uuid"
+        },
+        "TraceLabel": {
+          "type": [ "string", "null" ],
+          "maxLength": 32,
+          "description": "Optional short unicode label for the trace (<= 32 characters)"
         }
       },
       "required": [ "FromTraceItemzId", "ToTraceItemzId" ],
@@ -390,6 +395,11 @@
         "ToTraceBaselineItemzId": {
           "type": "string",
           "format": "uuid"
+        },
+        "TraceLabel": {
+          "type": [ "string", "null" ],
+          "maxLength": 32,
+          "description": "Optional short unicode label for the baseline trace (<= 32 characters)"
         }
       },
       "required": [ "FromTraceBaselineItemzId", "ToTraceBaselineItemzId" ],

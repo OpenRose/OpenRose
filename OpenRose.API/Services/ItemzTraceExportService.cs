@@ -36,10 +36,29 @@ namespace ItemzApp.API.Services
 					if (!uniqueTraces.Contains(traceKey))
 					{
 						uniqueTraces.Add(traceKey);
+
+						//TODO :: We should move Normalize Tracelabel  to a helper method
+						//		  so that it can be reused in other places as well.
+						// Normalize TraceLabel: preserve null, trim whitespace, and defensively truncate to 32 chars
+						string? label = trace.TraceLabel;
+						if (!string.IsNullOrWhiteSpace(label))
+						{
+							label = label.Trim();
+							if (label.Length > 32)
+							{
+								label = label.Substring(0, 32);
+							}
+						}
+						else
+						{
+							label = null;
+						}
+
 						result.Add(new ItemzTraceDTO
 						{
 							FromTraceItemzId = trace.FromItemzId,
-							ToTraceItemzId = trace.ToItemzId
+							ToTraceItemzId = trace.ToItemzId,
+							TraceLabel = label
 						});
 					}
 				}

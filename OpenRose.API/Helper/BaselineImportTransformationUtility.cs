@@ -86,10 +86,33 @@ namespace ItemzApp.API.Helper
 		public static List<ItemzTraceDTO> TransformBaselineTracesToItemzTraces(IEnumerable<BaselineItemzTraceDTO>? baselineTraces)
 		{
 			return (baselineTraces ?? Enumerable.Empty<BaselineItemzTraceDTO>())
-				.Select(t => new ItemzTraceDTO
+				.Select(t =>
 				{
-					FromTraceItemzId = t.FromTraceBaselineItemzId,
-					ToTraceItemzId = t.ToTraceBaselineItemzId
+
+					//TODO :: We should move Normalize Tracelabel  to a helper method
+					//		  so that it can be reused in other places as well.
+
+					// Normalize TraceLabel: preserve null, trim, and defensively truncate to 32 chars
+					string? label = t.TraceLabel;
+					if (!string.IsNullOrWhiteSpace(label))
+					{
+						label = label.Trim();
+						if (label.Length > 32)
+						{
+							label = label.Substring(0, 32);
+						}
+					}
+					else
+					{
+						label = null;
+					}
+
+					return new ItemzTraceDTO
+					{
+						FromTraceItemzId = t.FromTraceBaselineItemzId,
+						ToTraceItemzId = t.ToTraceBaselineItemzId,
+						TraceLabel = label
+					};
 				})
 				.ToList();
 		}

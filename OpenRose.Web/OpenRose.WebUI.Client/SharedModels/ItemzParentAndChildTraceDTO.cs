@@ -9,33 +9,39 @@ using System.Threading.Tasks;
 
 namespace OpenRose.WebUI.Client.SharedModels
 {
-    public class ItemzParentAndChildTraceDTO
-    {
-        public ItemzParentAndChildTraceDTO()
-        {
-            SingleItemzAllTrace__DTO singleItemzAllTrace__DTO = new SingleItemzAllTrace__DTO();
-            Itemz = singleItemzAllTrace__DTO;
-        }
+	public class ItemzParentAndChildTraceDTO
+	{
+		public ItemzParentAndChildTraceDTO()
+		{
+			SingleItemzAllTrace__DTO singleItemzAllTrace__DTO = new SingleItemzAllTrace__DTO();
+			Itemz = singleItemzAllTrace__DTO;
+		}
 
-        public SingleItemzAllTrace__DTO? Itemz { get; set; }
+		public SingleItemzAllTrace__DTO? Itemz { get; set; }
 
-    }
+	}
 
-    public class SingleItemzAllTrace__DTO
-    {
-        public Guid ID { get; set; }
-        public List<ParentTraceItemz__DTO>? ParentItemz { get; set; }
-        public List<ChildTraceItemz__DTO>? ChildItemz { get; set; }
-    }
+	public class SingleItemzAllTrace__DTO
+	{
+		public Guid ID { get; set; }
+		public List<ParentTraceItemz__DTO>? ParentItemz { get; set; }
+		public List<ChildTraceItemz__DTO>? ChildItemz { get; set; }
+	}
 
-    // Root myDeserializedClass = JsonConvert.DeserializeObject<Root>(myJsonResponse);
-    public class ChildTraceItemz__DTO
-    {
-        public Guid ItemzID { get; set; }
-    }
+	// Root myDeserializedClass = JsonConvert.DeserializeObject<Root>(myJsonResponse);
+	public class ChildTraceItemz__DTO
+	{
+		public Guid ItemzID { get; set; }
 
-    public class ParentTraceItemz__DTO
-    {
-        public Guid ItemzID { get; set; }
-    }
+		// Optional short unicode label for this trace (Parent -> Child)
+		public string? TraceLabel { get; set; }
+	}
+
+	public class ParentTraceItemz__DTO
+	{
+		public Guid ItemzID { get; set; }
+
+		// Optional short unicode label for this trace (Parent -> Child)
+		public string? TraceLabel { get; set; }
+	}
 }

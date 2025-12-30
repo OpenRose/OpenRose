@@ -641,9 +641,9 @@ namespace ItemzApp.API.Services
 
 
 		private async Task<int> ProcessItemzTracesAsync(
-								IEnumerable<ItemzTraceDTO>? traceDtos,
-								Dictionary<Guid, Guid> idMap,
-								List<string> errorList)
+						IEnumerable<ItemzTraceDTO>? traceDtos,
+						Dictionary<Guid, Guid> idMap,
+						List<string> errorList)
 		{
 			int traceCreated = 0;
 
@@ -652,11 +652,24 @@ namespace ItemzApp.API.Services
 				if (idMap.TryGetValue(trace.FromTraceItemzId, out var fromId) &&
 					idMap.TryGetValue(trace.ToTraceItemzId, out var toId))
 				{
+					//TODO :: We should move Normalize Tracelabel  to a helper method
+					//		  so that it can be reused in other places as well.
+					// Normalize TraceLabel: trim, treat empty as null, and enforce max length 32
+					string? label = string.IsNullOrWhiteSpace(trace.TraceLabel) ? null : trace.TraceLabel.Trim();
+					if (label != null && label.Length > 32)
+					{
+						_logger.LogWarning("TraceLabel too long for trace {From}->{To}; truncating to 32 chars",
+							trace.FromTraceItemzId, trace.ToTraceItemzId);
+						label = label.Substring(0, 32);
+					}
+
 					await _traceRepository.EstablishTraceBetweenItemzAsync(new ItemzTraceDTO
 					{
 						FromTraceItemzId = fromId,
-						ToTraceItemzId = toId
+						ToTraceItemzId = toId,
+						TraceLabel = label
 					});
+
 					traceCreated++;
 				}
 				else
