@@ -7,6 +7,7 @@
 @using OpenRose.WebUI.Client.SharedModels
 @using OpenRose.WebUI.Client.Services.BaselineItemzCollection
 @using OpenRose.WebUI.Client.Services.BaselineItemzTrace;
+@using OpenRose.WebUI.Client.SharedModels.ClientSideUIOnlyModel
 @using OpenRose.WebUI.Components.EventServices
 @using OpenRose.WebUI.Components.Pages.Common
 @inject NavigationManager NavManager
@@ -16,7 +17,7 @@
 <MudPaper Class="pa-4 align-start d-flex" Style="width: auto" Outlined="false">
 	<MudText Typo="Typo.h6" Align="Align.Left"> <MudIcon Icon="@Icons.Material.Filled.KeyboardDoubleArrowUp" /> Parent / From Baseline Traces </MudText>
 </MudPaper>
-<MudDataGrid Items="@AllParentBaselineItemzTraces"
+<MudDataGrid Items="@AllParentBaselineTraceViewModels"
 			 Filterable="true"
 			 SortMode="@SortMode.None"
 			 Groupable="false"
@@ -42,6 +43,20 @@
 			</CellTemplate>
 		</PropertyColumn>
 		<PropertyColumn Property="x => x.Name" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
+		<PropertyColumn Property="x => x.TraceLabel" Title="Trace Label">
+			<CellTemplate>
+				@if (!string.IsNullOrWhiteSpace(context.Item.TraceLabel))
+				{
+					<MudChip Color="Color.Info">@context.Item.TraceLabel</MudChip>
+				}
+				else
+				{
+					<MudChip Color="Color.Default" Variant="Variant.Outlined">
+						No Label
+					</MudChip>
+				}
+			</CellTemplate>
+		</PropertyColumn>
 		<PropertyColumn Property="x => x.Status" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
 		<PropertyColumn Property="x => x.Priority" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
 		<TemplateColumn Title="Action">
@@ -58,7 +73,7 @@
 <MudPaper Class="pa-4 align-start d-flex" Style="width: auto" Outlined="false">
 	<MudText Typo="Typo.h6" Align="Align.Left"><MudIcon Icon="@Icons.Material.Filled.KeyboardDoubleArrowDown" />Child / To Traces </MudText>
 </MudPaper>
-<MudDataGrid Items="@AllChildBaselineItemzTraces"
+<MudDataGrid Items="@AllChildBaselineTraceViewModels"
 			 Filterable="true"
 			 SortMode="@SortMode.None"
 			 Groupable="false"
@@ -84,6 +99,20 @@
 			</CellTemplate>
 		</PropertyColumn>
 		<PropertyColumn Property="x => x.Name" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
+		<PropertyColumn Property="x => x.TraceLabel" Title="Trace Label">
+			<CellTemplate>
+				@if (!string.IsNullOrWhiteSpace(context.Item.TraceLabel))
+				{
+					<MudChip Color="Color.Info">@context.Item.TraceLabel</MudChip>
+				}
+				else
+				{
+					<MudChip Color="Color.Default" Variant="Variant.Outlined">
+						No Label
+					</MudChip>
+				}
+			</CellTemplate>
+		</PropertyColumn>
 		<PropertyColumn Property="x => x.Status" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
 		<PropertyColumn Property="x => x.Priority" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
 		<TemplateColumn CellClass="d-flex justify-left">
@@ -108,39 +137,63 @@
 	public IBaselineItemzCollectionService baselineItemzCollectionService { get; set; }
 
 	private BaselineItemzParentAndChildTraceDTO SingleBaselineItemzTraces { get; set; } = new BaselineItemzParentAndChildTraceDTO();
-	private ICollection<GetBaselineItemzDTO> AllParentBaselineItemzTraces { get; set; } = new List<GetBaselineItemzDTO>();
-	private ICollection<GetBaselineItemzDTO> AllChildBaselineItemzTraces { get; set; } = new List<GetBaselineItemzDTO>();
+	// private ICollection<GetBaselineItemzDTO> AllParentBaselineItemzTraces { get; set; } = new List<GetBaselineItemzDTO>();
+	// private ICollection<GetBaselineItemzDTO> AllChildBaselineItemzTraces { get; set; } = new List<GetBaselineItemzDTO>();
+	private ICollection<BaselineTraceComponentViewModel> AllParentBaselineTraceViewModels { get; set; } = new List<BaselineTraceComponentViewModel>();
+	private ICollection<BaselineTraceComponentViewModel> AllChildBaselineTraceViewModels { get; set; } = new List<BaselineTraceComponentViewModel>();
 
 	protected override async Task OnInitializedAsync()
 	{
-		var SingleBaselineItemzTraces = await baselineItemzTraceService.__GET_All_Parent_and_Child_Baseline_Itemz_Traces_By_BaselineItemzID__Async(BaselineItemzId);
+		var singleBaselineItemzTraces = await baselineItemzTraceService.__GET_All_Parent_and_Child_Baseline_Itemz_Traces_By_BaselineItemzID__Async(BaselineItemzId);
 
-		if (SingleBaselineItemzTraces != null)
+		if (singleBaselineItemzTraces?.BaselineItemz != null)
 		{
-			if (SingleBaselineItemzTraces.BaselineItemz != null)
+			// --- Parent Baseline Traces ---
+			if (singleBaselineItemzTraces.BaselineItemz.ParentBaselineItemz != null && singleBaselineItemzTraces.BaselineItemz.ParentBaselineItemz.Any())
 			{
-				if (SingleBaselineItemzTraces.BaselineItemz.ParentBaselineItemz != null)
+				var parentIds = singleBaselineItemzTraces.BaselineItemz.ParentBaselineItemz.Select(p => p.BaselineItemzID).ToList();
+				var parentItemzDtos = await baselineItemzCollectionService.__GET_BaselineItemz_Collection_By_GUID_IDS__Async(parentIds);
+
+				AllParentBaselineTraceViewModels = parentItemzDtos.Select(dto =>
 				{
-					List<Guid> tempParentBaselineItemzIds = new List<Guid>();
+					var traceInfo = singleBaselineItemzTraces.BaselineItemz.ParentBaselineItemz.FirstOrDefault(t => t.BaselineItemzID == dto.Id);
+					return new BaselineTraceComponentViewModel
+					{
+						Id = dto.Id,
+						Name = dto.Name,
+						Status = dto.Status,
+						Priority = dto.Priority,
+						isIncluded = dto.isIncluded,
+						TraceLabel = traceInfo?.TraceLabel
+					};
+				}).ToList();
+			}
 
-					tempParentBaselineItemzIds = SingleBaselineItemzTraces.BaselineItemz.ParentBaselineItemz.Select(p => p.BaselineItemzID).ToList();
+			// --- Child Baseline Traces ---
+			if (singleBaselineItemzTraces.BaselineItemz.ChildBaselineItemz != null && singleBaselineItemzTraces.BaselineItemz.ChildBaselineItemz.Any())
+			{
+				var childIds = singleBaselineItemzTraces.BaselineItemz.ChildBaselineItemz.Select(c => c.BaselineItemzID).ToList();
+				var childItemzDtos = await baselineItemzCollectionService.__GET_BaselineItemz_Collection_By_GUID_IDS__Async(childIds);
 
-					AllParentBaselineItemzTraces = await baselineItemzCollectionService.__GET_BaselineItemz_Collection_By_GUID_IDS__Async(tempParentBaselineItemzIds);
-
-				}
-				if (SingleBaselineItemzTraces.BaselineItemz.ChildBaselineItemz != null)
+				AllChildBaselineTraceViewModels = childItemzDtos.Select(dto =>
 				{
-					List<Guid> tempChildBaselineItemzIds = new List<Guid>();
-
-					tempChildBaselineItemzIds = SingleBaselineItemzTraces.BaselineItemz.ChildBaselineItemz.Select(p => p.BaselineItemzID).ToList();
-
-					AllChildBaselineItemzTraces = await baselineItemzCollectionService.__GET_BaselineItemz_Collection_By_GUID_IDS__Async(tempChildBaselineItemzIds);
-
-				}
+					var traceInfo = singleBaselineItemzTraces.BaselineItemz.ChildBaselineItemz.FirstOrDefault(t => t.BaselineItemzID == dto.Id);
+					return new BaselineTraceComponentViewModel
+					{
+						Id = dto.Id,
+						Name = dto.Name,
+						Status = dto.Status,
+						Priority = dto.Priority,
+						isIncluded = dto.isIncluded,
+						TraceLabel = traceInfo?.TraceLabel
+					};
+				}).ToList();
 			}
 		}
+
 		StateHasChanged();
 	}
+
 
 	public async Task openBaselineItemz(string baselineItemzId)
 	{
