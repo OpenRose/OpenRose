@@ -164,20 +164,28 @@ namespace ItemzApp.API.Services
                 throw new Exception(nameof(itemzTraceDTO.ToTraceItemzId));
             }
 
-            var itrace = await _itemzTraceContext.ItemzJoinItemzTrace!.FindAsync(itemzTraceDTO.FromTraceItemzId, itemzTraceDTO.ToTraceItemzId);
-            if(itrace == null)
-            {
-                var temp_itrace = new ItemzJoinItemzTrace
-                {
-                    FromItemzId = itemzTraceDTO.FromTraceItemzId,
-                    ToItemzId = itemzTraceDTO.ToTraceItemzId,
-                    TraceLabel = itemzTraceDTO.TraceLabel
-				};
-                await _itemzTraceContext.ItemzJoinItemzTrace.AddAsync(temp_itrace);
-            }
-        }
+			var itrace = await _itemzTraceContext.ItemzJoinItemzTrace!
+				.FindAsync(itemzTraceDTO.FromTraceItemzId, itemzTraceDTO.ToTraceItemzId);
 
-        public async Task<bool> ItemzExistsAsync(Guid itemzId)
+			if (itrace == null)
+			{
+				var temp_itrace = new ItemzJoinItemzTrace
+				{
+					FromItemzId = itemzTraceDTO.FromTraceItemzId,
+					ToItemzId = itemzTraceDTO.ToTraceItemzId,
+					TraceLabel = itemzTraceDTO.TraceLabel
+				};
+				await _itemzTraceContext.ItemzJoinItemzTrace.AddAsync(temp_itrace);
+			}
+			else
+			{
+				// Update existing trace label
+				itrace.TraceLabel = itemzTraceDTO.TraceLabel;
+				// _itemzTraceContext.ItemzJoinItemzTrace.Update(itrace);
+			}
+		}
+
+		public async Task<bool> ItemzExistsAsync(Guid itemzId)
         {
             if (itemzId == Guid.Empty)
             {
