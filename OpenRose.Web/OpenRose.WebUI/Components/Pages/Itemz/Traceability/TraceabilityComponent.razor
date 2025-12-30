@@ -349,72 +349,7 @@
 		}
 	}
 
-
-	// public async Task createChildTrace(Guid ItemzId)
-	// {
-	// 	var parameters = new DialogParameters();
-	// 	var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-	// 	var dialog = await DialogService.ShowAsync<CreateChildTraceabilityDialog>("Enter Child Record ID", parameters, options);
-	// 	var result = await dialog.Result;
-	// 	if (!result.Canceled && result.Data is Guid inputChildItemzId)
-	// 	{
-	// 		// Verify that ChildItemzId is not present in the current child traces. 
-	// 		// We first check for null and then any otherwise it gives runtime null error
-	// 		if (AllChildItemzTraces != null && AllChildItemzTraces.Any(cit => cit.Id == inputChildItemzId))
-	// 		{
-	// 			DialogService.ShowMessageBox("INFORMATION", markupMessage: new MarkupString($"<p style=\"color: green; \">Trace for record with Id '{ItemzId.ToString()}' already exists.</p>"), yesText: "OK");
-	// 			return;
-	// 		}
-	// 		// Verify recordId exists in your repository
-	// 		if (await ItemzService.__Single_Itemz_By_GUID_ID__Async(inputChildItemzId) != null && inputChildItemzId != ItemzId)
-	// 		{
-	// 			var tempItemTraceDTO = new ItemzTraceDTO();
-	// 			tempItemTraceDTO.FromTraceItemzId = ItemzId;
-	// 			tempItemTraceDTO.ToTraceItemzId = inputChildItemzId;
-	// 			// Create link between records
-	// 			try
-	// 			{
-	// 				// await ItemzTraceService.__POST_Establish_Trace_Between_Itemz__Async(tempItemTraceDTO);
-	// 				// ChildTraceItemz__DTO tempChildTraceItemzDTO = new ChildTraceItemz__DTO();
-	// 				// tempChildTraceItemzDTO.ItemzID = inputChildItemzId;
-	// 				// AllChildItemzTraces.Add(tempChildTraceItemzDTO);
-
-	// 				await ItemzTraceService.__POST_Establish_Trace_Between_Itemz__Async(tempItemTraceDTO);
-	// 				// ParentTraceItemz__DTO tempParentTraceItemzDTO = new ParentTraceItemz__DTO();
-	// 				// tempParentTraceItemzDTO.ItemzID = inputParentItemzId;
-
-	// 				var tempChildTraceItemzDTO = await ItemzService.__Single_Itemz_By_GUID_ID__Async(inputChildItemzId);
-	// 				if (tempChildTraceItemzDTO != null)
-	// 				{
-	// 					if (AllChildItemzTraces != null)
-	// 					{
-	// 						AllChildItemzTraces.Add(tempChildTraceItemzDTO);
-	// 					}
-	// 					else
-	// 					{
-	// 						AllChildItemzTraces = new List<GetItemzDTO>();
-	// 						AllChildItemzTraces.Add(tempChildTraceItemzDTO);
-	// 					}
-	// 				}
-
-	// 			}
-	// 			catch (Exception ex)
-	// 			{
-	// 				await DialogService.ShowMessageBox("WARNING", markupMessage: new MarkupString($"<p style=\"color: red; \">{ex.Message}</p>"), yesText: "OK");
-	// 			}
-	// 			finally
-	// 			{
-	// 				// Add any clean-up code here.
-	// 			}
-	// 		}
-	// 		else
-	// 		{
-	// 			DialogService.ShowMessageBox("WARNING", markupMessage: new MarkupString($"<p style=\"color: red; \">Could not find Child Itemz with ID {inputChildItemzId} in repository.</p>"), yesText: "OK");
-	// 		}
-	// 	}
-	// }
-
-	public async Task createChildTrace(Guid ItemzId)
+		public async Task createChildTrace(Guid ItemzId)
 	{
 		var parameters = new DialogParameters();
 		var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
