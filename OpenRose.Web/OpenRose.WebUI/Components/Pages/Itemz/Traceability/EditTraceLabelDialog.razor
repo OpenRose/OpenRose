@@ -1,0 +1,23 @@
+﻿<MudDialog>
+    <DialogContent>
+@*         <MudText Typo="Typo.h6">Edit Trace Label</MudText> *@
+        <MudTextField @bind-Value="TraceLabel"
+                      Label="Trace Label"
+                      MaxLength="32"
+                      Variant="Variant.Outlined"
+                      Immediate="true"
+                      Placeholder="Enter up to 32 characters" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="Save">Save</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="Cancel">Cancel</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public string TraceLabel { get; set; } = string.Empty;
+
+    private void Save() => MudDialog.Close(DialogResult.Ok(TraceLabel));
+    private void Cancel() => MudDialog.Cancel();
+}

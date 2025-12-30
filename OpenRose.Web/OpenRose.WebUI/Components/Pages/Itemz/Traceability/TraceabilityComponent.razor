@@ -8,6 +8,7 @@
 @using OpenRose.WebUI.Client.SharedModels
 @using OpenRose.WebUI.Client.Services.Itemz
 @using OpenRose.WebUI.Client.Services.ItemzCollection
+@using OpenRose.WebUI.Client.SharedModels.ClientSideUIOnlyModel
 @using OpenRose.WebUI.Components.EventServices
 @using OpenRose.WebUI.Components.Pages.Common
 @inject NavigationManager NavManager
@@ -21,7 +22,7 @@
 	<MudSpacer />
 	<MudButton @onclick="async _ => await createParentTrace(ItemzId)" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Primary"> Create Parent Trace </MudButton>
 </MudPaper>
-<MudDataGrid Items="@AllParentItemzTraces"
+<MudDataGrid Items="@AllParentTraceViewModels"
 			 Filterable="true"
 			 SortMode="@SortMode.None"
 			 Groupable="false"
@@ -35,6 +36,23 @@
 			</CellTemplate>
 		</PropertyColumn>
 		<PropertyColumn Property="x => x.Name" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
+		<PropertyColumn Property="x => x.TraceLabel" Title="Trace Label" Filterable="false">
+			<CellTemplate>
+				<MudButton Variant="Variant.Text" Color="Color.Primary"
+						   OnClick="_ => OpenEditTraceLabelDialogAsync(context.Item.Id, context.Item.TraceLabel, isParent:true)">
+					@if (!string.IsNullOrWhiteSpace(context.Item.TraceLabel))
+					{
+						<MudChip Color="Color.Info">@context.Item.TraceLabel</MudChip>
+					}
+					else
+					{
+						<MudChip Color="Color.Default" Variant="Variant.Outlined">
+							No Label
+						</MudChip>
+					}
+				</MudButton>
+			</CellTemplate>
+		</PropertyColumn>
 		<PropertyColumn Property="x => x.Status" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
 		<PropertyColumn Property="x => x.Priority" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
 		<TemplateColumn Title="Action">
@@ -57,7 +75,7 @@
 	<MudSpacer />
 	<MudButton @onclick="async _ => await createChildTrace(ItemzId)" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Primary"> Create Child Trace </MudButton>
 </MudPaper>
-<MudDataGrid Items="@AllChildItemzTraces"
+<MudDataGrid Items="@AllChildTraceViewModels"
 			 Filterable="true"
 			 SortMode="@SortMode.None"
 			 Groupable="false"
@@ -71,6 +89,24 @@
 			</CellTemplate>
 		</PropertyColumn>
 		<PropertyColumn Property="x => x.Name" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
+		<PropertyColumn Property="x => x.TraceLabel" Title="Trace Label" Filterable="false">
+			<CellTemplate>
+				<MudButton Variant="Variant.Text" Color="Color.Primary"
+						   OnClick="_ => OpenEditTraceLabelDialogAsync(context.Item.Id, context.Item.TraceLabel, isParent:false)">
+					@if (!string.IsNullOrWhiteSpace(context.Item.TraceLabel))
+					{
+						<MudChip Color="Color.Info">@context.Item.TraceLabel</MudChip>
+					}
+					else
+					{
+						<MudChip Color="Color.Default" Variant="Variant.Outlined">
+							No Label
+						</MudChip>
+					}
+				</MudButton>
+			</CellTemplate>
+		</PropertyColumn>
+
 		<PropertyColumn Property="x => x.Status" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
 		<PropertyColumn Property="x => x.Priority" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
 		<TemplateColumn CellClass="d-flex justify-left">
@@ -103,41 +139,61 @@
 
 
 	private ItemzParentAndChildTraceDTO SingleItemzTraces { get; set; } = new ItemzParentAndChildTraceDTO();
-	private ICollection<GetItemzDTO> AllParentItemzTraces { get; set; } = new List<GetItemzDTO>();
-	private ICollection<GetItemzDTO> AllChildItemzTraces { get; set; } = new List<GetItemzDTO>();
 
+	private ICollection<TraceComponentViewModel> AllParentTraceViewModels { get; set; } = new List<TraceComponentViewModel>();
+	private ICollection<TraceComponentViewModel> AllChildTraceViewModels { get; set; } = new List<TraceComponentViewModel>();
 
-	protected override async Task OnInitializedAsync()
+		protected override async Task OnInitializedAsync()
 	{
-		var SingleItemzTraces = await ItemzTraceService.__GET_All_Parent_and_Child_Itemz_Traces_By_ItemzID__Async(ItemzId);
+		var singleItemzTraces = await ItemzTraceService.__GET_All_Parent_and_Child_Itemz_Traces_By_ItemzID__Async(ItemzId);
 
-		if (SingleItemzTraces != null)
+		if (singleItemzTraces?.Itemz != null)
 		{
-			if (SingleItemzTraces.Itemz != null)
+			// --- Parent Traces ---
+			if (singleItemzTraces.Itemz.ParentItemz != null && singleItemzTraces.Itemz.ParentItemz.Any())
 			{
-				if (SingleItemzTraces.Itemz.ParentItemz != null)
-				{
-					List<Guid> tempParentItemzIds = new List<Guid>();
+				var parentIds = singleItemzTraces.Itemz.ParentItemz.Select(p => p.ItemzID).ToList();
+				var parentItemzDtos = await itemzCollectionService.__GET_Itemz_Collection_By_GUID_IDS__Async(parentIds);
 
-					tempParentItemzIds = SingleItemzTraces.Itemz.ParentItemz.Select(p => p.ItemzID).ToList();
+				AllParentTraceViewModels = parentItemzDtos
+					.Select(dto =>
+					{
+						var traceInfo = singleItemzTraces.Itemz.ParentItemz.FirstOrDefault(t => t.ItemzID == dto.Id);
+						return new TraceComponentViewModel
+						{
+							Id = dto.Id,
+							Name = dto.Name,
+							Status = dto.Status,
+							Priority = dto.Priority,
+							TraceLabel = traceInfo?.TraceLabel
+						};
+					})
+					.ToList();
+			}
 
-					AllParentItemzTraces = await itemzCollectionService.__GET_Itemz_Collection_By_GUID_IDS__Async(tempParentItemzIds);
+			// --- Child Traces ---
+			if (singleItemzTraces.Itemz.ChildItemz != null && singleItemzTraces.Itemz.ChildItemz.Any())
+			{
+				var childIds = singleItemzTraces.Itemz.ChildItemz.Select(c => c.ItemzID).ToList();
+				var childItemzDtos = await itemzCollectionService.__GET_Itemz_Collection_By_GUID_IDS__Async(childIds);
 
-					// AllParentItemzTraces = SingleItemzTraces.Itemz.ParentItemz;
-				}
-				if (SingleItemzTraces.Itemz.ChildItemz != null)
-				{
-					List<Guid> tempChildItemzIds = new List<Guid>();
-
-					tempChildItemzIds = SingleItemzTraces.Itemz.ChildItemz.Select(p => p.ItemzID).ToList();
-
-					AllChildItemzTraces = await itemzCollectionService.__GET_Itemz_Collection_By_GUID_IDS__Async(tempChildItemzIds);
-
-
-					// AllChildItemzTraces = SingleItemzTraces.Itemz.ChildItemz;
-				}
+				AllChildTraceViewModels = childItemzDtos
+					.Select(dto =>
+					{
+						var traceInfo = singleItemzTraces.Itemz.ChildItemz.FirstOrDefault(t => t.ItemzID == dto.Id);
+						return new TraceComponentViewModel
+						{
+							Id = dto.Id,
+							Name = dto.Name,
+							Status = dto.Status,
+							Priority = dto.Priority,
+							TraceLabel = traceInfo?.TraceLabel
+						};
+					})
+					.ToList();
 			}
 		}
+
 		StateHasChanged();
 	}
 
@@ -172,11 +228,13 @@
 			tempDeleteItemzTraceDTO.ToTraceItemzId = toTraceItemzId;
 			await ItemzTraceService.__DELETE_Itemz_Trace__Async(tempDeleteItemzTraceDTO);
 
-			var itemToRemove = AllParentItemzTraces.FirstOrDefault(item => item.Id == fromTraceItemzId); 
+			// Remove from the ViewModel collection instead of GetItemzDTO
+			var itemToRemove = AllParentTraceViewModels.FirstOrDefault(item => item.Id == fromTraceItemzId);
 			if (itemToRemove != null)
 			{
-				AllParentItemzTraces.Remove(itemToRemove);
+				AllParentTraceViewModels.Remove(itemToRemove);
 			}
+
 		}
 		catch (Exception ex)
 		{
@@ -205,10 +263,11 @@
 			tempDeleteItemzTraceDTO.ToTraceItemzId = toTraceItemzId;
 			await ItemzTraceService.__DELETE_Itemz_Trace__Async(tempDeleteItemzTraceDTO);
 
-			var itemToRemove = AllChildItemzTraces.FirstOrDefault(item => item.Id == toTraceItemzId);
+			// Remove from the ViewModel collection instead of GetItemzDTO
+			var itemToRemove = AllChildTraceViewModels.FirstOrDefault(item => item.Id == toTraceItemzId);
 			if (itemToRemove != null)
 			{
-				AllChildItemzTraces.Remove(itemToRemove);
+				AllChildTraceViewModels.Remove(itemToRemove);
 			}
 		}
 		catch (Exception ex)
@@ -218,68 +277,142 @@
 		}
 	}
 
-
 	public async Task createParentTrace(Guid ItemzId)
 	{
-		var parameters = new DialogParameters(); 
-		var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true }; 
+		var parameters = new DialogParameters();
+		var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
 		var dialog = await DialogService.ShowAsync<CreateParentTraceabilityDialog>("Enter Parent Record ID", parameters, options);
-		var result = await dialog.Result; 
+		var result = await dialog.Result;
+
 		if (!result.Canceled && result.Data is Guid inputParentItemzId)
-		{ 
+		{
 			// Verify that ParentItemzId is not present in the current Parent traces.
 			// We first check for null and then any otherwise it gives runtime null error
-
-			if (AllParentItemzTraces != null && AllParentItemzTraces.Any(pit => pit.Id == inputParentItemzId))
+			if (AllParentTraceViewModels.Any(pit => pit.Id == inputParentItemzId))
 			{
-				DialogService.ShowMessageBox("INFORMATION", markupMessage: new MarkupString($"<p style=\"color: green; \">Trace for record with Id '{ItemzId.ToString()}' already exists.</p>"), yesText: "OK");
+				await DialogService.ShowMessageBox(
+					"INFORMATION",
+					markupMessage: new MarkupString($"<p style=\"color: green;\">Trace for record with Id '{ItemzId}' already exists.</p>"),
+					yesText: "OK"
+				);
 				return;
 			}
 
-			// Verify recordId exists in your repository 
-			if (await ItemzService.__Single_Itemz_By_GUID_ID__Async(inputParentItemzId) != null && inputParentItemzId != ItemzId)
+			// Verify recordId exists in repository and is not self‑referencing
+			var parentItemzDto = await ItemzService.__Single_Itemz_By_GUID_ID__Async(inputParentItemzId);
+			if (parentItemzDto != null && inputParentItemzId != ItemzId)
 			{
-				var tempItemTraceDTO = new ItemzTraceDTO();
-				tempItemTraceDTO.FromTraceItemzId = inputParentItemzId;
-				tempItemTraceDTO.ToTraceItemzId = ItemzId;
-				// Create link between records 
+				var tempItemTraceDTO = new ItemzTraceDTO
+				{
+					FromTraceItemzId = inputParentItemzId,
+					ToTraceItemzId = ItemzId
+				};
+
 				try
 				{
+					// Persist the new trace
 					await ItemzTraceService.__POST_Establish_Trace_Between_Itemz__Async(tempItemTraceDTO);
-					// ParentTraceItemz__DTO tempParentTraceItemzDTO = new ParentTraceItemz__DTO();
-					// tempParentTraceItemzDTO.ItemzID = inputParentItemzId;
 
-					var tempParentTraceItemzDTO = await ItemzService.__Single_Itemz_By_GUID_ID__Async(inputParentItemzId);
-					if (tempParentTraceItemzDTO != null)
+					// Add to ViewModel collection
+					var newVm = new TraceComponentViewModel
 					{
-						// AllParentItemzTraces.Add(tempParentTraceItemzDTO);
+						Id = parentItemzDto.Id,
+						Name = parentItemzDto.Name,
+						Status = parentItemzDto.Status,
+						Priority = parentItemzDto.Priority,
+						TraceLabel = tempItemTraceDTO.TraceLabel // will be null unless you set it
+					};
 
-						if (AllParentItemzTraces != null)
-						{
-							AllParentItemzTraces.Add(tempParentTraceItemzDTO);
-						}
-						else
-						{
-							AllParentItemzTraces = new List<GetItemzDTO>();
-							AllParentItemzTraces.Add(tempParentTraceItemzDTO);
-						}
-					}
+					AllParentTraceViewModels.Add(newVm);
 				}
 				catch (Exception ex)
 				{
-					await DialogService.ShowMessageBox("WARNING", markupMessage: new MarkupString($"<p style=\"color: red; \">{ex.Message}</p>"), yesText: "OK");
+					await DialogService.ShowMessageBox(
+						"WARNING",
+						markupMessage: new MarkupString($"<p style=\"color: red;\">{ex.Message}</p>"),
+						yesText: "OK"
+					);
 				}
 				finally
 				{
 					// Add any clean-up code here.
 				}
-			} 
+			}
 			else
 			{
-				await DialogService.ShowMessageBox("WARNING", markupMessage: new MarkupString($"<p style=\"color: red; \">Could not find Parent Itemz with ID {inputParentItemzId} in repository.</p>"), yesText: "OK");
-			} 
+				await DialogService.ShowMessageBox(
+					"WARNING",
+					markupMessage: new MarkupString($"<p style=\"color: red;\">Could not find Parent Itemz with ID {inputParentItemzId} in repository.</p>"),
+					yesText: "OK"
+				);
+			}
 		}
 	}
+
+
+	// public async Task createChildTrace(Guid ItemzId)
+	// {
+	// 	var parameters = new DialogParameters();
+	// 	var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+	// 	var dialog = await DialogService.ShowAsync<CreateChildTraceabilityDialog>("Enter Child Record ID", parameters, options);
+	// 	var result = await dialog.Result;
+	// 	if (!result.Canceled && result.Data is Guid inputChildItemzId)
+	// 	{
+	// 		// Verify that ChildItemzId is not present in the current child traces. 
+	// 		// We first check for null and then any otherwise it gives runtime null error
+	// 		if (AllChildItemzTraces != null && AllChildItemzTraces.Any(cit => cit.Id == inputChildItemzId))
+	// 		{
+	// 			DialogService.ShowMessageBox("INFORMATION", markupMessage: new MarkupString($"<p style=\"color: green; \">Trace for record with Id '{ItemzId.ToString()}' already exists.</p>"), yesText: "OK");
+	// 			return;
+	// 		}
+	// 		// Verify recordId exists in your repository
+	// 		if (await ItemzService.__Single_Itemz_By_GUID_ID__Async(inputChildItemzId) != null && inputChildItemzId != ItemzId)
+	// 		{
+	// 			var tempItemTraceDTO = new ItemzTraceDTO();
+	// 			tempItemTraceDTO.FromTraceItemzId = ItemzId;
+	// 			tempItemTraceDTO.ToTraceItemzId = inputChildItemzId;
+	// 			// Create link between records
+	// 			try
+	// 			{
+	// 				// await ItemzTraceService.__POST_Establish_Trace_Between_Itemz__Async(tempItemTraceDTO);
+	// 				// ChildTraceItemz__DTO tempChildTraceItemzDTO = new ChildTraceItemz__DTO();
+	// 				// tempChildTraceItemzDTO.ItemzID = inputChildItemzId;
+	// 				// AllChildItemzTraces.Add(tempChildTraceItemzDTO);
+
+	// 				await ItemzTraceService.__POST_Establish_Trace_Between_Itemz__Async(tempItemTraceDTO);
+	// 				// ParentTraceItemz__DTO tempParentTraceItemzDTO = new ParentTraceItemz__DTO();
+	// 				// tempParentTraceItemzDTO.ItemzID = inputParentItemzId;
+
+	// 				var tempChildTraceItemzDTO = await ItemzService.__Single_Itemz_By_GUID_ID__Async(inputChildItemzId);
+	// 				if (tempChildTraceItemzDTO != null)
+	// 				{
+	// 					if (AllChildItemzTraces != null)
+	// 					{
+	// 						AllChildItemzTraces.Add(tempChildTraceItemzDTO);
+	// 					}
+	// 					else
+	// 					{
+	// 						AllChildItemzTraces = new List<GetItemzDTO>();
+	// 						AllChildItemzTraces.Add(tempChildTraceItemzDTO);
+	// 					}
+	// 				}
+
+	// 			}
+	// 			catch (Exception ex)
+	// 			{
+	// 				await DialogService.ShowMessageBox("WARNING", markupMessage: new MarkupString($"<p style=\"color: red; \">{ex.Message}</p>"), yesText: "OK");
+	// 			}
+	// 			finally
+	// 			{
+	// 				// Add any clean-up code here.
+	// 			}
+	// 		}
+	// 		else
+	// 		{
+	// 			DialogService.ShowMessageBox("WARNING", markupMessage: new MarkupString($"<p style=\"color: red; \">Could not find Child Itemz with ID {inputChildItemzId} in repository.</p>"), yesText: "OK");
+	// 		}
+	// 	}
+	// }
 
 	public async Task createChildTrace(Guid ItemzId)
 	{
@@ -287,62 +420,170 @@
 		var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
 		var dialog = await DialogService.ShowAsync<CreateChildTraceabilityDialog>("Enter Child Record ID", parameters, options);
 		var result = await dialog.Result;
+
 		if (!result.Canceled && result.Data is Guid inputChildItemzId)
 		{
-			// Verify that ChildItemzId is not present in the current child traces. 
+			// Verify that ChildItemzId is not present in the current child traces.
 			// We first check for null and then any otherwise it gives runtime null error
-			if (AllChildItemzTraces != null && AllChildItemzTraces.Any(cit => cit.Id == inputChildItemzId))
+			if (AllChildTraceViewModels.Any(cit => cit.Id == inputChildItemzId))
 			{
-				DialogService.ShowMessageBox("INFORMATION", markupMessage: new MarkupString($"<p style=\"color: green; \">Trace for record with Id '{ItemzId.ToString()}' already exists.</p>"), yesText: "OK");
+				await DialogService.ShowMessageBox(
+					"INFORMATION",
+					markupMessage: new MarkupString($"<p style=\"color: green;\">Trace for record with Id '{ItemzId}' already exists.</p>"),
+					yesText: "OK"
+				);
 				return;
 			}
-			// Verify recordId exists in your repository
-			if (await ItemzService.__Single_Itemz_By_GUID_ID__Async(inputChildItemzId) != null && inputChildItemzId != ItemzId)
+
+			// Verify recordId exists in your repository and is not self‑referencing
+			var childItemzDto = await ItemzService.__Single_Itemz_By_GUID_ID__Async(inputChildItemzId);
+			if (childItemzDto != null && inputChildItemzId != ItemzId)
 			{
-				var tempItemTraceDTO = new ItemzTraceDTO();
-				tempItemTraceDTO.FromTraceItemzId = ItemzId;
-				tempItemTraceDTO.ToTraceItemzId = inputChildItemzId;
-				// Create link between records
+				var tempItemTraceDTO = new ItemzTraceDTO
+				{
+					FromTraceItemzId = ItemzId,
+					ToTraceItemzId = inputChildItemzId
+				};
+
 				try
 				{
-					// await ItemzTraceService.__POST_Establish_Trace_Between_Itemz__Async(tempItemTraceDTO);
-					// ChildTraceItemz__DTO tempChildTraceItemzDTO = new ChildTraceItemz__DTO();
-					// tempChildTraceItemzDTO.ItemzID = inputChildItemzId;
-					// AllChildItemzTraces.Add(tempChildTraceItemzDTO);
-
+					// Persist the new trace
 					await ItemzTraceService.__POST_Establish_Trace_Between_Itemz__Async(tempItemTraceDTO);
-					// ParentTraceItemz__DTO tempParentTraceItemzDTO = new ParentTraceItemz__DTO();
-					// tempParentTraceItemzDTO.ItemzID = inputParentItemzId;
 
-					var tempChildTraceItemzDTO = await ItemzService.__Single_Itemz_By_GUID_ID__Async(inputChildItemzId);
-					if (tempChildTraceItemzDTO != null)
+					// Add to ViewModel collection
+					var newVm = new TraceComponentViewModel
 					{
-						if (AllChildItemzTraces != null)
-						{
-							AllChildItemzTraces.Add(tempChildTraceItemzDTO);
-						}
-						else
-						{
-							AllChildItemzTraces = new List<GetItemzDTO>();
-							AllChildItemzTraces.Add(tempChildTraceItemzDTO);
-						}
-					}
+						Id = childItemzDto.Id,
+						Name = childItemzDto.Name,
+						Status = childItemzDto.Status,
+						Priority = childItemzDto.Priority,
+						TraceLabel = tempItemTraceDTO.TraceLabel // will be null unless you set it
+					};
 
+					AllChildTraceViewModels.Add(newVm);
 				}
 				catch (Exception ex)
 				{
-					await DialogService.ShowMessageBox("WARNING", markupMessage: new MarkupString($"<p style=\"color: red; \">{ex.Message}</p>"), yesText: "OK");
-				}
-				finally
-				{
-					// Add any clean-up code here.
+					await DialogService.ShowMessageBox(
+						"WARNING",
+						markupMessage: new MarkupString($"<p style=\"color: red;\">{ex.Message}</p>"),
+						yesText: "OK"
+					);
 				}
 			}
 			else
 			{
-				DialogService.ShowMessageBox("WARNING", markupMessage: new MarkupString($"<p style=\"color: red; \">Could not find Child Itemz with ID {inputChildItemzId} in repository.</p>"), yesText: "OK");
+				await DialogService.ShowMessageBox(
+					"WARNING",
+					markupMessage: new MarkupString($"<p style=\"color: red;\">Could not find Child Itemz with ID {inputChildItemzId} in repository.</p>"),
+					yesText: "OK"
+				);
 			}
 		}
 	}
+
+
+	private async Task OpenEditTraceLabelDialogAsync(Guid traceId, string? currentLabel, bool isParent)
+	{
+		var parameters = new DialogParameters { ["TraceLabel"] = currentLabel ?? string.Empty };
+		var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+
+		var dialog = await DialogService.ShowAsync<EditTraceLabelDialog>("Edit Trace Label", parameters, options);
+		var result = await dialog.Result;
+
+		if (!result.Canceled && result.Data is string newLabel)
+		{
+			try
+			{
+				// Update DTO and persist via service
+				var traceDto = new ItemzTraceDTO
+				{
+					FromTraceItemzId = isParent ? traceId : ItemzId,
+					ToTraceItemzId = isParent ? ItemzId : traceId,
+					TraceLabel = newLabel
+				};
+
+				await ItemzTraceService.__POST_Establish_Trace_Between_Itemz__Async(traceDto);
+
+				// Update local ViewModel collection
+				if (isParent)
+				{
+					var trace = AllParentTraceViewModels.FirstOrDefault(t => t.Id == traceId);
+					if (trace != null) trace.TraceLabel = newLabel;
+				}
+				else
+				{
+					var trace = AllChildTraceViewModels.FirstOrDefault(t => t.Id == traceId);
+					if (trace != null) trace.TraceLabel = newLabel;
+				}
+			}
+			catch (Exception ex)
+			{
+				await DialogService.ShowMessageBox("WARNING",
+					markupMessage: new MarkupString($"<p style=\"color: red;\">{ex.Message}</p>"), yesText: "OK");
+			}
+		}
+	}
+
+
+
+	private List<TraceComponentViewModel> MapChildTraces(
+		ItemzParentAndChildTraceDTO traceDto,
+		ICollection<GetItemzDTO> childItemzDtos)
+	{
+		var result = new List<TraceComponentViewModel>();
+
+		if (traceDto?.Itemz?.ChildItemz == null)
+			return result;
+
+		foreach (var childTrace in traceDto.Itemz.ChildItemz)
+		{
+			var itemzDetails = childItemzDtos.FirstOrDefault(i => i.Id == childTrace.ItemzID);
+
+			if (itemzDetails != null)
+			{
+				result.Add(new TraceComponentViewModel
+				{
+					Id = itemzDetails.Id,
+					Name = itemzDetails.Name,
+					Status = itemzDetails.Status,
+					Priority = itemzDetails.Priority,
+					TraceLabel = childTrace.TraceLabel // merge in the trace label
+				});
+			}
+		}
+
+		return result;
+	}
+
+	private List<TraceComponentViewModel> MapParentTraces(
+		ItemzParentAndChildTraceDTO traceDto,
+		ICollection<GetItemzDTO> parentItemzDtos)
+	{
+		var result = new List<TraceComponentViewModel>();
+
+		if (traceDto?.Itemz?.ParentItemz == null)
+			return result;
+
+		foreach (var parentTrace in traceDto.Itemz.ParentItemz)
+		{
+			var itemzDetails = parentItemzDtos.FirstOrDefault(i => i.Id == parentTrace.ItemzID);
+
+			if (itemzDetails != null)
+			{
+				result.Add(new TraceComponentViewModel
+				{
+					Id = itemzDetails.Id,
+					Name = itemzDetails.Name,
+					Status = itemzDetails.Status,
+					Priority = itemzDetails.Priority,
+					TraceLabel = parentTrace.TraceLabel
+				});
+			}
+		}
+
+		return result;
+	}
+
 
 }
