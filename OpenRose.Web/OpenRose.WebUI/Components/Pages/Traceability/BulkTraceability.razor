@@ -1,0 +1,262 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * Export Records UI with details preview for all 6 record types.
+*@
+
+@page "/traceability"
+
+@using OpenRose.WebUI.Client.Services.ItemzTrace
+@using OpenRose.WebUI.Components.Dialogs
+@inject IItemzTraceService ItemzTraceService
+@inject IDialogService DialogService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+
+<MudPaper Class="pa-3 mb-3 align-start d-flex" Outlined="false">
+    <MudStack Row="true" Spacing="3">
+        <MudIcon Icon="@Icons.Material.Filled.GraphicEq" Size="Size.Large" />
+        <MudText Typo="Typo.h5" Align="Align.Left">Traceability</MudText>
+        <MudSpacer />
+        <MudText Class="mt-3" Typo="Typo.caption">
+           Perform Bulk Traceability operation that includes importing / deleting / updating / generating multiple traces from a single view.
+        </MudText>
+    </MudStack>
+</MudPaper>
+@* 
+<MudItem xs="12" Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3">
+    <MudPaper Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3" Style="padding: 16px;">
+        <MudStack Row="false" Spacing="3" AlignItems="AlignItems.Center" JustifyContent="Justify.Center" Class="w-100">
+
+            <div>
+                <MudTooltip Text="Step 1: Provide Record ID for Mermaid Export">
+                    <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">
+                        STEP 1
+                    </MudChip>
+                </MudTooltip>
+            </div>
+            <MudText Align="Align.Center" Typo="Typo.body1">
+                Enter the GUID of the record for exporting Mermaid FlowChart :
+            </MudText>
+
+            <MudTextField T="string" Value="targetGuidText"
+                          ValueChanged="(x) => OnGuidChanged(x)"
+                          Placeholder="Paste or enter GUID here"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Normal"
+                          Style="min-width: 420px"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Keyboard"
+                          Immediate="true"
+                          OnKeyDown="@(async e => { if (e.Key == "Enter" && IsGuidInputValid()) { await HandleExportMermaidFlowChartAsync(); } })" />
+
+            <MudCheckBox @bind-Value="exportIncludedBaselineItemzOnly"
+                         Label="Only export BaselineItemz marked for Inclusion" />
+
+            <MudCheckBox Label="Show only traced records (Traceability Only)"
+                         Value="showTraceabilityOnly"
+                         ValueChanged="@((bool x) => OnTraceabilityOnlyChanged(x))" />
+
+            <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                <MudButton Variant="Variant.Filled"
+                           Size="Size.Medium"
+                           Color="Color.Primary"
+                           Disabled="!IsGuidInputValid() || loading"
+                           OnClick="async () => await HandleExportMermaidFlowChartAsync()">
+                    @if (loading)
+                    {
+                        <MudProgressCircular Indeterminate="true" Size="Size.Small" />
+                    }
+                    else
+                    {
+                        <span>Export Mermaid FlowChart</span>
+                    }
+                </MudButton>
+
+                <MudButton OnClick="Reset" Variant="Variant.Filled" Color="Color.Warning">
+                    Reset
+                </MudButton>
+            </MudStack>
+        </MudStack>
+    </MudPaper>
+</MudItem>
+
+@if (!string.IsNullOrWhiteSpace(mermaidText))
+{
+    <MudItem xs="12" Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3">
+        <MudPaper Class="w-100" Style="padding: 16px;">
+            <MudStack Row="false" Spacing="2" Class="w-100">
+
+                <MudGrid>
+                    <MudItem xs="6">
+                        <MudText Typo="Typo.subtitle1">Mermaid FlowChart Text</MudText>
+                    </MudItem>
+                    <MudItem xs="6" Class="d-flex justify-end">
+                        <MudButton Variant="Variant.Filled"
+                                   StartIcon="@Icons.Material.Filled.ContentCopy"
+                                   OnClick="CopyMermaidText"
+                                   Color="@copyButtonColor"
+                                   AriaLive="polite">
+                            @copyButtonLabel
+                        </MudButton>
+                    </MudItem>
+                </MudGrid>
+
+
+                <MudDivider />
+
+                <!-- Scrollable text container -->
+
+                <MudPaper Outlined="true" Class="pa-2 mt-2 w-100 mermaid-text-box"
+                          Style="max-height: 500px; overflow: auto; background-color:#000000; color:#2cf517;">
+                    <MudText Typo="Typo.body2"
+                             Style="white-space: pre; font-family: monospace; color:inherit;">
+                        @mermaidText
+                    </MudText>
+                </MudPaper>
+
+
+            </MudStack>
+        </MudPaper>
+    </MudItem>
+}
+
+ *@
+<style>
+    .mermaid-text-box::-webkit-scrollbar {
+        width: 16px; /* vertical scrollbar thickness */
+        height: 16px; /* horizontal scrollbar thickness */
+    }
+
+    .mermaid-text-box::-webkit-scrollbar-thumb {
+        background-color: #2cf517;
+        border-radius: 8px;
+    }
+
+    .mermaid-text-box::-webkit-scrollbar-track {
+        background-color: #333333;
+    }
+
+    /* Firefox */
+    .mermaid-text-box {
+        scrollbar-width: auto; /* auto | thin | none */
+        scrollbar-color: #2cf517 #333333; /* thumb | track */
+</style>
+
+@code {
+/* 
+    private string targetGuidText { get; set; } = string.Empty;
+    private bool exportIncludedBaselineItemzOnly { get; set; } = false;
+    private bool showTraceabilityOnly { get; set; } = false;
+    private string mermaidText { get; set; } = string.Empty;
+    private bool loading { get; set; } = false;
+
+
+    private bool IsGuidInputValid() => Guid.TryParse(targetGuidText, out _);
+
+
+    private string copyButtonLabel = "Copy";
+    private Color copyButtonColor = Color.Primary; // default blue
+
+    private async Task HandleExportMermaidFlowChartAsync()
+    {
+        //if (selectedRecordId == Guid.Empty)
+        if (string.IsNullOrEmpty(targetGuidText))
+        {
+            await ShowErrorMessage("Please select a valid Record ID.");
+            return;
+        }
+
+        try
+        {
+            Guid guid = Guid.Parse(targetGuidText.Trim());
+            loading = true;
+
+            var clientBaseUrl = NavigationManager.BaseUri.TrimEnd('/');
+
+            mermaidText = await ExportService.__GET_MermaidFlowChart_By_GUID_ID__Async(
+                                                guid, 
+                                                exportIncludedBaselineItemzOnly,
+                                                showTraceabilityOnly,
+                                                clientBaseUrl);
+
+            loading = false;
+
+            if (string.IsNullOrWhiteSpace(mermaidText))
+            {
+                await ShowErrorMessage("No Mermaid text returned from server.");
+            }
+        }
+        catch (Exception ex)
+        {
+            loading = false;
+            mermaidText = string.Empty;
+            await ShowErrorMessage($"Error exporting Mermaid FlowChart: {ex.Message}");
+        }
+    }
+
+    private async Task CopyMermaidText()
+    {
+        if (!string.IsNullOrWhiteSpace(mermaidText))
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", mermaidText);
+
+            // Change label and color
+            copyButtonLabel = "Copied";
+            copyButtonColor = Color.Success; // dark green background
+            StateHasChanged();
+
+            // Reset back after 2 seconds
+            await Task.Delay(2000);
+            copyButtonLabel = "Copy";
+            copyButtonColor = Color.Primary; // back to default blue
+            StateHasChanged();
+        }
+    }
+
+    private void Reset()
+    {
+        targetGuidText = string.Empty;
+        // selectedRecordId = Guid.Empty;
+        mermaidText = string.Empty;
+        exportIncludedBaselineItemzOnly = false;
+        loading = false;
+    }
+
+    // This is the method Blazor will call when ValueChanged fires
+    private void OnGuidChanged(string newValue)
+    {
+        targetGuidText = newValue;   // keep the field in sync
+        mermaidText = string.Empty;  // clear old flowchart text
+    }
+
+    private void OnTraceabilityOnlyChanged(bool newValue)
+    {
+        showTraceabilityOnly = newValue;
+        mermaidText = string.Empty;  // clear old flowchart text
+    }
+
+
+    private async Task ShowErrorMessage(string message)
+    {
+        var parameters = new DialogParameters { ["Message"] = message };
+        var options = new DialogOptions
+        {
+            CloseButton = false,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true
+        };
+
+        // Use ShowAsync instead of Show
+        var dialogRef = await DialogService.ShowAsync<ErrorDialog>("Error", parameters, options);
+
+        // Await the result as before
+        await dialogRef.Result;
+    }
+
+    private async Task ShowSuccessMessage(string message)
+    {
+        await DialogService.ShowMessageBox("SUCCESS",
+            markupMessage: new MarkupString($"<p style=\"color: blue;\">{message}</p>"), yesText: "OK");
+    } */
+}
