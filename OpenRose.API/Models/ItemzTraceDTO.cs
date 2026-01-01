@@ -12,12 +12,14 @@ namespace ItemzApp.API.Models
         /// <summary>
         /// Id of the From Trace Itemz representated by a GUID.
         /// </summary>
+        [Required]
         public Guid FromTraceItemzId { get; set; }
 
-        /// <summary>
-        /// Id of the To Trace Itemz representated by a GUID.
-        /// </summary>
-        public Guid ToTraceItemzId { get; set; }
+		/// <summary>
+		/// Id of the To Trace Itemz representated by a GUID.
+		/// </summary>
+		[Required]
+		public Guid ToTraceItemzId { get; set; }
 
 		/// <summary>
 		/// Optional short unicode label for the trace ( <= 32 characters )
