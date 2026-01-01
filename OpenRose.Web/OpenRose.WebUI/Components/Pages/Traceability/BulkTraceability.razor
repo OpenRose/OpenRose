@@ -7,7 +7,10 @@
 @page "/traceability"
 
 @using OpenRose.WebUI.Client.Services.ItemzTrace
+@using OpenRose.WebUI.Client.SharedModels
 @using OpenRose.WebUI.Components.Dialogs
+@using System.Text.Json
+@using System.ComponentModel.DataAnnotations
 @inject IItemzTraceService ItemzTraceService
 @inject IDialogService DialogService
 @inject NavigationManager NavigationManager
@@ -15,113 +18,144 @@
 
 <MudPaper Class="pa-3 mb-3 align-start d-flex" Outlined="false">
     <MudStack Row="true" Spacing="3">
-        <MudIcon Icon="@Icons.Material.Filled.GraphicEq" Size="Size.Large" />
+        <MudIcon Icon="@Icons.Material.Filled.Hub" Size="Size.Large" />
         <MudText Typo="Typo.h5" Align="Align.Left">Traceability</MudText>
         <MudSpacer />
         <MudText Class="mt-3" Typo="Typo.caption">
-           Perform Bulk Traceability operation that includes importing / deleting / updating / generating multiple traces from a single view.
+            Perform Bulk Traceability operation that includes importing / updating / deleting multiple traces from a single view.
         </MudText>
     </MudStack>
 </MudPaper>
-@* 
-<MudItem xs="12" Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3">
-    <MudPaper Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3" Style="padding: 16px;">
-        <MudStack Row="false" Spacing="3" AlignItems="AlignItems.Center" JustifyContent="Justify.Center" Class="w-100">
 
-            <div>
-                <MudTooltip Text="Step 1: Provide Record ID for Mermaid Export">
-                    <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">
-                        STEP 1
-                    </MudChip>
-                </MudTooltip>
-            </div>
-            <MudText Align="Align.Center" Typo="Typo.body1">
-                Enter the GUID of the record for exporting Mermaid FlowChart :
-            </MudText>
-
-            <MudTextField T="string" Value="targetGuidText"
-                          ValueChanged="(x) => OnGuidChanged(x)"
-                          Placeholder="Paste or enter GUID here"
-                          Variant="Variant.Outlined"
-                          Margin="Margin.Normal"
-                          Style="min-width: 420px"
-                          Adornment="Adornment.Start"
-                          AdornmentIcon="@Icons.Material.Filled.Keyboard"
-                          Immediate="true"
-                          OnKeyDown="@(async e => { if (e.Key == "Enter" && IsGuidInputValid()) { await HandleExportMermaidFlowChartAsync(); } })" />
-
-            <MudCheckBox @bind-Value="exportIncludedBaselineItemzOnly"
-                         Label="Only export BaselineItemz marked for Inclusion" />
-
-            <MudCheckBox Label="Show only traced records (Traceability Only)"
-                         Value="showTraceabilityOnly"
-                         ValueChanged="@((bool x) => OnTraceabilityOnlyChanged(x))" />
-
-            <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
-                <MudButton Variant="Variant.Filled"
-                           Size="Size.Medium"
-                           Color="Color.Primary"
-                           Disabled="!IsGuidInputValid() || loading"
-                           OnClick="async () => await HandleExportMermaidFlowChartAsync()">
-                    @if (loading)
-                    {
-                        <MudProgressCircular Indeterminate="true" Size="Size.Small" />
-                    }
-                    else
-                    {
-                        <span>Export Mermaid FlowChart</span>
-                    }
-                </MudButton>
-
-                <MudButton OnClick="Reset" Variant="Variant.Filled" Color="Color.Warning">
-                    Reset
-                </MudButton>
-            </MudStack>
-        </MudStack>
-    </MudPaper>
-</MudItem>
-
-@if (!string.IsNullOrWhiteSpace(mermaidText))
-{
-    <MudItem xs="12" Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3">
-        <MudPaper Class="w-100" Style="padding: 16px;">
-            <MudStack Row="false" Spacing="2" Class="w-100">
-
-                <MudGrid>
-                    <MudItem xs="6">
-                        <MudText Typo="Typo.subtitle1">Mermaid FlowChart Text</MudText>
-                    </MudItem>
-                    <MudItem xs="6" Class="d-flex justify-end">
-                        <MudButton Variant="Variant.Filled"
-                                   StartIcon="@Icons.Material.Filled.ContentCopy"
-                                   OnClick="CopyMermaidText"
-                                   Color="@copyButtonColor"
-                                   AriaLive="polite">
-                            @copyButtonLabel
-                        </MudButton>
-                    </MudItem>
-                </MudGrid>
-
-
-                <MudDivider />
-
-                <!-- Scrollable text container -->
-
-                <MudPaper Outlined="true" Class="pa-2 mt-2 w-100 mermaid-text-box"
-                          Style="max-height: 500px; overflow: auto; background-color:#000000; color:#2cf517;">
-                    <MudText Typo="Typo.body2"
-                             Style="white-space: pre; font-family: monospace; color:inherit;">
-                        @mermaidText
+<MudTabs Outlined="true" Position="Position.Top" Rounded="true" Border="true" 
+					 IconColor="Color.Secondary" ScrollIconColor="Color.Secondary" SliderColor = "Color.Secondary"
+					 ApplyEffectsToContainer="true" PanelClass="pa-2" MinimumTabWidth="200px" >
+    <MudTabPanel Text="Bulk Import" Icon="@Icons.Material.Filled.FileUpload">
+                <MudItem xs="12" Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3">
+                <MudPaper Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3" Width="100%">
+                <MudStack Row="false" Spacing="3" AlignItems="AlignItems.Center" JustifyContent="Justify.Center" Class="w-100">
+                    <MudTooltip Text="Step 1: Provide input JSON file for Inserting / Updating Treaceability record(s)">
+                        <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">
+                            STEP 1
+                        </MudChip>
+                    </MudTooltip>
+                    <MudText Typo="Typo.inherit">
+                        Provide input JSON file for Inserting / Updating Treaceability record(s)
                     </MudText>
-                </MudPaper>
+@*                     <MudAlert Severity="Severity.Error"
+                              Variant="Variant.Filled"
+                              style="gap: 10px; margin-left : 10px">
+                        NOTE: Bulk traceability insert / update process is a permament operation. Please ensure the input JSON is correct before submitting.
+                    </MudAlert> *@
+
+                    <MudDivider />
+
+                    <!-- Scrollable JSON input container -->
+
+                    <MudPaper Outlined="true" Class="pa-2 w-100 mermaid-text-box"
+                                Style="max-height: 500px; overflow: auto; background-color:#000000; color:#2cf517;">
+                        <MudTextField @bind-Value="jsonInput"
+                                      Label="Paste Traceability JSON here"
+                                      Lines="20"
+                                      FullWidth="true"
+                                      Style="font-family: monospace; color:inherit; background-color:#000000;"
+                                      Immediate="true"
+                                      spellcheck="false" />
+                    </MudPaper>
+                    <MudStack Row="false" Spacing="3" AlignItems="AlignItems.Center" JustifyContent="Justify.Center" Class="w-100">
+                        <MudTooltip Text="Step 2: Submit JSON file for Inserting / Updating Treaceability record(s)">
+                            <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">
+                                STEP 2
+                            </MudChip>
+                        </MudTooltip>
+                        <MudText Typo="Typo.inherit">
+                            Submit input JSON file for Inserting / Updating Treaceability record(s)
+                        </MudText>
+                        <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" JustifyContent="Justify.Center">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ProcessJsonAsync">
+                            Submit JSON
+                        </MudButton>
+                        <MudButton Variant="Variant.Filled" Color="Color.Warning" OnClick="@(() => jsonInput = string.Empty)">
+                            Clear
+                        </MudButton>
+                    </MudStack>
+                    </MudStack>
+                </MudStack>
+	            </MudPaper>
+                </MudItem>
+
+			</MudTabPanel>
 
 
-            </MudStack>
-        </MudPaper>
-    </MudItem>
-}
 
- *@
+
+    <MudTabPanel Icon="@Icons.Material.Filled.RemoveCircle" Text="Bulk Delete ">
+        <MudItem xs="12" Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3">
+            <MudPaper Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3" Width="100%">
+                <MudStack Row="false" Spacing="3" AlignItems="AlignItems.Center" JustifyContent="Justify.Center" Class="w-100">
+
+                    <!-- Step 1 -->
+                    <MudTooltip Text="Step 1: Provide input JSON file for deleting traceability record(s)">
+                        <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Error">
+                            STEP 1
+                        </MudChip>
+                    </MudTooltip>
+                    <MudText Typo="Typo.inherit">
+                        Provide input JSON file for deleting traceability record(s)
+                    </MudText>
+
+                    <MudAlert Severity="Severity.Error"
+                              Variant="Variant.Filled"
+                              style="gap: 10px; margin-left : 10px">
+                        NOTE: Traceability Deletion Process can not be reversed and all traceability links specified in the input JSON will be permanently removed.
+                    </MudAlert>
+                    <MudDivider />
+
+                    <!-- Scrollable JSON input container -->
+                    <MudPaper Outlined="true" Class="pa-2 w-100 mermaid-text-box"
+                              Style="max-height: 500px; overflow: auto; background-color:#000000; color:#ff5555;">
+                        <MudTextField @bind-Value="jsonDeleteInput"
+                                      Label="Paste Traceability JSON here"
+                                      Lines="20"
+                                      FullWidth="true"
+                                      Style="font-family: monospace; color:inherit; background-color:#000000;"
+                                      Immediate="true"
+                                      spellcheck="false" />
+                    </MudPaper>
+
+                    <!-- Step 2 -->
+                    <MudTooltip Text="Step 2: Submit JSON file for deleting traceability record(s)">
+                        <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Error">
+                            STEP 2
+                        </MudChip>
+                    </MudTooltip>
+                    <MudText Typo="Typo.inherit">
+                        Submit input JSON file for deleting traceability record(s)
+                    </MudText>
+                    <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" JustifyContent="Justify.Center">
+                        <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="ProcessDeleteJsonAsync">
+                            Submit JSON
+                        </MudButton>
+                        <MudButton Variant="Variant.Filled" Color="Color.Warning" OnClick="@(() => jsonDeleteInput = string.Empty)">
+                            Clear
+                        </MudButton>
+                    </MudStack>
+
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+    </MudTabPanel>
+
+
+@*     <MudTabPanel Icon="@Icons.Material.Filled.EditNote" Text="Generate JSON">
+		<MudItem xs="12" sm="12" md="12" lg="12">
+			<MudPaper Class="pa-4 mud-height-full" Width="100%">
+							
+			</MudPaper>
+		</MudItem>
+	</MudTabPanel> *@
+</MudTabs>
+
 <style>
     .mermaid-text-box::-webkit-scrollbar {
         width: 16px; /* vertical scrollbar thickness */
@@ -141,122 +175,141 @@
     .mermaid-text-box {
         scrollbar-width: auto; /* auto | thin | none */
         scrollbar-color: #2cf517 #333333; /* thumb | track */
+    }
 </style>
 
 @code {
-/* 
-    private string targetGuidText { get; set; } = string.Empty;
-    private bool exportIncludedBaselineItemzOnly { get; set; } = false;
-    private bool showTraceabilityOnly { get; set; } = false;
-    private string mermaidText { get; set; } = string.Empty;
-    private bool loading { get; set; } = false;
+    private string jsonInput { get; set; } = string.Empty;
+    private string jsonDeleteInput { get; set; } = string.Empty;
 
-
-    private bool IsGuidInputValid() => Guid.TryParse(targetGuidText, out _);
-
-
-    private string copyButtonLabel = "Copy";
-    private Color copyButtonColor = Color.Primary; // default blue
-
-    private async Task HandleExportMermaidFlowChartAsync()
+    private async Task ProcessJsonAsync()
     {
-        //if (selectedRecordId == Guid.Empty)
-        if (string.IsNullOrEmpty(targetGuidText))
+        var parsed = TryParseJson(jsonInput, out var parseError);
+
+        if (parsed == null)
         {
-            await ShowErrorMessage("Please select a valid Record ID.");
+            await DialogService.ShowMessageBox("Invalid JSON", parseError);
+            return;
+        }
+
+        var validationErrors = ValidateDtoCollection(parsed);
+
+        if (validationErrors.Any())
+        {
+            var errorMessage = string.Join("\n", validationErrors);
+            await DialogService.ShowMessageBox("Validation Errors", errorMessage);
             return;
         }
 
         try
         {
-            Guid guid = Guid.Parse(targetGuidText.Trim());
-            loading = true;
-
-            var clientBaseUrl = NavigationManager.BaseUri.TrimEnd('/');
-
-            mermaidText = await ExportService.__GET_MermaidFlowChart_By_GUID_ID__Async(
-                                                guid, 
-                                                exportIncludedBaselineItemzOnly,
-                                                showTraceabilityOnly,
-                                                clientBaseUrl);
-
-            loading = false;
-
-            if (string.IsNullOrWhiteSpace(mermaidText))
-            {
-                await ShowErrorMessage("No Mermaid text returned from server.");
-            }
+            var response = await ItemzTraceService.__POST_Create_Or_Verify_Itemz_Trace_Collection__Async(parsed);
+            await DialogService.ShowMessageBox("Success", $"Processed {response.Count} trace links successfully!");
         }
         catch (Exception ex)
         {
-            loading = false;
-            mermaidText = string.Empty;
-            await ShowErrorMessage($"Error exporting Mermaid FlowChart: {ex.Message}");
+            await DialogService.ShowMessageBox("API Error", ex.Message);
+        }
+    }
+   
+    private IEnumerable<ItemzTraceDTO>? TryParseJson(string json, out string errorMessage)
+    {
+        try
+        {
+            // Collect only required property names from DTO
+            var requiredProps = typeof(ItemzTraceDTO)
+                .GetProperties()
+                .Where(p => Attribute.IsDefined(p, typeof(RequiredAttribute)))
+                .Select(p => p.Name)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var doc = JsonDocument.Parse(json);
+
+            int index = 1;
+            foreach (var element in doc.RootElement.EnumerateArray())
+            {
+                foreach (var requiredProp in requiredProps)
+                {
+                    if (!element.EnumerateObject().Any(p =>
+                            string.Equals(p.Name, requiredProp, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        errorMessage = $"Item {index}: Missing required property '{requiredProp}'.";
+                        return null;
+                    }
+                }
+                index++;
+            }
+
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            var result = JsonSerializer.Deserialize<IEnumerable<ItemzTraceDTO>>(json, options);
+
+            errorMessage = string.Empty;
+            return result;
+        }
+        catch (JsonException jex)
+        {
+            errorMessage = $"Invalid JSON format: {jex.Message}";
+            return null;
         }
     }
 
-    private async Task CopyMermaidText()
+
+    private List<string> ValidateDtoCollection(IEnumerable<ItemzTraceDTO> dtos)
     {
-        if (!string.IsNullOrWhiteSpace(mermaidText))
+        var errors = new List<string>();
+        int index = 1;
+
+        foreach (var dto in dtos)
         {
-            await JS.InvokeVoidAsync("navigator.clipboard.writeText", mermaidText);
+            var validationResults = new List<ValidationResult>();
+            var context = new ValidationContext(dto);
 
-            // Change label and color
-            copyButtonLabel = "Copied";
-            copyButtonColor = Color.Success; // dark green background
-            StateHasChanged();
+            if (!Validator.TryValidateObject(dto, context, validationResults, validateAllProperties: true))
+            {
+                foreach (var validationResult in validationResults)
+                {
+                    // Prefix error with item index
+                    errors.Add($"Item {index}: {validationResult.ErrorMessage}");
+                }
+            }
 
-            // Reset back after 2 seconds
-            await Task.Delay(2000);
-            copyButtonLabel = "Copy";
-            copyButtonColor = Color.Primary; // back to default blue
-            StateHasChanged();
+            index++;
+        }
+
+        return errors;
+    }
+
+
+
+    private async Task ProcessDeleteJsonAsync()
+    {
+        var parsed = TryParseJson(jsonDeleteInput, out var parseError);
+
+        if (parsed == null)
+        {
+            await DialogService.ShowMessageBox("Invalid JSON", parseError);
+            return;
+        }
+
+        var validationErrors = ValidateDtoCollection(parsed);
+
+        if (validationErrors.Any())
+        {
+            var errorMessage = string.Join("\n", validationErrors);
+            await DialogService.ShowMessageBox("Validation Errors", errorMessage);
+            return;
+        }
+
+        try
+        {
+            await ItemzTraceService.__DELETE_Itemz_Trace_Collection__Async(parsed);
+            await DialogService.ShowMessageBox("Success", $"Deleted {parsed.Count()} trace links successfully!");
+        }
+        catch (Exception ex)
+        {
+            await DialogService.ShowMessageBox("API Error", ex.Message);
         }
     }
 
-    private void Reset()
-    {
-        targetGuidText = string.Empty;
-        // selectedRecordId = Guid.Empty;
-        mermaidText = string.Empty;
-        exportIncludedBaselineItemzOnly = false;
-        loading = false;
-    }
 
-    // This is the method Blazor will call when ValueChanged fires
-    private void OnGuidChanged(string newValue)
-    {
-        targetGuidText = newValue;   // keep the field in sync
-        mermaidText = string.Empty;  // clear old flowchart text
-    }
-
-    private void OnTraceabilityOnlyChanged(bool newValue)
-    {
-        showTraceabilityOnly = newValue;
-        mermaidText = string.Empty;  // clear old flowchart text
-    }
-
-
-    private async Task ShowErrorMessage(string message)
-    {
-        var parameters = new DialogParameters { ["Message"] = message };
-        var options = new DialogOptions
-        {
-            CloseButton = false,
-            MaxWidth = MaxWidth.Small,
-            FullWidth = true
-        };
-
-        // Use ShowAsync instead of Show
-        var dialogRef = await DialogService.ShowAsync<ErrorDialog>("Error", parameters, options);
-
-        // Await the result as before
-        await dialogRef.Result;
-    }
-
-    private async Task ShowSuccessMessage(string message)
-    {
-        await DialogService.ShowMessageBox("SUCCESS",
-            markupMessage: new MarkupString($"<p style=\"color: blue;\">{message}</p>"), yesText: "OK");
-    } */
 }
