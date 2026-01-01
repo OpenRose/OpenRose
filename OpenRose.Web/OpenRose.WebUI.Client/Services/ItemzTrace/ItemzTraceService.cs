@@ -602,11 +602,9 @@ namespace OpenRose.WebUI.Client.Services.ItemzTrace
 				};
 				var json_ = JsonSerializer.Serialize<IEnumerable<ItemzTraceDTO>>(body, options);
 
-				var request = new HttpRequestMessage
+				var request = new HttpRequestMessage(HttpMethod.Delete, "/api/ItemzTrace/DeleteItemzTraceCollection")
 				{
-					Content = new StringContent($"{json_}", Encoding.UTF8, "application/json"),
-					Method = HttpMethod.Delete,
-					RequestUri = new Uri("/api/ItemzTrace/DeleteItemzTraceCollection")
+					Content = new StringContent(json_, Encoding.UTF8, "application/json")
 				};
 				var httpResponseMessage = await _httpClient.SendAsync(request);
 
