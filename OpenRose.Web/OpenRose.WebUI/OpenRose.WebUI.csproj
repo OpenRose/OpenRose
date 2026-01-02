@@ -24,6 +24,7 @@
 		<Folder Include="Components\Pages\BaselineItemz\BaselineTraceability\" />
 		<Folder Include="Components\Pages\Baseline\" />
 		<Folder Include="Components\Pages\ChangeLog\" />
+		<Folder Include="Components\Pages\Traceability\" />
 		<Folder Include="wwwroot\icons\" />
 	</ItemGroup>
 	<ItemGroup>
