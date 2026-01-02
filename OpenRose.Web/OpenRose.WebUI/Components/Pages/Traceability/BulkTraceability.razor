@@ -31,118 +31,109 @@
 					 IconColor="Color.Secondary" ScrollIconColor="Color.Secondary" SliderColor = "Color.Secondary"
 					 ApplyEffectsToContainer="true" PanelClass="pa-2" MinimumTabWidth="200px" >
     <MudTabPanel Text="Bulk Import" Icon="@Icons.Material.Filled.FileUpload">
-                <MudItem xs="12" Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3">
-                <MudPaper Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3" Width="100%">
-                <MudStack Row="false" Spacing="3" AlignItems="AlignItems.Center" JustifyContent="Justify.Center" Class="w-100">
-                    <MudTooltip Text="Step 1: Provide input JSON file for Inserting / Updating Treaceability record(s)">
-                        <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">
-                            STEP 1
-                        </MudChip>
-                    </MudTooltip>
-                    <MudText Typo="Typo.inherit">
-                        Provide input JSON file for Inserting / Updating Treaceability record(s)
-                    </MudText>
-@*                     <MudAlert Severity="Severity.Error"
-                              Variant="Variant.Filled"
-                              style="gap: 10px; margin-left : 10px">
-                        NOTE: Bulk traceability insert / update process is a permament operation. Please ensure the input JSON is correct before submitting.
-                    </MudAlert> *@
+        <MudItem xs="12" Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3">
+        <MudPaper Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3" Width="100%">
+        <MudStack Row="false" Spacing="3" AlignItems="AlignItems.Center" JustifyContent="Justify.Center" Class="w-100">
+            <MudTooltip Text="Step 1: Provide input JSON file for Inserting / Updating Treaceability record(s)">
+                <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">
+                    STEP 1
+                </MudChip>
+            </MudTooltip>
+            <MudText Typo="Typo.inherit">
+                Provide input JSON file for Inserting / Updating Treaceability record(s)
+            </MudText>
 
-                    <MudDivider />
+            <MudDivider />
 
-                    <!-- Scrollable JSON input container -->
+            <!-- Scrollable JSON input container -->
 
                     <MudPaper Outlined="true" Class="pa-2 w-100 mermaid-text-box"
-                                Style="max-height: 500px; overflow: auto; background-color:#000000; color:#2cf517;">
-                        <MudTextField @bind-Value="jsonInput"
-                                      Label="Paste Traceability JSON here"
-                                      Lines="20"
-                                      FullWidth="true"
-                                      Style="font-family: monospace; color:inherit; background-color:#000000;"
-                                      Immediate="true"
+                        Style="max-height: 500px; overflow: auto; background-color:#000000; color:#2cf517;">
+                <MudTextField @bind-Value="jsonInput"
+                                Label="Paste Traceability JSON here"
+                                Lines="20"
+                                FullWidth="true"
+                                Style="font-family: monospace; color:inherit; background-color:#000000;"
+                                Immediate="true"
                                       spellcheck="false" />
-                    </MudPaper>
-                    <MudStack Row="false" Spacing="3" AlignItems="AlignItems.Center" JustifyContent="Justify.Center" Class="w-100">
-                        <MudTooltip Text="Step 2: Submit JSON file for Inserting / Updating Treaceability record(s)">
-                            <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">
-                                STEP 2
-                            </MudChip>
-                        </MudTooltip>
-                        <MudText Typo="Typo.inherit">
-                            Submit input JSON file for Inserting / Updating Treaceability record(s)
-                        </MudText>
-                        <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" JustifyContent="Justify.Center">
-                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ProcessJsonAsync">
-                            Submit JSON
-                        </MudButton>
-                        <MudButton Variant="Variant.Filled" Color="Color.Warning" OnClick="@(() => jsonInput = string.Empty)">
-                            Clear
-                        </MudButton>
-                    </MudStack>
-                    </MudStack>
-                </MudStack>
-	            </MudPaper>
-                </MudItem>
-
-			</MudTabPanel>
-
-
-
+            </MudPaper>
+            <MudStack Row="false" Spacing="3" AlignItems="AlignItems.Center" JustifyContent="Justify.Center" Class="w-100">
+                <MudTooltip Text="Step 2: Submit JSON file for Inserting / Updating Treaceability record(s)">
+                    <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">
+                        STEP 2
+                    </MudChip>
+                </MudTooltip>
+                <MudText Typo="Typo.inherit">
+                    Submit input JSON file for Inserting / Updating Treaceability record(s)
+                </MudText>
+                <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" JustifyContent="Justify.Center">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ProcessJsonAsync">
+                    Submit JSON
+                </MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Warning" OnClick="@(() => jsonInput = string.Empty)">
+                    Clear
+                </MudButton>
+            </MudStack>
+            </MudStack>
+        </MudStack>
+	    </MudPaper>
+        </MudItem>
+	</MudTabPanel>
 
     <MudTabPanel Icon="@Icons.Material.Filled.RemoveCircle" Text="Bulk Delete ">
         <MudItem xs="12" Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3">
-            <MudPaper Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3" Width="100%">
-                <MudStack Row="false" Spacing="3" AlignItems="AlignItems.Center" JustifyContent="Justify.Center" Class="w-100">
+        <MudPaper Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3" Width="100%">
+        <MudStack Row="false" Spacing="3" AlignItems="AlignItems.Center" JustifyContent="Justify.Center" Class="w-100">
 
-                    <!-- Step 1 -->
-                    <MudTooltip Text="Step 1: Provide input JSON file for deleting traceability record(s)">
-                        <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Error">
-                            STEP 1
-                        </MudChip>
-                    </MudTooltip>
-                    <MudText Typo="Typo.inherit">
-                        Provide input JSON file for deleting traceability record(s)
-                    </MudText>
+            <!-- Step 1 -->
+            <MudTooltip Text="Step 1: Provide input JSON file for deleting traceability record(s)">
+                <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Error">
+                    STEP 1
+                </MudChip>
+            </MudTooltip>
+            <MudText Typo="Typo.inherit">
+                Provide input JSON file for deleting traceability record(s)
+            </MudText>
 
-                    <MudAlert Severity="Severity.Error"
-                              Variant="Variant.Filled"
-                              style="gap: 10px; margin-left : 10px">
-                        NOTE: Traceability Deletion Process can not be reversed and all traceability links specified in the input JSON will be permanently removed.
-                    </MudAlert>
-                    <MudDivider />
+            <MudAlert Severity="Severity.Error"
+                        Variant="Variant.Filled"
+                        style="gap: 10px; margin-left : 10px">
+                NOTE: Traceability Deletion Process can not be reversed and all traceability links specified in the input JSON will be permanently removed.
+            </MudAlert>
+            <MudDivider />
 
-                    <!-- Scrollable JSON input container -->
+            <!-- Scrollable JSON input container -->
                     <MudPaper Outlined="true" Class="pa-2 w-100 mermaid-text-box"
-                              Style="max-height: 500px; overflow: auto; background-color:#000000; color:#ff5555;">
-                        <MudTextField @bind-Value="jsonDeleteInput"
-                                      Label="Paste Traceability JSON here"
-                                      Lines="20"
-                                      FullWidth="true"
-                                      Style="font-family: monospace; color:inherit; background-color:#000000;"
-                                      Immediate="true"
+                        Style="max-height: 500px; overflow: auto; background-color:#000000; color:#ff5555;">
+                <MudTextField @bind-Value="jsonDeleteInput"
+                                Label="Paste Traceability JSON here"
+                                Lines="20"
+                                FullWidth="true"
+                                Style="font-family: monospace; color:inherit; background-color:#000000;"
+                                Immediate="true"
                                       spellcheck="false" />
-                    </MudPaper>
-
-                    <!-- Step 2 -->
-                    <MudTooltip Text="Step 2: Submit JSON file for deleting traceability record(s)">
-                        <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Error">
-                            STEP 2
-                        </MudChip>
-                    </MudTooltip>
-                    <MudText Typo="Typo.inherit">
-                        Submit input JSON file for deleting traceability record(s)
-                    </MudText>
-                    <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" JustifyContent="Justify.Center">
-                        <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="ProcessDeleteJsonAsync">
-                            Submit JSON
-                        </MudButton>
-                        <MudButton Variant="Variant.Filled" Color="Color.Warning" OnClick="@(() => jsonDeleteInput = string.Empty)">
-                            Clear
-                        </MudButton>
-                    </MudStack>
-
-                </MudStack>
             </MudPaper>
+
+            <!-- Step 2 -->
+            <MudTooltip Text="Step 2: Submit JSON file for deleting traceability record(s)">
+                <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Error">
+                    STEP 2
+                </MudChip>
+            </MudTooltip>
+            <MudText Typo="Typo.inherit">
+                Submit input JSON file for deleting traceability record(s)
+            </MudText>
+            <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" JustifyContent="Justify.Center">
+                <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="ProcessDeleteJsonAsync">
+                    Submit JSON
+                </MudButton>
+                <MudButton Variant="Variant.Filled" Color="Color.Warning" OnClick="@(() => jsonDeleteInput = string.Empty)">
+                    Clear
+                </MudButton>
+            </MudStack>
+
+        </MudStack>
+        </MudPaper>
         </MudItem>
     </MudTabPanel>
 
@@ -253,7 +244,6 @@
         }
     }
 
-
     private List<string> ValidateDtoCollection(IEnumerable<ItemzTraceDTO> dtos)
     {
         var errors = new List<string>();
@@ -278,8 +268,6 @@
 
         return errors;
     }
-
-
 
     private async Task ProcessDeleteJsonAsync()
     {
@@ -310,6 +298,4 @@
             await DialogService.ShowMessageBox("API Error", ex.Message);
         }
     }
-
-
 }
