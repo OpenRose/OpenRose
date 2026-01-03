@@ -69,7 +69,9 @@
 					<!-- Ensure this div applies the custom class to the Markdown content -->
 					<MudText><strong>Description : </strong></MudText>
 					<div class="custom-markdown-editor">
-						<MarkdownEditor @bind-Value="@MyContent" HideIcons="@(["mde-tb-image"])" />
+						<MarkdownEditor @bind-Value="@MyContent"
+							SpellChecker="false"
+							HideIcons="@(["mde-tb-image"])" />
 						<MudPaper Class="pa-4 mb-5" Style="background-color: #f5f5f5;">
 							@if (!string.IsNullOrEmpty(convertedMarkdown.Value))
 							{

@@ -83,7 +83,9 @@ else
 					<!-- Ensure this div applies the custom class to the Markdown content -->
 					<MudText><strong>Description : </strong></MudText>
 					<div class="custom-markdown-editor">
-						<MarkdownEditor @bind-Value="@MyContentForCreateBaselineByProject" HideIcons="@(["mde-tb-image"])" />
+						<MarkdownEditor @bind-Value="@MyContentForCreateBaselineByProject" 
+							SpellChecker="false"
+							HideIcons="@(["mde-tb-image"])" />
 						<MudPaper Class="pa-4 mb-5" Style="background-color: #f5f5f5;">
 							@if (!string.IsNullOrEmpty(convertedMarkdownForCreateBaselineByProject.Value))
 							{
@@ -150,7 +152,9 @@ else
 					<!-- Ensure this div applies the custom class to the Markdown content -->
 					<MudText><strong>Description : </strong></MudText>
 					<div class="custom-markdown-editor">
-						<MarkdownEditor @bind-Value="@MyContentForCreateBaselineByItemzType" HideIcons="@(["mde-tb-image"])" />
+						<MarkdownEditor @bind-Value="@MyContentForCreateBaselineByItemzType"
+                                        SpellChecker="false"
+										HideIcons="@(["mde-tb-image"])" />
 						<MudPaper Class="pa-4 mb-5" Style="background-color: #f5f5f5;">
 							@if (!string.IsNullOrEmpty(convertedMarkdownForCreateBaselineByItemzType.Value))
 							{
@@ -215,7 +219,9 @@ else
 
 					<MudText><strong>Description : </strong></MudText>
 					<div class="custom-markdown-editor">
-						<MarkdownEditor @bind-Value="@MyContentForCreateBaselineByCloneBaseline" HideIcons="@(["mde-tb-image"])" />
+						<MarkdownEditor @bind-Value="@MyContentForCreateBaselineByCloneBaseline"
+                            SpellChecker="false"
+							HideIcons="@(["mde-tb-image"])" />
 						<MudPaper Class="pa-4 mb-5" Style="background-color: #f5f5f5;">
 							@if (!string.IsNullOrEmpty(convertedMarkdownForCreateBaselineByCloneBaseline.Value))
 							{
