@@ -184,17 +184,18 @@
 				<MudText><strong>Description : </strong></MudText>
 				<div class="custom-markdown-editor">
 					<MarkdownEditor Value="@MyContent"
-									ValueChanged="@(async (string newValue) =>
-									{
-										MyContent = newValue;
+						ValueChanged="@(async (string newValue) =>
+						{
+							if (_initializingDescription) return; // ignore first load
+							MyContent = newValue;
 
-										// Only mark dirty if user changed from original
-										if (newValue != _originalDescription)
-										{
-											await formFieldChanged();
-										}
-									})"
-								HideIcons="@(["mde-tb-image"])" />
+							// Only mark dirty if user changed from original
+							if (!string.Equals(NormalizeMarkdown(newValue), NormalizeMarkdown(_originalDescription))) 
+							{ 
+								await formFieldChanged(); 
+							}
+						})"
+					HideIcons="@(["mde-tb-image"])" />
 
 					<MudPaper Class="pa-4 mb-5" Style="background-color: #f5f5f5;">
 						@if (!string.IsNullOrEmpty(convertedMarkdown.Value))
@@ -298,6 +299,7 @@
 	public GetItemzDTO singleItemz { get; set; } = new();
 	private ParameterForItemzBreadcrums BreadcrumsParameter;
 	private string _originalDescription = string.Empty;
+	private bool _initializingDescription = true;
 	public bool initializingPage { get; set; } = false;
 	private bool deletingItemz { get; set; } = false;
 
@@ -434,6 +436,9 @@
 		isOrphaned = (httpResponse == null) || (httpResponse.ParentRecordId == Guid.Empty);
 
 		await ConvertMarkdownToHtml(singleItemz.Description);
+
+        // Mark that description initialization is complete
+		_initializingDescription = false;
 
 		// Reset dirty state
 		FormStateService.SetDirty(ItemzId, false);
@@ -709,5 +714,12 @@
 		{
 			FormStateService.SetDirty(ItemzId, false);
 		}
+	}
+
+	private string NormalizeMarkdown(string input)
+	{
+		return (input ?? string.Empty)
+			.Replace("\r\n", "\n")   // unify line endings
+			.Trim();                 // remove leading/trailing whitespace
 	}
 }
