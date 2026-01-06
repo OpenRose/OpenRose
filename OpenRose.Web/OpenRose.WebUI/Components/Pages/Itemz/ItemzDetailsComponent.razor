@@ -684,12 +684,20 @@
 
 	public async Task HandleGoToDetailsView()
 	{
+		// EXPLANATION :: Before we navigate to a different view, ensure any unsaved changes are handled.
+		bool canProceed = await FormStateService.ConfirmDiscardChangesAsync(ItemzId);
+        if (!canProceed) return;
+
 		var url = $"/itemz/{ItemzId.ToString()}";
 		await JS.InvokeVoidAsync("openInNewTab", url);
 	}
 
 	public async Task HandleGoToTreeView()
 	{
+		// EXPLANATION :: Before we navigate to a different view, ensure any unsaved changes are handled.
+		bool canProceed = await FormStateService.ConfirmDiscardChangesAsync(ItemzId);
+		if (!canProceed) return;
+
 		// TODO :: Similar Code is there in ProjectTreeView.razor file as well. 
 		// We should try and come up with some common way to handle it!
 

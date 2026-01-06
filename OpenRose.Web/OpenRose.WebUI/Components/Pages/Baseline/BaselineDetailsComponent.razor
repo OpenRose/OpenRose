@@ -422,6 +422,11 @@
 
 	public async Task HandleGoToDetailsView()
 	{
+
+		// EXPLANATION :: Before we navigate to a different view, ensure any unsaved changes are handled.
+		bool canProceed = await FormStateService.ConfirmDiscardChangesAsync(BaselineId);
+		if (!canProceed) return;
+
 		var url = $"/baseline/{BaselineId.ToString()}";
 		await JS.InvokeVoidAsync("openInNewTab", url);
 	}
