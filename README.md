@@ -34,6 +34,7 @@ Organized and Bundled Requirements could lead to
 - Detailed specification for AI (Artificial Intelligence) processing
 - List of Activities
 - Standard Specification
+- Digital Family Tree
 - Journal on Specific Topic
 - Rule Book
 - Cook Book
@@ -44,11 +45,15 @@ BUT primarily, **Itemz** is nothing but Requirements / Needs / Wants / Notes / F
 
 ## Overview of Current State
 
-Latest release [version 0.2.0-161](https://github.com/OpenRose/OpenRose/releases/tag/v0.2.0-161)
+Latest release [version 0.2.0-196](https://github.com/OpenRose/OpenRose/releases/tag/v0.2.0-196)
 
 Main New Feature
 
-- Generating Mermaid FlowChart diagram text - [Demo](https://www.youtube.com/watch?v=DFF0bJ5y1p4)
+- Stay on Page Alert when encountered unsaved data [Demo](https://www.youtube.com/watch?v=QcpDGpGqOD0)
+
+version 0.2.0-161
+
+- Generating Mermaid FlowChart diagrams - [Demo](https://www.youtube.com/watch?v=DFF0bJ5y1p4)
 - Multilingual Title and Description - Support for Unicode - [Demo](https://www.youtube.com/shorts/hFAA9wb3kns)
 
  version 0.2.0-120
