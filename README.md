@@ -45,9 +45,14 @@ BUT primarily, **Itemz** is nothing but Requirements / Needs / Wants / Notes / F
 
 ## Overview of Current State
 
-Latest release [version 0.2.0-196](https://github.com/OpenRose/OpenRose/releases/tag/v0.2.0-196)
+Latest release [version 0.2.0-232](https://github.com/OpenRose/OpenRose/releases/tag/v0.2.0-232)
 
 Main New Feature
+
+- Introduce Trace Label within Requirements to Requirements Trace Link  [Demo](https://www.youtube.com/watch?v=h_cLO1M2cyY)
+- Create, Update and Remove bulk traces [Demo](https://www.youtube.com/watch?v=bQXqsPQVmdU)
+
+version 0.2.0-196
 
 - Stay on Page Alert when encountered unsaved data [Demo](https://www.youtube.com/watch?v=QcpDGpGqOD0)
 
