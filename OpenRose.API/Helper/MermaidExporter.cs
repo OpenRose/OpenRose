@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using ItemzApp.API.Constants;
 using ItemzApp.API.Models;
 
 namespace ItemzApp.API.Helper
@@ -59,7 +60,7 @@ namespace ItemzApp.API.Helper
 				}
 
 				// If a TraceLabel exists include it on the edge (sanitized & truncated)
-				if (!string.IsNullOrWhiteSpace(t.TraceLabel))
+				if ( (!string.IsNullOrWhiteSpace(t.TraceLabel)) && (t.TraceLabel != Sentinel.TraceLabelDefault) )
 				{
 					var edgeLabel = SanitizeLabelForMermaid(t.TraceLabel);
 					// Use |label| notation between dashes to show a label on the edge.
