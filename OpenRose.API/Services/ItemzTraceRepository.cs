@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. 
 // See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 
+using ItemzApp.API.Constants;
 using ItemzApp.API.DbContexts;
 using ItemzApp.API.Entities;
 using ItemzApp.API.Helper;
@@ -143,45 +144,52 @@ namespace ItemzApp.API.Services
 		/// </summary>
 		/// <param name="itemzTraceDTO"></param>
 		public async Task EstablishTraceBetweenItemzAsync(ItemzTraceDTO itemzTraceDTO)
-        {
-            if (itemzTraceDTO.FromTraceItemzId == Guid.Empty)
-            {
-                throw new ArgumentNullException(nameof(itemzTraceDTO.FromTraceItemzId));
-            }
+		{
+			if (itemzTraceDTO.FromTraceItemzId == Guid.Empty)
+			{
+				throw new ArgumentNullException(nameof(itemzTraceDTO.FromTraceItemzId));
+			}
 
-            if (itemzTraceDTO.ToTraceItemzId == Guid.Empty)
-            {
-                throw new ArgumentNullException(nameof(itemzTraceDTO.ToTraceItemzId));
-            }
+			if (itemzTraceDTO.ToTraceItemzId == Guid.Empty)
+			{
+				throw new ArgumentNullException(nameof(itemzTraceDTO.ToTraceItemzId));
+			}
 
-            if (!(await _context.Itemzs.AsNoTracking().AnyAsync(a => a.Id == itemzTraceDTO.FromTraceItemzId)))
-            {
-                throw new Exception(nameof(itemzTraceDTO.FromTraceItemzId));
-            }
+			if (!(await _context.Itemzs.AsNoTracking().AnyAsync(a => a.Id == itemzTraceDTO.FromTraceItemzId)))
+			{
+				throw new Exception(nameof(itemzTraceDTO.FromTraceItemzId));
+			}
 
-            if (!(await _context.Itemzs.AsNoTracking().AnyAsync(a => a.Id == itemzTraceDTO.ToTraceItemzId)))
-            {
-                throw new Exception(nameof(itemzTraceDTO.ToTraceItemzId));
-            }
+			if (!(await _context.Itemzs.AsNoTracking().AnyAsync(a => a.Id == itemzTraceDTO.ToTraceItemzId)))
+			{
+				throw new Exception(nameof(itemzTraceDTO.ToTraceItemzId));
+			}
 
 			var itrace = await _itemzTraceContext.ItemzJoinItemzTrace!
 				.FindAsync(itemzTraceDTO.FromTraceItemzId, itemzTraceDTO.ToTraceItemzId);
 
 			if (itrace == null)
 			{
+				// NEW TRACE → always set TraceLabel (could be null or a value)
 				var temp_itrace = new ItemzJoinItemzTrace
 				{
 					FromItemzId = itemzTraceDTO.FromTraceItemzId,
 					ToItemzId = itemzTraceDTO.ToTraceItemzId,
-					TraceLabel = itemzTraceDTO.TraceLabel
+					TraceLabel = itemzTraceDTO.TraceLabel == Sentinel.TraceLabelDefault ? null : itemzTraceDTO.TraceLabel
 				};
 				await _itemzTraceContext.ItemzJoinItemzTrace.AddAsync(temp_itrace);
 			}
 			else
 			{
-				// Update existing trace label
-				itrace.TraceLabel = itemzTraceDTO.TraceLabel;
-				// _itemzTraceContext.ItemzJoinItemzTrace.Update(itrace);
+				// Only update if the client actually provided TraceLabel in JSON
+				bool traceLabelWasProvided =
+					itemzTraceDTO.TraceLabel != Sentinel.TraceLabelDefault;
+
+				if (traceLabelWasProvided)
+				{
+					itrace.TraceLabel = itemzTraceDTO.TraceLabel;
+				}
+				// else: do nothing → keep existing TraceLabel untouched
 			}
 		}
 
