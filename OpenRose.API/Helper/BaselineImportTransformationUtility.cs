@@ -3,6 +3,7 @@
 // See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 
 
+using ItemzApp.API.Constants;
 using ItemzApp.API.Models;
 using System;
 using System.Collections.Generic;
@@ -94,7 +95,7 @@ namespace ItemzApp.API.Helper
 
 					// Normalize TraceLabel: preserve null, trim, and defensively truncate to 32 chars
 					string? label = t.TraceLabel;
-					if (!string.IsNullOrWhiteSpace(label))
+					if ((!string.IsNullOrWhiteSpace(label)) && (label != Sentinel.TraceLabelDefault))
 					{
 						label = label.Trim();
 						if (label.Length > 32)
