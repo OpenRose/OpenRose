@@ -117,7 +117,7 @@ namespace ItemzApp.API.Helper
 				}
 
 				// Add the edge, including label if present
-				if (!string.IsNullOrWhiteSpace(t.TraceLabel))
+				if ((!string.IsNullOrWhiteSpace(t.TraceLabel)) && (t.TraceLabel != Sentinel.TraceLabelDefault))
 				{
 					var edgeLabel = SanitizeLabelForMermaid(t.TraceLabel);
 					sb.AppendLine($"    {t.FromTraceBaselineItemzId} -.{edgeLabel}.-> {t.ToTraceBaselineItemzId}");
