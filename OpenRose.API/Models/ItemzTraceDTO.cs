@@ -31,6 +31,14 @@ namespace ItemzApp.API.Models
 		[JsonProperty(NullValueHandling = NullValueHandling.Include)]
 		public string? TraceLabel { get; set; } = Sentinel.TraceLabelDefault;
 
+		// EXPLANATION:  We are using [JsonProperty(NullValueHandling = NullValueHandling.Include)]
+		// because we want to explicitely capture null as value passed by user. This helps us
+		// to understand and differenciate between null being passed by user or it was defaulted to sentinel
+		// value because user didn't pass any value for this property.
+		// Later it helps in deciding if we should override any existing TraceLabel that are defined 
+		// in the repository for the given record or not. 
+
+
 		// EXPLANATION: ShouldSerializeTraceLabel tells Newtonsoft whether to include TraceLabel in output
 		// By adding this method we control at the DTO level itself that one should not serialize the TraceLabel
 		// if it has the sentinel default value. So anywhere this DTO is serialized, the TraceLabel will be omitted
@@ -40,7 +48,7 @@ namespace ItemzApp.API.Models
 		public bool ShouldSerializeTraceLabel()
 		{
 			// Only serialize if it was actually provided
-			return (TraceLabel != "XZQPLMNRTYABWECOVHJKDUSFIGQX");
+			return (TraceLabel != Sentinel.TraceLabelDefault);
 		}
 	}
 }
