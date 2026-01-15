@@ -1,0 +1,66 @@
+﻿// OpenRose - Requirements Management
+// Licensed under the Apache License, Version 2.0. 
+// See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+
+
+using System;
+using System.Collections.Generic;
+using ItemzApp.API.Models;
+
+namespace ItemzApp.API.Models
+{
+	public class RepositoryExportForJsonDTO
+	{
+		public Guid RepositoryId { get; set; }
+
+		// Project-based export
+		public List<ProjectExportNodeForJson>? Projects { get; set; }
+		public List<ItemzTypeExportNodeForJson>? ItemzTypes { get; set; }
+		public List<ItemzExportNodeForJson>? Itemz { get; set; }
+
+		// Trace links (for live Itemz)
+		public List<ItemzTraceExportNodeDTO>? ItemzTraces { get; set; }
+
+		// Baseline-based export
+		public List<BaselineExportNodeForJson>? Baselines { get; set; }
+		public List<BaselineItemzTypeExportNodeForJson>? BaselineItemzTypes { get; set; }
+		public List<BaselineItemzExportNodeForJson>? BaselineItemz { get; set; }
+
+		// Trace links (for Baseline Itemz)
+		public List<BaselineItemzTraceExportNodeDTO>? BaselineItemzTraces { get; set; }
+	}
+
+	// Project hierarchy
+	public class ProjectExportNodeForJson
+	{
+		public GetProjectDTO Project { get; set; }
+		public List<ItemzTypeExportNodeForJson>? ItemzTypes { get; set; }
+	}
+	public class ItemzTypeExportNodeForJson
+	{
+		public GetItemzTypeDTO ItemzType { get; set; }
+		public List<ItemzExportNodeForJson>? Itemz { get; set; }
+	}
+	public class ItemzExportNodeForJson
+	{
+		public GetItemzDTO Itemz { get; set; }
+		public List<ItemzExportNodeForJson>? SubItemz { get; set; }
+	}
+
+	// Baseline hierarchy (parallel to Project)
+	public class BaselineExportNodeForJson
+	{
+		public GetBaselineDTO Baseline { get; set; }
+		public List<BaselineItemzTypeExportNodeForJson>? BaselineItemzTypes { get; set; }
+	}
+	public class BaselineItemzTypeExportNodeForJson
+	{
+		public GetBaselineItemzTypeDTO BaselineItemzType { get; set; }
+		public List<BaselineItemzExportNodeForJson>? BaselineItemz { get; set; }
+	}
+	public class BaselineItemzExportNodeForJson
+	{
+		public GetBaselineItemzDTO BaselineItemz { get; set; }
+		public List<BaselineItemzExportNodeForJson>? BaselineSubItemz { get; set; }
+	}
+}
