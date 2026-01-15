@@ -251,7 +251,9 @@
           "type": [ "string", "null" ],
           "maxLength": 32,
           "description": "Optional short unicode label for the trace (<= 32 characters)"
-        }
+        },
+        "FromTraceName": { "type": "string" },
+        "ToTraceName": { "type": "string" }
       },
       "required": [ "FromTraceItemzId", "ToTraceItemzId" ],
       "additionalProperties": false
@@ -400,7 +402,9 @@
           "type": [ "string", "null" ],
           "maxLength": 32,
           "description": "Optional short unicode label for the baseline trace (<= 32 characters)"
-        }
+        },
+        "FromTraceBaselineItemzName": { "type": "string" },
+        "ToTraceBaselineItemzName": { "type": "string" }
       },
       "required": [ "FromTraceBaselineItemzId", "ToTraceBaselineItemzId" ],
       "additionalProperties": false
