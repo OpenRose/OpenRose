@@ -9,13 +9,13 @@ namespace ItemzApp.API.Services
 {
 	public interface IExportNodeMapper
 	{
-		Task<ProjectExportNode> ConvertToProjectExportNode(NestedHierarchyIdRecordDetailsDTO node);
-		Task<ItemzTypeExportNode> ConvertToItemzTypeExportNode(NestedHierarchyIdRecordDetailsDTO node);
-		Task<ItemzExportNode> ConvertToItemzExportNode(NestedHierarchyIdRecordDetailsDTO node);
+		Task<ProjectExportNodeForJson> ConvertToProjectExportNode(NestedHierarchyIdRecordDetailsDTO node);
+		Task<ItemzTypeExportNodeForJson> ConvertToItemzTypeExportNode(NestedHierarchyIdRecordDetailsDTO node);
+		Task<ItemzExportNodeForJson> ConvertToItemzExportNode(NestedHierarchyIdRecordDetailsDTO node);
 
-		Task<BaselineExportNode> ConvertToBaselineExportNode(NestedBaselineHierarchyIdRecordDetailsDTO node);
-		Task<BaselineItemzTypeExportNode> ConvertToBaselineItemzTypeExportNode(NestedBaselineHierarchyIdRecordDetailsDTO node);
-		Task<BaselineItemzExportNode> ConvertToBaselineItemzExportNode(NestedBaselineHierarchyIdRecordDetailsDTO node);
+		Task<BaselineExportNodeForJson> ConvertToBaselineExportNode(NestedBaselineHierarchyIdRecordDetailsDTO node);
+		Task<BaselineItemzTypeExportNodeForJson> ConvertToBaselineItemzTypeExportNode(NestedBaselineHierarchyIdRecordDetailsDTO node);
+		Task<BaselineItemzExportNodeForJson> ConvertToBaselineItemzExportNode(NestedBaselineHierarchyIdRecordDetailsDTO node);
 
 	}
 }

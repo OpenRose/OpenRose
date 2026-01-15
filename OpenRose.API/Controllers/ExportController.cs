@@ -66,7 +66,7 @@ namespace ItemzApp.API.Controllers
 		public async Task<IActionResult> ExportHierarchy([FromQuery] Guid exportRecordId,
 										[FromQuery] bool exportIncludedBaselineItemzOnly = false)
 		{
-			_logger.LogDebug("{FormattedControllerAndActionNames} Processing request to export hierarchy as RepositoryExportDTO. Id: {ExportRecordId}, exportIncludedBaselineItemzOnly: {ExportIncludedBaselineItemzOnly}",
+			_logger.LogDebug("{FormattedControllerAndActionNames} Processing request to export hierarchy as RepositoryExportForJsonDTO. Id: {ExportRecordId}, exportIncludedBaselineItemzOnly: {ExportIncludedBaselineItemzOnly}",
 				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext), exportRecordId, exportIncludedBaselineItemzOnly);
 
 			if (exportRecordId == Guid.Empty)
@@ -80,7 +80,7 @@ namespace ItemzApp.API.Controllers
 				if (repositoryRecordDto == null)
 					return NotFound("Repository (root) not found.");
 
-				RepositoryExportDTO? exportDto = null;
+				RepositoryExportForJsonDTO? exportDto = null;
 				string? recordType = null;
 
 				// Try live hierarchy (Project/ItemzType/Itemz)
@@ -101,25 +101,60 @@ namespace ItemzApp.API.Controllers
 						};
 						recordType = parentHierarchyRecord.RecordType?.ToLowerInvariant();
 
-						exportDto = new RepositoryExportDTO
+						exportDto = new RepositoryExportForJsonDTO
 						{
 							RepositoryId = repositoryRecordDto.RecordId
 						};
 
 						HashSet<Guid> exportedItemzIds = CollectExportedIdsByType(rootNode, "Itemz");
 						var itemzTraces = await _itemzTraceExportService.GetTracesForExportAsync(exportedItemzIds);
-						exportDto.ItemzTraces = itemzTraces;
+
+						//exportDto.ItemzTraces = itemzTraces;
+
+						// Recursively collect all nodes under root
+						Dictionary<Guid, string> BuildIdToNameMap(NestedHierarchyIdRecordDetailsDTO node)
+						{
+							var map = new Dictionary<Guid, string>();
+							void Traverse(NestedHierarchyIdRecordDetailsDTO current)
+							{
+								if ( !(string.IsNullOrWhiteSpace(current.Name)) )
+								{ 
+									map[current.RecordId] = current.Name;
+								}
+								foreach (var child in current.Children ?? Enumerable.Empty<NestedHierarchyIdRecordDetailsDTO>())
+								{
+									Traverse(child);
+								}
+							}
+							Traverse(node);
+							return map;
+						}
+
+						var idToNameMap = BuildIdToNameMap(rootNode);
+
+
+						// Project into ItemzTraceExportNodeDTO objects
+						exportDto.ItemzTraces = itemzTraces.Select(t => new ItemzTraceExportNodeDTO
+						{
+							FromTraceName = idToNameMap.TryGetValue(t.FromTraceItemzId, out var fromName) ? fromName : null,
+							ToTraceName = idToNameMap.TryGetValue(t.ToTraceItemzId, out var toName) ? toName : null,
+							FromTraceItemzId = t.FromTraceItemzId,
+							ToTraceItemzId = t.ToTraceItemzId,
+							TraceLabel = t.TraceLabel
+						}).ToList();
+
+
 
 						switch (recordType)
 						{
 							case "project":
-								exportDto.Projects = new List<ProjectExportNode> { await _exportNodeMapper.ConvertToProjectExportNode(rootNode) };
+								exportDto.Projects = new List<ProjectExportNodeForJson> { await _exportNodeMapper.ConvertToProjectExportNode(rootNode) };
 								break;
 							case "itemztype":
-								exportDto.ItemzTypes = new List<ItemzTypeExportNode> { await _exportNodeMapper.ConvertToItemzTypeExportNode(rootNode) };
+								exportDto.ItemzTypes = new List<ItemzTypeExportNodeForJson> { await _exportNodeMapper.ConvertToItemzTypeExportNode(rootNode) };
 								break;
 							case "itemz":
-								exportDto.Itemz = new List<ItemzExportNode> { await _exportNodeMapper.ConvertToItemzExportNode(rootNode) };
+								exportDto.Itemz = new List<ItemzExportNodeForJson> { await _exportNodeMapper.ConvertToItemzExportNode(rootNode) };
 								break;
 							default:
 								return BadRequest($"Unsupported RecordType: {recordType}");
@@ -167,25 +202,60 @@ namespace ItemzApp.API.Controllers
 							};
 							recordType = baselineHierarchyRecord.RecordType?.ToLowerInvariant();
 
-							exportDto = new RepositoryExportDTO
+							exportDto = new RepositoryExportForJsonDTO
 							{
 								RepositoryId = repositoryRecordDto.RecordId
 							};
 
+							//var exportedBaselineItemzIds = CollectExportedIdsByType(rootNode, "BaselineItemz");
+							//var baselineItemzTraces = await _baselineItemzTraceExportService.GetTracesForExportAsync(exportedBaselineItemzIds);
+							//exportDto.BaselineItemzTraces = baselineItemzTraces;
+
+							// Recursively collect all nodes under baseline root
+							Dictionary<Guid, string> BuildBaselineIdToNameMap(NestedBaselineHierarchyIdRecordDetailsDTO node)
+							{
+								var map = new Dictionary<Guid, string>();
+								void Traverse(NestedBaselineHierarchyIdRecordDetailsDTO current)
+								{
+									if (!string.IsNullOrWhiteSpace(current.Name))
+									{
+										map[current.RecordId] = current.Name;
+									}
+									foreach (var child in current.Children ?? Enumerable.Empty<NestedBaselineHierarchyIdRecordDetailsDTO>())
+									{
+										Traverse(child);
+									}
+								}
+								Traverse(node);
+								return map;
+							}
+
+							var idToNameMap = BuildBaselineIdToNameMap(rootNode);
+
 							var exportedBaselineItemzIds = CollectExportedIdsByType(rootNode, "BaselineItemz");
 							var baselineItemzTraces = await _baselineItemzTraceExportService.GetTracesForExportAsync(exportedBaselineItemzIds);
-							exportDto.BaselineItemzTraces = baselineItemzTraces;
+
+							// Project into BaselineItemzTraceExportNodeDTO objects
+							exportDto.BaselineItemzTraces = baselineItemzTraces.Select(t => new BaselineItemzTraceExportNodeDTO
+							{
+								FromTraceBaselineItemzId = t.FromTraceBaselineItemzId,
+								ToTraceBaselineItemzId = t.ToTraceBaselineItemzId,
+								TraceLabel = t.TraceLabel,
+								FromTraceBaselineItemzName = idToNameMap.TryGetValue(t.FromTraceBaselineItemzId, out var fromName) ? fromName : null,
+								ToTraceBaselineItemzName = idToNameMap.TryGetValue(t.ToTraceBaselineItemzId, out var toName) ? toName : null
+							}).ToList();
+
 
 							switch (recordType)
 							{
 								case "baseline":
-									exportDto.Baselines = new List<BaselineExportNode> { await _exportNodeMapper.ConvertToBaselineExportNode(rootNode) };
+									exportDto.Baselines = new List<BaselineExportNodeForJson> { await _exportNodeMapper.ConvertToBaselineExportNode(rootNode) };
 									break;
 								case "baselineitemztype":
-									exportDto.BaselineItemzTypes = new List<BaselineItemzTypeExportNode> { await _exportNodeMapper.ConvertToBaselineItemzTypeExportNode(rootNode) };
+									exportDto.BaselineItemzTypes = new List<BaselineItemzTypeExportNodeForJson> { await _exportNodeMapper.ConvertToBaselineItemzTypeExportNode(rootNode) };
 									break;
 								case "baselineitemz":
-									exportDto.BaselineItemz = new List<BaselineItemzExportNode> { await _exportNodeMapper.ConvertToBaselineItemzExportNode(rootNode) };
+									exportDto.BaselineItemz = new List<BaselineItemzExportNodeForJson> { await _exportNodeMapper.ConvertToBaselineItemzExportNode(rootNode) };
 									break;
 								default:
 									return BadRequest($"Unsupported RecordType: {recordType}");
