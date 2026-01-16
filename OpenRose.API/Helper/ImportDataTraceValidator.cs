@@ -21,14 +21,14 @@ namespace ItemzApp.API.Helper
 				// Project → ItemzType → Itemz
 				foreach (var project in dto.Projects ?? Enumerable.Empty<ProjectExportNode>())
 				{
-					foreach (var itemzType in project.ItemzTypes ?? Enumerable.Empty<ItemzTypeExportNode>())
+					foreach (var itemzType in project.ItemzTypes ?? Enumerable.Empty<ItemzTypeImportNode>())
 					{
 						CollectItemzIds(itemzType.Itemz, validIds);
 					}
 				}
 
 				// Top-level ItemzTypes
-				foreach (var itemzType in dto.ItemzTypes ?? Enumerable.Empty<ItemzTypeExportNode>())
+				foreach (var itemzType in dto.ItemzTypes ?? Enumerable.Empty<ItemzTypeImportNode>())
 				{
 					CollectItemzIds(itemzType.Itemz, validIds);
 				}

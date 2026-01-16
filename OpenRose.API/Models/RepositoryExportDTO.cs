@@ -26,7 +26,7 @@ namespace ItemzApp.API.Models
 
 		// Project-based export
 		public List<ProjectExportNode>? Projects { get; set; }
-		public List<ItemzTypeExportNode>? ItemzTypes { get; set; }
+		public List<ItemzTypeImportNode>? ItemzTypes { get; set; }
 		public List<ItemzImportNode>? Itemz { get; set; }
 
 		// Trace links (for live Itemz)
@@ -45,9 +45,9 @@ namespace ItemzApp.API.Models
 	public class ProjectExportNode
 	{
 		public GetProjectDTO Project { get; set; }
-		public List<ItemzTypeExportNode>? ItemzTypes { get; set; }
+		public List<ItemzTypeImportNode>? ItemzTypes { get; set; }
 	}
-	public class ItemzTypeExportNode
+	public class ItemzTypeImportNode
 	{
 		public GetItemzTypeDTO ItemzType { get; set; }
 		public List<ItemzImportNode>? Itemz { get; set; }

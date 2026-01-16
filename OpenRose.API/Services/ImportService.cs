@@ -331,7 +331,7 @@ namespace ItemzApp.API.Services
 
 
 		private async Task<(Guid RootId, int TotalCreated, int MaxDepth)> ImportSingleItemzTypeAsync(
-													ItemzTypeExportNode itemzTypeNode,
+													ItemzTypeImportNode itemzTypeNode,
 													Guid targetProjectId,
 													Dictionary<Guid, Guid> idMap)
 		{
@@ -507,7 +507,7 @@ namespace ItemzApp.API.Services
 			int totalCreated = 0;
 			int maxDepth = 1;
 
-			foreach (var itemzTypeNode in projectNode.ItemzTypes ?? Enumerable.Empty<ItemzTypeExportNode>())
+			foreach (var itemzTypeNode in projectNode.ItemzTypes ?? Enumerable.Empty<ItemzTypeImportNode>())
 			{
 				var (_, created, depth) = await ImportSingleItemzTypeAsync(
 					itemzTypeNode,
