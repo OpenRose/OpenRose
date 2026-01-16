@@ -75,7 +75,7 @@ namespace ItemzApp.API.Helper
 			};
 		}
 
-		public static ItemzImportNode TransformBaselineNodeToItemzNode(BaselineItemzExportNode baselineNode)
+		public static ItemzImportNode TransformBaselineNodeToItemzNode(BaselineItemzImportNode baselineNode)
 		{
 			return new ItemzImportNode
 			{

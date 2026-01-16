@@ -35,7 +35,7 @@ namespace ItemzApp.API.Models
 		// Baseline-based export
 		public List<BaselineExportNode>? Baselines { get; set; }
 		public List<BaselineItemzTypeExportNode>? BaselineItemzTypes { get; set; }
-		public List<BaselineItemzExportNode>? BaselineItemz { get; set; }
+		public List<BaselineItemzImportNode>? BaselineItemz { get; set; }
 
 		// Trace links (for Baseline Itemz)
 		public List<BaselineItemzTraceDTO>? BaselineItemzTraces { get; set; }
@@ -67,11 +67,11 @@ namespace ItemzApp.API.Models
 	public class BaselineItemzTypeExportNode
 	{
 		public GetBaselineItemzTypeDTO BaselineItemzType { get; set; }
-		public List<BaselineItemzExportNode>? BaselineItemz { get; set; }
+		public List<BaselineItemzImportNode>? BaselineItemz { get; set; }
 	}
-	public class BaselineItemzExportNode
+	public class BaselineItemzImportNode
 	{
 		public GetBaselineItemzDTO BaselineItemz { get; set; }
-		public List<BaselineItemzExportNode>? BaselineSubItemz { get; set; }
+		public List<BaselineItemzImportNode>? BaselineSubItemz { get; set; }
 	}
 }

@@ -113,7 +113,7 @@ namespace ItemzApp.API.Helper
 			}
 		}
 
-		private static void CollectBaselineItemzIds(List<BaselineItemzExportNode>? nodes, HashSet<Guid> ids)
+		private static void CollectBaselineItemzIds(List<BaselineItemzImportNode>? nodes, HashSet<Guid> ids)
 		{
 			if (nodes == null) return;
 

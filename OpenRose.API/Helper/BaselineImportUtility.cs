@@ -15,7 +15,7 @@ namespace ItemzApp.API.Helper
 	{
 		public static List<BaselineItemzTraceDTO> FilterValidBaselineItemzTraces(
 			List<BaselineItemzTraceDTO> traces,
-			IEnumerable<BaselineItemzExportNode> validNodes)
+			IEnumerable<BaselineItemzImportNode> validNodes)
 		{
 			var validIds = new HashSet<Guid>(
 				validNodes.Select(n => n.BaselineItemz.Id)
@@ -35,7 +35,7 @@ namespace ItemzApp.API.Helper
 		{
 			if (importExcludedBaselineItemz || repositoryExportDto == null) return;
 
-			var allValidNodes = new List<BaselineItemzExportNode>();
+			var allValidNodes = new List<BaselineItemzImportNode>();
 
 			// 1. Filter direct BaselineItemz list
 			if (repositoryExportDto.BaselineItemz != null)
@@ -82,22 +82,22 @@ namespace ItemzApp.API.Helper
 			logger.LogInformation("Filtered BaselineItemz globally across repository. Valid nodes retained: {Count}", allValidNodes.Count);
 		}
 
-		private static List<BaselineItemzExportNode> FilterNodeList(
-			List<BaselineItemzExportNode> inputNodes,
-			List<BaselineItemzExportNode> validCollector)
+		private static List<BaselineItemzImportNode> FilterNodeList(
+			List<BaselineItemzImportNode> inputNodes,
+			List<BaselineItemzImportNode> validCollector)
 		{
-			if (inputNodes == null) return new List<BaselineItemzExportNode>();
+			if (inputNodes == null) return new List<BaselineItemzImportNode>();
 
-			var filtered = new List<BaselineItemzExportNode>();
+			var filtered = new List<BaselineItemzImportNode>();
 
 			foreach (var node in inputNodes)
 			{
 				if (node?.BaselineItemz != null && node.BaselineItemz.isIncluded)
 				{
-					var newNode = new BaselineItemzExportNode
+					var newNode = new BaselineItemzImportNode
 					{
 						BaselineItemz = node.BaselineItemz,
-						BaselineSubItemz = FilterNodeList(node.BaselineSubItemz ?? new List<BaselineItemzExportNode>(), validCollector)
+						BaselineSubItemz = FilterNodeList(node.BaselineSubItemz ?? new List<BaselineItemzImportNode>(), validCollector)
 					};
 
 					filtered.Add(newNode);
