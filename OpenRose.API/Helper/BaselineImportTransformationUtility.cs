@@ -14,7 +14,7 @@ namespace ItemzApp.API.Helper
 	public static class BaselineImportTransformationUtility
 	{
 
-		public static ProjectImportNode TransformBaselineToProject(BaselineExportNode baselineNode)
+		public static ProjectImportNode TransformBaselineToProject(BaselineImportNode baselineNode)
 		{
 			var projectDto = new GetProjectDTO
 			{

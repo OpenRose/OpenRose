@@ -52,7 +52,7 @@ namespace ItemzApp.API.Helper
 			else if (IsBaselineBased(detectedType))
 			{
 				// Baseline → BaselineItemzType → BaselineItemz
-				foreach (var baseline in dto.Baselines ?? Enumerable.Empty<BaselineExportNode>())
+				foreach (var baseline in dto.Baselines ?? Enumerable.Empty<BaselineImportNode>())
 				{
 					foreach (var itemzType in baseline.BaselineItemzTypes ?? Enumerable.Empty<BaselineItemzTypeImportNode>())
 					{

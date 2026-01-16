@@ -33,7 +33,7 @@ namespace ItemzApp.API.Models
 		public List<ItemzTraceDTO>? ItemzTraces { get; set; }
 
 		// Baseline-based export
-		public List<BaselineExportNode>? Baselines { get; set; }
+		public List<BaselineImportNode>? Baselines { get; set; }
 		public List<BaselineItemzTypeImportNode>? BaselineItemzTypes { get; set; }
 		public List<BaselineItemzImportNode>? BaselineItemz { get; set; }
 
@@ -59,7 +59,7 @@ namespace ItemzApp.API.Models
 	}
 
 	// Baseline hierarchy (parallel to Project)
-	public class BaselineExportNode
+	public class BaselineImportNode
 	{
 		public GetBaselineDTO Baseline { get; set; }
 		public List<BaselineItemzTypeImportNode>? BaselineItemzTypes { get; set; }
