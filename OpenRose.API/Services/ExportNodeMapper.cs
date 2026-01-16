@@ -40,7 +40,7 @@ namespace ItemzApp.API.Services
 			_mapper = mapper;
 		}
 
-		public async Task<ProjectExportNodeForJson> ConvertToProjectExportNode(NestedHierarchyIdRecordDetailsDTO node)
+		public async Task<ProjectExportNode> ConvertToProjectExportNode(NestedHierarchyIdRecordDetailsDTO node)
 		{
 			// 1. Get the full Project entity for mapping
 			var projectEntity = await _projectRepository.GetProjectAsync(node.RecordId);
@@ -57,7 +57,7 @@ namespace ItemzApp.API.Services
 				}
 			}
 
-			return new ProjectExportNodeForJson
+			return new ProjectExportNode
 			{
 				Project = projectDto,
 				ItemzTypes = itemzTypeExportNodes.Any() ? itemzTypeExportNodes : null

@@ -148,7 +148,7 @@ namespace ItemzApp.API.Controllers
 						switch (recordType)
 						{
 							case "project":
-								exportDto.Projects = new List<ProjectExportNodeForJson> { await _exportNodeMapper.ConvertToProjectExportNode(rootNode) };
+								exportDto.Projects = new List<ProjectExportNode> { await _exportNodeMapper.ConvertToProjectExportNode(rootNode) };
 								break;
 							case "itemztype":
 								exportDto.ItemzTypes = new List<ItemzTypeExportNode> { await _exportNodeMapper.ConvertToItemzTypeExportNode(rootNode) };
