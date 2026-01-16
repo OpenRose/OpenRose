@@ -70,7 +70,7 @@ namespace ItemzApp.API.Services
 			var itemzTypeDto = _mapper.Map<GetItemzTypeDTO>(itemzTypeEntity);
 
 			// Recursively map Itemz
-			var itemzExportNodes = new List<ItemzExportNodeForJson>();
+			var itemzExportNodes = new List<ItemzExportNode>();
 			if (node.Children != null)
 			{
 				foreach (var child in node.Children.Where(c => string.Equals(c.RecordType, "Itemz", StringComparison.OrdinalIgnoreCase)))
@@ -87,13 +87,13 @@ namespace ItemzApp.API.Services
 			};
 		}
 
-		public async Task<ItemzExportNodeForJson> ConvertToItemzExportNode(NestedHierarchyIdRecordDetailsDTO node)
+		public async Task<ItemzExportNode> ConvertToItemzExportNode(NestedHierarchyIdRecordDetailsDTO node)
 		{
 			var itemzEntity = await _itemzRepository.GetItemzAsync(node.RecordId);
 			var itemzDto = _mapper.Map<GetItemzDTO>(itemzEntity);
 
 			// Recursively map sub-Itemz
-			var subItemzExportNodes = new List<ItemzExportNodeForJson>();
+			var subItemzExportNodes = new List<ItemzExportNode>();
 			if (node.Children != null)
 			{
 				foreach (var child in node.Children.Where(c => string.Equals(c.RecordType, "Itemz", StringComparison.OrdinalIgnoreCase)))
@@ -103,7 +103,7 @@ namespace ItemzApp.API.Services
 				}
 			}
 
-			return new ItemzExportNodeForJson
+			return new ItemzExportNode
 			{
 				Itemz = itemzDto,
 				SubItemz = subItemzExportNodes.Any() ? subItemzExportNodes : null

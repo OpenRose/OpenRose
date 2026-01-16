@@ -11,7 +11,7 @@ namespace ItemzApp.API.Services
 	{
 		Task<ProjectExportNodeForJson> ConvertToProjectExportNode(NestedHierarchyIdRecordDetailsDTO node);
 		Task<ItemzTypeExportNodeForJson> ConvertToItemzTypeExportNode(NestedHierarchyIdRecordDetailsDTO node);
-		Task<ItemzExportNodeForJson> ConvertToItemzExportNode(NestedHierarchyIdRecordDetailsDTO node);
+		Task<ItemzExportNode> ConvertToItemzExportNode(NestedHierarchyIdRecordDetailsDTO node);
 
 		Task<BaselineExportNode> ConvertToBaselineExportNode(NestedBaselineHierarchyIdRecordDetailsDTO node);
 		Task<BaselineItemzTypeExportNode> ConvertToBaselineItemzTypeExportNode(NestedBaselineHierarchyIdRecordDetailsDTO node);
