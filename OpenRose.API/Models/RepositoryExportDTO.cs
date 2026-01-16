@@ -25,7 +25,7 @@ namespace ItemzApp.API.Models
 		public Guid RepositoryId { get; set; }
 
 		// Project-based export
-		public List<ProjectExportNode>? Projects { get; set; }
+		public List<ProjectImportNode>? Projects { get; set; }
 		public List<ItemzTypeImportNode>? ItemzTypes { get; set; }
 		public List<ItemzImportNode>? Itemz { get; set; }
 
@@ -42,7 +42,7 @@ namespace ItemzApp.API.Models
 	}
 
 	// Project hierarchy
-	public class ProjectExportNode
+	public class ProjectImportNode
 	{
 		public GetProjectDTO Project { get; set; }
 		public List<ItemzTypeImportNode>? ItemzTypes { get; set; }

@@ -14,7 +14,7 @@ namespace ItemzApp.API.Helper
 	public static class BaselineImportTransformationUtility
 	{
 
-		public static ProjectExportNode TransformBaselineToProject(BaselineExportNode baselineNode)
+		public static ProjectImportNode TransformBaselineToProject(BaselineExportNode baselineNode)
 		{
 			var projectDto = new GetProjectDTO
 			{
@@ -30,7 +30,7 @@ namespace ItemzApp.API.Helper
 				.Select(TransformBaselineItemzTypeToItemzTypeNode)
 				.ToList();
 
-			return new ProjectExportNode
+			return new ProjectImportNode
 			{
 				Project = projectDto,
 				ItemzTypes = itemzTypeNodes

@@ -470,7 +470,7 @@ namespace ItemzApp.API.Services
 
 
 		private async Task<(Guid ProjectId, int TotalCreated, int MaxDepth)> ImportSingleProjectAsync(
-			ProjectExportNode projectNode,
+			ProjectImportNode projectNode,
 			Dictionary<Guid, Guid> idMap)
 		{
 			var projectDto = projectNode.Project;

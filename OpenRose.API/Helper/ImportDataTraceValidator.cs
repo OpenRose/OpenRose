@@ -19,7 +19,7 @@ namespace ItemzApp.API.Helper
 			if (IsItemzBased(detectedType))
 			{
 				// Project → ItemzType → Itemz
-				foreach (var project in dto.Projects ?? Enumerable.Empty<ProjectExportNode>())
+				foreach (var project in dto.Projects ?? Enumerable.Empty<ProjectImportNode>())
 				{
 					foreach (var itemzType in project.ItemzTypes ?? Enumerable.Empty<ItemzTypeImportNode>())
 					{
