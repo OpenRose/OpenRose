@@ -255,7 +255,7 @@ namespace ItemzApp.API.Controllers
 									exportDto.BaselineItemzTypes = new List<BaselineItemzTypeExportNodeForJson> { await _exportNodeMapper.ConvertToBaselineItemzTypeExportNode(rootNode) };
 									break;
 								case "baselineitemz":
-									exportDto.BaselineItemz = new List<BaselineItemzExportNodeForJson> { await _exportNodeMapper.ConvertToBaselineItemzExportNode(rootNode) };
+									exportDto.BaselineItemz = new List<BaselineItemzExportNode> { await _exportNodeMapper.ConvertToBaselineItemzExportNode(rootNode) };
 									break;
 								default:
 									return BadRequest($"Unsupported RecordType: {recordType}");

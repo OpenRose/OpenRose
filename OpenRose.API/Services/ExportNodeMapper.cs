@@ -140,7 +140,7 @@ namespace ItemzApp.API.Services
 			var baselineItemzTypeDto = _mapper.Map<GetBaselineItemzTypeDTO>(baselineItemzTypeEntity);
 
 			// Recursively map BaselineItemz
-			var baselineItemzExportNodes = new List<BaselineItemzExportNodeForJson>();
+			var baselineItemzExportNodes = new List<BaselineItemzExportNode>();
 			if (node.Children != null)
 			{
 				foreach (var child in node.Children.Where(c => string.Equals(c.RecordType, "BaselineItemz", StringComparison.OrdinalIgnoreCase)))
@@ -158,13 +158,13 @@ namespace ItemzApp.API.Services
 		}
 
 
-		public async Task<BaselineItemzExportNodeForJson> ConvertToBaselineItemzExportNode(NestedBaselineHierarchyIdRecordDetailsDTO node)
+		public async Task<BaselineItemzExportNode> ConvertToBaselineItemzExportNode(NestedBaselineHierarchyIdRecordDetailsDTO node)
 		{
 			var baselineItemzEntity = await _baselineItemzRepository.GetBaselineItemzAsync(node.RecordId);
 			var baselineItemzDto = _mapper.Map<GetBaselineItemzDTO>(baselineItemzEntity);
 
 			// Recursively map sub BaselineItemz (if any)
-			var baselineSubItemzExportNodes = new List<BaselineItemzExportNodeForJson>();
+			var baselineSubItemzExportNodes = new List<BaselineItemzExportNode>();
 			if (node.Children != null)
 			{
 				foreach (var child in node.Children.Where(c => string.Equals(c.RecordType, "BaselineItemz", StringComparison.OrdinalIgnoreCase)))
@@ -174,7 +174,7 @@ namespace ItemzApp.API.Services
 				}
 			}
 
-			return new BaselineItemzExportNodeForJson
+			return new BaselineItemzExportNode
 			{
 				BaselineItemz = baselineItemzDto,
 				BaselineSubItemz = baselineSubItemzExportNodes.Any() ? baselineSubItemzExportNodes : null
