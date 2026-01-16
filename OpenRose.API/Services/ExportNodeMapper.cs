@@ -47,7 +47,7 @@ namespace ItemzApp.API.Services
 			var projectDto = _mapper.Map<GetProjectDTO>(projectEntity);
 
 			// 2. Recursively map ItemzTypes
-			var itemzTypeExportNodes = new List<ItemzTypeExportNodeForJson>();
+			var itemzTypeExportNodes = new List<ItemzTypeExportNode>();
 			if (node.Children != null)
 			{
 				foreach (var child in node.Children.Where(c => string.Equals(c.RecordType, "ItemzType", StringComparison.OrdinalIgnoreCase)))
@@ -64,7 +64,7 @@ namespace ItemzApp.API.Services
 			};
 		}
 
-		public async Task<ItemzTypeExportNodeForJson> ConvertToItemzTypeExportNode(NestedHierarchyIdRecordDetailsDTO node)
+		public async Task<ItemzTypeExportNode> ConvertToItemzTypeExportNode(NestedHierarchyIdRecordDetailsDTO node)
 		{
 			var itemzTypeEntity = await _itemzTypeRepository.GetItemzTypeAsync(node.RecordId);
 			var itemzTypeDto = _mapper.Map<GetItemzTypeDTO>(itemzTypeEntity);
@@ -80,7 +80,7 @@ namespace ItemzApp.API.Services
 				}
 			}
 
-			return new ItemzTypeExportNodeForJson
+			return new ItemzTypeExportNode
 			{
 				ItemzType = itemzTypeDto,
 				Itemz = itemzExportNodes.Any() ? itemzExportNodes : null

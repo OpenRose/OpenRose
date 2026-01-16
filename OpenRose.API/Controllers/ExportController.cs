@@ -151,7 +151,7 @@ namespace ItemzApp.API.Controllers
 								exportDto.Projects = new List<ProjectExportNodeForJson> { await _exportNodeMapper.ConvertToProjectExportNode(rootNode) };
 								break;
 							case "itemztype":
-								exportDto.ItemzTypes = new List<ItemzTypeExportNodeForJson> { await _exportNodeMapper.ConvertToItemzTypeExportNode(rootNode) };
+								exportDto.ItemzTypes = new List<ItemzTypeExportNode> { await _exportNodeMapper.ConvertToItemzTypeExportNode(rootNode) };
 								break;
 							case "itemz":
 								exportDto.Itemz = new List<ItemzExportNode> { await _exportNodeMapper.ConvertToItemzExportNode(rootNode) };

@@ -10,7 +10,7 @@ namespace ItemzApp.API.Services
 	public interface IExportNodeMapper
 	{
 		Task<ProjectExportNodeForJson> ConvertToProjectExportNode(NestedHierarchyIdRecordDetailsDTO node);
-		Task<ItemzTypeExportNodeForJson> ConvertToItemzTypeExportNode(NestedHierarchyIdRecordDetailsDTO node);
+		Task<ItemzTypeExportNode> ConvertToItemzTypeExportNode(NestedHierarchyIdRecordDetailsDTO node);
 		Task<ItemzExportNode> ConvertToItemzExportNode(NestedHierarchyIdRecordDetailsDTO node);
 
 		Task<BaselineExportNode> ConvertToBaselineExportNode(NestedBaselineHierarchyIdRecordDetailsDTO node);
