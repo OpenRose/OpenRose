@@ -99,7 +99,7 @@ namespace ItemzApp.API.Helper
 		}
 
 
-		private static void CollectItemzIds(List<ItemzExportNode>? nodes, HashSet<Guid> ids)
+		private static void CollectItemzIds(List<ItemzImportNode>? nodes, HashSet<Guid> ids)
 		{
 			if (nodes == null) return;
 

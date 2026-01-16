@@ -75,9 +75,9 @@ namespace ItemzApp.API.Helper
 			};
 		}
 
-		public static ItemzExportNode TransformBaselineNodeToItemzNode(BaselineItemzExportNode baselineNode)
+		public static ItemzImportNode TransformBaselineNodeToItemzNode(BaselineItemzExportNode baselineNode)
 		{
-			return new ItemzExportNode
+			return new ItemzImportNode
 			{
 				Itemz = TransformBaselineItemzToItemz(baselineNode.BaselineItemz),
 				SubItemz = baselineNode.BaselineSubItemz?.Select(TransformBaselineNodeToItemzNode).ToList()

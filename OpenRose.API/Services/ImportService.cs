@@ -188,12 +188,12 @@ namespace ItemzApp.API.Services
 
 
 		private async Task<(Guid RootId, int TotalCreated, int Depth)> ImportItemzRecursivelyWithStats(
-									ItemzExportNode itemzExportNode,
+									ItemzImportNode itemzImportNode,
 									Guid? parentItemzId,
 									int currentDepth,
 									Dictionary<Guid, Guid> idMap)
 		{
-			var itemzDto = itemzExportNode.Itemz;
+			var itemzDto = itemzImportNode.Itemz;
 			var originalId = itemzDto.Id;
 
 			// EXPLANATION: Purpose of first creating 'tempItemzDTO' of type 'CreateItemzDTO'
@@ -219,9 +219,9 @@ namespace ItemzApp.API.Services
 			int totalCreated = 1;
 			int maxDepth = currentDepth;
 
-			if (itemzExportNode.SubItemz != null)
+			if (itemzImportNode.SubItemz != null)
 			{
-				foreach (var subRecord in itemzExportNode.SubItemz)
+				foreach (var subRecord in itemzImportNode.SubItemz)
 				{
 					var (subId, subCreated, subDepth) =
 						await ImportItemzRecursivelyWithStats(subRecord, itemzEntity.Id, currentDepth + 1, idMap);
@@ -354,7 +354,7 @@ namespace ItemzApp.API.Services
 					int totalCreated = 0;
 					int maxDepth = 1;
 
-					foreach (var itemzNode in itemzTypeNode.Itemz ?? Enumerable.Empty<ItemzExportNode>())
+					foreach (var itemzNode in itemzTypeNode.Itemz ?? Enumerable.Empty<ItemzImportNode>())
 					{
 						var (_, created, depth) = await ImportItemzRecursivelyWithStats(
 							itemzNode,
@@ -394,7 +394,7 @@ namespace ItemzApp.API.Services
 			int normalCreated = 0;
 			int normalDepth = 1;
 
-			foreach (var itemzNode in itemzTypeNode.Itemz ?? Enumerable.Empty<ItemzExportNode>())
+			foreach (var itemzNode in itemzTypeNode.Itemz ?? Enumerable.Empty<ItemzImportNode>())
 			{
 				var (_, created, depth) = await ImportItemzRecursivelyWithStats(
 					itemzNode,
