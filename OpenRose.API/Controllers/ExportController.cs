@@ -252,7 +252,7 @@ namespace ItemzApp.API.Controllers
 									exportDto.Baselines = new List<BaselineExportNodeForJson> { await _exportNodeMapper.ConvertToBaselineExportNode(rootNode) };
 									break;
 								case "baselineitemztype":
-									exportDto.BaselineItemzTypes = new List<BaselineItemzTypeExportNodeForJson> { await _exportNodeMapper.ConvertToBaselineItemzTypeExportNode(rootNode) };
+									exportDto.BaselineItemzTypes = new List<BaselineItemzTypeExportNode> { await _exportNodeMapper.ConvertToBaselineItemzTypeExportNode(rootNode) };
 									break;
 								case "baselineitemz":
 									exportDto.BaselineItemz = new List<BaselineItemzExportNode> { await _exportNodeMapper.ConvertToBaselineItemzExportNode(rootNode) };

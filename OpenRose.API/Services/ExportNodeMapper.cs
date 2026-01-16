@@ -117,7 +117,7 @@ namespace ItemzApp.API.Services
 			var baselineDto = _mapper.Map<GetBaselineDTO>(baselineEntity);
 
 			// 2. Recursively map BaselineItemzTypes
-			var baselineItemzTypeExportNodes = new List<BaselineItemzTypeExportNodeForJson>();
+			var baselineItemzTypeExportNodes = new List<BaselineItemzTypeExportNode>();
 			if (node.Children != null)
 			{
 				foreach (var child in node.Children.Where(c => string.Equals(c.RecordType, "BaselineItemzType", StringComparison.OrdinalIgnoreCase)))
@@ -134,7 +134,7 @@ namespace ItemzApp.API.Services
 			};
 		}
 
-		public async Task<BaselineItemzTypeExportNodeForJson> ConvertToBaselineItemzTypeExportNode(NestedBaselineHierarchyIdRecordDetailsDTO node)
+		public async Task<BaselineItemzTypeExportNode> ConvertToBaselineItemzTypeExportNode(NestedBaselineHierarchyIdRecordDetailsDTO node)
 		{
 			var baselineItemzTypeEntity = await _baselineItemzTypeRepository.GetBaselineItemzTypeAsync(node.RecordId);
 			var baselineItemzTypeDto = _mapper.Map<GetBaselineItemzTypeDTO>(baselineItemzTypeEntity);
@@ -150,7 +150,7 @@ namespace ItemzApp.API.Services
 				}
 			}
 
-			return new BaselineItemzTypeExportNodeForJson
+			return new BaselineItemzTypeExportNode
 			{
 				BaselineItemzType = baselineItemzTypeDto,
 				BaselineItemz = baselineItemzExportNodes.Any() ? baselineItemzExportNodes : null

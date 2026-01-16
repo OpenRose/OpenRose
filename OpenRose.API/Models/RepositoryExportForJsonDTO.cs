@@ -23,7 +23,7 @@ namespace ItemzApp.API.Models
 
 		// Baseline-based export
 		public List<BaselineExportNodeForJson>? Baselines { get; set; }
-		public List<BaselineItemzTypeExportNodeForJson>? BaselineItemzTypes { get; set; }
+		public List<BaselineItemzTypeExportNode>? BaselineItemzTypes { get; set; }
 		public List<BaselineItemzExportNode>? BaselineItemz { get; set; }
 
 		// Trace links (for Baseline Itemz)
@@ -51,9 +51,9 @@ namespace ItemzApp.API.Models
 	public class BaselineExportNodeForJson
 	{
 		public GetBaselineDTO Baseline { get; set; }
-		public List<BaselineItemzTypeExportNodeForJson>? BaselineItemzTypes { get; set; }
+		public List<BaselineItemzTypeExportNode>? BaselineItemzTypes { get; set; }
 	}
-	public class BaselineItemzTypeExportNodeForJson
+	public class BaselineItemzTypeExportNode
 	{
 		public GetBaselineItemzTypeDTO BaselineItemzType { get; set; }
 		public List<BaselineItemzExportNode>? BaselineItemz { get; set; }
