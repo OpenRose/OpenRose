@@ -39,7 +39,7 @@ namespace ItemzApp.API.Helper
 
 
 		public static ItemzTypeImportNode TransformBaselineItemzTypeToItemzTypeNode(
-											BaselineItemzTypeExportNode baselineNode)
+											BaselineItemzTypeImportNode baselineNode)
 		{
 			return new ItemzTypeImportNode
 			{

@@ -54,14 +54,14 @@ namespace ItemzApp.API.Helper
 				// Baseline → BaselineItemzType → BaselineItemz
 				foreach (var baseline in dto.Baselines ?? Enumerable.Empty<BaselineExportNode>())
 				{
-					foreach (var itemzType in baseline.BaselineItemzTypes ?? Enumerable.Empty<BaselineItemzTypeExportNode>())
+					foreach (var itemzType in baseline.BaselineItemzTypes ?? Enumerable.Empty<BaselineItemzTypeImportNode>())
 					{
 						CollectBaselineItemzIds(itemzType.BaselineItemz, validIds);
 					}
 				}
 
 				// Top-level BaselineItemzTypes
-				foreach (var itemzType in dto.BaselineItemzTypes ?? Enumerable.Empty<BaselineItemzTypeExportNode>())
+				foreach (var itemzType in dto.BaselineItemzTypes ?? Enumerable.Empty<BaselineItemzTypeImportNode>())
 				{
 					CollectBaselineItemzIds(itemzType.BaselineItemz, validIds);
 				}
