@@ -110,7 +110,7 @@ namespace ItemzApp.API.Services
 			};
 		}
 
-		public async Task<BaselineExportNodeForJson> ConvertToBaselineExportNode(NestedBaselineHierarchyIdRecordDetailsDTO node)
+		public async Task<BaselineExportNode> ConvertToBaselineExportNode(NestedBaselineHierarchyIdRecordDetailsDTO node)
 		{
 			// 1. Get the full Baseline entity for mapping
 			var baselineEntity = await _baselineRepository.GetBaselineAsync(node.RecordId);
@@ -127,7 +127,7 @@ namespace ItemzApp.API.Services
 				}
 			}
 
-			return new BaselineExportNodeForJson
+			return new BaselineExportNode
 			{
 				Baseline = baselineDto,
 				BaselineItemzTypes = baselineItemzTypeExportNodes.Any() ? baselineItemzTypeExportNodes : null

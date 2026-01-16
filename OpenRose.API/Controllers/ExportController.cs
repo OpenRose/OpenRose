@@ -249,7 +249,7 @@ namespace ItemzApp.API.Controllers
 							switch (recordType)
 							{
 								case "baseline":
-									exportDto.Baselines = new List<BaselineExportNodeForJson> { await _exportNodeMapper.ConvertToBaselineExportNode(rootNode) };
+									exportDto.Baselines = new List<BaselineExportNode> { await _exportNodeMapper.ConvertToBaselineExportNode(rootNode) };
 									break;
 								case "baselineitemztype":
 									exportDto.BaselineItemzTypes = new List<BaselineItemzTypeExportNode> { await _exportNodeMapper.ConvertToBaselineItemzTypeExportNode(rootNode) };
