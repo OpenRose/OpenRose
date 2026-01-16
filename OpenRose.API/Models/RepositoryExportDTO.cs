@@ -9,7 +9,7 @@ using ItemzApp.API.Models;
 
 namespace ItemzApp.API.Models
 {
-	public class RepositoryExportForJsonDTO
+	public class RepositoryExportDTO
 	{
 		public Guid RepositoryId { get; set; }
 

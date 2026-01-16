@@ -66,7 +66,7 @@ namespace ItemzApp.API.Controllers
 		public async Task<IActionResult> ExportHierarchy([FromQuery] Guid exportRecordId,
 										[FromQuery] bool exportIncludedBaselineItemzOnly = false)
 		{
-			_logger.LogDebug("{FormattedControllerAndActionNames} Processing request to export hierarchy as RepositoryExportForJsonDTO. Id: {ExportRecordId}, exportIncludedBaselineItemzOnly: {ExportIncludedBaselineItemzOnly}",
+			_logger.LogDebug("{FormattedControllerAndActionNames} Processing request to export hierarchy as RepositoryExportDTO. Id: {ExportRecordId}, exportIncludedBaselineItemzOnly: {ExportIncludedBaselineItemzOnly}",
 				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext), exportRecordId, exportIncludedBaselineItemzOnly);
 
 			if (exportRecordId == Guid.Empty)
@@ -80,7 +80,7 @@ namespace ItemzApp.API.Controllers
 				if (repositoryRecordDto == null)
 					return NotFound("Repository (root) not found.");
 
-				RepositoryExportForJsonDTO? exportDto = null;
+				RepositoryExportDTO? exportDto = null;
 				string? recordType = null;
 
 				// Try live hierarchy (Project/ItemzType/Itemz)
@@ -101,7 +101,7 @@ namespace ItemzApp.API.Controllers
 						};
 						recordType = parentHierarchyRecord.RecordType?.ToLowerInvariant();
 
-						exportDto = new RepositoryExportForJsonDTO
+						exportDto = new RepositoryExportDTO
 						{
 							RepositoryId = repositoryRecordDto.RecordId
 						};
@@ -202,7 +202,7 @@ namespace ItemzApp.API.Controllers
 							};
 							recordType = baselineHierarchyRecord.RecordType?.ToLowerInvariant();
 
-							exportDto = new RepositoryExportForJsonDTO
+							exportDto = new RepositoryExportDTO
 							{
 								RepositoryId = repositoryRecordDto.RecordId
 							};
