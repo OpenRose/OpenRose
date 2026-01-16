@@ -11,7 +11,7 @@ namespace ItemzApp.API.Helper
 {
 	public static class ImportDataTraceValidator
 	{
-		public static List<string> ValidateTraceLinks(RepositoryExportDTO dto, string detectedType)
+		public static List<string> ValidateTraceLinks(RepositoryImportDTO dto, string detectedType)
 		{
 			var errors = new List<string>();
 			var validIds = new HashSet<Guid>();

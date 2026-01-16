@@ -45,7 +45,7 @@ namespace ItemzApp.API.Controllers
 				return BadRequest("A valid OpenRose export JSON file is required.");
 			}
 
-			RepositoryExportDTO? repositoryExportDto;
+			RepositoryImportDTO? repositoryImportDto;
 
 			try
 			{
@@ -63,12 +63,12 @@ namespace ItemzApp.API.Controllers
 					return UnprocessableEntity(new { error = "Import JSON failed schema validation.", details = errors });
 				}
 
-				repositoryExportDto = JsonSerializer.Deserialize<RepositoryExportDTO>(jsonText, new JsonSerializerOptions
+				repositoryImportDto = JsonSerializer.Deserialize<RepositoryImportDTO>(jsonText, new JsonSerializerOptions
 				{
 					PropertyNameCaseInsensitive = true
 				});
 
-				if (repositoryExportDto == null)
+				if (repositoryImportDto == null)
 				{
 					return BadRequest("Could not parse the uploaded file as a valid OpenRose export.");
 				}
@@ -81,13 +81,13 @@ namespace ItemzApp.API.Controllers
 			}
 
 			bool hasBaselineItemz =
-				repositoryExportDto?.BaselineItemz?.Any() == true;
+				repositoryImportDto?.BaselineItemz?.Any() == true;
 
 			bool hasBaselineItemzTypes =
-				repositoryExportDto?.BaselineItemzTypes?.Any(t => t.BaselineItemz?.Any() == true) == true;
+				repositoryImportDto?.BaselineItemzTypes?.Any(t => t.BaselineItemz?.Any() == true) == true;
 
 			bool hasBaselines =
-				repositoryExportDto?.Baselines?.Any(b =>
+				repositoryImportDto?.Baselines?.Any(b =>
 					b.BaselineItemzTypes?.Any(t => t.BaselineItemz?.Any() == true) == true) == true;
 
 			bool needsFiltering = !form.ImportExcludedBaselineItemz &&
@@ -96,26 +96,26 @@ namespace ItemzApp.API.Controllers
 			if (needsFiltering)
 			{
 				BaselineImportUtility.FilterExcludedBaselineItemzAcrossRepository(
-					repositoryExportDto,
+					repositoryImportDto,
 					form.ImportExcludedBaselineItemz,
 					_logger);
 			}
 
 
 			string detectedType = null;
-			if (repositoryExportDto.Projects?.Count > 0) detectedType = "Project";
-			else if (repositoryExportDto.ItemzTypes?.Count > 0) detectedType = "ItemzType";
-			else if (repositoryExportDto.Itemz?.Count > 0) detectedType = "Itemz";
-			else if (repositoryExportDto.Baselines?.Count > 0) detectedType = "Baseline";
-			else if (repositoryExportDto.BaselineItemzTypes?.Count > 0) detectedType = "BaselineItemzType";
-			else if (repositoryExportDto.BaselineItemz?.Count > 0) detectedType = "BaselineItemz";
+			if (repositoryImportDto.Projects?.Count > 0) detectedType = "Project";
+			else if (repositoryImportDto.ItemzTypes?.Count > 0) detectedType = "ItemzType";
+			else if (repositoryImportDto.Itemz?.Count > 0) detectedType = "Itemz";
+			else if (repositoryImportDto.Baselines?.Count > 0) detectedType = "Baseline";
+			else if (repositoryImportDto.BaselineItemzTypes?.Count > 0) detectedType = "BaselineItemzType";
+			else if (repositoryImportDto.BaselineItemz?.Count > 0) detectedType = "BaselineItemz";
 
 			if (string.IsNullOrEmpty(detectedType))
 			{
 				return BadRequest("Could not detect record type from the uploaded file.");
 			}
 
-			var traceValidationErrors = ImportDataTraceValidator.ValidateTraceLinks(repositoryExportDto, detectedType);
+			var traceValidationErrors = ImportDataTraceValidator.ValidateTraceLinks(repositoryImportDto, detectedType);
 			if (traceValidationErrors.Any())
 			{
 				_logger.LogWarning("Trace validation failed: {Errors}", string.Join("; ", traceValidationErrors));
@@ -153,28 +153,28 @@ namespace ItemzApp.API.Controllers
 
 				if (string.Equals(detectedType, "Project", StringComparison.OrdinalIgnoreCase))
 				{
-					result = await _importService.ImportProjectHierarchyAsync(repositoryExportDto, placementDto);
+					result = await _importService.ImportProjectHierarchyAsync(repositoryImportDto, placementDto);
 				}
 				else if (string.Equals(detectedType, "ItemzType", StringComparison.OrdinalIgnoreCase))
 				{
-					result = await _importService.ImportItemzTypeHierarchyAsync(repositoryExportDto, placementDto);
+					result = await _importService.ImportItemzTypeHierarchyAsync(repositoryImportDto, placementDto);
 				}
 				else if (string.Equals(detectedType, "BaselineItemz", StringComparison.OrdinalIgnoreCase))
 				{
-					result = await _importService.ImportBaselineItemzAsync(repositoryExportDto, placementDto);
+					result = await _importService.ImportBaselineItemzAsync(repositoryImportDto, placementDto);
 				}
 				else if (string.Equals(detectedType, "BaselineItemzType", StringComparison.OrdinalIgnoreCase))
 				{
-					result = await _importService.ImportBaselineItemzTypeAsync(repositoryExportDto, placementDto);
+					result = await _importService.ImportBaselineItemzTypeAsync(repositoryImportDto, placementDto);
 				}
 				else if (string.Equals(detectedType, "Baseline", StringComparison.OrdinalIgnoreCase))
 				{
-					result = await _importService.ImportBaselineAsProjectAsync(repositoryExportDto, placementDto);
+					result = await _importService.ImportBaselineAsProjectAsync(repositoryImportDto, placementDto);
 				}
 
 				else
 				{
-					result = await _importService.ImportAsync(repositoryExportDto, detectedType, placementDto);
+					result = await _importService.ImportAsync(repositoryImportDto, detectedType, placementDto);
 				}
 
 				if (!result.Success)

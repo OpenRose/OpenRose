@@ -40,7 +40,7 @@ namespace ItemzApp.API.Services
 		}
 
 		public async Task<ImportResult> ImportAsync(
-											RepositoryExportDTO repositoryExportDto,
+											RepositoryImportDTO repositoryImportDto,
 											string detectedType,
 											ImportDataPlacementDTO placementDto)
 		{
@@ -57,7 +57,7 @@ namespace ItemzApp.API.Services
 				return result;
 			}
 
-			if (repositoryExportDto.Itemz == null || repositoryExportDto.Itemz.Count != 1)
+			if (repositoryImportDto.Itemz == null || repositoryImportDto.Itemz.Count != 1)
 			{
 				result.Errors.Add("Expected exactly one Itemz to import.");
 				return result;
@@ -100,7 +100,7 @@ namespace ItemzApp.API.Services
 					}
 				}
 
-				var itemzRecord = repositoryExportDto.Itemz.First();
+				var itemzRecord = repositoryImportDto.Itemz.First();
 				var itemzDto = itemzRecord.Itemz;
 
 				// EXPLANATION: Purpose of first creating 'tempDto' of type 'CreateItemzDTO'
@@ -162,7 +162,7 @@ namespace ItemzApp.API.Services
 				}
 
 				// Process trace links
-				int traceCreated = await ProcessItemzTracesAsync(repositoryExportDto.ItemzTraces, idMap, result.Errors);
+				int traceCreated = await ProcessItemzTracesAsync(repositoryImportDto.ItemzTraces, idMap, result.Errors);
 
 				_logger.LogInformation("Imported {Count} Itemz records at depth {Depth}. Trace links created: {TraceCount}. Root ID: {RootId}",
 					totalCreated, maxDepth, traceCreated, rootEntity.Id);
@@ -237,7 +237,7 @@ namespace ItemzApp.API.Services
 
 
 		public async Task<ImportResult> ImportItemzTypeHierarchyAsync(
-											RepositoryExportDTO repositoryExportDto,
+											RepositoryImportDTO repositoryImportDto,
 											ImportDataPlacementDTO placementDto)
 		{
 			var result = new ImportResult
@@ -246,7 +246,7 @@ namespace ItemzApp.API.Services
 				Errors = new List<string>()
 			};
 
-			if (repositoryExportDto.ItemzTypes == null || repositoryExportDto.ItemzTypes.Count != 1)
+			if (repositoryImportDto.ItemzTypes == null || repositoryImportDto.ItemzTypes.Count != 1)
 			{
 				result.Errors.Add("Expected exactly one ItemzType to import.");
 				return result;
@@ -279,7 +279,7 @@ namespace ItemzApp.API.Services
 
 				// Import a single ItemzType
 				var idMap = new Dictionary<Guid, Guid>();
-				var itemzTypeRecord = repositoryExportDto.ItemzTypes.First();
+				var itemzTypeRecord = repositoryImportDto.ItemzTypes.First();
 
 				var (itemzTypeId, totalCreated, maxDepth) = await ImportSingleItemzTypeAsync(
 					itemzTypeRecord,
@@ -305,7 +305,7 @@ namespace ItemzApp.API.Services
 				await _itemzTypeRepository.SaveAsync();
 
 				// Process trace links
-				int traceCreated = await ProcessItemzTracesAsync(repositoryExportDto.ItemzTraces, idMap, result.Errors);
+				int traceCreated = await ProcessItemzTracesAsync(repositoryImportDto.ItemzTraces, idMap, result.Errors);
 
 				_logger.LogInformation("Imported 1 ItemzType '{Name}' with {Count} Itemz at depth {Depth}. Traces: {Traces}. Root ID: {RootId}",
 					itemzTypeRecord.ItemzType.Name, totalCreated, maxDepth, traceCreated, itemzTypeId);
@@ -412,7 +412,7 @@ namespace ItemzApp.API.Services
 
 
 		public async Task<ImportResult> ImportProjectHierarchyAsync(
-			RepositoryExportDTO repositoryExportDto,
+			RepositoryImportDTO repositoryImportDto,
 			ImportDataPlacementDTO placementDto)
 		{
 			var result = new ImportResult
@@ -421,7 +421,7 @@ namespace ItemzApp.API.Services
 				Errors = new List<string>()
 			};
 
-			if (repositoryExportDto.Projects == null || repositoryExportDto.Projects.Count != 1)
+			if (repositoryImportDto.Projects == null || repositoryImportDto.Projects.Count != 1)
 			{
 				result.Errors.Add("Expected exactly one Project to import.");
 				return result;
@@ -429,13 +429,13 @@ namespace ItemzApp.API.Services
 
 			try
 			{
-				var projectRecord = repositoryExportDto.Projects.First();
+				var projectRecord = repositoryImportDto.Projects.First();
 				var idMap = new Dictionary<Guid, Guid>();
 
 				var (projectId, totalCreated, maxDepth) = await ImportSingleProjectAsync(projectRecord, idMap);
 
 				// 📎 Process trace links across all Itemz in the project
-				int traceCreated = await ProcessItemzTracesAsync(repositoryExportDto.ItemzTraces, idMap, result.Errors);
+				int traceCreated = await ProcessItemzTracesAsync(repositoryImportDto.ItemzTraces, idMap, result.Errors);
 
 				_logger.LogInformation("Imported 1 Project '{Name}' with {Count} Itemz across {Types} ItemzTypes at depth {Depth}. Traces: {Traces}. Root ID: {RootId}",
 					projectRecord.Project.Name,
@@ -525,17 +525,17 @@ namespace ItemzApp.API.Services
 
 
 		public async Task<ImportResult> ImportBaselineItemzAsync(
-										RepositoryExportDTO repositoryExportDto,
+										RepositoryImportDTO repositoryImportDto,
 										ImportDataPlacementDTO placementDto)
 		{
 			// Transform BaselineItemz hierarchy to Itemz-compatible format
-			var itemzNodes = repositoryExportDto.BaselineItemz
+			var itemzNodes = repositoryImportDto.BaselineItemz
 				.Select(BaselineImportTransformationUtility.TransformBaselineNodeToItemzNode)
 				.ToList();
 
-			var itemzTraces = BaselineImportTransformationUtility.TransformBaselineTracesToItemzTraces(repositoryExportDto.BaselineItemzTraces ?? new List<BaselineItemzTraceDTO>());
+			var itemzTraces = BaselineImportTransformationUtility.TransformBaselineTracesToItemzTraces(repositoryImportDto.BaselineItemzTraces ?? new List<BaselineItemzTraceDTO>());
 
-			var convertedRepository = new RepositoryExportDTO
+			var convertedRepository = new RepositoryImportDTO
 			{
 				Itemz = itemzNodes,
 				ItemzTraces = itemzTraces
@@ -549,7 +549,7 @@ namespace ItemzApp.API.Services
 
 
 		public async Task<ImportResult> ImportBaselineItemzTypeAsync(
-										RepositoryExportDTO repositoryExportDto,
+										RepositoryImportDTO repositoryImportDto,
 										ImportDataPlacementDTO placementDto)
 		{
 			var result = new ImportResult
@@ -559,7 +559,7 @@ namespace ItemzApp.API.Services
 			};
 
 			// Validate input
-			if (repositoryExportDto.BaselineItemzTypes == null || !repositoryExportDto.BaselineItemzTypes.Any())
+			if (repositoryImportDto.BaselineItemzTypes == null || !repositoryImportDto.BaselineItemzTypes.Any())
 			{
 				result.Errors.Add("No BaselineItemzType records found in the import data.");
 				return result;
@@ -568,16 +568,16 @@ namespace ItemzApp.API.Services
 			try
 			{
 				// Transform BaselineItemzTypes → ItemzTypes
-				var itemzTypeNodes = repositoryExportDto.BaselineItemzTypes
+				var itemzTypeNodes = repositoryImportDto.BaselineItemzTypes
 					.Select(BaselineImportTransformationUtility.TransformBaselineItemzTypeToItemzTypeNode)
 					.ToList();
 
 				// Transform BaselineItemzTraces → ItemzTraces
 				var itemzTraces = BaselineImportTransformationUtility
-					.TransformBaselineTracesToItemzTraces(repositoryExportDto.BaselineItemzTraces ?? new List<BaselineItemzTraceDTO>());
+					.TransformBaselineTracesToItemzTraces(repositoryImportDto.BaselineItemzTraces ?? new List<BaselineItemzTraceDTO>());
 
 				// Build converted repository DTO
-				var convertedRepository = new RepositoryExportDTO
+				var convertedRepository = new RepositoryImportDTO
 				{
 					ItemzTypes = itemzTypeNodes,
 					ItemzTraces = itemzTraces
@@ -599,12 +599,12 @@ namespace ItemzApp.API.Services
 
 
 		public async Task<ImportResult> ImportBaselineAsProjectAsync(
-			RepositoryExportDTO repositoryExportDto,
+			RepositoryImportDTO repositoryImportDto,
 			ImportDataPlacementDTO placementDto)
 		{
 			var result = new ImportResult();
 
-			if (repositoryExportDto?.Baselines == null || !repositoryExportDto.Baselines.Any())
+			if (repositoryImportDto?.Baselines == null || !repositoryImportDto.Baselines.Any())
 			{
 				result.Success = false;
 				result.Errors = new List<string> { "No Baselines found to import." };
@@ -613,15 +613,15 @@ namespace ItemzApp.API.Services
 
 			try
 			{
-				var projectNodes = repositoryExportDto.Baselines
+				var projectNodes = repositoryImportDto.Baselines
 					.Select(BaselineImportTransformationUtility.TransformBaselineToProject)
 					.ToList();
 
-				var convertedRepository = new RepositoryExportDTO
+				var convertedRepository = new RepositoryImportDTO
 				{
 					Projects = projectNodes,
 					ItemzTraces = BaselineImportTransformationUtility
-						.TransformBaselineTracesToItemzTraces(repositoryExportDto.BaselineItemzTraces ?? new List<BaselineItemzTraceDTO>())
+						.TransformBaselineTracesToItemzTraces(repositoryImportDto.BaselineItemzTraces ?? new List<BaselineItemzTraceDTO>())
 				};
 
 				return await ImportProjectHierarchyAsync(convertedRepository, placementDto);

@@ -29,26 +29,26 @@ namespace ItemzApp.API.Helper
 
 
 		public static void FilterExcludedBaselineItemzAcrossRepository(
-			RepositoryExportDTO repositoryExportDto,
+			RepositoryImportDTO repositoryImportDto,
 			bool importExcludedBaselineItemz,
 			ILogger logger)
 		{
-			if (importExcludedBaselineItemz || repositoryExportDto == null) return;
+			if (importExcludedBaselineItemz || repositoryImportDto == null) return;
 
 			var allValidNodes = new List<BaselineItemzImportNode>();
 
 			// 1. Filter direct BaselineItemz list
-			if (repositoryExportDto.BaselineItemz != null)
+			if (repositoryImportDto.BaselineItemz != null)
 			{
-				repositoryExportDto.BaselineItemz = FilterNodeList(
-					repositoryExportDto.BaselineItemz,
+				repositoryImportDto.BaselineItemz = FilterNodeList(
+					repositoryImportDto.BaselineItemz,
 					allValidNodes);
 			}
 
 			// 2. Filter BaselineItemz inside top-level BaselineItemzTypes
-			if (repositoryExportDto.BaselineItemzTypes != null)
+			if (repositoryImportDto.BaselineItemzTypes != null)
 			{
-				foreach (var typeNode in repositoryExportDto.BaselineItemzTypes)
+				foreach (var typeNode in repositoryImportDto.BaselineItemzTypes)
 				{
 					if (typeNode.BaselineItemz != null)
 					{
@@ -58,9 +58,9 @@ namespace ItemzApp.API.Helper
 			}
 
 			// ✅ 3. Filter BaselineItemz inside Baseline → BaselineItemzTypes → BaselineItemz
-			if (repositoryExportDto.Baselines != null)
+			if (repositoryImportDto.Baselines != null)
 			{
-				foreach (var baselineDto in repositoryExportDto.Baselines)
+				foreach (var baselineDto in repositoryImportDto.Baselines)
 				{
 					if (baselineDto.BaselineItemzTypes == null) continue;
 
@@ -75,8 +75,8 @@ namespace ItemzApp.API.Helper
 			}
 
 			// 4. Prune traces to match only valid nodes
-			repositoryExportDto.BaselineItemzTraces = FilterValidBaselineItemzTraces(
-				repositoryExportDto.BaselineItemzTraces ?? new List<BaselineItemzTraceDTO>(),
+			repositoryImportDto.BaselineItemzTraces = FilterValidBaselineItemzTraces(
+				repositoryImportDto.BaselineItemzTraces ?? new List<BaselineItemzTraceDTO>(),
 				allValidNodes);
 
 			logger.LogInformation("Filtered BaselineItemz globally across repository. Valid nodes retained: {Count}", allValidNodes.Count);
