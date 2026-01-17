@@ -11,7 +11,7 @@ namespace ItemzApp.API.Helper
 {
 	public static class ImportDataTraceValidator
 	{
-		public static List<string> ValidateTraceLinks(RepositoryExportDTO dto, string detectedType)
+		public static List<string> ValidateTraceLinks(RepositoryImportDTO dto, string detectedType)
 		{
 			var errors = new List<string>();
 			var validIds = new HashSet<Guid>();
@@ -19,16 +19,16 @@ namespace ItemzApp.API.Helper
 			if (IsItemzBased(detectedType))
 			{
 				// Project → ItemzType → Itemz
-				foreach (var project in dto.Projects ?? Enumerable.Empty<ProjectExportNode>())
+				foreach (var project in dto.Projects ?? Enumerable.Empty<ProjectImportNode>())
 				{
-					foreach (var itemzType in project.ItemzTypes ?? Enumerable.Empty<ItemzTypeExportNode>())
+					foreach (var itemzType in project.ItemzTypes ?? Enumerable.Empty<ItemzTypeImportNode>())
 					{
 						CollectItemzIds(itemzType.Itemz, validIds);
 					}
 				}
 
 				// Top-level ItemzTypes
-				foreach (var itemzType in dto.ItemzTypes ?? Enumerable.Empty<ItemzTypeExportNode>())
+				foreach (var itemzType in dto.ItemzTypes ?? Enumerable.Empty<ItemzTypeImportNode>())
 				{
 					CollectItemzIds(itemzType.Itemz, validIds);
 				}
@@ -52,16 +52,16 @@ namespace ItemzApp.API.Helper
 			else if (IsBaselineBased(detectedType))
 			{
 				// Baseline → BaselineItemzType → BaselineItemz
-				foreach (var baseline in dto.Baselines ?? Enumerable.Empty<BaselineExportNode>())
+				foreach (var baseline in dto.Baselines ?? Enumerable.Empty<BaselineImportNode>())
 				{
-					foreach (var itemzType in baseline.BaselineItemzTypes ?? Enumerable.Empty<BaselineItemzTypeExportNode>())
+					foreach (var itemzType in baseline.BaselineItemzTypes ?? Enumerable.Empty<BaselineItemzTypeImportNode>())
 					{
 						CollectBaselineItemzIds(itemzType.BaselineItemz, validIds);
 					}
 				}
 
 				// Top-level BaselineItemzTypes
-				foreach (var itemzType in dto.BaselineItemzTypes ?? Enumerable.Empty<BaselineItemzTypeExportNode>())
+				foreach (var itemzType in dto.BaselineItemzTypes ?? Enumerable.Empty<BaselineItemzTypeImportNode>())
 				{
 					CollectBaselineItemzIds(itemzType.BaselineItemz, validIds);
 				}
@@ -99,7 +99,7 @@ namespace ItemzApp.API.Helper
 		}
 
 
-		private static void CollectItemzIds(List<ItemzExportNode>? nodes, HashSet<Guid> ids)
+		private static void CollectItemzIds(List<ItemzImportNode>? nodes, HashSet<Guid> ids)
 		{
 			if (nodes == null) return;
 
@@ -113,7 +113,7 @@ namespace ItemzApp.API.Helper
 			}
 		}
 
-		private static void CollectBaselineItemzIds(List<BaselineItemzExportNode>? nodes, HashSet<Guid> ids)
+		private static void CollectBaselineItemzIds(List<BaselineItemzImportNode>? nodes, HashSet<Guid> ids)
 		{
 			if (nodes == null) return;
 

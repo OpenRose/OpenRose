@@ -19,7 +19,7 @@ namespace ItemzApp.API.Models
 		public List<ItemzExportNode>? Itemz { get; set; }
 
 		// Trace links (for live Itemz)
-		public List<ItemzTraceDTO>? ItemzTraces { get; set; }
+		public List<ItemzTraceExportNodeDTO>? ItemzTraces { get; set; }
 
 		// Baseline-based export
 		public List<BaselineExportNode>? Baselines { get; set; }
@@ -27,7 +27,7 @@ namespace ItemzApp.API.Models
 		public List<BaselineItemzExportNode>? BaselineItemz { get; set; }
 
 		// Trace links (for Baseline Itemz)
-		public List<BaselineItemzTraceDTO>? BaselineItemzTraces { get; set; }
+		public List<BaselineItemzTraceExportNodeDTO>? BaselineItemzTraces { get; set; }
 	}
 
 	// Project hierarchy

@@ -108,7 +108,42 @@ namespace ItemzApp.API.Controllers
 
 						HashSet<Guid> exportedItemzIds = CollectExportedIdsByType(rootNode, "Itemz");
 						var itemzTraces = await _itemzTraceExportService.GetTracesForExportAsync(exportedItemzIds);
-						exportDto.ItemzTraces = itemzTraces;
+
+						//exportDto.ItemzTraces = itemzTraces;
+
+						// Recursively collect all nodes under root
+						Dictionary<Guid, string> BuildIdToNameMap(NestedHierarchyIdRecordDetailsDTO node)
+						{
+							var map = new Dictionary<Guid, string>();
+							void Traverse(NestedHierarchyIdRecordDetailsDTO current)
+							{
+								if ( !(string.IsNullOrWhiteSpace(current.Name)) )
+								{ 
+									map[current.RecordId] = current.Name;
+								}
+								foreach (var child in current.Children ?? Enumerable.Empty<NestedHierarchyIdRecordDetailsDTO>())
+								{
+									Traverse(child);
+								}
+							}
+							Traverse(node);
+							return map;
+						}
+
+						var idToNameMap = BuildIdToNameMap(rootNode);
+
+
+						// Project into ItemzTraceExportNodeDTO objects
+						exportDto.ItemzTraces = itemzTraces.Select(t => new ItemzTraceExportNodeDTO
+						{
+							FromTraceName = idToNameMap.TryGetValue(t.FromTraceItemzId, out var fromName) ? fromName : null,
+							ToTraceName = idToNameMap.TryGetValue(t.ToTraceItemzId, out var toName) ? toName : null,
+							FromTraceItemzId = t.FromTraceItemzId,
+							ToTraceItemzId = t.ToTraceItemzId,
+							TraceLabel = t.TraceLabel
+						}).ToList();
+
+
 
 						switch (recordType)
 						{
@@ -172,9 +207,44 @@ namespace ItemzApp.API.Controllers
 								RepositoryId = repositoryRecordDto.RecordId
 							};
 
+							//var exportedBaselineItemzIds = CollectExportedIdsByType(rootNode, "BaselineItemz");
+							//var baselineItemzTraces = await _baselineItemzTraceExportService.GetTracesForExportAsync(exportedBaselineItemzIds);
+							//exportDto.BaselineItemzTraces = baselineItemzTraces;
+
+							// Recursively collect all nodes under baseline root
+							Dictionary<Guid, string> BuildBaselineIdToNameMap(NestedBaselineHierarchyIdRecordDetailsDTO node)
+							{
+								var map = new Dictionary<Guid, string>();
+								void Traverse(NestedBaselineHierarchyIdRecordDetailsDTO current)
+								{
+									if (!string.IsNullOrWhiteSpace(current.Name))
+									{
+										map[current.RecordId] = current.Name;
+									}
+									foreach (var child in current.Children ?? Enumerable.Empty<NestedBaselineHierarchyIdRecordDetailsDTO>())
+									{
+										Traverse(child);
+									}
+								}
+								Traverse(node);
+								return map;
+							}
+
+							var idToNameMap = BuildBaselineIdToNameMap(rootNode);
+
 							var exportedBaselineItemzIds = CollectExportedIdsByType(rootNode, "BaselineItemz");
 							var baselineItemzTraces = await _baselineItemzTraceExportService.GetTracesForExportAsync(exportedBaselineItemzIds);
-							exportDto.BaselineItemzTraces = baselineItemzTraces;
+
+							// Project into BaselineItemzTraceExportNodeDTO objects
+							exportDto.BaselineItemzTraces = baselineItemzTraces.Select(t => new BaselineItemzTraceExportNodeDTO
+							{
+								FromTraceBaselineItemzId = t.FromTraceBaselineItemzId,
+								ToTraceBaselineItemzId = t.ToTraceBaselineItemzId,
+								TraceLabel = t.TraceLabel,
+								FromTraceBaselineItemzName = idToNameMap.TryGetValue(t.FromTraceBaselineItemzId, out var fromName) ? fromName : null,
+								ToTraceBaselineItemzName = idToNameMap.TryGetValue(t.ToTraceBaselineItemzId, out var toName) ? toName : null
+							}).ToList();
+
 
 							switch (recordType)
 							{
