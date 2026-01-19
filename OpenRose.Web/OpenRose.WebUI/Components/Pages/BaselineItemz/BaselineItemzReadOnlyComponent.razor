@@ -1,0 +1,131 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+@using OpenRose.WebUI.Client.Services.Hierarchy
+@using OpenRose.WebUI.Client.Services.BaselineItemz
+@using OpenRose.WebUI.Client.SharedModels
+@using OpenRose.WebUI.Components.Pages.BaselineItemz.BaselineTraceability
+@using OpenRose.WebUI.Components.Pages.Common
+@using OpenRose.WebUI.Services
+@using Microsoft.AspNetCore.Components.Forms
+@inject NavigationManager NavManager
+@inject IDialogService DialogService
+@inject IJSRuntime JS
+@inject ConfigurationService ConfigurationService
+
+<MudGrid>
+	@if (initializingPage)
+	{
+		<MudPaper Height="calc(100vh - 100px);" Width="100%">
+			<MudOverlay Visible="@initializingPage" DarkBackground="true" Absolute="true">
+				<MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Inherit">Loading ...</MudText>
+				<br />
+				<MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+			</MudOverlay>
+		</MudPaper>
+	}
+	else
+	{
+ 		<MudItem xs="12" sm="12">
+			<MudCard style="background-color : #FABBBB;" >
+				<MudCardContent>
+				<MudItem Class="align-start d-flex" Style="width: auto" Outlined="false">
+					<MudGrid>
+						<MudItem xs="12" sm="12" md="7" lg="7">
+							<MudText Typo="Typo.h5" Align="Align.Left"><strong>@singleBaselineItemz.Name </strong></MudText>
+						</MudItem>
+					</MudGrid>
+				</MudItem>
+				</MudCardContent>
+			</MudCard>
+			<MudCard Elevation="0" Outlined="false" Style="background-color:transparent;">
+				<MudCardContent>
+					<MudStack Row="true" Spacing="2" StretchItems="StretchItems.None" AlignItems="AlignItems.Start" Class="w-100">
+						<MudStack Row="true" Spacing="2">
+							<MudText><strong>ID          : </strong></MudText>
+							<CopyableText TextToCopy="@singleBaselineItemz.Id.ToString()" DisplayLength="8" />
+						</MudStack>
+						<MudText><strong> || Status      : </strong> @singleBaselineItemz.Status</MudText>
+					</MudStack>
+					
+					<br />
+					<div class="custom-markdown-editor">
+						@if (!string.IsNullOrEmpty(singleBaselineItemz.Description))
+						{
+							<div class="markdown-body">@((MarkupString)convertedMarkdown)</div>
+						}
+					</div>
+					<BaselineTraceabilityReadOnlyComponent BaselineItemzId="@BaselineItemzId"/> @* // TODO :: Perhaps we can change @nameof with Cascading Parameter in future *@
+				</MudCardContent>
+			</MudCard>
+		</MudItem>
+		<br />
+	}
+</MudGrid>
+@if (_showOverlay)
+{
+	<MudPaper Height="calc(100vh - 100px);" Width="100%">
+		<MudOverlay Visible="@_showOverlay" DarkBackground="true" Absolute="true">
+			<MudContainer Class="d-flex flex-column justify-center align-center" Style="height: 100%;">
+				@* <MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Inherit">Moving ... </MudText>
+			<br /> *@
+				<MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+			</MudContainer>
+		</MudOverlay>
+	</MudPaper>
+}
+@code {
+	[Parameter]
+	public Guid BaselineItemzId { get; set; }
+
+	[Inject]
+	public IBaselineItemzService BaselineItemzService { get; set; }
+
+	public GetBaselineItemzDTO singleBaselineItemz { get; set; } = new();
+	public bool initializingPage { get; set; } = true;
+	public bool _showOverlay { get; set; } = false;
+
+	private MarkupString convertedMarkdown;
+
+	protected override async Task OnInitializedAsync()
+	{
+		if (!ConfigurationService.IsOpenRoseAPIConfigured)
+		{
+			NavManager.NavigateTo("/");
+			return;
+		}
+	}
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender)
+		{
+			initializingPage = true;
+			StateHasChanged();
+			Thread.Sleep(300);
+
+			singleBaselineItemz = await BaselineItemzService.__Single_BaselineItemz_By_GUID_ID__Async(BaselineItemzId);
+			if (singleBaselineItemz != null && singleBaselineItemz.Description != null)
+			{
+				await ConvertMarkdownToHtml(singleBaselineItemz.Description);
+			}
+
+			initializingPage = false;
+			StateHasChanged();
+		}
+	}
+
+	private async Task ConvertMarkdownToHtml(string markdown)
+	{
+		if (!string.IsNullOrEmpty(markdown))
+		{
+			var html = await JS.InvokeAsync<string>("markdownToHtml", markdown);
+			convertedMarkdown = (MarkupString)html;
+			StateHasChanged();
+
+		}
+	}
+}
