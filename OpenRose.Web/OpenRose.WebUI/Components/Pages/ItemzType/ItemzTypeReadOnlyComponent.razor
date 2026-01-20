@@ -112,7 +112,8 @@
 		{
 			initializingPage = true;
 			StateHasChanged();
-			Thread.Sleep(300);
+			//Thread.Sleep(300);
+			await Task.Delay(300);
 
 			singleItemzType = await ItemzTypeService.__Single_ItemzType_By_GUID_ID__Async(ItemzTypeId);
 			if (singleItemzType != null && singleItemzType.Description != null)

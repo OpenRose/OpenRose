@@ -105,7 +105,8 @@
 		{
 			initializingPage = true;
 			StateHasChanged();
-			Thread.Sleep(300);
+			//Thread.Sleep(300);
+			await Task.Delay(300);
 
 			singleBaselineItemz = await BaselineItemzService.__Single_BaselineItemz_By_GUID_ID__Async(BaselineItemzId);
 			if (singleBaselineItemz != null && singleBaselineItemz.Description != null)
