@@ -143,58 +143,74 @@
 	private ICollection<TraceComponentViewModel> AllParentTraceViewModels { get; set; } = new List<TraceComponentViewModel>();
 	private ICollection<TraceComponentViewModel> AllChildTraceViewModels { get; set; } = new List<TraceComponentViewModel>();
 
-		protected override async Task OnInitializedAsync()
+	protected override async Task OnInitializedAsync()
 	{
-		var singleItemzTraces = await ItemzTraceService.__GET_All_Parent_and_Child_Itemz_Traces_By_ItemzID__Async(ItemzId);
-
-		if (singleItemzTraces?.Itemz != null)
+		try
 		{
-			// --- Parent Traces ---
-			if (singleItemzTraces.Itemz.ParentItemz != null && singleItemzTraces.Itemz.ParentItemz.Any())
-			{
-				var parentIds = singleItemzTraces.Itemz.ParentItemz.Select(p => p.ItemzID).ToList();
-				var parentItemzDtos = await itemzCollectionService.__GET_Itemz_Collection_By_GUID_IDS__Async(parentIds);
 
-				AllParentTraceViewModels = parentItemzDtos
-					.Select(dto =>
-					{
-						var traceInfo = singleItemzTraces.Itemz.ParentItemz.FirstOrDefault(t => t.ItemzID == dto.Id);
-						return new TraceComponentViewModel
-						{
-							Id = dto.Id,
-							Name = dto.Name,
-							Status = dto.Status,
-							Priority = dto.Priority,
-							TraceLabel = traceInfo?.TraceLabel
-						};
-					})
-					.ToList();
+			if (ItemzId == Guid.Empty)
+			{
+				Console.WriteLine("TraceabilityComponent: ItemzId is empty, skipping load.");
+				return;
 			}
 
-			// --- Child Traces ---
-			if (singleItemzTraces.Itemz.ChildItemz != null && singleItemzTraces.Itemz.ChildItemz.Any())
-			{
-				var childIds = singleItemzTraces.Itemz.ChildItemz.Select(c => c.ItemzID).ToList();
-				var childItemzDtos = await itemzCollectionService.__GET_Itemz_Collection_By_GUID_IDS__Async(childIds);
+			var singleItemzTraces = await ItemzTraceService.__GET_All_Parent_and_Child_Itemz_Traces_By_ItemzID__Async(ItemzId);
 
-				AllChildTraceViewModels = childItemzDtos
-					.Select(dto =>
-					{
-						var traceInfo = singleItemzTraces.Itemz.ChildItemz.FirstOrDefault(t => t.ItemzID == dto.Id);
-						return new TraceComponentViewModel
+			if (singleItemzTraces?.Itemz != null)
+			{
+				// --- Parent Traces ---
+				if (singleItemzTraces.Itemz.ParentItemz != null && singleItemzTraces.Itemz.ParentItemz.Any())
+				{
+					var parentIds = singleItemzTraces.Itemz.ParentItemz.Select(p => p.ItemzID).ToList();
+					var parentItemzDtos = await itemzCollectionService.__GET_Itemz_Collection_By_GUID_IDS__Async(parentIds)
+													?? new List<GetItemzDTO>();
+
+					AllParentTraceViewModels = parentItemzDtos
+						.Select(dto =>
 						{
-							Id = dto.Id,
-							Name = dto.Name,
-							Status = dto.Status,
-							Priority = dto.Priority,
-							TraceLabel = traceInfo?.TraceLabel
-						};
-					})
-					.ToList();
+							var traceInfo = singleItemzTraces.Itemz.ParentItemz.FirstOrDefault(t => t.ItemzID == dto.Id);
+							return new TraceComponentViewModel
+								{
+									Id = dto.Id,
+									Name = dto.Name,
+									Status = dto.Status,
+									Priority = dto.Priority,
+									TraceLabel = traceInfo?.TraceLabel
+								};
+						})
+						.ToList();
+				}
+
+				// --- Child Traces ---
+				if (singleItemzTraces.Itemz.ChildItemz != null && singleItemzTraces.Itemz.ChildItemz.Any())
+				{
+					var childIds = singleItemzTraces.Itemz.ChildItemz.Select(c => c.ItemzID).ToList();
+					var childItemzDtos = await itemzCollectionService.__GET_Itemz_Collection_By_GUID_IDS__Async(childIds);
+
+					AllChildTraceViewModels = childItemzDtos
+						.Select(dto =>
+						{
+							var traceInfo = singleItemzTraces.Itemz.ChildItemz.FirstOrDefault(t => t.ItemzID == dto.Id);
+							return new TraceComponentViewModel
+								{
+									Id = dto.Id,
+									Name = dto.Name,
+									Status = dto.Status,
+									Priority = dto.Priority,
+									TraceLabel = traceInfo?.TraceLabel
+								};
+						})
+						.ToList();
+				}
 			}
+
+			StateHasChanged();
 		}
-
-		StateHasChanged();
+		catch (Exception ex)
+		{
+			Console.WriteLine($"TraceabilityComponent init failed: {ex}");
+			await DialogService.ShowMessageBox("ERROR", new MarkupString($"<p style=\"color:red\">{ex.Message}</p>"), yesText: "OK");
+        }
 	}
 
 	public async Task openItemz(string itemzId)
