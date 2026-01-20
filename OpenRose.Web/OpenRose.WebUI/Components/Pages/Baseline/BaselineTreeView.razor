@@ -498,7 +498,7 @@
             InitialTreeItems = await LoadInitialData(BaselineId);
             StateHasChanged();
 
-            Thread.Sleep(300);
+            await Task.Delay(300);
             // Load Entire Baseline Hierarchy data
             InitialTreeItems = await LoadAllBaselineHierarchyData(BaselineId);
 

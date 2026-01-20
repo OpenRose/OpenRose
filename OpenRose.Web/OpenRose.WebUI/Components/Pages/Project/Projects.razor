@@ -144,7 +144,7 @@
     {
         if (firstRender)
         {
-            Thread.Sleep(500);
+            await Task.Delay(500);
             var returnedProjectList = await ProjectService.__GET_Projects__Async();
             if (returnedProjectList != null)
             {

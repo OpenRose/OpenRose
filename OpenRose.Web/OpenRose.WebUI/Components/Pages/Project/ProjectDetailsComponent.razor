@@ -322,7 +322,7 @@
 	{
 		initializingPage = true;
 		StateHasChanged();
-		//Thread.Sleep(300);
+		//await Task.Delay(300);
 		singleProject = await ProjectService.__Single_Project_By_GUID_ID__Async(ProjectId);
 
 		if (singleProject != null)
@@ -378,7 +378,7 @@
 					// Save logic...
 					FormStateService.SetDirty(ProjectId, false);
 				}
-				// Thread.Sleep(800);
+				// await Task.Delay(800);
 			}
 		}
 		catch (Exception ex)
@@ -439,7 +439,7 @@
 			try
 			{
 				await deleteProject();
-				Thread.Sleep(200);
+				await Task.Delay(200);
 			}
 			finally
 			{

@@ -323,7 +323,7 @@
 			try
 			{
 				copyingOverlay = true;
-				// Thread.Sleep(300);
+				// await Task.Delay(300);
 				await ItemzService.__POST_Copy_Itemz_By_GUID_ID__Async(new CopyItemzDTO { ItemzId = copyItemz.Id });
 				copyingOverlay = false;
 				await ShowSuccessMessage("Copying of Itemz completed successfully!");
@@ -345,7 +345,7 @@
 			try
 			{
 				copyingOverlay = true;
-				// Thread.Sleep(100);
+				// await Task.Delay(100);
 				await ItemzTypeService.__POST_Copy_ItemzType_By_GUID_ID__Async(new CopyItemzTypeDTO { ItemzTypeId = copyItemzType.Id });
 				copyingOverlay = false;
 				await ShowSuccessMessage("Copying of ItemzType completed successfully!");
@@ -367,7 +367,7 @@
 			try
 			{
 				copyingOverlay = true;
-				// Thread.Sleep(300);
+				// await Task.Delay(300);
 				await ProjectService.__POST_Copy_Project_By_GUID_ID__Async(new CopyProjectDTO { ProjectId = copyProject.Id });
 				copyingOverlay = false;
 				await ShowSuccessMessage("Copying of Project completed successfully!");

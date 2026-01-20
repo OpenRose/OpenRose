@@ -208,7 +208,7 @@
 
 		initializingPage = true;
 		StateHasChanged();
-		//Thread.Sleep(300);
+		//await Task.Delay(300);
 		singleItemz = await itemzService.__Single_Itemz_By_GUID_ID__Async(ItemzId);
 
 		if (singleItemz != null)

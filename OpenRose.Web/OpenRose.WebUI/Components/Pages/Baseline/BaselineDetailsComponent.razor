@@ -275,7 +275,6 @@
 	{
 		initializingPage = true;
 		StateHasChanged();
-		//Thread.Sleep(300);
 		singleBaseline = await baselinesService.__Single_Baseline_By_GUID_ID__Async(BaselineId);
 
 		if (singleBaseline != null)
@@ -336,7 +335,7 @@
 				updateBaselineDTO.Description = singleBaseline.Description;
 				await baselinesService.__PUT_Update_Baseline_By_GUID_ID__Async(BaselineId, updateBaselineDTO);
 				BaselineItemzSelectionService.UpdateBaselineTreeNodeItemzName(BaselineId, updateBaselineDTO.Name);
-				Thread.Sleep(800);
+				await Task.Delay(800);
 
 				FormStateService.SetDirty(BaselineId, false); // reset dirty
 			}

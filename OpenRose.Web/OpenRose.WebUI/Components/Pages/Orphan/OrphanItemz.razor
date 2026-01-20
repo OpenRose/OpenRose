@@ -160,7 +160,7 @@
             try
             {
                 await deleteItemz(itemz.Id);
-                Thread.Sleep(200);
+                await Task.Delay(200);
             }
             finally
             {

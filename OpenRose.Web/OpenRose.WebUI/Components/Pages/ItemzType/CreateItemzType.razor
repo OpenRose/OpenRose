@@ -194,7 +194,7 @@
 				try
 				{
 					var updatedResult = await ItemzTypeService.__POST_Create_ItemzType__Async(singleItemzType);
-					Thread.Sleep(1500);
+					await Task.Delay(1500);
 					goBackToProjectSetting();
 				}
 				catch (Exception ex)

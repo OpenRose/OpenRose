@@ -367,7 +367,7 @@
 	{
 		initializingPage = true;
 		StateHasChanged();
-		//Thread.Sleep(300);
+		//await Task.Delay(300);
 		singleItemz = await ItemzService.__Single_Itemz_By_GUID_ID__Async(ItemzId);
 
 		if (singleItemz != null)
@@ -466,7 +466,7 @@
 				// TODO :: SEND ITEMZ NAME UPDATE TO BREADCRUMS AS WELL.
 
 				FormStateService.SetDirty(ItemzId, false);
-				Thread.Sleep(800);
+				await Task.Delay(800);
 				await goBackToItemz();
 			}
 		}
@@ -550,7 +550,7 @@
 			try
 			{
 				await deleteItemz();
-				Thread.Sleep(200);
+				await Task.Delay(200);
 			}
 			finally
 			{
