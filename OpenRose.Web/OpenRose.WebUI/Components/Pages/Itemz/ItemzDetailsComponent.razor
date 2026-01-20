@@ -573,7 +573,7 @@
 	{
 		FormStateService.SetDirty(ItemzId, false);
 
-		@if (CalledFrom == nameof(ItemzDetails))
+		if (CalledFrom == nameof(ItemzDetails))
 		{
 			NavManager.NavigateTo($"/itemz/{ItemzId.ToString()}");
 		}
@@ -584,7 +584,7 @@
 	}
 	public async Task goBackToParent()
 	{
-		@if (CalledFrom == nameof(ItemzDetails)) 
+		if (CalledFrom == nameof(ItemzDetails)) 
 		{
 			if (ParentId != Guid.Empty) // Orphaned Itemz will not have ParentId
 			{
@@ -604,7 +604,7 @@
 			}
 
 		}
-		@if(CalledFrom == nameof(ProjectTreeView))
+		if(CalledFrom == nameof(ProjectTreeView))
 		{
 			TreeNodeItemzSelectionService.DeletedTreeNodeItemz(ItemzId);
 			if (ParentId != Guid.Empty) // Orphaned Itemz will not have ParentId

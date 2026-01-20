@@ -190,7 +190,7 @@
 		BaselineItemzSelectionService.SelectBaselineTreeNodeItemz(Guid.Parse(baselineItemzId));
 		BaselineItemzSelectionService.ScrollToTreeViewNode(Guid.Parse(baselineItemzId));
 
-		@if (CalledFrom == nameof(BaselineItemzDetails))
+		if (CalledFrom == nameof(BaselineItemzDetails))
 		{
 			NavManager.NavigateTo($"/baselineItemzDetails/{baselineItemzId}", true);
 		}

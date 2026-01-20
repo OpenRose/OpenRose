@@ -190,7 +190,7 @@
 		ItemzSelectionService.SelectTreeNodeItemz(Guid.Parse(itemzId));
 		ItemzSelectionService.ScrollToTreeViewNode(Guid.Parse(itemzId));
 
-		@if (CalledFrom == nameof(ItemzDetails))
+		if (CalledFrom == nameof(ItemzDetails))
 		{
 			NavManager.NavigateTo($"/itemzDetails/{itemzId}", true);
 		}

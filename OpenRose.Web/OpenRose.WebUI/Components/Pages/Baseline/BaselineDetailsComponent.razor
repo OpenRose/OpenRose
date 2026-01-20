@@ -410,7 +410,7 @@
 	public async Task goBackToBaseline()
 	{
 		FormStateService.SetDirty(BaselineId, false);
-		@if (CalledFrom == nameof(BaselineDetails))
+		if (CalledFrom == nameof(BaselineDetails))
 		{
 			NavManager.NavigateTo($"/baseline/{BaselineId.ToString()}");
 		}
