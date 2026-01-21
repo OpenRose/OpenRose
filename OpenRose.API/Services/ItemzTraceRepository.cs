@@ -36,7 +36,7 @@ namespace ItemzApp.API.Services
 
         public async Task<bool> SaveAsync()
         {
-            return (await _itemzTraceContext.SaveChangesAsync() >= 0);
+            return (await _context.SaveChangesAsync() >= 0);
         }
         public async Task<IEnumerable<ItemzJoinItemzTrace>> GetAllTracesByItemzIdAsync(Guid itemzId)
         {
@@ -45,50 +45,67 @@ namespace ItemzApp.API.Services
                 throw new ArgumentNullException(nameof(itemzId));
             }
 
-            return await _itemzTraceContext.ItemzJoinItemzTrace!
+            return await _context.ItemzJoinItemzTrace!
                 .Where(ijit => ijit.FromItemzId == itemzId || ijit.ToItemzId == itemzId).AsNoTracking().ToListAsync();
         }
 
-        public async Task<ItemzParentAndChildTraceDTO> GetAllParentAndChildTracesByItemzIdAsync(Guid itemzId)
-        {
-            if (itemzId == Guid.Empty)
-            {
-                throw new ArgumentNullException(nameof(itemzId));
-            }
+		public async Task<ItemzParentAndChildTraceDTO> GetAllParentAndChildTracesByItemzIdAsync(Guid itemzId)
+		{
+			if (itemzId == Guid.Empty)
+			{
+				throw new ArgumentNullException(nameof(itemzId));
+			}
 
-            var itemzParentAndChildTraceDTO = new ItemzParentAndChildTraceDTO();
+			var itemzParentAndChildTraceDTO = new ItemzParentAndChildTraceDTO();
+			itemzParentAndChildTraceDTO.Itemz = new();
+			itemzParentAndChildTraceDTO.Itemz.ChildItemz = new();
+			itemzParentAndChildTraceDTO.Itemz.ParentItemz = new();
+			itemzParentAndChildTraceDTO.Itemz.ID = itemzId;
 
-            itemzParentAndChildTraceDTO.Itemz = new();
-            itemzParentAndChildTraceDTO.Itemz.ChildItemz = new();
-            itemzParentAndChildTraceDTO.Itemz.ParentItemz = new();
-            itemzParentAndChildTraceDTO.Itemz.ID = itemzId;
+			// Defensive check: DbSet might be null in some misconfigured environments
+			var dbSet = _context.ItemzJoinItemzTrace;
+			if (dbSet == null)
+			{
+				// Option A: return empty DTO and let caller handle empty results
+				return itemzParentAndChildTraceDTO;
+				// Option B (recommended for debugging): throw new InvalidOperationException("ItemzJoinItemzTrace DbSet is null. Check ItemzTraceContext configuration.");
+			}
 
-            var allChildTraceItemzs = _itemzTraceContext.ItemzJoinItemzTrace!
-                .Where(ijit => ijit.FromItemzId == itemzId);
+			// Execute queries as lists (so exceptions happen here and can be logged)
+			var allChildTraceItemzs = await dbSet
+				.Where(ijit => ijit.FromItemzId == itemzId)
+				.AsNoTracking()
+				.ToListAsync();
 
-            foreach (var childTraceItemz in allChildTraceItemzs)
-            {
-                var tempChildTraceItemzDTO = new ChildTraceItemz__DTO();
-                tempChildTraceItemzDTO.ItemzID = childTraceItemz.ToItemzId;
-				tempChildTraceItemzDTO.TraceLabel = childTraceItemz.TraceLabel;
+			foreach (var childTraceItemz in allChildTraceItemzs)
+			{
+				var tempChildTraceItemzDTO = new ChildTraceItemz__DTO
+				{
+					ItemzID = childTraceItemz.ToItemzId,
+					TraceLabel = childTraceItemz.TraceLabel
+				};
 				itemzParentAndChildTraceDTO.Itemz.ChildItemz.Add(tempChildTraceItemzDTO);
-            }
+			}
 
-            var allParentTraceItemzs = _itemzTraceContext.ItemzJoinItemzTrace!
-                .Where(ijit => ijit.ToItemzId == itemzId);
+			var allParentTraceItemzs = await dbSet
+				.Where(ijit => ijit.ToItemzId == itemzId)
+				.AsNoTracking()
+				.ToListAsync();
 
-            foreach (var parentTraceItemz in allParentTraceItemzs)
-            {
-                var tempParentTraceItemzDTO = new ParentTraceItemz__DTO();
-                tempParentTraceItemzDTO.ItemzID = parentTraceItemz.FromItemzId;
-				tempParentTraceItemzDTO.TraceLabel = parentTraceItemz.TraceLabel;
+			foreach (var parentTraceItemz in allParentTraceItemzs)
+			{
+				var tempParentTraceItemzDTO = new ParentTraceItemz__DTO
+				{
+					ItemzID = parentTraceItemz.FromItemzId,
+					TraceLabel = parentTraceItemz.TraceLabel
+				};
 				itemzParentAndChildTraceDTO.Itemz.ParentItemz.Add(tempParentTraceItemzDTO);
-            }
+			}
 
-            return itemzParentAndChildTraceDTO;
-        }
+			return itemzParentAndChildTraceDTO;
+		}
 
-        public void Dispose()
+		public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
@@ -120,7 +137,7 @@ namespace ItemzApp.API.Services
                 throw new ArgumentNullException(nameof(itemzTraceDTO.ToTraceItemzId));
             }
 
-            return await _itemzTraceContext.ItemzJoinItemzTrace
+            return await _context.ItemzJoinItemzTrace
                             .AsNoTracking()
                             .AnyAsync(itrace => itrace.FromItemzId == itemzTraceDTO.FromTraceItemzId
                                         && itrace.ToItemzId == itemzTraceDTO.ToTraceItemzId);
@@ -131,7 +148,7 @@ namespace ItemzApp.API.Services
 			if (fromTraceItemzId == Guid.Empty) throw new ArgumentNullException(nameof(fromTraceItemzId));
 			if (toTraceItemzId == Guid.Empty) throw new ArgumentNullException(nameof(toTraceItemzId));
 
-			return await _itemzTraceContext.ItemzJoinItemzTrace!
+			return await _context.ItemzJoinItemzTrace!
 				.AsNoTracking()
 				.FirstOrDefaultAsync(itrace =>
 					itrace.FromItemzId == fromTraceItemzId &&
@@ -165,7 +182,7 @@ namespace ItemzApp.API.Services
 				throw new Exception(nameof(itemzTraceDTO.ToTraceItemzId));
 			}
 
-			var itrace = await _itemzTraceContext.ItemzJoinItemzTrace!
+			var itrace = await _context.ItemzJoinItemzTrace!
 				.FindAsync(itemzTraceDTO.FromTraceItemzId, itemzTraceDTO.ToTraceItemzId);
 
 			if (itrace == null)
@@ -177,7 +194,7 @@ namespace ItemzApp.API.Services
 					ToItemzId = itemzTraceDTO.ToTraceItemzId,
 					TraceLabel = itemzTraceDTO.TraceLabel == Sentinel.TraceLabelDefault ? null : itemzTraceDTO.TraceLabel
 				};
-				await _itemzTraceContext.ItemzJoinItemzTrace.AddAsync(temp_itrace);
+				await _context.ItemzJoinItemzTrace.AddAsync(temp_itrace);
 			}
 			else
 			{
@@ -218,30 +235,30 @@ namespace ItemzApp.API.Services
 
         public async Task<int> GetFromTraceCountByItemz(Guid itemzId)
         {
-            return await _itemzTraceContext.ItemzJoinItemzTrace
+            return await _context.ItemzJoinItemzTrace
                 .Include(ijit => ijit.FromItemz)
                 .Where(ijit => ijit.ToItemzId == itemzId).CountAsync();
         }
 
         public async Task<int> GetToTraceCountByItemz(Guid itemzId)
         {
-            return await _itemzTraceContext.ItemzJoinItemzTrace
+            return await _context.ItemzJoinItemzTrace
                 .Include(ijit => ijit.ToItemz)
                 .Where(ijit => ijit.FromItemzId == itemzId).CountAsync();
         }
         public async Task<int> RemoveAllFromItemzTraceAsync(Guid itemzId)
         {
-            var fromItemzJoinTraceItemzList = await _itemzTraceContext.ItemzJoinItemzTrace!
+            var fromItemzJoinTraceItemzList = await _context.ItemzJoinItemzTrace!
                     // .Include(ijit => ijit.FromItemz) // This Include here will end up in Database SQL Query Error. Find out why in the futre?
                     .Where(ijit => ijit.ToItemzId == itemzId).AsNoTracking().ToListAsync();
             var countOfDeletedFromItemzJointItemzTrace = 0;
             foreach (var tempIJIT in fromItemzJoinTraceItemzList)
             {   
                 // TODO: add aditional check that tempIJIT.ToItemzId == itemzID; // This way we make sure that we only pick-up links where provided itemzID is a To-Trace
-                var itrace = await _itemzTraceContext.ItemzJoinItemzTrace!.FindAsync(tempIJIT.FromItemzId, itemzId);
+                var itrace = await _context.ItemzJoinItemzTrace!.FindAsync(tempIJIT.FromItemzId, itemzId);
                 if (itrace != null)
                 {
-                    _itemzTraceContext.ItemzJoinItemzTrace.Remove(itrace);
+                    _context.ItemzJoinItemzTrace.Remove(itrace);
                     countOfDeletedFromItemzJointItemzTrace++;
                 }
             }
@@ -250,7 +267,7 @@ namespace ItemzApp.API.Services
 
         public async Task<int> RemoveAllToItemzTraceAsync(Guid itemzId)
         {
-            var toItemzJoinTraceItemzList = await _itemzTraceContext.ItemzJoinItemzTrace!
+            var toItemzJoinTraceItemzList = await _context.ItemzJoinItemzTrace!
                     // .Include(ijit => ijit.ToItemz) // This Include here will end up in Database SQL Query Error. Find out why in the futre?
                     .Where(ijit => ijit.FromItemzId == itemzId).AsNoTracking().ToListAsync();
             var countOfDeletedToItemzJointItemzTrace = 0;
@@ -258,10 +275,10 @@ namespace ItemzApp.API.Services
             {
                 // TODO: add aditional check that tempIJIT.FromItemzId == itemzID; // This way we make sure that we only pick-up links where provided itemzID is a From-Trace
 
-                var itrace = await _itemzTraceContext.ItemzJoinItemzTrace!.FindAsync(itemzId, tempIJIT.ToItemzId);
+                var itrace = await _context.ItemzJoinItemzTrace!.FindAsync(itemzId, tempIJIT.ToItemzId);
                 if (itrace != null)
                 {
-                    _itemzTraceContext.ItemzJoinItemzTrace.Remove(itrace);
+                    _context.ItemzJoinItemzTrace.Remove(itrace);
                     countOfDeletedToItemzJointItemzTrace++;
                 }
             }
@@ -276,16 +293,16 @@ namespace ItemzApp.API.Services
                 throw new ArgumentNullException(nameof(itemzId));
             }
 
-            return await _itemzTraceContext.ItemzJoinItemzTrace!
+            return await _context.ItemzJoinItemzTrace!
                     .Where(ijit => ijit.FromItemzId == itemzId || ijit.ToItemzId == itemzId).CountAsync();
         }
 
         public async Task<bool> RemoveItemzTraceAsync(ItemzTraceDTO itemzTraceDTO)
         {
-            var itrace = await _itemzTraceContext.ItemzJoinItemzTrace!.FindAsync(itemzTraceDTO.FromTraceItemzId, itemzTraceDTO.ToTraceItemzId);
+            var itrace = await _context.ItemzJoinItemzTrace!.FindAsync(itemzTraceDTO.FromTraceItemzId, itemzTraceDTO.ToTraceItemzId);
             if (itrace != null)
             {
-                _itemzTraceContext.ItemzJoinItemzTrace.Remove(itrace);
+                _context.ItemzJoinItemzTrace.Remove(itrace);
                 return true; // Found and removed
             }
             return false;  // Could not be found
@@ -294,7 +311,7 @@ namespace ItemzApp.API.Services
 		public async Task<List<ItemzJoinItemzTrace>> GetAllTracesForItemzIdsAsync(IEnumerable<Guid> itemzIds)
 		{
 			var idSet = itemzIds.ToHashSet(); // for efficient lookup if needed
-			return await _itemzTraceContext.ItemzJoinItemzTrace!
+			return await _context.ItemzJoinItemzTrace!
 				.Where(t => idSet.Contains(t.FromItemzId) || idSet.Contains(t.ToItemzId))
 				.AsNoTracking()
 				.ToListAsync();
