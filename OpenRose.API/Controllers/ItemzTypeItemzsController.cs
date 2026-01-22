@@ -329,7 +329,7 @@ namespace ItemzApp.API.Controllers
                 ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
                 itemzCollectionToReturn.Count(),
                 ItemzTypeId);
-            return CreatedAtRoute("__GET_Itemz_Collection_By_GUID_IDS__",
+            return CreatedAtRoute("__POST_Itemz_Collection_By_GUID_IDS__",
                 new { Controller = "ItemzCollection", ids = idConvertedToString }, itemzCollectionToReturn);
         }
 

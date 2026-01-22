@@ -1,4 +1,4 @@
-﻿@*
+﻿﻿@*
  * OpenRose - Requirements Management
  * Licensed under the Apache License, Version 2.0.
  * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
@@ -18,98 +18,98 @@
 @if (AllParentTraceViewModels.Count > 0)
 {
 
-<MudPaper Class="pa-4 align-start d-flex" Style="width: auto" Outlined="false">
-	<MudText Typo="Typo.h6" Align="Align.Left"> <MudIcon Icon="@Icons.Material.Filled.KeyboardDoubleArrowUp" /> Parent / From Traces </MudText>
-</MudPaper>
+	<MudPaper Class="pa-4 align-start d-flex" Style="width: auto" Outlined="false">
+		<MudText Typo="Typo.h6" Align="Align.Left"> <MudIcon Icon="@Icons.Material.Filled.KeyboardDoubleArrowUp" /> Parent / From Traces </MudText>
+	</MudPaper>
 
-<MudDataGrid Items="@AllParentTraceViewModels"
-			 Filterable="true"
-			 SortMode="@SortMode.None"
-			 Groupable="false"
-			 Striped="true"
-			 FixedHeader="true"
-			 HeaderClass="background-color: red;">
-	<Columns>
-		<PropertyColumn Property="x => x.Id" Title="Id" Filterable="false">
-			<CellTemplate>
-				<CopyableText TextToCopy="@context.Item.Id.ToString()" DisplayLength="8" />
-			</CellTemplate>
-		</PropertyColumn>
-		<PropertyColumn Property="x => x.Name" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
-		<PropertyColumn Property="x => x.TraceLabel" Title="Trace Label" Filterable="false">
-			<CellTemplate>
-				@if (!string.IsNullOrWhiteSpace(context.Item.TraceLabel))
-				{
-					<MudChip Color="Color.Info">@context.Item.TraceLabel</MudChip>
-				}
-				else
-				{
-					<MudChip Color="Color.Default" Variant="Variant.Outlined">
-						No Label
-					</MudChip>
-				}
-			</CellTemplate>
-		</PropertyColumn>
-		<PropertyColumn Property="x => x.Status" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
-		<PropertyColumn Property="x => x.Priority" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
-		<TemplateColumn Title="Action">
-			<CellTemplate>
-				<div style="display: flex; justify-content: left; align-items: center; gap: 10px;">
-				<MudButton Size="@Size.Large"
-						   Variant="@Variant.Filled" Color="@Color.Success"
-						   OnClick="_ => openItemz(context.Item.Id.ToString())"> Open </MudButton>
-				</div>
-			</CellTemplate>
-		</TemplateColumn>
-	</Columns>
-</MudDataGrid>
+	<MudDataGrid Items="@AllParentTraceViewModels"
+				 Filterable="true"
+				 SortMode="@SortMode.None"
+				 Groupable="false"
+				 Striped="true"
+				 FixedHeader="true"
+				 HeaderClass="background-color: red;">
+		<Columns>
+			<PropertyColumn Property="x => x.Id" Title="Id" Filterable="false">
+				<CellTemplate>
+					<CopyableText TextToCopy="@context.Item.Id.ToString()" DisplayLength="8" />
+				</CellTemplate>
+			</PropertyColumn>
+			<PropertyColumn Property="x => x.Name" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
+			<PropertyColumn Property="x => x.TraceLabel" Title="Trace Label" Filterable="false">
+				<CellTemplate>
+					@if (!string.IsNullOrWhiteSpace(context.Item.TraceLabel))
+					{
+						<MudChip Color="Color.Info">@context.Item.TraceLabel</MudChip>
+					}
+					else
+					{
+						<MudChip Color="Color.Default" Variant="Variant.Outlined">
+							No Label
+						</MudChip>
+					}
+				</CellTemplate>
+			</PropertyColumn>
+			<PropertyColumn Property="x => x.Status" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
+			<PropertyColumn Property="x => x.Priority" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
+			<TemplateColumn Title="Action">
+				<CellTemplate>
+					<div style="display: flex; justify-content: left; align-items: center; gap: 10px;">
+						<MudButton Size="@Size.Large"
+								   Variant="@Variant.Filled" Color="@Color.Success"
+								   OnClick="_ => openItemz(context.Item.Id.ToString())"> Open </MudButton>
+					</div>
+				</CellTemplate>
+			</TemplateColumn>
+		</Columns>
+	</MudDataGrid>
 }
 
 @if (AllChildTraceViewModels.Count > 0)
 {
-<MudPaper Class="pa-4 align-start d-flex" Style="width: auto" Outlined="false">
-	<MudText Typo="Typo.h6" Align="Align.Left"><MudIcon Icon="@Icons.Material.Filled.KeyboardDoubleArrowDown" />Child / To Traces </MudText>
-</MudPaper>
-<MudDataGrid Items="@AllChildTraceViewModels"
-			 Filterable="true"
-			 SortMode="@SortMode.None"
-			 Groupable="false"
-			 Striped="true"
-			 FixedHeader="true"
-			 HeaderClass="background-color: red;">
-	<Columns>
-		<PropertyColumn Property="x => x.Id" Title="Id">
-			<CellTemplate>
-				<CopyableText TextToCopy="@context.Item.Id.ToString()" DisplayLength="8" />
-			</CellTemplate>
-		</PropertyColumn>
-		<PropertyColumn Property="x => x.Name" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
-		<PropertyColumn Property="x => x.TraceLabel" Title="Trace Label" Filterable="false">
-			<CellTemplate>
-				@if (!string.IsNullOrWhiteSpace(context.Item.TraceLabel))
-				{
-					<MudChip Color="Color.Info">@context.Item.TraceLabel</MudChip>
-				}
-				else
-				{
-					<MudChip Color="Color.Default" Variant="Variant.Outlined">
-						No Label
-					</MudChip>
-				}
-			</CellTemplate>
-		</PropertyColumn>
+	<MudPaper Class="pa-4 align-start d-flex" Style="width: auto" Outlined="false">
+		<MudText Typo="Typo.h6" Align="Align.Left"><MudIcon Icon="@Icons.Material.Filled.KeyboardDoubleArrowDown" />Child / To Traces </MudText>
+	</MudPaper>
+	<MudDataGrid Items="@AllChildTraceViewModels"
+				 Filterable="true"
+				 SortMode="@SortMode.None"
+				 Groupable="false"
+				 Striped="true"
+				 FixedHeader="true"
+				 HeaderClass="background-color: red;">
+		<Columns>
+			<PropertyColumn Property="x => x.Id" Title="Id">
+				<CellTemplate>
+					<CopyableText TextToCopy="@context.Item.Id.ToString()" DisplayLength="8" />
+				</CellTemplate>
+			</PropertyColumn>
+			<PropertyColumn Property="x => x.Name" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
+			<PropertyColumn Property="x => x.TraceLabel" Title="Trace Label" Filterable="false">
+				<CellTemplate>
+					@if (!string.IsNullOrWhiteSpace(context.Item.TraceLabel))
+					{
+						<MudChip Color="Color.Info">@context.Item.TraceLabel</MudChip>
+					}
+					else
+					{
+						<MudChip Color="Color.Default" Variant="Variant.Outlined">
+							No Label
+						</MudChip>
+					}
+				</CellTemplate>
+			</PropertyColumn>
 
-		<PropertyColumn Property="x => x.Status" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
-		<PropertyColumn Property="x => x.Priority" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
-		<TemplateColumn CellClass="d-flex justify-left">
-			<CellTemplate>
-				<MudButton Size="@Size.Large"
-						   Variant="@Variant.Filled" Color="@Color.Success"
-						   OnClick="_ => openItemz(context.Item.Id.ToString())"> Open </MudButton>
-			</CellTemplate>
-		</TemplateColumn>
-	</Columns>
-</MudDataGrid>
+			<PropertyColumn Property="x => x.Status" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
+			<PropertyColumn Property="x => x.Priority" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
+			<TemplateColumn CellClass="d-flex justify-left">
+				<CellTemplate>
+					<MudButton Size="@Size.Large"
+							   Variant="@Variant.Filled" Color="@Color.Success"
+							   OnClick="_ => openItemz(context.Item.Id.ToString())"> Open </MudButton>
+				</CellTemplate>
+			</TemplateColumn>
+		</Columns>
+	</MudDataGrid>
 }
 
 @code {
@@ -141,7 +141,9 @@
 			if (singleItemzTraces.Itemz.ParentItemz != null && singleItemzTraces.Itemz.ParentItemz.Any())
 			{
 				var parentIds = singleItemzTraces.Itemz.ParentItemz.Select(p => p.ItemzID).ToList();
-				var parentItemzDtos = await itemzCollectionService.__GET_Itemz_Collection_By_GUID_IDS__Async(parentIds);
+				// Use POST-based batch retrieval (avoids long GET URLs / IIS limits)
+				var parentItemzDtos = await itemzCollectionService.__POST_Itemz_Collection_By_GUID_IDS__Async(parentIds)
+					?? new List<GetItemzDTO>();
 
 				AllParentTraceViewModels = parentItemzDtos
 					.Select(dto =>
@@ -163,7 +165,9 @@
 			if (singleItemzTraces.Itemz.ChildItemz != null && singleItemzTraces.Itemz.ChildItemz.Any())
 			{
 				var childIds = singleItemzTraces.Itemz.ChildItemz.Select(c => c.ItemzID).ToList();
-				var childItemzDtos = await itemzCollectionService.__GET_Itemz_Collection_By_GUID_IDS__Async(childIds);
+				// Use POST-based batch retrieval (avoids long GET URLs / IIS limits)
+				var childItemzDtos = await itemzCollectionService.__POST_Itemz_Collection_By_GUID_IDS__Async(childIds)
+					?? new List<GetItemzDTO>();
 
 				AllChildTraceViewModels = childItemzDtos
 					.Select(dto =>

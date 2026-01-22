@@ -1,4 +1,4 @@
-﻿@*
+﻿﻿@*
  * OpenRose - Requirements Management
  * Licensed under the Apache License, Version 2.0.
  * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
@@ -58,13 +58,13 @@
 		<TemplateColumn Title="Action">
 			<CellTemplate>
 				<div style="display: flex; justify-content: left; align-items: center; gap: 10px;">
-				<MudButton Size="@Size.Large"
-						   Variant="@Variant.Filled" Color="@Color.Success"
-						   OnClick="_ => openItemz(context.Item.Id.ToString())"> Open </MudButton>
-				<MudButton Size="@Size.Large"
-						   Variant="@Variant.Filled" Color="@Color.Error"
-						   style="gap: 10px; margin-left : 10px"
-						   OnClick="_ => OpenDeleteParentItemzTraceConfirmationDialogAsync(context.Item.Id,ItemzId)"> Delete </MudButton>
+					<MudButton Size="@Size.Large"
+							   Variant="@Variant.Filled" Color="@Color.Success"
+							   OnClick="_ => openItemz(context.Item.Id.ToString())"> Open </MudButton>
+					<MudButton Size="@Size.Large"
+							   Variant="@Variant.Filled" Color="@Color.Error"
+							   style="gap: 10px; margin-left : 10px"
+							   OnClick="_ => OpenDeleteParentItemzTraceConfirmationDialogAsync(context.Item.Id,ItemzId)"> Delete </MudButton>
 				</div>
 			</CellTemplate>
 		</TemplateColumn>
@@ -162,7 +162,8 @@
 				if (singleItemzTraces.Itemz.ParentItemz != null && singleItemzTraces.Itemz.ParentItemz.Any())
 				{
 					var parentIds = singleItemzTraces.Itemz.ParentItemz.Select(p => p.ItemzID).ToList();
-					var parentItemzDtos = await itemzCollectionService.__GET_Itemz_Collection_By_GUID_IDS__Async(parentIds)
+					// Use POST-based batch retrieval (avoids long GET URLs / IIS limits)
+					var parentItemzDtos = await itemzCollectionService.__POST_Itemz_Collection_By_GUID_IDS__Async(parentIds)
 													?? new List<GetItemzDTO>();
 
 					AllParentTraceViewModels = parentItemzDtos
@@ -170,13 +171,13 @@
 						{
 							var traceInfo = singleItemzTraces.Itemz.ParentItemz.FirstOrDefault(t => t.ItemzID == dto.Id);
 							return new TraceComponentViewModel
-								{
-									Id = dto.Id,
-									Name = dto.Name,
-									Status = dto.Status,
-									Priority = dto.Priority,
-									TraceLabel = traceInfo?.TraceLabel
-								};
+							{
+								Id = dto.Id,
+								Name = dto.Name,
+								Status = dto.Status,
+								Priority = dto.Priority,
+								TraceLabel = traceInfo?.TraceLabel
+							};
 						})
 						.ToList();
 				}
@@ -185,20 +186,22 @@
 				if (singleItemzTraces.Itemz.ChildItemz != null && singleItemzTraces.Itemz.ChildItemz.Any())
 				{
 					var childIds = singleItemzTraces.Itemz.ChildItemz.Select(c => c.ItemzID).ToList();
-					var childItemzDtos = await itemzCollectionService.__GET_Itemz_Collection_By_GUID_IDS__Async(childIds);
+					// Use POST-based batch retrieval (avoids long GET URLs / IIS limits)
+					var childItemzDtos = await itemzCollectionService.__POST_Itemz_Collection_By_GUID_IDS__Async(childIds)
+												?? new List<GetItemzDTO>();
 
 					AllChildTraceViewModels = childItemzDtos
 						.Select(dto =>
 						{
 							var traceInfo = singleItemzTraces.Itemz.ChildItemz.FirstOrDefault(t => t.ItemzID == dto.Id);
 							return new TraceComponentViewModel
-								{
-									Id = dto.Id,
-									Name = dto.Name,
-									Status = dto.Status,
-									Priority = dto.Priority,
-									TraceLabel = traceInfo?.TraceLabel
-								};
+							{
+								Id = dto.Id,
+								Name = dto.Name,
+								Status = dto.Status,
+								Priority = dto.Priority,
+								TraceLabel = traceInfo?.TraceLabel
+							};
 						})
 						.ToList();
 				}
@@ -210,7 +213,7 @@
 		{
 			Console.WriteLine($"TraceabilityComponent init failed: {ex}");
 			await DialogService.ShowMessageBox("ERROR", new MarkupString($"<p style=\"color:red\">{ex.Message}</p>"), yesText: "OK");
-        }
+		}
 	}
 
 	public async Task openItemz(string itemzId)
@@ -365,7 +368,7 @@
 		}
 	}
 
-		public async Task createChildTrace(Guid ItemzId)
+	public async Task createChildTrace(Guid ItemzId)
 	{
 		var parameters = new DialogParameters();
 		var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
