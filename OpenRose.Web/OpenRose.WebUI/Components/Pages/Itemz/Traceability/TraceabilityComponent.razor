@@ -5,12 +5,14 @@
 *@
 
 @using OpenRose.WebUI.Client.Services.ItemzTrace
+@using OpenRose.WebUI.Client.SharedConstants
 @using OpenRose.WebUI.Client.SharedModels
 @using OpenRose.WebUI.Client.Services.Itemz
 @using OpenRose.WebUI.Client.Services.ItemzCollection
 @using OpenRose.WebUI.Client.SharedModels.ClientSideUIOnlyModel
 @using OpenRose.WebUI.Components.EventServices
 @using OpenRose.WebUI.Components.Pages.Common
+@using OpenRose.WebUI.Helper.TraceLabel
 @inject NavigationManager NavManager
 @inject IDialogService DialogService
 @inject TreeNodeItemzSelectionService ItemzSelectionService
@@ -176,7 +178,7 @@
 								Name = dto.Name,
 								Status = dto.Status,
 								Priority = dto.Priority,
-								TraceLabel = traceInfo?.TraceLabel
+								TraceLabel = TraceLabelHelper.NormalizeTraceLabel(traceInfo?.TraceLabel)
 							};
 						})
 						.ToList();
@@ -200,7 +202,7 @@
 								Name = dto.Name,
 								Status = dto.Status,
 								Priority = dto.Priority,
-								TraceLabel = traceInfo?.TraceLabel
+								TraceLabel = TraceLabelHelper.NormalizeTraceLabel(traceInfo?.TraceLabel)
 							};
 						})
 						.ToList();
@@ -339,7 +341,7 @@
 						Name = parentItemzDto.Name,
 						Status = parentItemzDto.Status,
 						Priority = parentItemzDto.Priority,
-						TraceLabel = tempItemTraceDTO.TraceLabel // will be null unless you set it
+						TraceLabel = TraceLabelHelper.NormalizeTraceLabel(tempItemTraceDTO.TraceLabel)
 					};
 
 					AllParentTraceViewModels.Add(newVm);
@@ -411,7 +413,7 @@
 						Name = childItemzDto.Name,
 						Status = childItemzDto.Status,
 						Priority = childItemzDto.Priority,
-						TraceLabel = tempItemTraceDTO.TraceLabel // will be null unless you set it
+						TraceLabel = TraceLabelHelper.NormalizeTraceLabel(tempItemTraceDTO.TraceLabel)
 					};
 
 					AllChildTraceViewModels.Add(newVm);
@@ -463,12 +465,12 @@
 				if (isParent)
 				{
 					var trace = AllParentTraceViewModels.FirstOrDefault(t => t.Id == traceId);
-					if (trace != null) trace.TraceLabel = newLabel;
+					if (trace != null) trace.TraceLabel = TraceLabelHelper.NormalizeTraceLabel(newLabel);
 				}
 				else
 				{
 					var trace = AllChildTraceViewModels.FirstOrDefault(t => t.Id == traceId);
-					if (trace != null) trace.TraceLabel = newLabel;
+					if (trace != null) trace.TraceLabel = TraceLabelHelper.NormalizeTraceLabel(newLabel);
 				}
 			}
 			catch (Exception ex)
@@ -502,7 +504,7 @@
 					Name = itemzDetails.Name,
 					Status = itemzDetails.Status,
 					Priority = itemzDetails.Priority,
-					TraceLabel = childTrace.TraceLabel // merge in the trace label
+					TraceLabel = TraceLabelHelper.NormalizeTraceLabel(childTrace.TraceLabel)
 				});
 			}
 		}
@@ -531,13 +533,11 @@
 					Name = itemzDetails.Name,
 					Status = itemzDetails.Status,
 					Priority = itemzDetails.Priority,
-					TraceLabel = parentTrace.TraceLabel
+					TraceLabel = TraceLabelHelper.NormalizeTraceLabel(parentTrace.TraceLabel)
 				});
 			}
 		}
 
 		return result;
 	}
-
-
 }
