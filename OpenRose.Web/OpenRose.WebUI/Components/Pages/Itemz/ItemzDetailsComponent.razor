@@ -367,7 +367,7 @@
 	{
 		initializingPage = true;
 		StateHasChanged();
-		//Thread.Sleep(300);
+		//await Task.Delay(300);
 		singleItemz = await ItemzService.__Single_Itemz_By_GUID_ID__Async(ItemzId);
 
 		if (singleItemz != null)
@@ -466,7 +466,7 @@
 				// TODO :: SEND ITEMZ NAME UPDATE TO BREADCRUMS AS WELL.
 
 				FormStateService.SetDirty(ItemzId, false);
-				Thread.Sleep(800);
+				await Task.Delay(800);
 				await goBackToItemz();
 			}
 		}
@@ -550,7 +550,7 @@
 			try
 			{
 				await deleteItemz();
-				Thread.Sleep(200);
+				await Task.Delay(200);
 			}
 			finally
 			{
@@ -573,7 +573,7 @@
 	{
 		FormStateService.SetDirty(ItemzId, false);
 
-		@if (CalledFrom == nameof(ItemzDetails))
+		if (CalledFrom == nameof(ItemzDetails))
 		{
 			NavManager.NavigateTo($"/itemz/{ItemzId.ToString()}");
 		}
@@ -584,7 +584,7 @@
 	}
 	public async Task goBackToParent()
 	{
-		@if (CalledFrom == nameof(ItemzDetails)) 
+		if (CalledFrom == nameof(ItemzDetails)) 
 		{
 			if (ParentId != Guid.Empty) // Orphaned Itemz will not have ParentId
 			{
@@ -604,7 +604,7 @@
 			}
 
 		}
-		@if(CalledFrom == nameof(ProjectTreeView))
+		if(CalledFrom == nameof(ProjectTreeView))
 		{
 			TreeNodeItemzSelectionService.DeletedTreeNodeItemz(ItemzId);
 			if (ParentId != Guid.Empty) // Orphaned Itemz will not have ParentId

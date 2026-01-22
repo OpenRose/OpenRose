@@ -229,7 +229,7 @@
 				try
 				{
 					var updatedResult = await ProjectService.__POST_Create_Project__Async(singleProject);
-					Thread.Sleep(1500);
+					await Task.Delay(1500);
 					NavManager.NavigateTo("/projects");
 				}
 				catch (Exception ex)

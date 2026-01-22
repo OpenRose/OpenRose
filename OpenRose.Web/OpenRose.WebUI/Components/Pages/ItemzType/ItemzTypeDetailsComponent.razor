@@ -324,7 +324,7 @@
 	{
 		initializingPage = true;
 		StateHasChanged();
-		//Thread.Sleep(300);
+		//await Task.Delay(300);
 		singleItemzType = await ItemzTypeService.__Single_ItemzType_By_GUID_ID__Async(ItemzTypeId);
 		if (singleItemzType != null)
 		{
@@ -399,7 +399,7 @@
 				var updatedResult = await ItemzTypeService.__PUT_Update_ItemzType_By_GUID_ID__Async(ItemzTypeId, updateItemzTypeDTO);
 				TreeNodeItemzSelectionService.UpdateTreeNodeItemzName(ItemzTypeId, singleItemzType.Name!);
 				FormStateService.SetDirty(ItemzTypeId, false);
-				//Thread.Sleep(800);
+				//await Task.Delay(800);
 			}
 		}
 		catch (Exception ex)
@@ -473,7 +473,7 @@
 			try
 			{
 				await deleteItemzType();
-				Thread.Sleep(200);
+				await Task.Delay(200);
 			}
             finally
             {

@@ -271,7 +271,7 @@
 				|| targetSecondItemzType != null || targetSecondItemzType.Id != Guid.Empty)
 			{
 				movingItemzTypeOverlay = true;
-				Thread.Sleep(300);
+				await Task.Delay(300);
 				await ItemzTypeService.__POST_Move_ItemzType_Between_ItemzTypes__Async(sourceItemzType.Id, targetFirstItemzType.Id, targetSecondItemzType.Id);
 				movingItemzTypeOverlay = false;
 				await DialogService.ShowMessageBox("SUCCESS", markupMessage: new

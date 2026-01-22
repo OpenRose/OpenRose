@@ -5,6 +5,7 @@
 *@
 
 @page "/BaselineTreeView/{BaselineId:guid}"
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
 @using OpenRose.WebUI.Client.Services.BaselineHierarchy
 @using OpenRose.WebUI.Client.Services.Baselines
 @using OpenRose.WebUI.Client.SharedModels
@@ -24,6 +25,9 @@
 @inject IJSRuntime JS
 @inject ConfigurationService ConfigurationService
 @inject FormStateService FormStateService
+@inject ViewSettingsService ViewSettings
+@inject ProtectedSessionStorage SessionStorage
+
 
 
 <MudExtensions.MudSplitter @bind-Dimension="@_percentage"
@@ -41,7 +45,22 @@
             }
             else
             {
-                <MudButton OnClick="@(()=>baselineMudTreeView.ExpandAllAsync())" Variant="Variant.Filled">Expand All</MudButton>
+@*                 <MudButton OnClick="@(()=>baselineMudTreeView.ExpandAllAsync())" Variant="Variant.Filled">Expand All</MudButton> *@
+
+                <MudPaper Elevation="1" Class="d-flex align-center pa-2 mb-2">
+                    <MudButton OnClick="@(() => baselineMudTreeView.ExpandAllAsync())"
+                               Variant="Variant.Filled">
+                        Expand All
+                    </MudButton>
+
+                    <MudSwitch T="bool"
+                               Value="@ViewSettings.ReadOnlyView"
+                               ValueChanged="ToggleReadOnly"
+                               Label="Read-Only"
+                               Color="Color.Secondary"
+                               LabelPlacement="Placement.End" />
+                </MudPaper>
+
             }
             <MudTreeView @ref="baselineMudTreeView" Items="@InitialTreeItems"
                          Color="Color.Secondary"
@@ -84,15 +103,47 @@
             {
                 if (selectedItem.RecordType.ToLower() == "baseline".ToLower()) // TODO :: USE CONSTANTS
                 {
-                    <BaselineDetailsComponent BaselineId="@selectedItem.Value" @key="selectedItem.Value" CalledFrom="@this.GetType().Name" />
+@*                     <BaselineDetailsComponent BaselineId="@selectedItem.Value" @key="selectedItem.Value" CalledFrom="@this.GetType().Name" /> *@
+
+                    if (ViewSettings.ReadOnlyView)
+                    {
+                        <BaselineReadOnlyComponent BaselineId="@selectedItem.Value"
+                                                  @key="selectedItem.Value" />
+                    }
+                    else
+                    {
+                        <BaselineDetailsComponent BaselineId="@selectedItem.Value" 
+                                                @key="selectedItem.Value" 
+                                                CalledFrom="@this.GetType().Name" />
+                    }
                 }
                 else if (selectedItem.RecordType.ToLower() == "baselineitemztype".ToLower()) // TODO :: USE CONSTANTS
                 {
-                    <BaselineItemzTypeTreeViewComponent BaselineItemzTypeId="@selectedItem.Value" @key="selectedItem.Value"/>
+                    
+                    if (ViewSettings.ReadOnlyView)
+                    {
+                        <BaselineItemzTypeReadOnlyComponent BaselineItemzTypeId="@selectedItem.Value"
+                                                    @key="selectedItem.Value" />
+                    }
+                    else
+                    {
+                        <BaselineItemzTypeTreeViewComponent BaselineItemzTypeId="@selectedItem.Value" 
+                                                            @key="selectedItem.Value" />
+                    }
                 }
                 else if (selectedItem.RecordType.ToLower() == "baselineitemz".ToLower()) // TODO :: USE CONSTANTS
                 {
-                    <BaselineItemzTreeViewComponent BaselineItemzId="@selectedItem.Value" @key="selectedItem.Value" />
+                    
+                    if (ViewSettings.ReadOnlyView)
+                    {
+                        <BaselineItemzReadOnlyComponent BaselineItemzId="@selectedItem.Value"
+                                                  @key="selectedItem.Value" />
+                    }
+                    else
+                    {
+                        <BaselineItemzTreeViewComponent BaselineItemzId="@selectedItem.Value" 
+                                                    @key="selectedItem.Value" />
+                    }
                 }
                 else
                 {
@@ -436,11 +487,18 @@
         if (firstRender)
         {
 
+            // Load view settings
+            var result = await SessionStorage.GetAsync<bool>("READONLYVIEW");
+            if (result.Success)
+            {
+                ViewSettings.ReadOnlyView = result.Value;
+            }
+
             // Load initial data
             InitialTreeItems = await LoadInitialData(BaselineId);
             StateHasChanged();
 
-            Thread.Sleep(300);
+            await Task.Delay(300);
             // Load Entire Baseline Hierarchy data
             InitialTreeItems = await LoadAllBaselineHierarchyData(BaselineId);
 
@@ -686,5 +744,11 @@
         var dialogPara = new DialogParameters();
         dialogPara.Add("exceptionMessage", exceptionMessage);
         var dialogref = await DialogService.ShowAsync<BaselineExceptionDialog>("ISSUE", dialogPara, options);
+    }
+
+    private async Task ToggleReadOnly(bool value)
+    {
+        ViewSettings.ReadOnlyView = value;
+        await SessionStorage.SetAsync("READONLYVIEW", value);
     }
 }

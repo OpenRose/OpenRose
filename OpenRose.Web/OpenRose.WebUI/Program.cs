@@ -52,6 +52,7 @@ var configurationService = new ConfigurationService
 
 builder.Services.AddSingleton(configurationService);
 
+
 if (!configurationService.IsOpenRoseAPIConfigured)
 {
     var configFile = string.IsNullOrEmpty(builder.Environment.EnvironmentName) ? "appsettings.json" : $"appsettings.{builder.Environment.EnvironmentName}.json";
@@ -176,6 +177,7 @@ builder.Services.AddScoped<BaselineTreeNodeItemzSelectionService>(); // Register
 builder.Services.AddScoped<BaselineBreadcrumsService>(); // Register the service
 builder.Services.AddScoped<BreadcrumsService>(); // Register the service
 builder.Services.AddScoped<FormStateService>(); // Register the service
+builder.Services.AddScoped<ViewSettingsService>(); // Register the ReadOnlyView toggle service
 
 
 builder.Services.AddSingleton<AssemblyInfoService>(); // Register the service

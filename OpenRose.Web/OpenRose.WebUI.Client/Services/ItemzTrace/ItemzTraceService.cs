@@ -6,6 +6,7 @@ using OpenRose.WebUI.Client.SharedModels;
 using OpenRose.WebUI.Client.Utilities;
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Reflection;
@@ -387,13 +388,22 @@ namespace OpenRose.WebUI.Client.Services.ItemzTrace
 
 				//urlBuilder_.Length--;
 
-				var response = await _httpClient.GetFromJsonAsync<ItemzParentAndChildTraceDTO>($"/api/ItemzTrace/AllItemzTraces/{itemzId.ToString()}", cancellationToken);
+				//var response = await _httpClient.GetFromJsonAsync<ItemzParentAndChildTraceDTO>($"/api/ItemzTrace/AllItemzTraces/{itemzId.ToString()}", cancellationToken);
 
-				return response!;
+				//return response!;
+				var response = await _httpClient.GetAsync($"/api/ItemzTrace/AllItemzTraces/{itemzId}", cancellationToken);
+				if (response.StatusCode == HttpStatusCode.NotFound)
+				{
+					return null; // or a DTO with empty collections
+				}
+				response.EnsureSuccessStatusCode();
+				return await response.Content.ReadFromJsonAsync<ItemzParentAndChildTraceDTO>();
+
 			}
-			catch (Exception)
+			catch (Exception ex)
 			{
-
+				Console.WriteLine($"Error fetching traces: {ex}"); 
+				return null;
 			}
 			return default;
 		}

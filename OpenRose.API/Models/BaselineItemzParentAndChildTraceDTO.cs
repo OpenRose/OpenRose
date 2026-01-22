@@ -24,8 +24,8 @@ namespace ItemzApp.API.Models
 	public class SingleBaselineItemzAllTrace__DTO
 	{
 		public Guid ID { get; set; }
-		public List<ParentTraceBaselineItemz__DTO>? ParentBaselineItemz { get; set; }
-		public List<ChildTraceBaselineItemz__DTO>? ChildBaselineItemz { get; set; }
+		public List<ParentTraceBaselineItemz__DTO>? ParentBaselineItemz { get; set; } = new();
+		public List<ChildTraceBaselineItemz__DTO>? ChildBaselineItemz { get; set; } = new();
 	}
 
 	// Root myDeserializedClass = JsonConvert.DeserializeObject<Root>(myJsonResponse);

@@ -97,7 +97,7 @@
 					<MudText><strong>Description : </strong></MudText>
 					<br />
 					<div class="custom-markdown-editor">
-						<MudPaper Class="pa-2 fixed-height-scroll">
+						<MudPaper Class="pa-2" Elevation="0" Outlined="false">
 							@if (!string.IsNullOrEmpty(singleItemz.Description))
 							{
 								<div class="markdown-body">@((MarkupString)convertedMarkdown)</div>
@@ -208,7 +208,7 @@
 
 		initializingPage = true;
 		StateHasChanged();
-		//Thread.Sleep(300);
+		//await Task.Delay(300);
 		singleItemz = await itemzService.__Single_Itemz_By_GUID_ID__Async(ItemzId);
 
 		if (singleItemz != null)

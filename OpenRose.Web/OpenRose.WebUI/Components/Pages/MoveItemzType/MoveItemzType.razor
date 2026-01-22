@@ -301,7 +301,7 @@
 		try
 		{
 			movingItemzTypeOverlay = true;
-			Thread.Sleep(300);
+			await Task.Delay(300);
 			await ItemzTypeService.__POST_Move_ItemzType__Async(sourceItemzType.Id, targetProject.Id, radioAtBottomOfChildList);
 			movingItemzTypeOverlay = false;
 			await DialogService.ShowMessageBox("SUCCESS", markupMessage: new

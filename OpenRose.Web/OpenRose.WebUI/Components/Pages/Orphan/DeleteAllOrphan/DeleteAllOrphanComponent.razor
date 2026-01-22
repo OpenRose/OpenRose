@@ -77,13 +77,13 @@
 			deletingAllOrphanItemz = true;
 			StateHasChanged();
 			await deleteAllOrphanItemz();
-			Thread.Sleep(200);
+			await Task.Delay(200);
 		}
 	}
 
 	public async Task deleteAllOrphanItemz()
 	{
-		Thread.Sleep(400);
+		await Task.Delay(400);
 		await itemzService.__Delete_All_Orphan_Itemz__Async();
 		await GetCountOfOrphanItemz();
 		deletingAllOrphanItemz = false;

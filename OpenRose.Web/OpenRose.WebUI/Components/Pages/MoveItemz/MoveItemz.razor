@@ -321,7 +321,7 @@
 					(targetItemzType == null || targetItemzType.Id == Guid.Empty))
 			{
 				movingItemzOverlay = true;
-				Thread.Sleep(300);
+				await Task.Delay(300);
 				await ItemzService.__POST_Move_Itemz__Async(sourceItemz.Id, targetItemz.Id, radioAtBottomOfChildList);
 				movingItemzOverlay = false;
 				await DialogService.ShowMessageBox("SUCCESS", markupMessage: new
@@ -334,7 +334,7 @@
 					(targetItemzType != null || targetItemzType.Id != Guid.Empty))
 			{
 				movingItemzOverlay = true;
-				Thread.Sleep(300);
+				await Task.Delay(300);
 				await ItemzService.__POST_Move_Itemz__Async(sourceItemz.Id, targetItemzType.Id, radioAtBottomOfChildList);
 				movingItemzOverlay = false;
 				await DialogService.ShowMessageBox("SUCCESS", markupMessage: new

@@ -5,6 +5,7 @@
 *@
 
 @page "/ProjectTreeView/{ProjectId:guid}"
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
 @using OpenRose.WebUI.Client.Services.Hierarchy
 @using OpenRose.WebUI.Client.Services.Project
 @using OpenRose.WebUI.Client.SharedModels
@@ -24,6 +25,10 @@
 @inject IJSRuntime JS
 @inject TreeNodeItemzSelectionService ItemzSelectionService
 @inject ConfigurationService ConfigurationService
+@inject ViewSettingsService ViewSettings
+@inject ProtectedSessionStorage SessionStorage
+
+
 
 <MudExtensions.MudSplitter @bind-Dimension="@_percentage"
                             OnDoubleClicked="@OnDoubleClicked"
@@ -40,9 +45,25 @@
             }
             else
             {
-                <MudButton OnClick="@(() => projectMudTreeView.ExpandAllAsync())" Variant="Variant.Filled">
+@*                 <MudButton OnClick="@(() => projectMudTreeView.ExpandAllAsync())" Variant="Variant.Filled">
+                    Expand All
+                </MudButton> *@
+
+            <MudPaper Elevation="1" Class="d-flex align-center pa-2 mb-2">
+                <MudButton OnClick="@(() => projectMudTreeView.ExpandAllAsync())"
+                           Variant="Variant.Filled">
                     Expand All
                 </MudButton>
+
+                <MudSwitch T="bool"
+                    Value="@ViewSettings.ReadOnlyView"
+                    ValueChanged="ToggleReadOnly"
+                    Label="Read-Only"
+                    Color="Color.Secondary"
+                    LabelPlacement="Placement.End" />
+            </MudPaper>
+
+
             }
             <MudTreeView @ref="projectMudTreeView"
                          Items="@InitialTreeItems"
@@ -77,15 +98,50 @@
             {
                 if (selectedItem.RecordType.ToLower() == "project") // TODO :: USE CONSTANTS
                 {
-                    <ProjectDetailsComponent ProjectId="@selectedItem.Value" @key="selectedItem.Value" CalledFrom="@this.GetType().Name" />
+@*                     <ProjectDetailsComponent ProjectId="@selectedItem.Value" @key="selectedItem.Value" CalledFrom="@this.GetType().Name" /> *@
+
+                    if (ViewSettings.ReadOnlyView)
+                    {
+                        <ProjectReadOnlyComponent ProjectId="@selectedItem.Value"
+                                                  @key="selectedItem.Value" />
+                    }
+                    else
+                    {
+                        <ProjectDetailsComponent ProjectId="@selectedItem.Value"
+                                                 @key="selectedItem.Value"
+                                                 CalledFrom="@this.GetType().Name" />
+                    }
                 }
                 else if (selectedItem.RecordType.ToLower() == "itemztype") // TODO :: USE CONSTANTS
                 {
-                    <ItemzTypeDetailsComponent ItemzTypeId="@selectedItem.Value" @key="selectedItem.Value" CalledFrom="@this.GetType().Name" />
+                    
+
+                    if (ViewSettings.ReadOnlyView)
+                    {
+                        <ItemzTypeReadOnlyComponent ItemzTypeId="@selectedItem.Value"
+                                                    @key="selectedItem.Value" />
+                    }
+                    else
+                    {
+                        <ItemzTypeDetailsComponent ItemzTypeId="@selectedItem.Value" 
+                                                    @key="selectedItem.Value" 
+                                                    CalledFrom="@this.GetType().Name" />
+                    }
+
                 }
                 else if (selectedItem.RecordType.ToLower() == "itemz") // TODO :: USE CONSTANTS
                 {
-                    <ItemzDetailsComponent ItemzId="@selectedItem.Value" @key="selectedItem.Value" CalledFrom="@this.GetType().Name" />
+                    if (ViewSettings.ReadOnlyView)
+                    {
+                        <ItemzReadOnlyComponent ItemzId="@selectedItem.Value"
+                                                  @key="selectedItem.Value" />
+                    }
+                    else
+                    {
+                        <ItemzDetailsComponent ItemzId="@selectedItem.Value"
+                                                 @key="selectedItem.Value"
+                                                 CalledFrom="@this.GetType().Name" />
+                    }
                 }
                 else
                 {
@@ -421,12 +477,19 @@
         if (firstRender)
         {
 
+            // Load view settings
+            var result = await SessionStorage.GetAsync<bool>("READONLYVIEW");
+            if (result.Success)
+            {
+                ViewSettings.ReadOnlyView = result.Value;
+            }
+
             // Load initial data
             InitialTreeItems = await LoadInitialData(ProjectId);
             StateHasChanged();
 
 
-            //Thread.Sleep(300);
+            //await Task.Delay(300);
             // Load Entire Hierarchy data
 
             InitialTreeItems = await LoadAllProjectHierarchyData(ProjectId);
@@ -590,4 +653,11 @@
 
         StateHasChanged();
     }
+
+    private async Task ToggleReadOnly(bool value)
+    {
+        ViewSettings.ReadOnlyView = value;
+        await SessionStorage.SetAsync("READONLYVIEW", value);
+    }
+
  }
