@@ -25,43 +25,101 @@ namespace OpenRose.WebUI.Client.Services.BaselineItemzCollection
 			_httpClient = httpClient;
 		}
 
-		#region __GET_BaselineItemz_Collection_By_GUID_IDS__Async
-		public async Task<ICollection<GetBaselineItemzDTO>> __GET_BaselineItemz_Collection_By_GUID_IDS__Async(IEnumerable<Guid> baselineItemzids)
+		//#region __GET_BaselineItemz_Collection_By_GUID_IDS__Async
+		//public async Task<ICollection<GetBaselineItemzDTO>> __GET_BaselineItemz_Collection_By_GUID_IDS__Async(IEnumerable<Guid> baselineItemzids)
+		//{
+		//	return await __GET_BaselineItemz_Collection_By_GUID_IDS__Async(baselineItemzids, CancellationToken.None);
+		//}
+		//public async Task<ICollection<GetBaselineItemzDTO>> __GET_BaselineItemz_Collection_By_GUID_IDS__Async(IEnumerable<Guid> baselineItemzids, CancellationToken cancellationToken)
+		//{
+		//	try
+		//	{
+		//		// TODO :: Utilize urlBuilder which is commented below.
+
+		//		if (!baselineItemzids?.Any() ?? true)
+		//		{
+		//			throw new ArgumentNullException(nameof(baselineItemzids) + "is required for which value is not provided");
+		//		}
+		//		var urlBuilder_ = new System.Text.StringBuilder();
+		//		urlBuilder_.Append("/api/BaselineItemzCollection/(");
+		//		// urlBuilder_.Append('(');
+		//		for (var i = 0; i < baselineItemzids!.Count(); i++)
+		//		{
+		//			if (i > 0) urlBuilder_.Append(',');
+		//			urlBuilder_.Append((baselineItemzids!.ElementAt(i).ToString()));
+		//		}
+		//		urlBuilder_.Append(')');
+
+
+		//		var response = await _httpClient.GetFromJsonAsync<IEnumerable<GetBaselineItemzDTO>>($"{urlBuilder_}", cancellationToken);
+
+		//		return response!.ToList();
+		//	}
+		//	catch (Exception)
+		//	{
+		//	}
+		//	return default;
+
+		//}
+
+		//#endregion
+
+		#region __POST_BaselineItemz_Collection_By_GUID_IDS__Async
+		public async Task<ICollection<GetBaselineItemzDTO>> __POST_BaselineItemz_Collection_By_GUID_IDS__Async(IEnumerable<Guid> baselineItemzids)
 		{
-			return await __GET_BaselineItemz_Collection_By_GUID_IDS__Async(baselineItemzids, CancellationToken.None);
+			return await __POST_BaselineItemz_Collection_By_GUID_IDS__Async(baselineItemzids, CancellationToken.None);
 		}
-		public async Task<ICollection<GetBaselineItemzDTO>> __GET_BaselineItemz_Collection_By_GUID_IDS__Async(IEnumerable<Guid> baselineItemzids, CancellationToken cancellationToken)
+
+		public async Task<ICollection<GetBaselineItemzDTO>> __POST_BaselineItemz_Collection_By_GUID_IDS__Async(IEnumerable<Guid> baselineItemzids, CancellationToken cancellationToken)
 		{
 			try
 			{
-				// TODO :: Utilize urlBuilder which is commented below.
-
 				if (!baselineItemzids?.Any() ?? true)
 				{
-					throw new ArgumentNullException(nameof(baselineItemzids) + "is required for which value is not provided");
+					throw new ArgumentNullException(nameof(baselineItemzids) + " is required for which value is not provided");
 				}
-				var urlBuilder_ = new System.Text.StringBuilder();
-				urlBuilder_.Append("/api/BaselineItemzCollection/(");
-				// urlBuilder_.Append('(');
-				for (var i = 0; i < baselineItemzids!.Count(); i++)
+
+				var httpResponseMessage = await _httpClient.PostAsJsonAsync($"/api/BaselineItemzCollection/by-ids", baselineItemzids, cancellationToken);
+
+				if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.Conflict)
 				{
-					if (i > 0) urlBuilder_.Append(',');
-					urlBuilder_.Append((baselineItemzids!.ElementAt(i).ToString()));
+					// Read the response content
+					var _errorContent = await httpResponseMessage.Content.ReadAsStringAsync();
+					throw new ApplicationException($"FAILED : {_errorContent}");
 				}
-				urlBuilder_.Append(')');
 
+				httpResponseMessage.EnsureSuccessStatusCode();
 
-				var response = await _httpClient.GetFromJsonAsync<IEnumerable<GetBaselineItemzDTO>>($"{urlBuilder_}", cancellationToken);
+				string responseContent = await httpResponseMessage.Content.ReadAsStringAsync(cancellationToken);
 
-				return response!.ToList();
+				if (string.IsNullOrWhiteSpace(responseContent))
+				{
+					return default;
+				}
+
+				// EXPLANATION :: HERE WE ARE SERIALIZING JSON RESPONSE INTO DESIRED CLASS / OBJECT FORMAT FOR RETURNING
+				var options = new JsonSerializerOptions
+				{
+					PropertyNameCaseInsensitive = true,
+				};
+				var response = JsonSerializer.Deserialize<ICollection<GetBaselineItemzDTO>>(responseContent, options);
+				return (response ?? default);
 			}
-			catch (Exception)
+			catch (HttpRequestException httpEx)
 			{
+				// Handle HTTP-specific exceptions (e.g., 404, 500) 
+				// You could log this exception or display an appropriate message to the user
+				throw new Exception($"HTTP error occurred: {httpEx.Message}");
 			}
-			return default;
-
+			catch (ArgumentNullException argEx)
+			{
+				throw new Exception($"Argument Null Exception: {argEx.Message}");
+			}
+			catch (Exception ex)
+			{
+				throw;
+			}
 		}
-
 		#endregion
 
 	}

@@ -6,11 +6,17 @@ using OpenRose.WebUI.Client.SharedModels;
 
 namespace OpenRose.WebUI.Client.Services.BaselineItemzCollection
 {
-    public class DummyBaselineItemzCollectionService : IBaselineItemzCollectionService
-    {
-        public Task<ICollection<GetBaselineItemzDTO>> __GET_BaselineItemz_Collection_By_GUID_IDS__Async(IEnumerable<Guid> baselineItemzids)
-        {
-            throw new NotImplementedException();
-        }
-    }
+	public class DummyBaselineItemzCollectionService : IBaselineItemzCollectionService
+	{
+		//public Task<ICollection<GetBaselineItemzDTO>> __GET_BaselineItemz_Collection_By_GUID_IDS__Async(IEnumerable<Guid> baselineItemzids)
+		//{
+		//	throw new NotImplementedException();
+		//}
+
+		// New POST-by-ids stub
+		public Task<ICollection<GetBaselineItemzDTO>> __POST_BaselineItemz_Collection_By_GUID_IDS__Async(IEnumerable<Guid> baselineItemzids)
+		{
+			throw new NotImplementedException();
+		}
+	}
 }

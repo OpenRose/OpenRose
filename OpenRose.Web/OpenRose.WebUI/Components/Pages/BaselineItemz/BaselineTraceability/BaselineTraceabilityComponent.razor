@@ -1,4 +1,4 @@
-﻿@*
+﻿﻿@*
  * OpenRose - Requirements Management
  * Licensed under the Apache License, Version 2.0.
  * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
@@ -62,9 +62,9 @@
 		<TemplateColumn Title="Action">
 			<CellTemplate>
 				<div style="display: flex; justify-content: left; align-items: center; gap: 10px;">
-				<MudButton Size="@Size.Large"
-						   Variant="@Variant.Filled" Color="@Color.Success"
-						   OnClick="_ => openBaselineItemz(context.Item.Id.ToString())"> Open </MudButton>
+					<MudButton Size="@Size.Large"
+							   Variant="@Variant.Filled" Color="@Color.Success"
+							   OnClick="_ => openBaselineItemz(context.Item.Id.ToString())"> Open </MudButton>
 				</div>
 			</CellTemplate>
 		</TemplateColumn>
@@ -156,7 +156,8 @@
 			if (singleBaselineItemzTraces.BaselineItemz.ParentBaselineItemz != null && singleBaselineItemzTraces.BaselineItemz.ParentBaselineItemz.Any())
 			{
 				var parentIds = singleBaselineItemzTraces.BaselineItemz.ParentBaselineItemz.Select(p => p.BaselineItemzID).ToList();
-				var parentItemzDtos = await baselineItemzCollectionService.__GET_BaselineItemz_Collection_By_GUID_IDS__Async(parentIds);
+				// Use POST-based batch retrieval (avoids long GET URLs / IIS limits)
+				var parentItemzDtos = await baselineItemzCollectionService.__POST_BaselineItemz_Collection_By_GUID_IDS__Async(parentIds);
 
 				AllParentBaselineTraceViewModels = parentItemzDtos.Select(dto =>
 				{
@@ -177,7 +178,8 @@
 			if (singleBaselineItemzTraces.BaselineItemz.ChildBaselineItemz != null && singleBaselineItemzTraces.BaselineItemz.ChildBaselineItemz.Any())
 			{
 				var childIds = singleBaselineItemzTraces.BaselineItemz.ChildBaselineItemz.Select(c => c.BaselineItemzID).ToList();
-				var childItemzDtos = await baselineItemzCollectionService.__GET_BaselineItemz_Collection_By_GUID_IDS__Async(childIds);
+				// Use POST-based batch retrieval (avoids long GET URLs / IIS limits)
+				var childItemzDtos = await baselineItemzCollectionService.__POST_BaselineItemz_Collection_By_GUID_IDS__Async(childIds);
 
 				AllChildBaselineTraceViewModels = childItemzDtos.Select(dto =>
 				{
