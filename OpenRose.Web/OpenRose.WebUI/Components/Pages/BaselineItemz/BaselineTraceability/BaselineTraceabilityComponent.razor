@@ -9,6 +9,7 @@
 @using OpenRose.WebUI.Client.Services.BaselineItemzTrace;
 @using OpenRose.WebUI.Client.SharedModels.ClientSideUIOnlyModel
 @using OpenRose.WebUI.Components.Pages.Common
+@using OpenRose.WebUI.Helper.TraceLabel
 @inject NavigationManager NavManager
 @inject IDialogService DialogService
 
@@ -169,11 +170,11 @@
 						Status = dto.Status,
 						Priority = dto.Priority,
 						isIncluded = dto.isIncluded,
-						TraceLabel = traceInfo?.TraceLabel
+						TraceLabel = TraceLabelHelper.NormalizeTraceLabel(traceInfo?.TraceLabel)
 					};
 				}).ToList();
 			}
-
+			
 			// --- Child Baseline Traces ---
 			if (singleBaselineItemzTraces.BaselineItemz.ChildBaselineItemz != null && singleBaselineItemzTraces.BaselineItemz.ChildBaselineItemz.Any())
 			{
@@ -191,7 +192,7 @@
 						Status = dto.Status,
 						Priority = dto.Priority,
 						isIncluded = dto.isIncluded,
-						TraceLabel = traceInfo?.TraceLabel
+						TraceLabel = TraceLabelHelper.NormalizeTraceLabel(traceInfo?.TraceLabel)
 					};
 				}).ToList();
 			}
