@@ -35,8 +35,8 @@
 		<MudSpacer />
 		<MudIconButton Icon="@Icons.Custom.Brands.GitHub" Color="Color.Inherit" Href="https://github.com/OpenRose/OpenRose" Target="_blank" />
 	</MudAppBar>
-	<MudDrawer @bind-Open="@drawerOpen" Elevation="1" Anchor="Anchor.Left" ClipMode="DrawerClipMode.Always" Variant="@DrawerVariant.Mini" >
-@*  		<MudDrawerHeader LinkToIndex="false">
+	<MudDrawer @bind-Open="@drawerOpen" Elevation="1" Anchor="Anchor.Left" ClipMode="DrawerClipMode.Never" Variant="@DrawerVariant.Temporary">
+			@*  		<MudDrawerHeader LinkToIndex="false">
 			<div>
 				<img src="tarkov-dev-logo.svg" width="100%" style="vertical-align: middle;" />  
 				<MudText Align="Align.Center" Typo="Typo.h6"></MudText>
@@ -81,7 +81,7 @@
 
 @code {
 
-	bool drawerOpen = true;
+	bool drawerOpen = false;
 
 	public string CurrentPageTitle = "OpenRose";
 
