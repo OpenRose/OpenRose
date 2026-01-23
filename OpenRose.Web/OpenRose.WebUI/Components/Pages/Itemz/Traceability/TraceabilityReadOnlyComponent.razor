@@ -11,6 +11,7 @@
 @using OpenRose.WebUI.Client.SharedModels.ClientSideUIOnlyModel
 @using OpenRose.WebUI.Components.EventServices
 @using OpenRose.WebUI.Components.Pages.Common
+@using OpenRose.WebUI.Helper.TraceLabel
 @inject NavigationManager NavManager
 @inject IDialogService DialogService
 @inject TreeNodeItemzSelectionService ItemzSelectionService
@@ -155,7 +156,7 @@
 							Name = dto.Name,
 							Status = dto.Status,
 							Priority = dto.Priority,
-							TraceLabel = traceInfo?.TraceLabel
+							TraceLabel = TraceLabelHelper.NormalizeTraceLabel(traceInfo?.TraceLabel)
 						};
 					})
 					.ToList();
@@ -179,7 +180,7 @@
 							Name = dto.Name,
 							Status = dto.Status,
 							Priority = dto.Priority,
-							TraceLabel = traceInfo?.TraceLabel
+							TraceLabel = TraceLabelHelper.NormalizeTraceLabel(traceInfo?.TraceLabel)
 						};
 					})
 					.ToList();
