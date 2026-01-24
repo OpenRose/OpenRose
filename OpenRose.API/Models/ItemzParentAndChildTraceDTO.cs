@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. 
 // See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 
+using ItemzApp.API.Constants;
 using System;
 using System.Collections.Generic;
 
@@ -40,6 +41,15 @@ namespace ItemzApp.API.Models
 
 		// Optional short unicode label for this trace (Parent -> Child).
 		public string? TraceLabel { get; set; }
+
+		// EXPLANATION: ShouldSerializeTraceLabel tells Newtonsoft whether to include TraceLabel in output
+		// By adding this method we control at the DTO level itself that one should not serialize the TraceLabel
+		// if it has the sentinel default value. So anywhere this DTO is serialized, the TraceLabel will be omitted.
+		public bool ShouldSerializeTraceLabel()
+		{
+			// Only serialize if it was actually provided
+			return (TraceLabel != Sentinel.TraceLabelDefault);
+		}
 	}
 
 	// Represents a parent trace link for an Itemz.
@@ -49,5 +59,14 @@ namespace ItemzApp.API.Models
 
 		// Optional short unicode label for this trace (Parent -> Child).
 		public string? TraceLabel { get; set; }
+
+		// EXPLANATION: ShouldSerializeTraceLabel tells Newtonsoft whether to include TraceLabel in output
+		// By adding this method we control at the DTO level itself that one should not serialize the TraceLabel
+		// if it has the sentinel default value. So anywhere this DTO is serialized, the TraceLabel will be omitted.
+		public bool ShouldSerializeTraceLabel()
+		{
+			// Only serialize if it was actually provided
+			return (TraceLabel != Sentinel.TraceLabelDefault);
+		}
 	}
 }
