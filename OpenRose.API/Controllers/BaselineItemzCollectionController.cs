@@ -124,7 +124,7 @@ namespace ItemzApp.API.Controllers
 		/// <response code="200">Collection of BaselineItemzs property details based on BaselineItemz Ids that were passed in as parameter</response>
 		/// <response code="400">Bad Request - BaselineItemz Ids should be passed in as parameter</response>
 		/// <response code="404">No BaselineItemzs were found based on provided list of BaselineItemz Ids</response>
-		[HttpPost("by-ids", Name = "__POST_BaselineItemz_Collection_By_GUID_IDS__")]
+		[HttpPost("by-ids", Name = "__POST_GET_BaselineItemz_Collection_By_GUID_IDS__")]
 		[ProducesResponseType(StatusCodes.Status200OK)]
 		[ProducesResponseType(StatusCodes.Status400BadRequest)]
 		[ProducesResponseType(StatusCodes.Status404NotFound)]
