@@ -14,7 +14,7 @@ namespace OpenRose.WebUI.Client.Services.ItemzCollection
 		public Task<ICollection<GetItemzDTO>> __POST_Create_Itemz_Collection__Async(IEnumerable<CreateItemzDTO> body);
 
 		// New: POST endpoint that accepts GUIDs in JSON body to retrieve multiple Itemz (avoids long GET urls)
-		public Task<ICollection<GetItemzDTO>> __POST_Itemz_Collection_By_GUID_IDS__Async(IEnumerable<System.Guid> ids);
+		public Task<ICollection<GetItemzDTO>> __POST_GET_Itemz_Collection_By_GUID_IDS__Async(IEnumerable<System.Guid> ids);
 
 	}
 }

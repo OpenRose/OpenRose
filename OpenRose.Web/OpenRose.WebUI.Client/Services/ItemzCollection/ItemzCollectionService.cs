@@ -66,13 +66,13 @@ namespace OpenRose.WebUI.Client.Services.ItemzCollection
 
 		//#endregion
 
-		#region __POST_Itemz_Collection_By_GUID_IDS__Async
-		public async Task<ICollection<GetItemzDTO>> __POST_Itemz_Collection_By_GUID_IDS__Async(IEnumerable<Guid> ids)
+		#region __POST_GET_Itemz_Collection_By_GUID_IDS__Async
+		public async Task<ICollection<GetItemzDTO>> __POST_GET_Itemz_Collection_By_GUID_IDS__Async(IEnumerable<Guid> ids)
 		{
-			return await __POST_Itemz_Collection_By_GUID_IDS__Async(ids, CancellationToken.None);
+			return await __POST_GET_Itemz_Collection_By_GUID_IDS__Async(ids, CancellationToken.None);
 		}
 
-		public async Task<ICollection<GetItemzDTO>> __POST_Itemz_Collection_By_GUID_IDS__Async(IEnumerable<Guid> ids, CancellationToken cancellationToken)
+		public async Task<ICollection<GetItemzDTO>> __POST_GET_Itemz_Collection_By_GUID_IDS__Async(IEnumerable<Guid> ids, CancellationToken cancellationToken)
 		{
 			try
 			{
