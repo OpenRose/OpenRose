@@ -158,7 +158,7 @@
 			{
 				var parentIds = singleBaselineItemzTraces.BaselineItemz.ParentBaselineItemz.Select(p => p.BaselineItemzID).ToList();
 				// Use POST-based batch retrieval (avoids long GET URLs / IIS limits)
-				var parentItemzDtos = await baselineItemzCollectionService.__POST_BaselineItemz_Collection_By_GUID_IDS__Async(parentIds);
+				var parentItemzDtos = await baselineItemzCollectionService.__POST_GET_BaselineItemz_Collection_By_GUID_IDS__Async(parentIds);
 
 				AllParentBaselineTraceViewModels = parentItemzDtos.Select(dto =>
 				{
@@ -180,7 +180,7 @@
 			{
 				var childIds = singleBaselineItemzTraces.BaselineItemz.ChildBaselineItemz.Select(c => c.BaselineItemzID).ToList();
 				// Use POST-based batch retrieval (avoids long GET URLs / IIS limits)
-				var childItemzDtos = await baselineItemzCollectionService.__POST_BaselineItemz_Collection_By_GUID_IDS__Async(childIds);
+				var childItemzDtos = await baselineItemzCollectionService.__POST_GET_BaselineItemz_Collection_By_GUID_IDS__Async(childIds);
 
 				AllChildBaselineTraceViewModels = childItemzDtos.Select(dto =>
 				{

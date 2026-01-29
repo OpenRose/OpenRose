@@ -64,13 +64,13 @@ namespace OpenRose.WebUI.Client.Services.BaselineItemzCollection
 
 		//#endregion
 
-		#region __POST_BaselineItemz_Collection_By_GUID_IDS__Async
-		public async Task<ICollection<GetBaselineItemzDTO>> __POST_BaselineItemz_Collection_By_GUID_IDS__Async(IEnumerable<Guid> baselineItemzids)
+		#region __POST_GET_BaselineItemz_Collection_By_GUID_IDS__Async
+		public async Task<ICollection<GetBaselineItemzDTO>> __POST_GET_BaselineItemz_Collection_By_GUID_IDS__Async(IEnumerable<Guid> baselineItemzids)
 		{
-			return await __POST_BaselineItemz_Collection_By_GUID_IDS__Async(baselineItemzids, CancellationToken.None);
+			return await __POST_GET_BaselineItemz_Collection_By_GUID_IDS__Async(baselineItemzids, CancellationToken.None);
 		}
 
-		public async Task<ICollection<GetBaselineItemzDTO>> __POST_BaselineItemz_Collection_By_GUID_IDS__Async(IEnumerable<Guid> baselineItemzids, CancellationToken cancellationToken)
+		public async Task<ICollection<GetBaselineItemzDTO>> __POST_GET_BaselineItemz_Collection_By_GUID_IDS__Async(IEnumerable<Guid> baselineItemzids, CancellationToken cancellationToken)
 		{
 			try
 			{

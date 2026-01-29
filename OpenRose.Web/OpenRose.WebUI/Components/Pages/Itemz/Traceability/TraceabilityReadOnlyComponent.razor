@@ -143,7 +143,7 @@
 			{
 				var parentIds = singleItemzTraces.Itemz.ParentItemz.Select(p => p.ItemzID).ToList();
 				// Use POST-based batch retrieval (avoids long GET URLs / IIS limits)
-				var parentItemzDtos = await itemzCollectionService.__POST_Itemz_Collection_By_GUID_IDS__Async(parentIds)
+				var parentItemzDtos = await itemzCollectionService.__POST_GET_Itemz_Collection_By_GUID_IDS__Async(parentIds)
 					?? new List<GetItemzDTO>();
 
 				AllParentTraceViewModels = parentItemzDtos
@@ -167,7 +167,7 @@
 			{
 				var childIds = singleItemzTraces.Itemz.ChildItemz.Select(c => c.ItemzID).ToList();
 				// Use POST-based batch retrieval (avoids long GET URLs / IIS limits)
-				var childItemzDtos = await itemzCollectionService.__POST_Itemz_Collection_By_GUID_IDS__Async(childIds)
+				var childItemzDtos = await itemzCollectionService.__POST_GET_Itemz_Collection_By_GUID_IDS__Async(childIds)
 					?? new List<GetItemzDTO>();
 
 				AllChildTraceViewModels = childItemzDtos

@@ -14,7 +14,7 @@ namespace OpenRose.WebUI.Client.Services.BaselineItemzCollection
 		//}
 
 		// New POST-by-ids stub
-		public Task<ICollection<GetBaselineItemzDTO>> __POST_BaselineItemz_Collection_By_GUID_IDS__Async(IEnumerable<Guid> baselineItemzids)
+		public Task<ICollection<GetBaselineItemzDTO>> __POST_GET_BaselineItemz_Collection_By_GUID_IDS__Async(IEnumerable<Guid> baselineItemzids)
 		{
 			throw new NotImplementedException();
 		}
