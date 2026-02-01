@@ -27,6 +27,8 @@ using OpenRose.WebUI.Components.EventServices;
 using OpenRose.WebUI.Components.FindServices;
 using OpenRose.WebUI.Configuration;
 using OpenRose.WebUI.Services;
+using System.Reflection;
+using System.Text.Json;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -52,6 +54,71 @@ var configurationService = new ConfigurationService
 
 builder.Services.AddSingleton(configurationService);
 
+
+// --- NEW: perform an API version check when a BaseUrl is provided ---
+if (configurationService.IsOpenRoseAPIConfigured)
+{
+	try
+	{
+		// Get the WebUI informational version (same approach as AssemblyInfoService)
+		var webUiVersion = Assembly.GetExecutingAssembly()
+			.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "";
+
+		// Short timeout to avoid long startup delays
+		using var http = new HttpClient
+		{
+			BaseAddress = new Uri(apiSettings!.BaseUrl),
+			Timeout = TimeSpan.FromSeconds(5)
+		};
+
+		var resp = http.GetAsync("api/version").GetAwaiter().GetResult();
+		if (!resp.IsSuccessStatusCode)
+		{
+			configurationService.IsOpenRoseAPIConfigured = false;
+			configurationService.ApiVersionMismatchMessage =
+				$"Unable to contact OpenRose API at '{apiSettings.BaseUrl}'. Please ensure the API is running and reachable.";
+			var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
+			logger.LogError("API version endpoint returned status {Status}. Marking API as unavailable.", resp.StatusCode);
+		}
+		else
+		{
+			// Read JSON and get InformationalVersion
+			var json = resp.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+			using var doc = JsonDocument.Parse(json);
+			var root = doc.RootElement;
+			var apiVersion = root.GetProperty("informationalVersion").GetString() ?? "";
+
+			configurationService.ApiVersion = apiVersion;
+			configurationService.WebUiVersion = webUiVersion;
+
+			if (!string.Equals(apiVersion, webUiVersion, StringComparison.OrdinalIgnoreCase))
+			{
+				configurationService.IsOpenRoseAPIConfigured = false; // force UI to show error
+				configurationService.ApiVersionMismatchMessage =
+					$"OpenRose API version ({apiVersion}) does not match this OpenRose WebUI version ({webUiVersion}). " +
+					"To avoid possible data corruption, please update both components to the same release. " +
+					"Contact your system administrator for assistance.";
+				var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
+				logger.LogError("API/WebUI version mismatch. API: {ApiVersion}, WebUI: {WebUiVersion}", apiVersion, webUiVersion);
+			}
+			else
+			{
+				// versions match; keep configured = true
+				var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
+				logger.LogInformation("API and WebUI version match: {Version}", apiVersion);
+			}
+		}
+	}
+	catch (Exception ex)
+	{
+		configurationService.IsOpenRoseAPIConfigured = false;
+		configurationService.ApiVersionMismatchMessage =
+			$"Error while checking OpenRose API version: {ex.Message}";
+		var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
+		logger.LogError(ex, "Exception while checking API version");
+	}
+}
+// --- END new version check ---
 
 if (!configurationService.IsOpenRoseAPIConfigured)
 {
