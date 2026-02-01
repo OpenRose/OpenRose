@@ -11,6 +11,7 @@
 @inject IConfiguration Configuration
 @inject IWebHostEnvironment Env
 @inject AssemblyInfoService AssemblyInfo
+@inject ConfigurationService ConfigurationService
 
 <PageTitle>OpenRose</PageTitle>
 
@@ -23,7 +24,14 @@
 
 </MudStack>
 
-@if (!string.IsNullOrEmpty(_errorMessage))
+@if (!string.IsNullOrEmpty(ConfigurationService.ApiVersionMismatchMessage))
+{
+    <br />
+    <MudText Typo="Typo.h5" Align="Align.Left" Color="Color.Error">
+        @ConfigurationService.ApiVersionMismatchMessage
+    </MudText>
+}
+else if (!string.IsNullOrEmpty(_errorMessage))
 {
     <br />
     <MudText Typo="Typo.h5" Align="Align.Left" Color="Color.Error">
@@ -35,6 +43,20 @@
     <br />
     <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success"> Version -  @version </MudChip>
 }
+
+
+@* @if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <br />
+    <MudText Typo="Typo.h5" Align="Align.Left" Color="Color.Error">
+        @_errorMessage
+    </MudText>
+    <MudText Typo="Typo.inherit" Align="Align.Left" Color="Color.Error">
+        Environment Name: @Env.EnvironmentName
+    </MudText>
+    <br />
+    <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success"> Version -  @version </MudChip>
+} *@
 
 @code {
     private string _errorMessage;
