@@ -66,8 +66,8 @@ namespace OpenRose.WebUI.Services
 			catch (Exception ex)
 			{
 				_config.IsOpenRoseAPIConfigured = false;
-				_config.ApiVersionMismatchMessage = $"Error checking API: {ex.Message}";
-				_logger.LogError(ex, "Exception during API version check");
+				_config.ApiVersionMismatchMessage = $"Exception during API version check : No connection could be made because the target machine actively refused it.";
+				_logger.LogError("Exception during API version check : No connection could be made because the target machine actively refused it.");
 				return false;
 			}
 		}
