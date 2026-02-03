@@ -128,58 +128,6 @@ namespace ItemzApp.API.Controllers
             return foundBaselineItemzCountByItemzId;
         }
 
-		///// <summary>
-		///// Gets collection of BaselineItemzs
-		///// </summary>
-		///// <param name="baselineItemzids">Array of BaselineItemz Id (in GUID form) for which details has to be returned to the caller</param>
-		///// <returns>Collection of BaselineItemz that are requested via Array of BaselineItemz Id</returns>
-		///// <response code="200">Collection of BaselineItemzs property details based on BaselineItemz Ids that were passed in as parameter</response>
-		///// <response code="500">Bad Request - BaselineItemz Ids should be passed in as parameter</response>
-		///// <response code="404">No BaselineItemzs were found based on provided list of BaselineItemz Ids</response>
-		///// <remarks>
-		///// Sample request (this request will get BaselineItemz by Ids) \
-		///// GET api/BaselineItemz/(9153a516-d69e-4364-b17e-03b87442e21c,5e76f8e8-d3e7-41db-b084-f64c107c6783) 
-		///// </remarks>
-		////[HttpGet("sss/({baselineItemzids})", Name = "__GET_BaselineItemz_Collection_By_GUID_IDS__")]
-		////[HttpHead("sss/({baselineItemzids})", Name = "__HEAD_BaselineItemz_Collection_By_GUID_IDS__")]
-		//[HttpGet("({baselineItemzids})", Name = "__GET_BaselineItemz_Collection_By_GUID_IDS__")]
-  //      [HttpHead("({baselineItemzids})", Name = "__HEAD_BaselineItemz_Collection_By_GUID_IDS__")]
-  //      [ProducesResponseType(StatusCodes.Status200OK)]
-  //      [ProducesResponseType(StatusCodes.Status404NotFound)]
-  //      [ProducesDefaultResponseType]
-  //      public async Task<ActionResult<IEnumerable<GetBaselineItemzDTO>>> GetBaselineItemzCollectionAsync(
-  //          [FromRoute]
-  //          [ModelBinder(BinderType = typeof(ArrayModelBinder))] IEnumerable<Guid> baselineItemzids)
-  //      {
-  //          if (baselineItemzids == null)
-  //          {
-  //              _logger.LogDebug("{FormattedControllerAndActionNames}Get multiple BaselineItemz request cannot be processed as required parameter of IDs is NULL",
-  //                  ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
-  //                  );
-  //              return BadRequest();
-  //          }
-
-  //          var baselineItemzEntities = await _baselineItemzRepository.GetBaselineItemzsAsync(baselineItemzids);
-
-  //          if (baselineItemzids.Count() != baselineItemzEntities.Count())
-  //          {
-  //              // TODO: We should identify which baselineItemzids were not found in the repository
-  //              // rather then just returning generinc response saying "One or More BaselineItemz are not found ..."
-
-  //              _logger.LogDebug("{FormattedControllerAndActionNames}One or More BaselineItemz are not found while processing request to get multiple items",
-  //                  ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
-  //                  );
-  //              return NotFound();
-  //          }
-
-  //          var baselineItemzsToReturn = _mapper.Map<IEnumerable<GetBaselineItemzDTO>>(baselineItemzEntities);
-
-  //          _logger.LogDebug("{FormattedControllerAndActionNames}Returning response with {NumberOfBaselineItemz} number of BaselineItemz to the requestor",
-  //              ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-  //              baselineItemzEntities.Count());
-  //          return Ok(baselineItemzsToReturn);
-  //      }
-
 
         /// <summary>
         /// Updating existing BaseilneItemzs for inclusion or exclusion from it's Baseline
