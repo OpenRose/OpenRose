@@ -3,15 +3,12 @@
  * Licensed under the Apache License, Version 2.0.
  * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 *@
+
 @page "/"
 @using OpenRose.WebUI.Configuration
 @using OpenRose.WebUI.Services
 
-@inject IConfiguration Configuration
-@inject IWebHostEnvironment Env
-@inject AssemblyInfoService AssemblyInfo
-@inject ConfigurationService ConfigurationService
-@inject ApiVersionChecker VersionChecker
+@implements IDisposable
 
 <PageTitle>OpenRose</PageTitle>
 
@@ -22,14 +19,14 @@
     </MudText>
 </MudStack>
 
-@if (!string.IsNullOrEmpty(ConfigurationService.ApiVersionMismatchMessage))
+@if (!string.IsNullOrEmpty(ConfigService.ApiVersionMismatchMessage))
 {
     <br />
     <MudText Typo="Typo.h5" Align="Align.Left" Color="Color.Error">
-        @ConfigurationService.ApiVersionMismatchMessage
+        @ConfigService.ApiVersionMismatchMessage
     </MudText>
 
-    <!-- Reconnect button with cooldown -->
+    <!-- Optional: manual reconnect button -->
     <MudButton Color="Color.Primary"
                Variant="Variant.Filled"
                Disabled="@_isReconnectDisabled"
@@ -51,16 +48,16 @@ else if (!string.IsNullOrEmpty(_errorMessage))
         Version - @version
     </MudChip>
 }
-@* else
-{
-    <MudAlert Severity="Severity.Success">
-        Connected to API (Version: @ConfigurationService.ApiVersion)
-    </MudAlert>
-} *@
 
 @code {
-    private string _errorMessage;
-    private string version;
+    [Inject] private ConfigurationService ConfigService { get; set; } = default!;
+    [Inject] private IConfiguration Configuration { get; set; } = default!;
+    [Inject] private IWebHostEnvironment Env { get; set; } = default!;
+    [Inject] private AssemblyInfoService AssemblyInfo { get; set; } = default!;
+    [Inject] private ApiVersionChecker VersionChecker { get; set; } = default!;
+
+    private string _errorMessage = string.Empty;
+    private string version = string.Empty;
     private bool _isReconnectDisabled = false;
 
     protected override void OnInitialized()
@@ -68,10 +65,19 @@ else if (!string.IsNullOrEmpty(_errorMessage))
         var apiSettings = Configuration.GetSection("APISettings").Get<APISettings>();
         if (string.IsNullOrEmpty(apiSettings?.BaseUrl))
         {
-            var configFile = string.IsNullOrEmpty(Env.EnvironmentName) ? "appsettings.json" : $"appsettings.{Env.EnvironmentName}.json";
             _errorMessage = $"OpenRose API connection via base URL is not configured. Please contact your System Administrator.";
         }
         version = AssemblyInfo.GetAssemblyVersion();
+
+       // Console.WriteLine("Home subscribing directly to ConfigService.OnChange");
+        ConfigService.OnChange -= HandleConfigChanged; // ensure no duplicate
+        ConfigService.OnChange += HandleConfigChanged;
+    }
+
+    private void HandleConfigChanged()
+    {
+        //Console.WriteLine("Home component received change event");
+        InvokeAsync(StateHasChanged);
     }
 
     private async Task Reconnect()
@@ -80,9 +86,16 @@ else if (!string.IsNullOrEmpty(_errorMessage))
         await VersionChecker.CheckApiVersionAsync();
         StateHasChanged();
 
-        // Wait 5 seconds before re-enabling the button
+        // Wait 5 seconds before re-enabling
         await Task.Delay(TimeSpan.FromSeconds(5));
         _isReconnectDisabled = false;
         StateHasChanged();
     }
+
+    public void Dispose()
+    {
+        // Console.WriteLine("Home unsubscribing from ConfigService.OnChange");
+        ConfigService.OnChange -= HandleConfigChanged;
+    }
+
 }

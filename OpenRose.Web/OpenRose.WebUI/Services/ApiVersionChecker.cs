@@ -34,9 +34,13 @@ namespace OpenRose.WebUI.Services
 
 				if (!resp.IsSuccessStatusCode)
 				{
-					_config.IsOpenRoseAPIConfigured = false;
-					_config.ApiVersionMismatchMessage =
-						$"Unable to contact OpenRose API. Status: {resp.StatusCode}";
+
+					_config.SetConnectionState(
+						isConfigured:false, 
+						apiVersion:null, 
+						message: $"Unable to contact OpenRose API. Status: {resp.StatusCode}"
+						);
+
 					_logger.LogError("API version endpoint returned {Status}", resp.StatusCode);
 					return false;
 				}
@@ -45,28 +49,43 @@ namespace OpenRose.WebUI.Services
 				using var doc = JsonDocument.Parse(json);
 				var apiVersion = doc.RootElement.GetProperty("informationalVersion").GetString() ?? "";
 
-				_config.ApiVersion = apiVersion;
 
 				if (!string.Equals(apiVersion, _config.WebUiVersion, StringComparison.OrdinalIgnoreCase))
 				{
-					_config.IsOpenRoseAPIConfigured = false;
-					_config.ApiVersionMismatchMessage =
-						$"OpenRose API version ({apiVersion}) does not match WebUI version ({_config.WebUiVersion}).";
+
+					_config.SetConnectionState(
+						isConfigured: false,
+						apiVersion: apiVersion,
+						message: $"OpenRose API version ({apiVersion}) does not match WebUI version ({_config.WebUiVersion})."
+						);
+
 					_logger.LogError("Version mismatch. API: {ApiVersion}, WebUI: {WebUiVersion}", apiVersion, _config.WebUiVersion);
 					return false;
 				}
 				else
 				{
-					_config.IsOpenRoseAPIConfigured = true;
-					_config.ApiVersionMismatchMessage = string.Empty; // ✅ clear error
+
+					_config.SetConnectionState(
+						isConfigured: true,
+						apiVersion: apiVersion,
+						message: string.Empty // ✅ clear error
+						);
+
+
 					_logger.LogInformation("API/WebUI versions match: {Version}", apiVersion);
 					return true;
 				}
 			}
 			catch (Exception ex)
 			{
-				_config.IsOpenRoseAPIConfigured = false;
-				_config.ApiVersionMismatchMessage = $"Exception during API version check : No connection could be made because the target machine actively refused it.";
+
+				_config.SetConnectionState(
+					isConfigured: false,
+					apiVersion: null,
+					message: $"Exception during API version check : No connection could be made because the target machine actively refused it."
+					);
+
+
 				_logger.LogError("Exception during API version check : No connection could be made because the target machine actively refused it.");
 				return false;
 			}

@@ -32,7 +32,11 @@ namespace OpenRose.WebUI.Services
 				if (healthy)
 				{
 					// Clear error message once healthy
-					_config.ApiVersionMismatchMessage = string.Empty;
+					_config.SetConnectionState(
+						isConfigured: true,
+						apiVersion: _config.ApiVersion, // keep current version if already known
+						message: string.Empty           // clear error
+					);
 
 					// Pause monitoring while healthy
 					_logger.LogInformation("API/WebUI versions compatible. Pausing monitor until connection is lost.");

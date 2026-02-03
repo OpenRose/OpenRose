@@ -48,11 +48,18 @@ builder.Services.Configure<APISettings>(builder.Configuration.GetSection("ApiSet
 var apiSettings = builder.Configuration.GetSection("APISettings").Get<APISettings>();
 
 
-var configurationService = new ConfigurationService
-{
-    IsOpenRoseAPIConfigured = !string.IsNullOrEmpty(apiSettings?.BaseUrl)
-};
-
+// EXPLANATION : Initialize the shared ConfigurationService singleton.
+// This service acts as a central "state container" for API connection status and version info.
+// We use SetConnectionState() instead of setting properties directly because:
+//   1. Properties have private setters to enforce consistency.
+//   2. Every update triggers NotifyStateChanged(), which raises the OnChange event.
+//      That event tells all Blazor components to re-render automatically when the API state changes.
+// Here we set the initial state based on whether the API BaseUrl is configured in appsettings.
+var configurationService = new ConfigurationService();
+configurationService.SetConnectionState(
+	isConfigured: !string.IsNullOrEmpty(apiSettings?.BaseUrl),
+	apiVersion: null,
+	message: null);
 builder.Services.AddSingleton(configurationService);
 
 
