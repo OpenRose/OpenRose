@@ -15,7 +15,6 @@
 @inject NavigationManager NavManager
 @inject IDialogService DialogService
 @inject IJSRuntime JS
-@inject ConfigurationService ConfigurationService
 
 <MudPaper Class="pa-3 mb-3 align-start d-flex" Style="width: auto " Outlined="false">
     <MudStack Row="true" Spacing="3">
@@ -160,15 +159,6 @@
 	public bool _showOverlay { get; set; } = false;
 
 	private MarkupString convertedMarkdown;
-
-	protected override async Task OnInitializedAsync()
-	{
-		if (!ConfigurationService.IsOpenRoseAPIConfigured)
-		{
-			NavManager.NavigateTo("/");
-			return;
-		}
-	}
 
 	protected override async Task OnAfterRenderAsync(bool firstRender)
 	{

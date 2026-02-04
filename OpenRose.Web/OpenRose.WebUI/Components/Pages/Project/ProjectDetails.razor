@@ -5,9 +5,6 @@
 *@
 
 @using OpenRose.WebUI.Services
-@inject NavigationManager NavManager
-@inject ConfigurationService ConfigurationService
-
 
 @page "/projectDetails/{ProjectId:guid}"
 
@@ -21,14 +18,5 @@
 	[Parameter]
 	[SupplyParameterFromQuery(Name = "showBaselineTab")]
 	public bool ShowBaselineTab { get; set; } = false;
-
-	protected override async Task OnInitializedAsync()
-	{
-		if (!ConfigurationService.IsOpenRoseAPIConfigured)
-		{
-			NavManager.NavigateTo("/");
-			return;
-		}
-	}
 
 }

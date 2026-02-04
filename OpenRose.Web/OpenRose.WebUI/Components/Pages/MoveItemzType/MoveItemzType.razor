@@ -14,8 +14,6 @@
 @using OpenRose.WebUI.Services
 @using OpenRose.WebUI.Components.Dialogs
 @inject IDialogService DialogService
-@inject NavigationManager NavManager
-@inject ConfigurationService ConfigurationService
 
 <MudPaper Class="pa-3 mb-3 align-start d-flex" Style="width: auto " Outlined="false">
 	<MudStack Row="true" Spacing="3">
@@ -146,16 +144,6 @@
 	public bool radioAtBottomOfChildList { get; set; } = true;
 	public bool movingItemzTypeOverlay { get; set; } = false;
 	public bool _yesDisableSelectTargetProject { get; set; } = false;
-
-
-	protected override async Task OnInitializedAsync()
-	{
-		if (!ConfigurationService.IsOpenRoseAPIConfigured)
-		{
-			NavManager.NavigateTo("/");
-			return;
-		}
-	}
 
 
 	public async Task selectSourceItemzType()

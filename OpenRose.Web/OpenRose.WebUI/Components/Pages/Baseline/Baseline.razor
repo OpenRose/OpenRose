@@ -16,7 +16,6 @@
 @inject NavigationManager NavManager
 @inject IDialogService DialogService
 @inject IJSRuntime JS
-@inject ConfigurationService ConfigurationService
 
 @if (BreadcrumsParameter != null)
 {
@@ -137,15 +136,6 @@
 	public bool initializingPage { get; set; } = true;
 
 	private MarkupString convertedMarkdown;
-
-	protected override async Task OnInitializedAsync()
-	{
-		if (!ConfigurationService.IsOpenRoseAPIConfigured)
-		{
-			NavManager.NavigateTo("/");
-			return;
-		}
-	}
 
 	protected override async Task OnAfterRenderAsync(bool firstRender)
 	{

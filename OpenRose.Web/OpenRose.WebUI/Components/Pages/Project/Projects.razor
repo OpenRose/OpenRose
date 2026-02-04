@@ -10,7 +10,6 @@
 @using OpenRose.WebUI.Components.Pages.Common
 @using OpenRose.WebUI.Services
 @rendermode InteractiveServer
-@inject ConfigurationService ConfigurationService
 @inject NavigationManager NavManager
 
 
@@ -130,15 +129,6 @@
     }
 
     #endregion
-
-    protected override async Task OnInitializedAsync()
-    {
-        if (!ConfigurationService.IsOpenRoseAPIConfigured)
-        {
-            NavManager.NavigateTo("/");
-            return;
-        }
-    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {

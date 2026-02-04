@@ -22,7 +22,6 @@
 @inject BreadcrumsService breadcrumsService
 @inject IJSRuntime JS
 @inject IServiceProvider serviceProvider
-@inject ConfigurationService ConfigurationService
 
 
 @if (BreadcrumsParameter != null)
@@ -190,12 +189,6 @@
 
 	protected override async Task OnInitializedAsync()
 	{
-
-		if (!ConfigurationService.IsOpenRoseAPIConfigured)
-		{
-			NavManager.NavigateTo("/");
-			return;
-		}
 
 		initializingPage = true;
 		StateHasChanged();

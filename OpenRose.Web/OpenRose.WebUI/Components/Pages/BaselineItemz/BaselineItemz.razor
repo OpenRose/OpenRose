@@ -21,7 +21,6 @@
 @inject NavigationManager NavManager
 @inject IDialogService DialogService
 @inject IJSRuntime JS
-@inject ConfigurationService ConfigurationService
 
 @if (BreadcrumsParameter != null)
 {
@@ -196,11 +195,6 @@
 
 	protected override async Task OnInitializedAsync()
 	{
-		if (!ConfigurationService.IsOpenRoseAPIConfigured)
-		{
-			NavManager.NavigateTo("/");
-			return;
-		}
 
 		initializingPage = true;
 		StateHasChanged();
