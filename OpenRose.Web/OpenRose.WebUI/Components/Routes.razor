@@ -4,9 +4,34 @@
  * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 *@
 
-<Router AppAssembly="typeof(Program).Assembly" AdditionalAssemblies="new[] { typeof(Client._Imports).Assembly }">
+@using OpenRose.WebUI.Services
+
+@inject ConfigurationService ConfigService
+@inject NavigationManager Nav
+
+<Router AppAssembly="typeof(Program).Assembly"
+        AdditionalAssemblies="new[] { typeof(Client._Imports).Assembly }"
+        OnNavigateAsync="GuardNavigation">
     <Found Context="routeData">
         <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
         <FocusOnNavigate RouteData="routeData" Selector="h1" />
     </Found>
 </Router>
+
+@code {
+    private Task GuardNavigation(Microsoft.AspNetCore.Components.Routing.NavigationContext context)
+    {
+        // Always allow home
+        if (string.IsNullOrEmpty(context.Path) || context.Path == "/")
+            return Task.CompletedTask;
+
+        // Block navigation if API is unavailable or incompatible
+        if (!ConfigService.IsOpenRoseAPIConfigured ||
+            !string.IsNullOrEmpty(ConfigService.ApiVersionMismatchMessage))
+        {
+            Nav.NavigateTo("/");
+        }
+
+        return Task.CompletedTask;
+    }
+}
