@@ -14,7 +14,6 @@
 @inject NavigationManager NavManager
 @inject IJSRuntime JS
 @inject IDialogService DialogService
-@inject ConfigurationService ConfigurationService
 
 <h1>Create ItemzType</h1>
 
@@ -149,15 +148,6 @@
 
 	private MarkupString convertedMarkdown;
 
-
-	protected override async Task OnInitializedAsync()
-	{
-		if (!ConfigurationService.IsOpenRoseAPIConfigured)
-		{
-			NavManager.NavigateTo("/");
-			return;
-		}
-	}
 
 	protected override async Task OnAfterRenderAsync(bool firstRender)
 	{

@@ -24,8 +24,6 @@
 @inject IBaselineItemzService BaselineItemzService
 @inject IExportService ExportService
 @inject IDialogService DialogService
-@inject NavigationManager NavManager
-@inject ConfigurationService ConfigurationService
 @inject IJSRuntime JS
 
 <MudPaper Class="pa-3 mb-3 align-start d-flex" Style="width: auto " Outlined="false">
@@ -234,15 +232,6 @@
     public GetBaselineDTO selectedBaseline { get; set; } = new();
     public GetBaselineItemzTypeDTO selectedBaselineItemzType { get; set; } = new();
     public GetBaselineItemzDTO selectedBaselineItemz { get; set; } = new();
-
-    protected override void OnInitialized()
-    {
-        if (!ConfigurationService.IsOpenRoseAPIConfigured)
-        {
-            NavManager.NavigateTo("/");
-            return;
-        }
-    }
 
     private async Task OnRecordTypeChanged(string newValue)
     {

@@ -24,7 +24,6 @@
 @inject IDialogService DialogService
 @inject IJSRuntime JS
 @inject TreeNodeItemzSelectionService ItemzSelectionService
-@inject ConfigurationService ConfigurationService
 @inject ViewSettingsService ViewSettings
 @inject ProtectedSessionStorage SessionStorage
 
@@ -450,11 +449,6 @@
     }
     protected override async Task OnInitializedAsync()
     {
-        if (!ConfigurationService.IsOpenRoseAPIConfigured)
-        {
-            NavManager.NavigateTo("/");
-            return;
-        }
         ItemzSelectionService.OnTreeNodeItemzSelected += async (itemzId) =>
             {
                 await HandleItemzSelectedAsync(itemzId);

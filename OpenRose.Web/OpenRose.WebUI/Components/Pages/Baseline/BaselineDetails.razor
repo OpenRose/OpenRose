@@ -4,13 +4,7 @@
  * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 *@
 
-
 @using OpenRose.WebUI.Services
-
-@inject NavigationManager NavManager
-@inject ConfigurationService ConfigurationService
-
-
 
 @page "/baselineDetails/{BaselineId:guid}"
 
@@ -19,15 +13,5 @@
 @code {
 	[Parameter]
 	public Guid BaselineId { get; set; }
-
-	protected override async Task OnInitializedAsync()
-	{
-		if (!ConfigurationService.IsOpenRoseAPIConfigured)
-		{
-			NavManager.NavigateTo("/");
-			return;
-		}
-	}
-
 
 }

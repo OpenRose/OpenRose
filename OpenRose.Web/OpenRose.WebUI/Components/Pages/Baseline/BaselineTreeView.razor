@@ -23,7 +23,6 @@
 @inject IDialogService DialogService
 @inject BaselineTreeNodeItemzSelectionService BaselineItemzSelectionService
 @inject IJSRuntime JS
-@inject ConfigurationService ConfigurationService
 @inject FormStateService FormStateService
 @inject ViewSettingsService ViewSettings
 @inject ProtectedSessionStorage SessionStorage
@@ -462,11 +461,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        if (!ConfigurationService.IsOpenRoseAPIConfigured)
-        {
-            NavManager.NavigateTo("/");
-            return;
-        }
 
         BaselineItemzSelectionService.OnBaselineTreeNodeItemzSelected += async (itemzId) =>
         {

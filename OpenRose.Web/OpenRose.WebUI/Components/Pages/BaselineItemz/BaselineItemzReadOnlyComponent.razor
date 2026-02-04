@@ -11,10 +11,8 @@
 @using OpenRose.WebUI.Components.Pages.Common
 @using OpenRose.WebUI.Services
 @using Microsoft.AspNetCore.Components.Forms
-@inject NavigationManager NavManager
 @inject IDialogService DialogService
 @inject IJSRuntime JS
-@inject ConfigurationService ConfigurationService
 
 <MudGrid>
 	@if (initializingPage)
@@ -89,15 +87,6 @@
 	public bool _showOverlay { get; set; } = false;
 
 	private MarkupString convertedMarkdown;
-
-	protected override async Task OnInitializedAsync()
-	{
-		if (!ConfigurationService.IsOpenRoseAPIConfigured)
-		{
-			NavManager.NavigateTo("/");
-			return;
-		}
-	}
 
 	protected override async Task OnAfterRenderAsync(bool firstRender)
 	{

@@ -5,8 +5,6 @@
 *@
 
 @using OpenRose.WebUI.Services
-@inject NavigationManager NavManager
-@inject ConfigurationService ConfigurationService
 
 @page "/itemzTypeDetails/{ItemzTypeId:guid}"
 
@@ -15,13 +13,4 @@
 @code {
 	[Parameter]
 	public Guid ItemzTypeId { get; set; }
-
-	protected override async Task OnInitializedAsync()
-	{
-		if (!ConfigurationService.IsOpenRoseAPIConfigured)
-		{
-			NavManager.NavigateTo("/");
-			return;
-		}
-	}
 }

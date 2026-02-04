@@ -8,8 +8,6 @@
 @using OpenRose.WebUI.Components.Pages.Orphan.DeleteAllOrphan
 @using OpenRose.WebUI.Services
 @inject AssemblyInfoService AssemblyInfo
-@inject ConfigurationService ConfigurationService
-@inject NavigationManager NavManager
 
 <MudPaper Class="pa-3 mb-3 align-start d-flex" Style="width: auto " Outlined="false">
     <MudStack Row="true" Spacing="3">
@@ -34,11 +32,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        if (!ConfigurationService.IsOpenRoseAPIConfigured)
-        {
-            NavManager.NavigateTo("/");
-            return;
-        }
         showDeleteAllOrphanItemz = true;
         version = AssemblyInfo.GetAssemblyVersion();
     }
