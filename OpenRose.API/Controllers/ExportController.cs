@@ -530,6 +530,17 @@ namespace ItemzApp.API.Controllers
 						rootNodeToExport = rootNode;
 					}
 
+					// No need to export Parking Lot if it's empty
+					if (rootNodeToExport.RecordType?.Equals("Project", StringComparison.OrdinalIgnoreCase) == true
+						&& rootNodeToExport.Children != null)
+					{
+						rootNodeToExport.Children = rootNodeToExport.Children
+							.Where(child => !(child.RecordType?.Equals("ItemzType", StringComparison.OrdinalIgnoreCase) == true
+											  && child.Name?.Equals("Parking Lot", StringComparison.OrdinalIgnoreCase) == true
+											  && (child.Children == null || child.Children.Count == 0)))
+							.ToList();
+					}
+
 					var mermaidText = MermaidExporter.Generate(rootNodeToExport, itemzTraces, exportRecordId, baseUrl);
 
 					// var mermaidText = MermaidExporter.Generate(rootNode, itemzTraces, exportRecordId, baseUrl);
@@ -622,6 +633,17 @@ namespace ItemzApp.API.Controllers
 					else
 					{
 						rootNodeToExport = rootNode;
+					}
+
+					// No need to export Parking Lot BaselineItemzType if it's empty
+					if (rootNodeToExport.RecordType?.Equals("Baseline", StringComparison.OrdinalIgnoreCase) == true
+						&& rootNodeToExport.Children != null)
+					{
+						rootNodeToExport.Children = rootNodeToExport.Children
+							.Where(child => !(child.RecordType?.Equals("BaselineItemzType", StringComparison.OrdinalIgnoreCase) == true
+											  && child.Name?.Equals("Parking Lot", StringComparison.OrdinalIgnoreCase) == true
+											  && (child.Children == null || child.Children.Count == 0)))
+							.ToList();
 					}
 
 					var mermaidText = MermaidExporter.GenerateBaseline(rootNodeToExport, baselineItemzTraces, exportRecordId, baseUrl);
