@@ -14,6 +14,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Hosting.WindowsServices;
+using System.Runtime.InteropServices;
+
+
 using Serilog;
 
 namespace ItemzApp.API
@@ -89,9 +93,9 @@ namespace ItemzApp.API
 				Log.CloseAndFlush();
 			}
 		}
-
-		public static IHostBuilder CreateHostBuilder(string[] args) =>
-			Host.CreateDefaultBuilder(args)
+		public static IHostBuilder CreateHostBuilder(string[] args)
+		{
+			var builder = Host.CreateDefaultBuilder(args)
 				.UseSerilog()
 
 				// Based on following Blogpost, we added UseDefaultServiceProvider 
@@ -104,12 +108,25 @@ namespace ItemzApp.API
 					options.ValidateOnBuild = true;
 				})
 				.ConfigureAppConfiguration((hostingContext, config) =>
-				{ 
+				{
 					config.AddEnvironmentVariables(); // This is to make sure that we can use Environment Variables for configuration.
 				})
 				.ConfigureWebHostDefaults(webBuilder =>
 				{
 					webBuilder.UseStartup<Startup>();
 				});
+
+			// Conditional Windows Service integration
+			if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+			{
+				builder.UseWindowsService();
+			}
+			else
+			{
+				builder.UseConsoleLifetime();
+			}
+
+			return builder;
+		}
 	}
 }
