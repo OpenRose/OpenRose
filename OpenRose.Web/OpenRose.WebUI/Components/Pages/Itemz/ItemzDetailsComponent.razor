@@ -629,7 +629,6 @@
 		newSiblingItemz.Status = "New";
 		newSiblingItemz.Priority = "Medium";
 		newSiblingItemz.Severity = "Medium";
-		newSiblingItemz.Description = "New Itemz Description";
 		try
 		{
 			var newlyCreatedSiblingItemz = await ItemzService.__POST_Create_Itemz__Async(ParentId, true, newSiblingItemz);
@@ -662,7 +661,6 @@
 		newChildItemz.Status = "New";
 		newChildItemz.Priority = "Medium";
 		newChildItemz.Severity = "Medium";
-		newChildItemz.Description = "New Itemz Description";
 		try
 		{
 			var newlyCreatedSiblingItemz = await ItemzService.__POST_Create_Itemz__Async(ItemzId, true, newChildItemz);
