@@ -33,7 +33,7 @@ namespace ItemzApp.API
 			// Dependency Injection of ASP.NET Core to create logger later on.
 
 			var configuration = new ConfigurationBuilder()
-			   .SetBasePath(Directory.GetCurrentDirectory())
+			   .SetBasePath(AppContext.BaseDirectory)
 			   .AddJsonFile(path: "appsettings.json", optional: false, reloadOnChange: true)
 			   .Build();
 
