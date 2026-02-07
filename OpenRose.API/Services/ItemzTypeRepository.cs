@@ -188,7 +188,7 @@ namespace ItemzApp.API.Services
             return await _context.ItemzTypes.AsNoTracking().AnyAsync(it => it.ProjectId.ToString().ToLower() == projectId.ToString().ToLower() && it.Name!.ToLower() == itemzTypeName.ToLower());
         }
 
-        public async Task<bool> DeleteItemzTypeItemzHierarchyAsync(Guid itemzTypeId)
+		public async Task<bool> DeleteItemzTypeItemzHierarchyAsync(Guid itemzTypeId)
         {
             bool returnValue;
             var OUTPUT_Success = new SqlParameter
@@ -704,5 +704,15 @@ namespace ItemzApp.API.Services
 			return returnValue;
 		}
 
+		public async Task<ItemzType?> GetItemzTypeByNameAsync(Guid projectId, string itemzTypeName)
+		{
+			if (projectId == Guid.Empty) throw new ArgumentNullException(nameof(projectId));
+			if (string.IsNullOrWhiteSpace(itemzTypeName)) throw new ArgumentNullException(nameof(itemzTypeName));
+
+			return await _context.ItemzTypes
+				.AsNoTracking()
+				.FirstOrDefaultAsync(it => it.ProjectId == projectId
+										&& it.Name!.ToLower() == itemzTypeName.Trim().ToLower());
+		}
 	}
 }

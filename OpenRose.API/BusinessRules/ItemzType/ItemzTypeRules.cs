@@ -36,28 +36,38 @@ namespace ItemzApp.API.BusinessRules.ItemzType
             }
             return false;
         }
-        /// <summary>
-        /// Used for verifying if project contains itemzType with the 
-        /// same name as the one used for inserting or updating
-        /// </summary>
-        /// <param name="projectId">Project Id in Guid form in which we are checking for ItemzType with a specific name</param>
-        /// <param name="targetItemzTypeName">New or updated itemzType name</param>
-        /// <param name="sourceItemzTypeName">Old itemzType name. No need to pass this for checking rule against creating itemzType action</param>
-        /// <returns>true if itemzType with same name exist in the repository otherwise false</returns>
-        public async Task<bool> UniqueItemzTypeNameRuleAsync(System.Guid projectId, string targetItemzTypeName, string? sourceItemzTypeName = null)
-        {
-            if (sourceItemzTypeName != null)
-            { // Update existing itemzType name
-                if (sourceItemzTypeName != targetItemzTypeName)
-                { // Source and Target are different names
-                    return await HasItemzTypeWithNameAsync(projectId, targetItemzTypeName);
-                }
-                return false;
-            }
-            else
-            { // Create new itemzType action
-                return await HasItemzTypeWithNameAsync(projectId, targetItemzTypeName);
-            }
-        }
-    }
+
+		/// <summary>
+		/// Used for verifying if a Project contains an ItemzType with the same name
+		/// as the one being inserted or updated. This method allows case-only renames
+		/// when the ItemzType being updated has the same Id as the existing record.
+		/// </summary>
+		/// <param name="projectId">Project Id in Guid form in which we are checking for ItemzType with a specific name. </param>
+		/// <param name="targetItemzTypeName">New or updated ItemzType name to be checked for uniqueness. </param>
+		/// <param name="sourceItemzTypeId">
+		/// Optional ItemzType Id of the record being updated. If provided, case-only renames
+		/// are allowed when the existing ItemzType with the same name has the same Id.
+		/// </param>
+		/// <returns>
+		/// true if another ItemzType with the same name exists in the repository for the given Project,
+		/// otherwise false.
+		/// </returns>
+
+		public async Task<bool> UniqueItemzTypeNameRuleAsync(Guid projectId, string targetItemzTypeName, Guid? sourceItemzTypeId = null)
+		{
+			var existingItemzType = await _itemzTypeRepository.GetItemzTypeByNameAsync(projectId, targetItemzTypeName);
+
+			if (existingItemzType != null)
+			{
+				// If updating, allow case-only rename if IDs match
+				if (sourceItemzTypeId.HasValue && existingItemzType.Id == sourceItemzTypeId.Value)
+				{
+					return false; // no conflict
+				}
+				return true; // conflict with another ItemzType
+			}
+
+			return false; // no conflict
+		}
+	}
 }

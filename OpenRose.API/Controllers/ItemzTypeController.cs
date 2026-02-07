@@ -284,7 +284,7 @@ namespace ItemzApp.API.Controllers
 					$"System ItemzType with name '{ItemzTypeFromRepo.Name}' and Id '{ItemzTypeFromRepo.Id}' is NOT ALLOWED to be modified");
 			}
 
-			if (await _itemzTypeRules.UniqueItemzTypeNameRuleAsync(ItemzTypeFromRepo.ProjectId, ItemzTypeToBeUpdated.Name!, ItemzTypeFromRepo.Name))
+			if (await _itemzTypeRules.UniqueItemzTypeNameRuleAsync(ItemzTypeFromRepo.ProjectId, ItemzTypeToBeUpdated.Name!, ItemzTypeFromRepo.Id))
 			{
 				_logger.LogDebug("{FormattedControllerAndActionNames}ItemzType with name {ItemzTypeToBeUpdated_Name} already exists in the project with Id {ItemzTypeFromRepo_ProjectId}",
 					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
@@ -423,7 +423,7 @@ namespace ItemzApp.API.Controllers
 			var nameChanged = !string.Equals(ItemzTypeFromRepo.Name, ItemzTypeToPatch.Name, StringComparison.Ordinal);
 			if (nameChanged)
 			{
-				if (await _itemzTypeRules.UniqueItemzTypeNameRuleAsync(ItemzTypeFromRepo.ProjectId, ItemzTypeToPatch.Name!, ItemzTypeFromRepo.Name))
+				if (await _itemzTypeRules.UniqueItemzTypeNameRuleAsync(ItemzTypeFromRepo.ProjectId, ItemzTypeToPatch.Name!, ItemzTypeFromRepo.Id))
 				{
 					_logger.LogDebug("{FormattedControllerAndActionNames}ItemzType with name {ItemzTypeToPatch_Name} already exists in the project with Id {ItemzTypeFromRepo_ProjectId}",
 						ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
