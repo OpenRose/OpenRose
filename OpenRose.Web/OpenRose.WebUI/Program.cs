@@ -28,11 +28,25 @@ using OpenRose.WebUI.Components.FindServices;
 using OpenRose.WebUI.Configuration;
 using OpenRose.WebUI.Services;
 using System.Reflection;
+using System.Runtime.InteropServices;
 //using System.Reflection;
 //using System.Text.Json;
 
 
 var builder = WebApplication.CreateBuilder(args);
+
+
+// Detect if running on Windows
+if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+{
+	builder.Host.UseWindowsService(); // Run as Windows Service
+}
+else
+{
+	builder.Host.UseConsoleLifetime(); // Normal console app for Linux/macOS
+}
+
+
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
