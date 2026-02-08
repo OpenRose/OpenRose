@@ -111,9 +111,17 @@
 						<MudButton Variant="Variant.Filled" Color="Color.Warning"
 									Disabled="!FormStateService.IsDirty(ProjectId)"
 									Size="Size.Large"
-									OnClick="(async () => await goBackToProject())">
+									OnClick="(async () => await LoadDataAsync())">
 							<MudText>Cancel</MudText>
 						</MudButton>
+						@if (CalledFrom == nameof(ProjectDetails))
+						{
+							<MudButton Variant="Variant.Filled" 
+										Size="Size.Medium" 
+										Color="Color.Warning" 
+										style="gap: 10px; margin-left : 10px"
+										OnClick="(async ()=> await goBackToProject())"> Go Back </MudButton>
+						}
 						</MudStack>
 					</MudCardActions>
 					<MudCardContent>
