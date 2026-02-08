@@ -470,7 +470,7 @@
 	
 	public async Task openBaselineTreeView(string Id)
 	{
-		var url = $"/baselineTreeView/{Id}";
+		var url = $"/baselineTreeView/{Id}?autoSelectedRecordId={Id}";
 		await JS.InvokeVoidAsync("openInNewTab", url);
 	}
 
