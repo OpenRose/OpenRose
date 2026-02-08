@@ -124,14 +124,23 @@
 							<MudText>Tree View</MudText>
 						</MudButton>
 					}
-
 				}
 				<MudButton Variant="Variant.Filled" Color="Color.Warning"
 							Disabled="!FormStateService.IsDirty(ItemzId)"
 							Size="Size.Large" style="gap: 10px; margin-left : 10px"
-							OnClick="(async () => await goBackToItemz())">
+							OnClick="(async () => await LoadDataAsync())">
 					<MudText>Cancel</MudText>
 				</MudButton>
+				@if (CalledFrom == nameof(ItemzDetails))
+				{
+					<MudButton Variant="Variant.Filled"
+								Size="Size.Medium"
+								Color="Color.Warning"
+								style="gap: 10px; margin-left : 10px"
+								OnClick="(async ()=> await goBackToItemz())">
+						<MudText>Go Back</MudText>
+					</MudButton>
+				}
 				</MudStack>
 			</MudCardActions>
 			<MudCardContent>
