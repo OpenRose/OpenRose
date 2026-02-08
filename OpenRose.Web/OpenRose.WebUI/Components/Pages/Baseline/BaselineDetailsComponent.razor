@@ -86,12 +86,31 @@
 								<MudText>Details View</MudText>
 							</MudButton>
 						}
+						@if (CalledFrom == nameof(BaselineDetails))
+						{
+							<MudButton Variant="Variant.Filled" Color="Color.Primary"
+										Size="Size.Large"
+										style="gap: 10px; margin : 10px"
+										OnClick="async _ => await openBaselineTreeView(BaselineId.ToString())">
+								<MudText>Tree View</MudText>
+							</MudButton>
+						}
 						<MudButton Variant="Variant.Filled" Color="Color.Warning"
 									Disabled="@( !FormStateService.IsDirty(BaselineId) )"
 									Size="Size.Large" style="gap: 10px; margin-left : 10px"
-									OnClick="(async () => await goBackToBaseline())">
+									OnClick="(async () => await LoadDataAsync())">
 							<MudText>Cancel</MudText>
 						</MudButton>
+						@if (CalledFrom == nameof(BaselineDetails))
+						{
+							<MudButton Variant="Variant.Filled"
+										Size="Size.Medium"
+										Color="Color.Warning"
+										style="gap: 10px; margin-left : 10px"
+										OnClick="(async ()=> await goBackToBaseline())">
+								<MudText>Go Back</MudText>
+							</MudButton>
+						}
 						</MudStack>
 					</MudCardActions>
 				<MudCardContent>
@@ -447,6 +466,12 @@
 			// User chose "Leave Page" → clear dirty state and allow navigation
 			FormStateService.SetDirty(BaselineId, false);
 		}
+	}
+	
+	public async Task openBaselineTreeView(string Id)
+	{
+		var url = $"/baselineTreeView/{Id}";
+		await JS.InvokeVoidAsync("openInNewTab", url);
 	}
 
 }
