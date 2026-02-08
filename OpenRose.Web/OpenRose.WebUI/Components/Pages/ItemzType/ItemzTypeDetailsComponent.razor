@@ -119,10 +119,21 @@
 						<MudButton Variant="Variant.Filled" Color="Color.Warning"
 									Disabled="!FormStateService.IsDirty(ItemzTypeId)"
 									Size="Size.Large" style="gap: 10px; margin-left : 10px"
-									OnClick="(() => goBackToItemzType())">
+									OnClick="(async () => await LoadDataAsync())">
 							<MudText>Cancel</MudText>
 						</MudButton>
-						</MudStack>
+
+						@if (CalledFrom == nameof(ItemzTypeDetails))
+						{
+							<MudButton Variant="Variant.Filled"
+									Size="Size.Medium"
+									Color="Color.Warning"
+									style="gap: 10px; margin-left : 10px"
+									OnClick="(async ()=> await goBackToItemzType())">
+								<MudText>Go Back</MudText>
+							</MudButton>
+						}
+					</MudStack>
 					</MudCardActions>
 					<MudCardContent>
 						<MudStack Row="true" Spacing="2">
