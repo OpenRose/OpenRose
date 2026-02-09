@@ -70,8 +70,8 @@ else
 		<MudCardContent>
 			<MudText Typo="Typo.h6" Align="Align.Left">Create Baseline by Project</MudText>
 			<MudStack Row="true" Spacing="2">
-			<MudText><strong>Project GUID Id: </strong></MudText>
-			<CopyableText TextToCopy="@ProjectId.ToString()" />
+				<MudText><strong>Project Id: </strong></MudText>
+				<CopyableText TextToCopy="@ProjectId.ToString()" />
 			</MudStack>
 			<MudTextField T="string" Label="Name" Required="true" RequiredError="Name is required!"
 						  @bind-Value="singleCreateBaselineByProject.Name"
@@ -126,7 +126,7 @@ else
 			<MudCardContent>
 				<MudText Typo="Typo.h6" Align="Align.Left">Create Baseline by ItemzType</MudText>
 				<MudStack Row="true" Spacing="2">
-				<MudText><strong>Project GUID Id: </strong></MudText>
+				<MudText><strong>Project Id: </strong></MudText>
 				<CopyableText TextToCopy="@ProjectId.ToString()" />
 				</MudStack>
 
@@ -195,7 +195,7 @@ else
 			<MudCardContent>
 				<MudText Typo="Typo.h6" Align="Align.Left">Clone Existing Baseline</MudText>
 				<MudStack Row="true" Spacing="2">
-				<MudText><strong>Project GUID Id: </strong></MudText>
+				<MudText><strong>Project Id: </strong></MudText>
 				<CopyableText TextToCopy="@ProjectId.ToString()" />
 				</MudStack>
 				<MudSelect T="@(Guid)"
