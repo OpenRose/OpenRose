@@ -188,6 +188,18 @@
 			{
 			<MudTabPanel Icon="@Icons.Material.Filled.Cancel" Text="Delete Project">
  			<MudItem xs="12" sm="12" md="12" lg="12">
+				<MudStack Row="true" Spacing="2" StretchItems="StretchItems.None" AlignItems="AlignItems.Start" Class="w-100">
+					<MudCard style="margin: 16px;" Class="w-100">
+						<MudCardContent>
+							<MudStack Row="true" Spacing="2">
+								<MudText><strong>ID          : </strong></MudText>
+								<CopyableText TextToCopy="@singleProject.Id.ToString()" />
+							</MudStack>
+							<MudText><strong>Name        : </strong> @singleProject.Name </MudText>
+							<MudText><strong>Status      : </strong> @singleProject.Status</MudText>
+						</MudCardContent>
+					</MudCard>
+				</MudStack>
 				<br />
 				<MudExpansionPanels Elevation="10" style="margin-left : 15px">
 					<MudExpansionPanel style="background-color : #FABBBB; color : red;"
