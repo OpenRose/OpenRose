@@ -740,9 +740,26 @@
         var dialogref = await DialogService.ShowAsync<BaselineExceptionDialog>("ISSUE", dialogPara, options);
     }
 
-    private async Task ToggleReadOnly(bool value)
+    private async Task ToggleReadOnly(bool newValue)
     {
-        ViewSettings.ReadOnlyView = value;
-        await SessionStorage.SetAsync("READONLYVIEW", value);
+        // Check if current record has unsaved changes
+        bool canChange = await FormStateService.ConfirmDiscardChangesAsync(_selectedValue);
+
+        if (!canChange)
+        {
+            // User cancelled → revert switch back to previous value
+            ViewSettings.ReadOnlyView = !newValue;
+            StateHasChanged();
+            return;
+        }
+
+        // User confirmed discard → clear dirty state for current record
+        FormStateService.SetDirty(_selectedValue, false);
+
+        // Apply the new setting
+        ViewSettings.ReadOnlyView = newValue;
+        await SessionStorage.SetAsync("READONLYVIEW", newValue);
+        StateHasChanged();
     }
+
 }
