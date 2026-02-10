@@ -39,7 +39,7 @@ namespace ItemzApp.API.Helper
 							  string? baseUrl)
 		{
 			var sb = new StringBuilder();
-			sb.AppendLine("flowchart TD");
+			EmitOpenRoseHeader(sb);
 
 			EmitHierarchyInline(root, sb, rootId, 1, baseUrl);
 
@@ -98,7 +98,7 @@ namespace ItemzApp.API.Helper
 			string? baseUrl = null)
 		{
 			var sb = new StringBuilder();
-			sb.AppendLine("flowchart TD");
+			EmitOpenRoseHeader(sb);
 
 			EmitBaselineHierarchyInline(root, sb, rootId, 1, baseUrl);
 
@@ -405,5 +405,13 @@ namespace ItemzApp.API.Helper
 		}
 
 		#endregion
+
+		private static void EmitOpenRoseHeader(StringBuilder sb)
+		{
+			sb.AppendLine("flowchart TD");
+			sb.AppendLine("  OpenRoseIcon@{ img: \"https://github.com/OpenRose/OpenRose/blob/main/OpenRose.Web/OpenRose.WebUI/wwwroot/icons/OpenRose_Mermaid.png?raw=true\", label: \"By OpenRose\", pos: \"b\", h: 60, constraint: \"on\" }");
+			sb.AppendLine("  click OpenRoseIcon href \"https://github.com/OpenRose\" \"OpenRose\" _blank");
+		}
+
 	}
 }
