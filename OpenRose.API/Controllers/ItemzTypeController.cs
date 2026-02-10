@@ -472,7 +472,6 @@ namespace ItemzApp.API.Controllers
 			return NoContent();
 		}
 
-
 		/// <summary>
 		/// Move ItemzType to a new project in the repository including all its sub-Itemz
 		/// </summary>
@@ -482,177 +481,202 @@ namespace ItemzApp.API.Controllers
 		/// <returns>No contents are returned when ItemzType gets moved to its new desired location</returns>
 		/// <response code="204">No content are returned but status of 204 indicating that ItemzType has successfully moved to its desired location</response>
 		/// <response code="404">Either moving ItemzType or target Project was not found</response>
+		/// <response code="409">ItemzType with the same name already exists in the target Project</response>
 		[HttpPost("{MovingItemzTypeId}", Name = "__POST_Move_ItemzType__")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesDefaultResponseType]
-        public async Task<ActionResult> MoveItemzTypeAsync([FromRoute] Guid MovingItemzTypeId, [FromQuery] Guid TargetProjectId, [FromQuery] bool AtBottomOfChildNodes = true)
-        {
-            if (!(await _ItemzTypeRepository.ItemzTypeExistsAsync(MovingItemzTypeId)))  
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}ItemzType for ID {MovingItemzTypeId} could not be found",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    MovingItemzTypeId);
-                return NotFound();
-            }
+		[ProducesResponseType(StatusCodes.Status204NoContent)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		[ProducesResponseType(StatusCodes.Status409Conflict)]
+		[ProducesDefaultResponseType]
+		public async Task<ActionResult> MoveItemzTypeAsync([FromRoute] Guid MovingItemzTypeId, [FromQuery] Guid TargetProjectId, [FromQuery] bool AtBottomOfChildNodes = true)
+		{
+			if (!(await _ItemzTypeRepository.ItemzTypeExistsAsync(MovingItemzTypeId)))
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}ItemzType for ID {MovingItemzTypeId} could not be found",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					MovingItemzTypeId);
+				return NotFound();
+			}
 
-            // TODO :: WE HAVE TO ALSO CHECK IN THE HIERARCHY TABLE IF TARGET EXISTITS OTHERWISE THERE IS NO
-            // POINT IN MOVING ITEMZTYPE.
+			// TODO :: WE HAVE TO ALSO CHECK IN THE HIERARCHY TABLE IF TARGET EXISTITS OTHERWISE THERE IS NO
+			// POINT IN MOVING ITEMZTYPE.
 
-            if (!(await _projectRepository.ProjectExistsAsync(TargetProjectId)))
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Target Project for ID {TargetProjectId} could not be found",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    TargetProjectId);
-                return NotFound();
-            }
+			if (!(await _projectRepository.ProjectExistsAsync(TargetProjectId)))
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Target Project for ID {TargetProjectId} could not be found",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					TargetProjectId);
+				return NotFound();
+			}
 
-            // TODO :: ADD NECESSARY EXCEPTION HANDLING CODE FOR MOVING ITEMZTYPE TO ANOTHER PROJECT
-            try
-            {
-                await _ItemzTypeRepository.MoveItemzTypeToAnotherProjectAsync(MovingItemzTypeId, TargetProjectId, atBottomOfChildNodes: AtBottomOfChildNodes);
-                await _ItemzTypeRepository.SaveAsync();
-            }
-            catch (ApplicationException appException)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to move ItemzType :" + appException.Message,
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
-                    );
-                var tempMessage = $"Could not move Itemz Type with ID '{MovingItemzTypeId}' " +
-                    $":: InnerException :: {appException.Message} ";
-                return BadRequest(tempMessage);
-            }
+			var itemzTypeFromRepo = await _ItemzTypeRepository.GetItemzTypeForUpdateAsync(MovingItemzTypeId);
+			if (itemzTypeFromRepo == null)
+			{
+				return NotFound();
+			}
 
-            _logger.LogDebug("{FormattedControllerAndActionNames}ItemzType ID {MovingItemzTypeId} successfully moved under Target Project ID {TargetProjectId}",
-                ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                MovingItemzTypeId,
-                TargetProjectId);
-            return NoContent(); // This indicates that update was successfully saved in the DB.
-        }
+			// Uniqueness check in target project before moving requirement type
+			if (await _itemzTypeRules.UniqueItemzTypeNameRuleAsync(TargetProjectId, itemzTypeFromRepo.Name, itemzTypeFromRepo.Id))
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}ItemzType with name {ItemzTypeName} already exists in target project {TargetProjectId}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					itemzTypeFromRepo.Name,
+					TargetProjectId);
+				return Conflict($"ItemzType with name '{itemzTypeFromRepo.Name}' already exists in the target project with Id '{TargetProjectId}'");
+			}
 
+			// TODO :: ADD NECESSARY EXCEPTION HANDLING CODE FOR MOVING ITEMZTYPE TO ANOTHER PROJECT
+			try
+			{
+				await _ItemzTypeRepository.MoveItemzTypeToAnotherProjectAsync(MovingItemzTypeId, TargetProjectId, atBottomOfChildNodes: AtBottomOfChildNodes);
+				await _ItemzTypeRepository.SaveAsync();
+			}
+			catch (ApplicationException appException)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to move ItemzType :" + appException.Message,
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
+					);
+				var tempMessage = $"Could not move Itemz Type with ID '{MovingItemzTypeId}' " +
+					$":: InnerException :: {appException.Message} ";
+				return BadRequest(tempMessage);
+			}
 
+			_logger.LogDebug("{FormattedControllerAndActionNames}ItemzType ID {MovingItemzTypeId} successfully moved under Target Project ID {TargetProjectId}",
+				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+				MovingItemzTypeId,
+				TargetProjectId);
+			return NoContent(); // This indicates that update was successfully saved in the DB.
+		}
 
+		/// <summary>
+		/// Used for moving ItemzType record between two existing ItemzType records
+		/// </summary>
+		/// <param name="movingItemzTypeId">Source moving ItemzType ID that will be moved to new location</param>
+		/// <param name="firstItemzTypeId">Used as first ItemzType for moving ItemzType between existing two ItemzTypes</param>
+		/// <param name="secondItemzTypeId">Used as second ItemzType for moving ItemzType between existing two ItemzTypes</param>
+		/// <returns>No Content</returns>
+		/// <response code="204">No Content</response>
+		/// <response code="404">Expected moveing OR target between ItemzTypes could not found</response>
+		/// <response code="409">ItemzType with the same name already exists in the target Project</response>
+		[HttpPost("MoveItemzTypeBetweenItemzTypes/", Name = "__POST_Move_ItemzType_Between_ItemzTypes__")]
+		[ProducesResponseType(StatusCodes.Status204NoContent)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		[ProducesResponseType(StatusCodes.Status409Conflict)]
+		[ProducesDefaultResponseType]
+		public async Task<ActionResult> MoveItemzTypeBetweenItemzTypesAsync([FromQuery] Guid movingItemzTypeId, [FromQuery] Guid firstItemzTypeId, [FromQuery] Guid secondItemzTypeId)
+		{
+			if (movingItemzTypeId == Guid.Empty)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Source moving ItemzTypeID is an empty ID.",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext));
+				return NotFound();
+			}
+			if (firstItemzTypeId == Guid.Empty)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}First ItemzTypeID from between two ItemzTypes is an empty ID.",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext));
+				return NotFound();
+			}
+			if (secondItemzTypeId == Guid.Empty)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Second ItemzTypeID from between two ItemzTypes is an empty ID.",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext));
+				return NotFound();
+			}
 
+			var movingItemzType = await _ItemzTypeRepository.GetItemzTypeAsync(movingItemzTypeId);
+			if (movingItemzType == null)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Expected moving ItemzType with ID {movingItemzTypeId} could not be found",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					movingItemzTypeId);
+				return NotFound();
+			}
 
+			var firstItemzType = await _ItemzTypeRepository.GetItemzTypeAsync(firstItemzTypeId);
+			if (firstItemzType == null)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Expected first ItemzType with ID {firstItemzTypeId} could not be found",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					firstItemzTypeId);
+				return NotFound();
+			}
 
+			var secondItemzType = await _ItemzTypeRepository.GetItemzTypeAsync(secondItemzTypeId);
+			if (secondItemzType == null)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Expected second ItemzType with ID {secondItemzTypeId} could not be found",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					secondItemzTypeId);
+				return NotFound();
+			}
 
+			// Only check uniqueness if moving into a different project
+			if (firstItemzType.ProjectId != movingItemzType.ProjectId || secondItemzType.ProjectId != movingItemzType.ProjectId)
+			{
+				var targetProjectId = firstItemzType.ProjectId; // assume both target ItemzTypes are in same project
 
+				if (await _itemzTypeRules.UniqueItemzTypeNameRuleAsync(targetProjectId, movingItemzType.Name, movingItemzType.Id))
+				{
+					_logger.LogDebug("{FormattedControllerAndActionNames}ItemzType with name {ItemzTypeName} already exists in target project {TargetProjectId}",
+						ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+						movingItemzType.Name,
+						targetProjectId);
+					return Conflict($"ItemzType with name '{movingItemzType.Name}' already exists in the target project with Id '{targetProjectId}'");
+				}
+			}
 
-        /// <summary>
-        /// Used for moving ItemzType record between two existing ItemzType records
-        /// </summary>
-        /// <param name="movingItemzTypeId">Source moving ItemzType ID that will be moved to new location</param>
-        /// <param name="firstItemzTypeId">Used as first ItemzType for moving ItemzType between existing two ItemzTypes</param>
-        /// <param name="secondItemzTypeId">Used as second ItemzType for moving ItemzType between existing two ItemzTypes</param>
-        /// <returns>No Content</returns>
-        /// <response code="204">No Content</response>
-        /// <response code="404">Expected moveing OR target between ItemzTypes could not found</response>
-        [HttpPost("MoveItemzTypeBetweenItemzTypes/", Name = "__POST_Move_ItemzType_Between_ItemzTypes__")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesDefaultResponseType]
-        public async Task<ActionResult> MoveItemzTypeBetweenItemzTypesAsync([FromQuery] Guid movingItemzTypeId, [FromQuery] Guid firstItemzTypeId, [FromQuery] Guid secondItemzTypeId)
-        {
-            if (movingItemzTypeId == Guid.Empty)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Source moving ItemzTypeID is an empty ID.",
-                        ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext));
-                return NotFound();
-            }
-            if (firstItemzTypeId == Guid.Empty)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}First ItemzTypeID from between two ItemzTypes is an empty ID.",
-                        ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext));
-                return NotFound();
-            }
-            if (secondItemzTypeId == Guid.Empty)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Second ItemzTypeID from between two ItemzTypes is an empty ID.",
-                        ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext));
-                return NotFound();
-            }
-
-            var movingItemzType = await _ItemzTypeRepository.GetItemzTypeAsync(movingItemzTypeId);
-
-            if (movingItemzType == null)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Expected moving ItemzType with ID {movingItemzTypeId} could not be found",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    movingItemzTypeId);
-                return NotFound();
-            }
-
-            var firstItemzType = await _ItemzTypeRepository.GetItemzTypeAsync(firstItemzTypeId);
-
-            if (firstItemzType == null)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Expected first ItemzType with ID {firstItemzTypeId} could not be found",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    firstItemzTypeId);
-                return NotFound();
-            }
-
-            var secondItemzType = await _ItemzTypeRepository.GetItemzTypeAsync(secondItemzTypeId);
-
-            if (secondItemzType == null)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Expected second ItemzType with ID {secondItemzTypeId} could not be found",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    secondItemzTypeId);
-                return NotFound();
-            }
-
-            try
-            {
-                await _ItemzTypeRepository.MoveItemzTypeBetweenTwoHierarchyRecordsAsync(firstItemzTypeId, secondItemzTypeId, movingItemzTypeId);
-                await _ItemzTypeRepository.SaveAsync();
-            }
-            catch (ApplicationException appException)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to move ItemzType between two existing ItemzTypes :" + appException.Message,
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
-                    );
+			try
+			{
+				await _ItemzTypeRepository.MoveItemzTypeBetweenTwoHierarchyRecordsAsync(firstItemzTypeId, secondItemzTypeId, movingItemzTypeId);
+				await _ItemzTypeRepository.SaveAsync();
+			}
+			catch (ApplicationException appException)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to move ItemzType between two existing ItemzTypes :" + appException.Message,
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
+					);
                 var tempMessage = $"Could not move ItemzType with Id {movingItemzTypeId} between ItemzType '{firstItemzTypeId}' " +
                     $"and '{secondItemzTypeId}'. " +
                     $":: InnerException :: {appException.Message} ";
-                return BadRequest(tempMessage);
-            }
-            catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}DBUpdateException Occured while trying to move ItemzType between two existing ItemzTypes :" + dbUpdateException.Message,
+				return BadRequest(tempMessage);
+			}
+			catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}DBUpdateException Occured while trying to move ItemzType between two existing ItemzTypes :" + dbUpdateException.Message,
                 ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
                     );
                 return Conflict($"DBUpdateException : Could not move ItemzType with Id {movingItemzTypeId} between ItemzTypes " +
                     $"'{firstItemzTypeId}' and '{secondItemzTypeId}'. DB Error reported, check the log file. " +
                     $":: InnerException :: '{dbUpdateException.Message}' ");
-            }
-            catch (Microsoft.SqlServer.Types.HierarchyIdException hierarchyIDException)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}HierarchyIdException Occured while trying to add Itemz between two existing Itemz :" + hierarchyIDException.Message,
+			}
+			catch (Microsoft.SqlServer.Types.HierarchyIdException hierarchyIDException)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}HierarchyIdException Occured while trying to add Itemz between two existing Itemz :" + hierarchyIDException.Message,
                 ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
                     );
                 return Conflict($"HierarchyIdException : Could not move ItemzType with Id {movingItemzTypeId} between ItemzTypes " +
                     $"'{firstItemzTypeId}' and '{secondItemzTypeId}'. DB Error reported, check the log file. " +
                     $":: InnerException :: '{hierarchyIDException.Message}' ");
-            }
+			}
 
-            return NoContent();
-            //_logger.LogDebug("{FormattedControllerAndActionNames}Created new Itemz with ID {ItemzId}",
-            //    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-            //    itemzEntity.Id);
-            //return CreatedAtRoute("__Single_Itemz_By_GUID_ID__", new { ItemzId = itemzEntity.Id },
-            //    _mapper.Map<GetItemzDTO>(itemzEntity) // Converting to DTO as this is going out to the consumer
-            //    );
-        }
+			_logger.LogDebug("{FormattedControllerAndActionNames}ItemzType ID {movingItemzTypeId} successfully moved between ItemzTypes {firstItemzTypeId} and {secondItemzTypeId}",
+				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+				movingItemzTypeId,
+				firstItemzTypeId,
+				secondItemzTypeId);
 
-
+			return NoContent();
+		}
 
 
-        // We have configured in startup class our own custom implementation of 
-        // problem Details. Now we are overriding ValidationProblem method that is defined in ControllerBase
-        // class to make sure that we use that custom problem details builder. 
-        // Instead of passing 400 it will pass back 422 code with more details.
-        public override ActionResult ValidationProblem([ActionResultObjectValue] ModelStateDictionary modelStateDictionary)
+
+
+
+		// We have configured in startup class our own custom implementation of 
+		// problem Details. Now we are overriding ValidationProblem method that is defined in ControllerBase
+		// class to make sure that we use that custom problem details builder. 
+		// Instead of passing 400 it will pass back 422 code with more details.
+		public override ActionResult ValidationProblem([ActionResultObjectValue] ModelStateDictionary modelStateDictionary)
         {
             var options = HttpContext.RequestServices
                 .GetRequiredService<IOptions<ApiBehaviorOptions>>();
