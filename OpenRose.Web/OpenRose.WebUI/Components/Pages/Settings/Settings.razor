@@ -13,9 +13,21 @@
     <MudStack Row="true" Spacing="3">
         <MudIcon Icon="@Icons.Material.Filled.LocalFlorist" Size="Size.Large" />
         <MudText Typo="Typo.h6" Align="Align.Left">About OpenRose </MudText>
-        <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success"> Version -  @version </MudChip>
+        <MudChip T="string" Icon="@Icons.Material.Filled.Web" Size="Size.Small" Color="Color.Primary">
+            WebUI Version - @version
+        </MudChip>
+        <MudChip T="string" Icon="@Icons.Material.Filled.Api" Size="Size.Small" Color="Color.Primary">
+            API Version - @(ConfigService.ApiVersion ?? "Not Connected")
+        </MudChip>
     </MudStack>
 </MudPaper>
+
+@if (!string.IsNullOrEmpty(ConfigService.ApiVersionMismatchMessage))
+{
+    <MudText Typo="Typo.body1" Color="Color.Error">
+        @ConfigService.ApiVersionMismatchMessage
+    </MudText>
+}
 
 <br />
 
@@ -25,6 +37,8 @@
 }
 
 @code {
+
+    [Inject] private ConfigurationService ConfigService { get; set; } = default!;
 
     bool showDeleteAllOrphanItemz = false;
 
