@@ -9,6 +9,13 @@
 @using OpenRose.WebUI.Services
 @inject AssemblyInfoService AssemblyInfo
 
+<MudPaper Class="pa-3 mb-3 align-start d-flex" Outlined="false">
+    <MudStack Row="true" Spacing="3">
+        <MudIcon Icon="@Icons.Material.Filled.Settings" Size="Size.Large" />
+        <MudText Typo="Typo.h5" Align="Align.Left">Setting</MudText>
+    </MudStack>
+</MudPaper>
+
 <MudPaper Class="pa-3 mb-3 align-start d-flex" Style="width: auto " Outlined="false">
     <MudStack Row="true" Spacing="3">
         <MudIcon Icon="@Icons.Material.Filled.LocalFlorist" Size="Size.Large" />
@@ -31,7 +38,8 @@
 
 <br />
 
-@if (showDeleteAllOrphanItemz)
+@if (ConfigService.IsOpenRoseAPIConfigured ||
+        string.IsNullOrEmpty(ConfigService.ApiVersionMismatchMessage))
 {
     <DeleteAllOrphanComponent />
 }
@@ -40,13 +48,10 @@
 
     [Inject] private ConfigurationService ConfigService { get; set; } = default!;
 
-    bool showDeleteAllOrphanItemz = false;
-
     private string version;
 
     protected override async Task OnInitializedAsync()
     {
-        showDeleteAllOrphanItemz = true;
         version = AssemblyInfo.GetAssemblyVersion();
     }
 }
