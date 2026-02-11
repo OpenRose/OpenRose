@@ -101,8 +101,12 @@
 
                     if (ViewSettings.ReadOnlyView)
                     {
+@*                         <ProjectReadOnlyComponent ProjectId="@selectedItem.Value"
+                                                  @key="selectedItem.Value" /> *@
                         <ProjectReadOnlyComponent ProjectId="@selectedItem.Value"
+                                                  OnNavigateNext="NavigateToNextItemz"
                                                   @key="selectedItem.Value" />
+
                     }
                     else
                     {
@@ -117,8 +121,13 @@
 
                     if (ViewSettings.ReadOnlyView)
                     {
+@*                         <ItemzTypeReadOnlyComponent ItemzTypeId="@selectedItem.Value"
+                                                    @key="selectedItem.Value" /> *@
                         <ItemzTypeReadOnlyComponent ItemzTypeId="@selectedItem.Value"
+                                                    OnNavigatePrevious="NavigateToPreviousItemz"
+                                                    OnNavigateNext="NavigateToNextItemz"
                                                     @key="selectedItem.Value" />
+
                     }
                     else
                     {
@@ -132,8 +141,13 @@
                 {
                     if (ViewSettings.ReadOnlyView)
                     {
+@*                         <ItemzReadOnlyComponent ItemzId="@selectedItem.Value"
+                                                  @key="selectedItem.Value" /> *@
                         <ItemzReadOnlyComponent ItemzId="@selectedItem.Value"
-                                                  @key="selectedItem.Value" />
+                                                OnNavigatePrevious="NavigateToPreviousItemz"
+                                                OnNavigateNext="NavigateToNextItemz"
+                                                @key="selectedItem.Value" />
+
                     }
                     else
                     {
@@ -668,6 +682,30 @@
         ViewSettings.ReadOnlyView = newValue;
         await SessionStorage.SetAsync("READONLYVIEW", newValue);
         StateHasChanged();
+    }
+
+    private async Task NavigateToPreviousItemz(Guid currentId)
+    {
+        var allNodes = InitialTreeItems.Flatten().OfType<TreeItemPresenter>().ToList();
+        var index = allNodes.FindIndex(x => x.Value == currentId);
+
+        if (index > 0)
+        {
+            var previousId = allNodes[index - 1].Value;
+            await TryUpdateSelectedItemAsync(previousId);
+        }
+    }
+
+    private async Task NavigateToNextItemz(Guid currentId)
+    {
+        var allNodes = InitialTreeItems.Flatten().OfType<TreeItemPresenter>().ToList();
+        var index = allNodes.FindIndex(x => x.Value == currentId);
+
+        if (index >= 0 && index < allNodes.Count - 1)
+        {
+            var nextId = allNodes[index + 1].Value;
+            await TryUpdateSelectedItemAsync(nextId);
+        }
     }
 
 
