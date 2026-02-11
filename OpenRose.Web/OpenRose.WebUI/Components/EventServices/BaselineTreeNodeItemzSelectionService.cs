@@ -9,8 +9,9 @@ namespace OpenRose.WebUI.Components.EventServices
 {
     public class BaselineTreeNodeItemzSelectionService
 	{
-        public event Action<Guid> OnBaselineTreeNodeItemzSelected;
-        public event Action<Guid, string> OnBaselineTreeNodeItemzNameUpdated;
+		//public event Action<Guid> OnBaselineTreeNodeItemzSelected;
+		public event Func<Guid, Task> OnBaselineTreeNodeItemzSelected;
+		public event Action<Guid, string> OnBaselineTreeNodeItemzNameUpdated;
 		public event Action<Guid, bool> OnLoadingOfBaselineItemzTreeViewComponent;
         public event Action<Guid> OnSingleBaselineItemzIsIncludedChanged;
         public event Action<Guid> OnExcludeAllChildrenBaselineItemzTreeNodes;

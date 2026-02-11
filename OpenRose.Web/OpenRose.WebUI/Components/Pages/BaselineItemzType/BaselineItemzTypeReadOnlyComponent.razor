@@ -27,17 +27,38 @@
 	else
 	{
  		<MudItem xs="12" sm="12">
-			<MudCard style="background-color : #FABBBB;" >
+			<MudCard style="background-color:#FABBBB; position:sticky; top:0; z-index:10;">
 				<MudCardContent>
-				<MudItem Class="align-start d-flex" Style="width: auto" Outlined="false">
 					<MudGrid>
+						<!-- Left side: Title -->
 						<MudItem xs="12" sm="12" md="7" lg="7">
-							<MudText Typo="Typo.h5" Align="Align.Left"><strong>@singleBaselineItemzType.Name </strong></MudText>
+							<MudText Typo="Typo.h5" Align="Align.Left">
+								<strong>@singleBaselineItemzType.Name</strong>
+							</MudText>
+						</MudItem>
+
+						<!-- Right side: Up + Down buttons -->
+						<MudItem xs="12" sm="12" md="5" lg="5" Class="d-flex justify-end align-center">
+							<MudIconButton Icon="@Icons.Material.Filled.ArrowCircleUp"
+										   Color="Color.Success"
+										   Size="Size.Medium"
+										   IconSize="Size.Large"
+										   Variant="Variant.Filled"
+										   Class="mud-rounded-circle me-2"
+										   OnClick="@(() => { if (OnNavigatePrevious.HasDelegate) OnNavigatePrevious.InvokeAsync(BaselineItemzTypeId); })" />
+
+							<MudIconButton Icon="@Icons.Material.Filled.ArrowCircleDown"
+										   Color="Color.Success"
+										   Size="Size.Medium"
+										   IconSize="Size.Large"
+										   Variant="Variant.Filled"
+										   Class="mud-rounded-circle"
+										   OnClick="@(() => { if (OnNavigateNext.HasDelegate) OnNavigateNext.InvokeAsync(BaselineItemzTypeId); })" />
 						</MudItem>
 					</MudGrid>
-				</MudItem>
 				</MudCardContent>
 			</MudCard>
+
 			<MudCard Elevation="0" Outlined="false" Style="background-color:transparent;">
 				<MudCardContent>
 
@@ -77,6 +98,10 @@
 @code {
 	[Parameter]
 	public Guid BaselineItemzTypeId { get; set; }
+
+	[Parameter] public EventCallback<Guid> OnNavigatePrevious { get; set; }
+	[Parameter] public EventCallback<Guid> OnNavigateNext { get; set; }
+
 
 	[Inject]
 	public IBaselineItemzTypesService BaselineItemzTypeServices { get; set; }

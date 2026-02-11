@@ -8,12 +8,13 @@ namespace OpenRose.WebUI.Components.EventServices
 {
     public class TreeNodeItemzSelectionService
     {
-        public event Action<Guid> OnTreeNodeItemzSelected;
-        public event Action<Guid, string> OnTreeNodeItemzNameUpdated;
+		public event Func<Guid, Task> OnTreeNodeItemzSelected;
+		public event Action<Guid, string> OnTreeNodeItemzNameUpdated;
 		public event Action<Guid> OnScrollToTreeViewNode;
-        public event Action<Guid, GetItemzDTO> OnCreatedNewItemz;
-        public event Action<Guid> OnTreeNodeItemzDeleted;
-		public event Action<Guid, GetItemzTypeDTO> OnCreatedNewItemzType;
+		public event Func<Guid, GetItemzDTO, Task> OnCreatedNewItemz;
+		public event Action<Guid> OnTreeNodeItemzDeleted;
+		public event Func<Guid, GetItemzTypeDTO, Task> OnCreatedNewItemzType;
+
 
 		public void SelectTreeNodeItemz(Guid recordId)
         {

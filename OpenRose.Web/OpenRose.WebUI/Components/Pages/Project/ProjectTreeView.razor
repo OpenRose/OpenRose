@@ -709,4 +709,15 @@
     }
 
 
+    public void Dispose()
+    {
+        // Always unsubscribe to avoid memory leaks
+        ItemzSelectionService.OnTreeNodeItemzSelected -= HandleItemzSelectedAsync;
+        ItemzSelectionService.OnTreeNodeItemzNameUpdated -= HandleTreeNodeItemzNameUpdated;
+        ItemzSelectionService.OnCreatedNewItemz -= HandleCreatedNewItemzAsync;
+        ItemzSelectionService.OnScrollToTreeViewNode -= HandleScrollToTreeViewNode;
+        ItemzSelectionService.OnTreeNodeItemzDeleted -= HandleItemzDeleted;
+        ItemzSelectionService.OnCreatedNewItemzType -= HandleCreatedNewItemzTypeAsync;
+    }
+
  }
