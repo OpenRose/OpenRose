@@ -331,6 +331,13 @@
         _selectedValue = presenter.Value;
         presenter.IsSelected = true;
         projectMudTreeView.SelectedValue = presenter.Value; // keep tree in sync
+
+        // 🔑 Update current index to match manual selection
+        if (_linearIds.Count > 0)
+        {
+            _currentIndex = _linearIds.FindIndex(id => id == _selectedValue);
+        }
+
         await UpdateSelectedItem(presenter.Value);
         StateHasChanged();
     }
