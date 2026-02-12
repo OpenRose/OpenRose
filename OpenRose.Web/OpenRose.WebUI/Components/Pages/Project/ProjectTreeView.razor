@@ -101,8 +101,12 @@
 
                     if (ViewSettings.ReadOnlyView)
                     {
+@*                         <ProjectReadOnlyComponent ProjectId="@selectedItem.Value"
+                                                  @key="selectedItem.Value" /> *@
                         <ProjectReadOnlyComponent ProjectId="@selectedItem.Value"
+                                                  OnNavigateNext="NavigateToNextItemz"
                                                   @key="selectedItem.Value" />
+
                     }
                     else
                     {
@@ -117,8 +121,13 @@
 
                     if (ViewSettings.ReadOnlyView)
                     {
+@*                         <ItemzTypeReadOnlyComponent ItemzTypeId="@selectedItem.Value"
+                                                    @key="selectedItem.Value" /> *@
                         <ItemzTypeReadOnlyComponent ItemzTypeId="@selectedItem.Value"
+                                                    OnNavigatePrevious="NavigateToPreviousItemz"
+                                                    OnNavigateNext="NavigateToNextItemz"
                                                     @key="selectedItem.Value" />
+
                     }
                     else
                     {
@@ -132,8 +141,13 @@
                 {
                     if (ViewSettings.ReadOnlyView)
                     {
+@*                         <ItemzReadOnlyComponent ItemzId="@selectedItem.Value"
+                                                  @key="selectedItem.Value" /> *@
                         <ItemzReadOnlyComponent ItemzId="@selectedItem.Value"
-                                                  @key="selectedItem.Value" />
+                                                OnNavigatePrevious="NavigateToPreviousItemz"
+                                                OnNavigateNext="NavigateToNextItemz"
+                                                @key="selectedItem.Value" />
+
                     }
                     else
                     {
@@ -195,6 +209,10 @@
     // Varibale related to selecting node in treeview
     private bool _suppressSelectionChanged;
 
+    private List<Guid> _linearIds = new();
+    private int _currentIndex = -1;
+
+
     private Task OnDoubleClicked()
     {
         if (_doubleClickEnabled)
@@ -228,7 +246,20 @@
             FormStateService.SetDirty(_selectedValue, false);
 
             _selectedValue = newValue;
+
+            if (_linearIds.Count > 0)
+            {
+                _currentIndex = _linearIds.FindIndex(id => id == newValue);
+            }
+            else
+            {
+            }
+
             await UpdateSelectedItem(newValue);
+
+            // 🔑 Ensure selected node is scrolled into view 
+            await ScrollToSelectedNode($"tree-node-{newValue}");
+
             StateHasChanged();
         }
     }
@@ -300,6 +331,13 @@
         _selectedValue = presenter.Value;
         presenter.IsSelected = true;
         projectMudTreeView.SelectedValue = presenter.Value; // keep tree in sync
+
+        // 🔑 Update current index to match manual selection
+        if (_linearIds.Count > 0)
+        {
+            _currentIndex = _linearIds.FindIndex(id => id == _selectedValue);
+        }
+
         await UpdateSelectedItem(presenter.Value);
         StateHasChanged();
     }
@@ -466,11 +504,10 @@
         };
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+        protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-
             // Load view settings
             var result = await SessionStorage.GetAsync<bool>("READONLYVIEW");
             if (result.Success)
@@ -482,14 +519,30 @@
             InitialTreeItems = await LoadInitialData(ProjectId);
             StateHasChanged();
 
-
-            //await Task.Delay(300);
-            // Load Entire Hierarchy data
-
+            // Load entire hierarchy
             InitialTreeItems = await LoadAllProjectHierarchyData(ProjectId);
 
+            // Build linear list once after full hierarchy is loaded
+            _linearIds = InitialTreeItems.Flatten()
+                                         .Select(x => x.Value)
+                                         .ToList();
 
-            // await projectMudTreeView.ExpandAllAsync();
+            _currentIndex = _linearIds.FindIndex(id => id == _selectedValue);
+
+            // After building _linearIds in OnAfterRenderAsync
+            if (_selectedValue == Guid.Empty && _linearIds.Count > 0)
+            {
+                _selectedValue = _linearIds[0]; // root project node
+                _currentIndex = 0;
+
+                // Keep tree in sync
+                projectMudTreeView.SelectedValue = _selectedValue;
+
+                // Update right-hand side content immediately
+                await UpdateSelectedItem(_selectedValue);
+
+            }
+
             showLoadingMessage = false;
             StateHasChanged();
 
@@ -667,8 +720,51 @@
         // Apply the new setting
         ViewSettings.ReadOnlyView = newValue;
         await SessionStorage.SetAsync("READONLYVIEW", newValue);
+
+        if (newValue)
+        {
+            _linearIds = InitialTreeItems.Flatten()
+                                         .Select(x => x.Value)
+                                         .ToList();
+
+            _currentIndex = _linearIds.FindIndex(id => id == _selectedValue);
+        }
+        else
+        {
+            _linearIds.Clear();
+            _currentIndex = -1;
+        }
+
         StateHasChanged();
     }
 
+    private async Task NavigateToPreviousItemz(Guid currentId)
+    {
+        if (_currentIndex > 0)
+        {
+            await TryUpdateSelectedItemAsync(_linearIds[_currentIndex - 1]);
+        }
+    }
+
+    private async Task NavigateToNextItemz(Guid currentId)
+    {
+        if (_currentIndex >= 0 && _currentIndex < _linearIds.Count - 1)
+        {
+            await TryUpdateSelectedItemAsync(_linearIds[_currentIndex + 1]);
+        }
+    }
+
+
+
+    public void Dispose()
+    {
+        // Always unsubscribe to avoid memory leaks
+        ItemzSelectionService.OnTreeNodeItemzSelected -= HandleItemzSelectedAsync;
+        ItemzSelectionService.OnTreeNodeItemzNameUpdated -= HandleTreeNodeItemzNameUpdated;
+        ItemzSelectionService.OnCreatedNewItemz -= HandleCreatedNewItemzAsync;
+        ItemzSelectionService.OnScrollToTreeViewNode -= HandleScrollToTreeViewNode;
+        ItemzSelectionService.OnTreeNodeItemzDeleted -= HandleItemzDeleted;
+        ItemzSelectionService.OnCreatedNewItemzType -= HandleCreatedNewItemzTypeAsync;
+    }
 
  }

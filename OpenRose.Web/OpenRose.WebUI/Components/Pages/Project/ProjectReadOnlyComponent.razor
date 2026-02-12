@@ -27,17 +27,30 @@
 	else
 	{
  		<MudItem xs="12" sm="12">
-			<MudCard style="background-color : #FABBBB;" >
+			<MudCard style="background-color:#FABBBB; position:sticky; top:0; z-index:10;">
 				<MudCardContent>
-				<MudItem Class="align-start d-flex" Style="width: auto" Outlined="false">
 					<MudGrid>
+						<!-- Left side: Title -->
 						<MudItem xs="12" sm="12" md="7" lg="7">
-							<MudText Typo="Typo.h5" Align="Align.Left"><strong>@singleProject.Name </strong></MudText>
+							<MudText Typo="Typo.h5" Align="Align.Left">
+								<strong>@singleProject.Name</strong>
+							</MudText>
+						</MudItem>
+
+						<!-- Right side: Only Down button -->
+						<MudItem xs="12" sm="12" md="5" lg="5" Class="d-flex justify-end align-center">
+							<MudIconButton Icon="@Icons.Material.Filled.ArrowCircleDown"
+										   Color="Color.Success"
+										   Size="Size.Medium"
+										   IconSize="Size.Large"
+										   Variant="Variant.Filled"
+										   Class="mud-rounded-circle"
+										   OnClick="@(() => { if (OnNavigateNext.HasDelegate) OnNavigateNext.InvokeAsync(ProjectId); })" />
 						</MudItem>
 					</MudGrid>
-				</MudItem>
 				</MudCardContent>
 			</MudCard>
+
 			<MudCard Elevation="0" Outlined="false" Style="background-color:transparent;">
 				<MudCardContent>
 @* 					<MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
@@ -84,6 +97,8 @@
 @code {
 	[Parameter]
 	public Guid ProjectId { get; set; }
+
+	[Parameter] public EventCallback<Guid> OnNavigateNext { get; set; }
 
 	[Inject]
 	public IProjectService ProjectService { get; set; }

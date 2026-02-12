@@ -106,8 +106,12 @@
 
                     if (ViewSettings.ReadOnlyView)
                     {
+@*                         <BaselineReadOnlyComponent BaselineId="@selectedItem.Value"
+                                                  @key="selectedItem.Value" /> *@
                         <BaselineReadOnlyComponent BaselineId="@selectedItem.Value"
-                                                  @key="selectedItem.Value" />
+                                                   OnNavigateNext="NavigateToNextBaselineNode"
+                                                   @key="selectedItem.Value" />
+
                     }
                     else
                     {
@@ -121,7 +125,11 @@
                     
                     if (ViewSettings.ReadOnlyView)
                     {
-                        <BaselineItemzTypeReadOnlyComponent BaselineItemzTypeId="@selectedItem.Value"
+@*                         <BaselineItemzTypeReadOnlyComponent BaselineItemzTypeId="@selectedItem.Value"
+                                                    @key="selectedItem.Value" /> *@
+                        <BaselineItemzTypeReadOnlyComponent BaselineItemzTypeId="@selectedItem.Value" 
+                                                    OnNavigatePrevious="NavigateToPreviousBaselineNode" 
+                                                    OnNavigateNext="NavigateToNextBaselineNode" 
                                                     @key="selectedItem.Value" />
                     }
                     else
@@ -135,8 +143,13 @@
                     
                     if (ViewSettings.ReadOnlyView)
                     {
+@*                         <BaselineItemzReadOnlyComponent BaselineItemzId="@selectedItem.Value"
+                                                  @key="selectedItem.Value" /> *@
                         <BaselineItemzReadOnlyComponent BaselineItemzId="@selectedItem.Value"
-                                                  @key="selectedItem.Value" />
+                                                        OnNavigatePrevious="NavigateToPreviousBaselineNode"
+                                                        OnNavigateNext="NavigateToNextBaselineNode"
+                                                        @key="selectedItem.Value" />
+
                     }
                     else
                     {
@@ -196,6 +209,10 @@
     bool _borderedEnabled = false;
     bool _doubleClickEnabled = true;
 
+    private List<Guid> _linearIds = new();
+    private int _currentIndex = -1;
+
+
     private Task OnDoubleClicked()
     {
         if (_doubleClickEnabled)
@@ -229,9 +246,21 @@
             FormStateService.SetDirty(_selectedValue, false);
 
             _selectedValue = newValue;
+
+            if (_linearIds.Count > 0)
+            {
+                _currentIndex = _linearIds.FindIndex(id => id == newValue);
+            }
+
             await UpdateSelectedItem(newValue);
+
+            // 🔑 Ensure selected node is scrolled into view
+            await ScrollToSelectedNode($"tree-node-{newValue}");
+
             StateHasChanged();
         }
+
+
         // else: user cancelled → do nothing
         // thanks to @bind-Selected, the old node remains highlighted automatically
     }
@@ -303,8 +332,16 @@
         _selectedValue = presenter.Value;
         presenter.IsSelected = true;
         baselineMudTreeView.SelectedValue = presenter.Value; // keep tree in sync
+
+        // 🔑 Update current index to match manual selection
+        if (_linearIds.Count > 0)
+        {
+            _currentIndex = _linearIds.FindIndex(id => id == _selectedValue);
+        }
+
         await UpdateSelectedItem(presenter.Value);
         StateHasChanged();
+
     }
 
 
@@ -495,6 +532,23 @@
             await Task.Delay(300);
             // Load Entire Baseline Hierarchy data
             InitialTreeItems = await LoadAllBaselineHierarchyData(BaselineId);
+
+            _linearIds = InitialTreeItems.Flatten()
+                                         .Select(x => x.Value)
+                                         .ToList();
+
+            _currentIndex = _linearIds.FindIndex(id => id == _selectedValue);
+
+            // Default to root node if nothing selected
+            if (_selectedValue == Guid.Empty && _linearIds.Count > 0)
+            {
+                _selectedValue = _linearIds[0];
+                _currentIndex = 0;
+
+                baselineMudTreeView.SelectedValue = _selectedValue;
+                await UpdateSelectedItem(_selectedValue);
+            }
+
 
             showLoadingMessage = false; 
 
@@ -759,7 +813,50 @@
         // Apply the new setting
         ViewSettings.ReadOnlyView = newValue;
         await SessionStorage.SetAsync("READONLYVIEW", newValue);
+
+        if (newValue)
+        {
+            _linearIds = InitialTreeItems.Flatten()
+                                         .Select(x => x.Value)
+                                         .ToList();
+
+            _currentIndex = _linearIds.FindIndex(id => id == _selectedValue);
+        }
+        else
+        {
+            _linearIds.Clear();
+            _currentIndex = -1;
+        }
+
         StateHasChanged();
+    }
+
+    private async Task NavigateToPreviousBaselineNode(Guid currentId)
+    {
+        if (_currentIndex > 0)
+        {
+            await TryUpdateSelectedItemAsync(_linearIds[_currentIndex - 1]);
+        }
+    }
+
+    private async Task NavigateToNextBaselineNode(Guid currentId)
+    {
+        if (_currentIndex >= 0 && _currentIndex < _linearIds.Count - 1)
+        {
+            await TryUpdateSelectedItemAsync(_linearIds[_currentIndex + 1]);
+        }
+    }
+
+    public void Dispose()
+    {
+        BaselineItemzSelectionService.OnBaselineTreeNodeItemzSelected -= HandleItemzSelectedAsync;
+        BaselineItemzSelectionService.OnBaselineTreeNodeItemzNameUpdated -= NOT_IN_USE_HandleTreeNodeItemzNameUpdated;
+        BaselineItemzSelectionService.OnLoadingOfBaselineItemzTreeViewComponent -= HandleLoadingOfBaselineItemzTreeViewComponent;
+        BaselineItemzSelectionService.OnSingleBaselineItemzIsIncludedChanged -= HandleIncludeOnlySingleBaselineItemzNode;
+        BaselineItemzSelectionService.OnIncludeAllChildrenBaselineItemzTreeNodes -= HandleIncludeAllChildrenBaselineItemzTreeNodes;
+        BaselineItemzSelectionService.OnExcludeAllChildrenBaselineItemzTreeNodes -= HandleExcludeAllChildrenBaselineItemzTreeNodes;
+        BaselineItemzSelectionService.OnRequestNodeWithParent -= HandleRequestNodeWithParent;
+        BaselineItemzSelectionService.OnScrollToTreeViewNode -= HandleScrollToTreeViewNode;
     }
 
 }

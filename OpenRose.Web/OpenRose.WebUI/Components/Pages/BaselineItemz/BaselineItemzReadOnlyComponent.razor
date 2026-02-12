@@ -28,17 +28,38 @@
 	else
 	{
  		<MudItem xs="12" sm="12">
-			<MudCard style="background-color : #FABBBB;" >
+			<MudCard style="background-color:#FABBBB; position:sticky; top:0; z-index:10;">
 				<MudCardContent>
-				<MudItem Class="align-start d-flex" Style="width: auto" Outlined="false">
 					<MudGrid>
+						<!-- Left side: Title -->
 						<MudItem xs="12" sm="12" md="7" lg="7">
-							<MudText Typo="Typo.h5" Align="Align.Left"><strong>@singleBaselineItemz.Name </strong></MudText>
+							<MudText Typo="Typo.h5" Align="Align.Left">
+								<strong>@singleBaselineItemz.Name</strong>
+							</MudText>
+						</MudItem>
+
+						<!-- Right side: Up + Down buttons -->
+						<MudItem xs="12" sm="12" md="5" lg="5" Class="d-flex justify-end align-center">
+							<MudIconButton Icon="@Icons.Material.Filled.ArrowCircleUp"
+										   Color="Color.Success"
+										   Size="Size.Medium"
+										   IconSize="Size.Large"
+										   Variant="Variant.Filled"
+										   Class="mud-rounded-circle me-2"
+										   OnClick="@(() => { if (OnNavigatePrevious.HasDelegate) OnNavigatePrevious.InvokeAsync(BaselineItemzId); })" />
+
+							<MudIconButton Icon="@Icons.Material.Filled.ArrowCircleDown"
+										   Color="Color.Success"
+										   Size="Size.Medium"
+										   IconSize="Size.Large"
+										   Variant="Variant.Filled"
+										   Class="mud-rounded-circle"
+										   OnClick="@(() => { if (OnNavigateNext.HasDelegate) OnNavigateNext.InvokeAsync(BaselineItemzId); })" />
 						</MudItem>
 					</MudGrid>
-				</MudItem>
 				</MudCardContent>
 			</MudCard>
+
 			<MudCard Elevation="0" Outlined="false" Style="background-color:transparent;">
 				<MudCardContent>
 					<MudStack Row="true" Spacing="2" StretchItems="StretchItems.None" AlignItems="AlignItems.Start" Class="w-100">
@@ -78,6 +99,9 @@
 @code {
 	[Parameter]
 	public Guid BaselineItemzId { get; set; }
+
+	[Parameter] public EventCallback<Guid> OnNavigatePrevious { get; set; }
+	[Parameter] public EventCallback<Guid> OnNavigateNext { get; set; }
 
 	[Inject]
 	public IBaselineItemzService BaselineItemzService { get; set; }
