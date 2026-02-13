@@ -34,8 +34,6 @@
                             EnableSlide="@_sliderEnabled" EnableMargin="@_marginEnabled" Sensitivity="_sensitivity"
                             Height="@_height" Bordered="_borderedEnabled">
     <StartContent>
-@* <MudGrid Spacing="6" Justify="Justify.FlexStart">
-    <MudItem xs="6"> *@
         <MudPaper Elevation="0" Class="full-width">
             @if (showLoadingMessage)
             {
@@ -44,8 +42,6 @@
             }
             else
             {
-@*                 <MudButton OnClick="@(()=>baselineMudTreeView.ExpandAllAsync())" Variant="Variant.Filled">Expand All</MudButton> *@
-
                 <MudPaper Elevation="1" Class="d-flex align-center pa-2 mb-2">
                     <MudButton OnClick="@(() => baselineMudTreeView.ExpandAllAsync())"
                                Variant="Variant.Filled">
@@ -102,12 +98,8 @@
             {
                 if (selectedItem.RecordType.ToLower() == "baseline".ToLower()) // TODO :: USE CONSTANTS
                 {
-@*                     <BaselineDetailsComponent BaselineId="@selectedItem.Value" @key="selectedItem.Value" CalledFrom="@this.GetType().Name" /> *@
-
                     if (ViewSettings.ReadOnlyView)
                     {
-@*                         <BaselineReadOnlyComponent BaselineId="@selectedItem.Value"
-                                                  @key="selectedItem.Value" /> *@
                         <BaselineReadOnlyComponent BaselineId="@selectedItem.Value"
                                                    OnNavigateNext="NavigateToNextBaselineNode"
                                                    @key="selectedItem.Value" />
@@ -125,8 +117,6 @@
                     
                     if (ViewSettings.ReadOnlyView)
                     {
-@*                         <BaselineItemzTypeReadOnlyComponent BaselineItemzTypeId="@selectedItem.Value"
-                                                    @key="selectedItem.Value" /> *@
                         <BaselineItemzTypeReadOnlyComponent BaselineItemzTypeId="@selectedItem.Value" 
                                                     OnNavigatePrevious="NavigateToPreviousBaselineNode" 
                                                     OnNavigateNext="NavigateToNextBaselineNode" 
@@ -143,8 +133,6 @@
                     
                     if (ViewSettings.ReadOnlyView)
                     {
-@*                         <BaselineItemzReadOnlyComponent BaselineItemzId="@selectedItem.Value"
-                                                  @key="selectedItem.Value" /> *@
                         <BaselineItemzReadOnlyComponent BaselineItemzId="@selectedItem.Value"
                                                         OnNavigatePrevious="NavigateToPreviousBaselineNode"
                                                         OnNavigateNext="NavigateToNextBaselineNode"
@@ -169,8 +157,7 @@
         </MudPaper>
     </EndContent>
 </MudExtensions.MudSplitter>
-@*     </MudItem>
-</MudGrid> *@
+
 
 
 @code {
@@ -259,8 +246,6 @@
 
             StateHasChanged();
         }
-
-
         // else: user cancelled → do nothing
         // thanks to @bind-Selected, the old node remains highlighted automatically
     }
@@ -488,13 +473,6 @@
         }
         return _baselineHierarchyTreeNodes;
     }
-    // protected async override void OnInitialized()
-    // {
-    //     // Load initial data
-    //     InitialTreeItems = await LoadInitialData(BaselineId);
-    //     StateHasChanged();
-
-    // }
 
     protected override async Task OnInitializedAsync()
     {
@@ -667,22 +645,7 @@
         return (null, null);
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
     #region  Handle_IsIncluded_Changes
-
-
 
     private void HandleLoadingOfBaselineItemzTreeViewComponent(Guid recordId, bool isIncluded)
     {
@@ -858,5 +821,4 @@
         BaselineItemzSelectionService.OnRequestNodeWithParent -= HandleRequestNodeWithParent;
         BaselineItemzSelectionService.OnScrollToTreeViewNode -= HandleScrollToTreeViewNode;
     }
-
 }

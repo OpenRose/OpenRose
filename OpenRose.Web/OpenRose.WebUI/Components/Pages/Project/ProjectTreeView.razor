@@ -27,8 +27,6 @@
 @inject ViewSettingsService ViewSettings
 @inject ProtectedSessionStorage SessionStorage
 
-
-
 <MudExtensions.MudSplitter @bind-Dimension="@_percentage"
                             OnDoubleClicked="@OnDoubleClicked"
                             EnableSlide="@_sliderEnabled" EnableMargin="@_marginEnabled" Sensitivity="_sensitivity"
@@ -44,10 +42,6 @@
             }
             else
             {
-@*                 <MudButton OnClick="@(() => projectMudTreeView.ExpandAllAsync())" Variant="Variant.Filled">
-                    Expand All
-                </MudButton> *@
-
             <MudPaper Elevation="1" Class="d-flex align-center pa-2 mb-2">
                 <MudButton OnClick="@(() => projectMudTreeView.ExpandAllAsync())"
                            Variant="Variant.Filled">
@@ -61,7 +55,6 @@
                     Color="Color.Secondary"
                     LabelPlacement="Placement.End" />
             </MudPaper>
-
 
             }
             <MudTreeView @ref="projectMudTreeView"
@@ -97,12 +90,8 @@
             {
                 if (selectedItem.RecordType.ToLower() == "project") // TODO :: USE CONSTANTS
                 {
-@*                     <ProjectDetailsComponent ProjectId="@selectedItem.Value" @key="selectedItem.Value" CalledFrom="@this.GetType().Name" /> *@
-
                     if (ViewSettings.ReadOnlyView)
                     {
-@*                         <ProjectReadOnlyComponent ProjectId="@selectedItem.Value"
-                                                  @key="selectedItem.Value" /> *@
                         <ProjectReadOnlyComponent ProjectId="@selectedItem.Value"
                                                   OnNavigateNext="NavigateToNextItemz"
                                                   @key="selectedItem.Value" />
@@ -121,8 +110,6 @@
 
                     if (ViewSettings.ReadOnlyView)
                     {
-@*                         <ItemzTypeReadOnlyComponent ItemzTypeId="@selectedItem.Value"
-                                                    @key="selectedItem.Value" /> *@
                         <ItemzTypeReadOnlyComponent ItemzTypeId="@selectedItem.Value"
                                                     OnNavigatePrevious="NavigateToPreviousItemz"
                                                     OnNavigateNext="NavigateToNextItemz"
@@ -141,8 +128,6 @@
                 {
                     if (ViewSettings.ReadOnlyView)
                     {
-@*                         <ItemzReadOnlyComponent ItemzId="@selectedItem.Value"
-                                                  @key="selectedItem.Value" /> *@
                         <ItemzReadOnlyComponent ItemzId="@selectedItem.Value"
                                                 OnNavigatePrevious="NavigateToPreviousItemz"
                                                 OnNavigateNext="NavigateToNextItemz"
@@ -265,8 +250,6 @@
     }
 
 
-
-
     private TreeItemPresenter selectedItem;
 
 
@@ -341,7 +324,6 @@
         await UpdateSelectedItem(presenter.Value);
         StateHasChanged();
     }
-
 
 
     public void AddChildrens(TreeItemData<Guid> parentTempTreeViewNode, List<NestedHierarchyIdRecordDetailsDTO> Children )
@@ -753,7 +735,6 @@
             await TryUpdateSelectedItemAsync(_linearIds[_currentIndex + 1]);
         }
     }
-
 
 
     public void Dispose()
