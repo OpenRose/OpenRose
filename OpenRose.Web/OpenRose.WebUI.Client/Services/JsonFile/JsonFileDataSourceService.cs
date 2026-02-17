@@ -127,6 +127,8 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 			_rootIds.Clear();
 			_itemzTraces.Clear();
 			_baselineItemzTraces.Clear();
+			_baselineItemzIncluded.Clear();
+
 		}
 
 		#endregion
@@ -160,18 +162,6 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 			_hierarchyById.TryGetValue(id, out var dto);
 			return Task.FromResult(dto);
 		}
-
-		//public async Task<JsonBaselineHierarchyNodeDTO?> GetBaselineHierarchyJsonAsync(Guid rootId)
-		//{
-		//	EnsureLoaded();
-
-		//	if (!_nodesById.TryGetValue(rootId, out var token))
-		//		return null;
-
-		//	var root = BuildJsonBaselineNode(rootId, token);
-		//	await LoadJsonBaselineChildrenAsync(root);
-		//	return root;
-		//}
 
 
 		public Task<ICollection<HierarchyIdRecordDetailsDTO>> GetImmediateChildrenHierarchyByGuidAsync(Guid parentId)
@@ -431,7 +421,8 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 			_rootIds.Clear();
 			_itemzTraces.Clear();
 			_baselineItemzTraces.Clear();
-			_exportKind = RepositoryExportKind.Unknown;
+			_baselineItemzIncluded.Clear();
+		    _exportKind = RepositoryExportKind.Unknown;
 
 			if (_root == null)
 				return;
@@ -827,7 +818,6 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 			return Guid.Empty;
 		}
 
-
 		private JToken? GetPropertyIgnoreCase(string name)
 		{
 			return _root!.Properties()
@@ -888,7 +878,5 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 		}
 
 		#endregion
-
-
 	}
 }
