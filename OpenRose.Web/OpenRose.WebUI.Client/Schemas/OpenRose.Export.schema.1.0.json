@@ -1,0 +1,414 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RepositoryExport",
+  "type": "object",
+  "properties": {
+    "RepositoryId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "Projects": {
+      "type": [ "array", "null" ],
+      "items": { "$ref": "#/definitions/ProjectExportNode" }
+    },
+    "ItemzTypes": {
+      "type": [ "array", "null" ],
+      "items": { "$ref": "#/definitions/ItemzTypeExportNode" }
+    },
+    "Itemz": {
+      "type": [ "array", "null" ],
+      "items": { "$ref": "#/definitions/ItemzExportNode" }
+    },
+    "ItemzTraces": {
+      "type": [ "array", "null" ],
+      "items": { "$ref": "#/definitions/ItemzTraceExportNode" }
+    },
+    "Baselines": {
+      "type": [ "array", "null" ],
+      "items": { "$ref": "#/definitions/BaselineExportNode" }
+    },
+    "BaselineItemzTypes": {
+      "type": [ "array", "null" ],
+      "items": { "$ref": "#/definitions/BaselineItemzTypeExportNode" }
+    },
+    "BaselineItemz": {
+      "type": [ "array", "null" ],
+      "items": { "$ref": "#/definitions/BaselineItemzExportNode" }
+    },
+    "BaselineItemzTraces": {
+      "type": [ "array", "null" ],
+      "items": { "$ref": "#/definitions/BaselineItemzTraceExportNode" }
+    }
+  },
+  "required": [ "RepositoryId" ],
+  "oneOf": [
+    {
+      "description": "Project export: Projects must be a non-empty array, ItemzTraces may be array or null, all other root arrays must be null.",
+      "properties": {
+        "Projects": {
+          "type": "array",
+          "minItems": 1
+        },
+        "ItemzTypes": { "type": "null" },
+        "Itemz": { "type": "null" },
+        "ItemzTraces": { "type": [ "array", "null" ] },
+        "Baselines": { "type": "null" },
+        "BaselineItemzTypes": { "type": "null" },
+        "BaselineItemz": { "type": "null" },
+        "BaselineItemzTraces": { "type": "null" }
+      }
+    },
+    {
+      "description": "ItemzType export: ItemzTypes must be a non-empty array, ItemzTraces may be array or null, all other root arrays must be null.",
+      "properties": {
+        "Projects": { "type": "null" },
+        "ItemzTypes": {
+          "type": "array",
+          "minItems": 1
+        },
+        "Itemz": { "type": "null" },
+        "ItemzTraces": { "type": [ "array", "null" ] },
+        "Baselines": { "type": "null" },
+        "BaselineItemzTypes": { "type": "null" },
+        "BaselineItemz": { "type": "null" },
+        "BaselineItemzTraces": { "type": "null" }
+      }
+    },
+    {
+      "description": "Itemz export: Itemz must be a non-empty array, ItemzTraces may be array or null, all other root arrays must be null.",
+      "properties": {
+        "Projects": { "type": "null" },
+        "ItemzTypes": { "type": "null" },
+        "Itemz": {
+          "type": "array",
+          "minItems": 1
+        },
+        "ItemzTraces": { "type": [ "array", "null" ] },
+        "Baselines": { "type": "null" },
+        "BaselineItemzTypes": { "type": "null" },
+        "BaselineItemz": { "type": "null" },
+        "BaselineItemzTraces": { "type": "null" }
+      }
+    },
+    {
+      "description": "Baseline export: Baselines must be a non-empty array, BaselineItemzTraces may be array or null, all other root arrays must be null.",
+      "properties": {
+        "Projects": { "type": "null" },
+        "ItemzTypes": { "type": "null" },
+        "Itemz": { "type": "null" },
+        "ItemzTraces": { "type": "null" },
+        "Baselines": {
+          "type": "array",
+          "minItems": 1
+        },
+        "BaselineItemzTypes": { "type": "null" },
+        "BaselineItemz": { "type": "null" },
+        "BaselineItemzTraces": { "type": [ "array", "null" ] }
+      }
+    },
+    {
+      "description": "BaselineItemzType export: BaselineItemzTypes must be a non-empty array, BaselineItemzTraces may be array or null, all other root arrays must be null.",
+      "properties": {
+        "Projects": { "type": "null" },
+        "ItemzTypes": { "type": "null" },
+        "Itemz": { "type": "null" },
+        "ItemzTraces": { "type": "null" },
+        "Baselines": { "type": "null" },
+        "BaselineItemzTypes": {
+          "type": "array",
+          "minItems": 1
+        },
+        "BaselineItemz": { "type": "null" },
+        "BaselineItemzTraces": { "type": [ "array", "null" ] }
+      }
+    },
+    {
+      "description": "BaselineItemz export: BaselineItemz must be a non-empty array, BaselineItemzTraces may be array or null, all other root arrays must be null.",
+      "properties": {
+        "Projects": { "type": "null" },
+        "ItemzTypes": { "type": "null" },
+        "Itemz": { "type": "null" },
+        "ItemzTraces": { "type": "null" },
+        "Baselines": { "type": "null" },
+        "BaselineItemzTypes": { "type": "null" },
+        "BaselineItemz": {
+          "type": "array",
+          "minItems": 1
+        },
+        "BaselineItemzTraces": { "type": [ "array", "null" ] }
+      }
+    }
+  ],
+  "definitions": {
+    "ProjectExportNode": {
+      "type": "object",
+      "properties": {
+        "Project": { "$ref": "#/definitions/ProjectDTO" },
+        "ItemzTypes": {
+          "type": [ "array", "null" ],
+          "items": { "$ref": "#/definitions/ItemzTypeExportNode" }
+        }
+      },
+      "required": [ "Project" ],
+      "additionalProperties": false
+    },
+    "ProjectDTO": {
+      "type": "object",
+      "properties": {
+        "Id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "Name": { "type": "string" },
+        "Status": { "type": "string" },
+        "Description": { "type": "string" },
+        "CreatedBy": { "type": "string" },
+        "CreatedDate": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [ "Id", "Name", "Status", "CreatedBy", "CreatedDate" ],
+      "additionalProperties": false
+    },
+    "ItemzTypeExportNode": {
+      "type": "object",
+      "properties": {
+        "ItemzType": { "$ref": "#/definitions/ItemzTypeDTO" },
+        "Itemz": {
+          "type": [ "array", "null" ],
+          "items": { "$ref": "#/definitions/ItemzExportNode" }
+        }
+      },
+      "required": [ "ItemzType" ],
+      "additionalProperties": false
+    },
+    "ItemzTypeDTO": {
+      "type": "object",
+      "properties": {
+        "Id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "Name": { "type": "string" },
+        "Status": { "type": "string" },
+        "Description": { "type": "string" },
+        "CreatedBy": { "type": "string" },
+        "CreatedDate": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "IsSystem": { "type": "boolean" }
+      },
+      "required": [ "Id", "Name", "Status", "CreatedBy", "CreatedDate", "IsSystem" ],
+      "additionalProperties": false
+    },
+    "ItemzExportNode": {
+      "type": "object",
+      "properties": {
+        "Itemz": { "$ref": "#/definitions/ItemzDTO" },
+        "SubItemz": {
+          "type": [ "array", "null" ],
+          "items": { "$ref": "#/definitions/ItemzExportNode" }
+        }
+      },
+      "required": [ "Itemz" ],
+      "additionalProperties": false
+    },
+    "ItemzDTO": {
+      "type": "object",
+      "properties": {
+        "Id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "Name": { "type": "string" },
+        "Status": { "type": "string" },
+        "Priority": { "type": "string" },
+        "Description": { "type": "string" },
+        "CreatedBy": { "type": "string" },
+        "CreatedDate": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "Severity": { "type": "string" }
+      },
+      "required": [ "Id", "Name", "Status", "Priority", "CreatedBy", "CreatedDate", "Severity" ],
+      "additionalProperties": false
+    },
+    "ItemzTraceExportNode": {
+      "type": "object",
+      "properties": {
+        "FromTraceItemzId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "ToTraceItemzId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "TraceLabel": {
+          "type": [ "string", "null" ],
+          "maxLength": 32,
+          "description": "Optional short unicode label for the trace (<= 32 characters)"
+        },
+        "FromTraceName": { "type": "string" },
+        "ToTraceName": { "type": "string" }
+      },
+      "required": [ "FromTraceItemzId", "ToTraceItemzId" ],
+      "additionalProperties": false
+    },
+    "BaselineExportNode": {
+      "type": "object",
+      "properties": {
+        "Baseline": { "$ref": "#/definitions/BaselineDTO" },
+        "BaselineItemzTypes": {
+          "type": [ "array", "null" ],
+          "items": { "$ref": "#/definitions/BaselineItemzTypeExportNode" }
+        }
+      },
+      "required": [ "Baseline" ],
+      "additionalProperties": false
+    },
+    "BaselineDTO": {
+      "type": "object",
+      "properties": {
+        "Id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "Name": { "type": "string" },
+        "Description": { "type": "string" },
+        "CreatedBy": { "type": "string" },
+        "CreatedDate": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [ "Id", "Name", "Description", "CreatedBy", "CreatedDate" ],
+      "additionalProperties": false
+    },
+    "BaselineItemzTypeExportNode": {
+      "type": "object",
+      "properties": {
+        "BaselineItemzType": { "$ref": "#/definitions/BaselineItemzTypeDTO" },
+        "BaselineItemz": {
+          "type": [ "array", "null" ],
+          "items": { "$ref": "#/definitions/BaselineItemzExportNode" }
+        }
+      },
+      "required": [ "BaselineItemzType" ],
+      "additionalProperties": false
+    },
+    "BaselineItemzTypeDTO": {
+      "type": "object",
+      "properties": {
+        "Id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "ItemzTypeId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "BaselineId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "Name": { "type": "string" },
+        "Status": { "type": "string" },
+        "Description": { "type": "string" },
+        "CreatedBy": { "type": "string" },
+        "CreatedDate": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "IsSystem": { "type": "boolean" }
+      },
+      "required": [
+        "Id",
+        "ItemzTypeId",
+        "BaselineId",
+        "Name",
+        "Status",
+        "Description",
+        "CreatedBy",
+        "CreatedDate",
+        "IsSystem"
+      ],
+      "additionalProperties": false
+    },
+    "BaselineItemzExportNode": {
+      "type": "object",
+      "properties": {
+        "BaselineItemz": { "$ref": "#/definitions/BaselineItemzDTO" },
+        "BaselineSubItemz": {
+          "type": [ "array", "null" ],
+          "items": { "$ref": "#/definitions/BaselineItemzExportNode" }
+        }
+      },
+      "required": [ "BaselineItemz" ],
+      "additionalProperties": false
+    },
+    "BaselineItemzDTO": {
+      "type": "object",
+      "properties": {
+        "Id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "ItemzId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "Name": { "type": "string" },
+        "Status": { "type": "string" },
+        "Priority": { "type": "string" },
+        "Description": { "type": "string" },
+        "CreatedBy": { "type": "string" },
+        "CreatedDate": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "Severity": { "type": "string" },
+        "isIncluded": { "type": "boolean" }
+      },
+      "required": [
+        "Id",
+        "ItemzId",
+        "Name",
+        "Status",
+        "Priority",
+        "Description",
+        "CreatedBy",
+        "CreatedDate",
+        "Severity",
+        "isIncluded"
+      ],
+      "additionalProperties": false
+    },
+    "BaselineItemzTraceExportNode": {
+      "type": "object",
+      "properties": {
+        "FromTraceBaselineItemzId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "ToTraceBaselineItemzId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "TraceLabel": {
+          "type": [ "string", "null" ],
+          "maxLength": 32,
+          "description": "Optional short unicode label for the baseline trace (<= 32 characters)"
+        },
+        "FromTraceBaselineItemzName": { "type": "string" },
+        "ToTraceBaselineItemzName": { "type": "string" }
+      },
+      "required": [ "FromTraceBaselineItemzId", "ToTraceBaselineItemzId" ],
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
