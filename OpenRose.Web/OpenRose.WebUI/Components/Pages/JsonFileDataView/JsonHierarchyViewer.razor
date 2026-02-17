@@ -1,0 +1,41 @@
+﻿@page "/jsonviewer"
+@using OpenRose.WebUI.Client.Services.JsonFile
+@using OpenRose.WebUI.Components.Pages.Baseline
+@using OpenRose.WebUI.Components.Pages.JsonFileDataView
+@using OpenRose.WebUI.Components.Pages.Project
+
+@inject JsonFileDataSourceService JsonFileDataSource
+
+@{
+    var isLoaded = JsonFileDataSource.IsJsonLoaded;
+    var kind = isLoaded ? JsonFileDataSource.DetectExportKind() : JsonExportKind.Unknown;
+    var rootId = isLoaded ? JsonFileDataSource.GetRootRecordId() : Guid.Empty;
+}
+
+@if (!isLoaded)
+{
+    <MudText>Please load a JSON file first.</MudText>
+}
+else
+{
+    @switch (kind)
+    {
+        case JsonExportKind.Project:
+        case JsonExportKind.ItemzType:
+        case JsonExportKind.Itemz:
+            <ProjectTreeViewForJson RootId="@rootId" />
+            break;
+
+        case JsonExportKind.Baseline:
+        case JsonExportKind.BaselineItemzType:
+        case JsonExportKind.BaselineItemz:
+            <BaselineTreeViewForJson RootId="@rootId" />
+            break;
+
+        default:
+            <MudAlert Severity="Severity.Error">
+                Unknown JSON export type.
+            </MudAlert>
+            break;
+    }
+}

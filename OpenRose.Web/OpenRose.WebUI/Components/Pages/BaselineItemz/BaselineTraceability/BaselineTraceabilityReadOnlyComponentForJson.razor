@@ -1,0 +1,132 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+
+@using OpenRose.WebUI.Client.Services.JsonFile
+@using OpenRose.WebUI.Client.SharedModels.ClientSideUIOnlyModel
+@using OpenRose.WebUI.Components.Pages.Common
+@inject JsonFileDataSourceService JsonService
+
+@if (AllParentTraceViewModels.Count > 0)
+{
+    <MudPaper Class="pa-4 align-start d-flex" Style="width: auto" Outlined="false">
+        <MudText Typo="Typo.h6" Align="Align.Left">
+            <MudIcon Icon="@Icons.Material.Filled.KeyboardDoubleArrowUp" /> Parent / From Traces
+        </MudText>
+    </MudPaper>
+
+    <MudDataGrid Items="@AllParentTraceViewModels"
+                 Filterable="true"
+                 SortMode="@SortMode.None"
+                 Groupable="false"
+                 Striped="true"
+                 FixedHeader="true">
+        <Columns>
+            <PropertyColumn Property="x => x.Id" Title="Id">
+                <CellTemplate>
+                    <CopyableText TextToCopy="@context.Item.Id.ToString()" DisplayLength="8" />
+                </CellTemplate>
+            </PropertyColumn>
+
+            <PropertyColumn Property="x => x.Name" CellStyle="max-width: 100px; white-space: normal;" />
+
+            <PropertyColumn Property="x => x.TraceLabel" Title="Trace Label">
+                <CellTemplate>
+                    @if (!string.IsNullOrWhiteSpace(context.Item.TraceLabel))
+                    {
+                        <MudChip Color="Color.Info">@context.Item.TraceLabel</MudChip>
+                    }
+                    else
+                    {
+                        <MudChip Color="Color.Default" Variant="Variant.Outlined">No Label</MudChip>
+                    }
+                </CellTemplate>
+            </PropertyColumn>
+
+            <PropertyColumn Property="x => x.Status" />
+            <PropertyColumn Property="x => x.Priority" />
+
+            <TemplateColumn Title="Action">
+                <CellTemplate>
+                    <MudButton Size="@Size.Small"
+                               Variant="@Variant.Filled"
+                               Color="@Color.Success"
+                               OnClick="_ => OpenItem(context.Item.Id)">Open</MudButton>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </MudDataGrid>
+}
+
+@if (AllChildTraceViewModels.Count > 0)
+{
+    <MudPaper Class="pa-4 align-start d-flex" Style="width: auto" Outlined="false">
+        <MudText Typo="Typo.h6" Align="Align.Left">
+            <MudIcon Icon="@Icons.Material.Filled.KeyboardDoubleArrowDown" /> Child / To Traces
+        </MudText>
+    </MudPaper>
+
+    <MudDataGrid Items="@AllChildTraceViewModels"
+                 Filterable="true"
+                 SortMode="@SortMode.None"
+                 Groupable="false"
+                 Striped="true"
+                 FixedHeader="true">
+        <Columns>
+            <PropertyColumn Property="x => x.Id" Title="Id">
+                <CellTemplate>
+                    <CopyableText TextToCopy="@context.Item.Id.ToString()" DisplayLength="8" />
+                </CellTemplate>
+            </PropertyColumn>
+
+            <PropertyColumn Property="x => x.Name" CellStyle="max-width: 100px; white-space: normal;" />
+
+            <PropertyColumn Property="x => x.TraceLabel" Title="Trace Label">
+                <CellTemplate>
+                    @if (!string.IsNullOrWhiteSpace(context.Item.TraceLabel))
+                    {
+                        <MudChip Color="Color.Info">@context.Item.TraceLabel</MudChip>
+                    }
+                    else
+                    {
+                        <MudChip Color="Color.Default" Variant="Variant.Outlined">No Label</MudChip>
+                    }
+                </CellTemplate>
+            </PropertyColumn>
+
+            <PropertyColumn Property="x => x.Status" />
+            <PropertyColumn Property="x => x.Priority" />
+
+            <TemplateColumn Title="Action">
+                <CellTemplate>
+                    <MudButton Size="@Size.Small"
+                               Variant="@Variant.Filled"
+                               Color="@Color.Success"
+                               OnClick="_ => OpenItem(context.Item.Id)">Open</MudButton>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </MudDataGrid>
+}
+
+@code {
+    [Parameter] public Guid BaselineItemzId { get; set; }
+    [Parameter] public EventCallback<Guid> OnOpenTraceTarget { get; set; }
+
+    private ICollection<TraceComponentViewModel> AllParentTraceViewModels { get; set; } = new List<TraceComponentViewModel>();
+    private ICollection<TraceComponentViewModel> AllChildTraceViewModels { get; set; } = new List<TraceComponentViewModel>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var traces = await JsonService.GetTracesForRecordAsync(BaselineItemzId);
+
+        AllParentTraceViewModels = traces.Parents;
+        AllChildTraceViewModels = traces.Children;
+    }
+
+    private Task OpenItem(Guid id)
+        => OnOpenTraceTarget.HasDelegate ? OnOpenTraceTarget.InvokeAsync(id) : Task.CompletedTask;
+}

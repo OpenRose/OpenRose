@@ -21,6 +21,7 @@ using OpenRose.WebUI.Client.Services.ItemzCollection;
 using OpenRose.WebUI.Client.Services.ItemzTrace;
 using OpenRose.WebUI.Client.Services.ItemzType;
 using OpenRose.WebUI.Client.Services.ItemzTypeItemzsService;
+using OpenRose.WebUI.Client.Services.JsonFile;
 using OpenRose.WebUI.Client.Services.Project;
 using OpenRose.WebUI.Components;
 using OpenRose.WebUI.Components.EventServices;
@@ -228,6 +229,11 @@ builder.Services.AddScoped<BaselineBreadcrumsService>(); // Register the service
 builder.Services.AddScoped<BreadcrumsService>(); // Register the service
 builder.Services.AddScoped<FormStateService>(); // Register the service
 builder.Services.AddScoped<ViewSettingsService>(); // Register the ReadOnlyView toggle service
+builder.Services.AddScoped<DataSourceStateService>(); // This service tracks whether we're using API or JSON file as data source
+builder.Services.AddScoped<JsonFileSchemaValidationService>(); // This service validates JSON files against the OpenRose export schema
+builder.Services.AddScoped<JsonFileDataSourceService>(); // This service provides hierarchy/project data queries from loaded JSON files
+builder.Services.AddScoped<BaselineTreeNodeItemzSelectionServiceForJson>(); // Register the service
+
 
 
 builder.Services.AddSingleton<AssemblyInfoService>(); // Register the service

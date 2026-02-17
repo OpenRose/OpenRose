@@ -5,8 +5,10 @@
 *@
 
 @using OpenRose.WebUI.Services
+@using OpenRose.WebUI.Components.EventServices
 
 @inject ConfigurationService ConfigService
+@inject DataSourceStateService DataSourceStateServiceForRoutingGuard
 @inject NavigationManager Nav
 
 <Router AppAssembly="typeof(Program).Assembly"
@@ -21,17 +23,77 @@
 @code {
     private Task GuardNavigation(Microsoft.AspNetCore.Components.Routing.NavigationContext context)
     {
-        // Always allow home
+        // EXPLANATION: Navigation guard logic determines if user can navigate to a given route.
+        // We need to handle two data source modes:
+        // 1. API Server Mode: User can navigate anywhere (if API is configured and healthy)
+        // 2. JSON File Mode: User can only view read-only data (limited navigation)
+
+        // ========================================================================
+        // ALWAYS ALLOW HOME PAGE
+        // ========================================================================
         if (string.IsNullOrEmpty(context.Path) || context.Path == "/")
             return Task.CompletedTask;
 
-        // Block navigation if API is unavailable or incompatible
-        if (!ConfigService.IsOpenRoseAPIConfigured ||
-            !string.IsNullOrEmpty(ConfigService.ApiVersionMismatchMessage))
+        // ========================================================================
+        // CHECK CURRENT DATA SOURCE MODE
+        // ========================================================================
+        var currentDataSourceTypeBeingUsed = DataSourceStateServiceForRoutingGuard.CurrentDataSourceState.CurrentDataSourceType;
+
+        // ========================================================================
+        // API SERVER MODE - Original routing logic
+        // ========================================================================
+        if (currentDataSourceTypeBeingUsed == DataSourceStateService.DataSourceType.ApiServer)
         {
-            Nav.NavigateTo("/");
+            // EXPLANATION: In API mode, block navigation if API is unavailable or incompatible
+            // User cannot view data if API is not configured properly
+            if (!ConfigService.IsOpenRoseAPIConfigured ||
+                !string.IsNullOrEmpty(ConfigService.ApiVersionMismatchMessage))
+            {
+                Nav.NavigateTo("/");
+                return Task.CompletedTask;
+            }
+
+            // If API is available, allow navigation to any route
+            return Task.CompletedTask;
         }
 
+        // ========================================================================
+        // JSON FILE MODE - Restricted navigation for read-only viewing
+        // ========================================================================
+        if (currentDataSourceTypeBeingUsed == DataSourceStateService.DataSourceType.JsonFile)
+        {
+            // EXPLANATION: In JSON file mode, only allow navigation to certain routes
+            // that support read-only viewing of the JSON data.
+            // Most admin/maintenance routes should be blocked.
+
+            string normalizedPathForComparison = context.Path.ToLowerInvariant().Trim('/');
+
+            // Routes that ARE ALLOWED in JSON file mode (read-only viewing)
+            bool isAllowedRouteInJsonMode =
+                normalizedPathForComparison == "" ||                           // Home page
+                normalizedPathForComparison == "jsonviewer" ||                  // JSON viewer root page
+                // normalizedPathForComparison == "projecttreeview" ||           // Project tree view
+                // normalizedPathForComparison.StartsWith("projecttreeview/") || // Project tree view with ID
+                // normalizedPathForComparison == "baselinerreadonly" ||         // Baseline read-only view
+                // normalizedPathForComparison.StartsWith("baseline/") ||        // Baseline with ID
+                normalizedPathForComparison == "settings";                    // Settings page
+
+            if (!isAllowedRouteInJsonMode)
+            {
+                // EXPLANATION: Block navigation to routes that require write access or API calls
+                // Redirect user back to home page
+                Nav.NavigateTo("/");
+                return Task.CompletedTask;
+            }
+
+            // Allow navigation to approved read-only routes
+            return Task.CompletedTask;
+        }
+
+        // ========================================================================
+        // DEFAULT: Unknown data source state - go to home
+        // ========================================================================
+        Nav.NavigateTo("/");
         return Task.CompletedTask;
     }
 }

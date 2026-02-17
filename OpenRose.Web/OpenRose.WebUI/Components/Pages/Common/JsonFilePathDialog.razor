@@ -1,0 +1,85 @@
+﻿@* 
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0. 
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+<!--
+	NEW DIALOG COMPONENT FOR JSON FILE DATA SOURCE FEATURE
+
+	This dialog displays the full path to the currently loaded JSON file.
+	User can copy the path to clipboard for sharing or reference.
+	This dialog is shown when user clicks "View Full Path" in the footer.
+-->
+@using MudBlazor
+@inject IJSRuntime JsRuntimeForClipboardAccess
+
+<MudDialog>
+	<TitleContent>
+		<MudText Color="Color.Primary">JSON File Path</MudText>
+	</TitleContent>
+
+	<DialogContent>
+		<MudStack Spacing="2">
+			<MudText Typo="Typo.body2">
+				<strong>Currently Loaded JSON File:</strong>
+			</MudText>
+
+			<MudCard>
+				<MudCardContent Class="pa-3">
+					<MudText Typo="Typo.body2" Style="word-break: break-all; font-family: monospace;">
+						@JsonFilePathToShow
+					</MudText>
+				</MudCardContent>
+			</MudCard>
+
+			<MudText Typo="Typo.caption" Color="Color.Secondary">
+				You can copy this path and share it with others who want to open the same file.
+			</MudText>
+		</MudStack>
+	</DialogContent>
+
+	<DialogActions>
+		<MudButton Color="Color.Primary" OnClick="@CopyPathToClipboardAsync">
+			📋 Copy to Clipboard
+		</MudButton>
+		<MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="@CloseDialogAsync">
+			Close
+		</MudButton>
+	</DialogActions>
+</MudDialog>
+
+@code {
+	// CORRECTED: Following MudBlazor 7+ pattern from SelectSourceRecordDialog.razor
+	[CascadingParameter]
+	private IMudDialogInstance MudDialog { get; set; }
+
+	[Parameter]
+	public string JsonFilePathToShow { get; set; } = string.Empty;
+
+	/// <summary>
+	/// NEW METHOD: Copies the JSON file path to the user's clipboard.
+	/// </summary>
+	private async Task CopyPathToClipboardAsync()
+	{
+		try
+		{
+			await JsRuntimeForClipboardAccess.InvokeVoidAsync("navigator.clipboard.writeText", JsonFilePathToShow);
+			// Optionally show a snackbar notification that path was copied
+		}
+		catch (Exception exceptionDuringClipboardCopy)
+		{
+			System.Diagnostics.Debug.WriteLine($"Error copying to clipboard: {exceptionDuringClipboardCopy.Message}");
+		}
+	}
+
+	/// <summary>
+	/// NEW METHOD: Closes the dialog.
+	/// CORRECTED: Using MudDialogInstance.Close() following MudBlazor 7+ pattern
+	/// </summary>
+	private void CloseDialogAsync()
+	{
+		// CORRECTED: Simple Close() call like SelectSourceRecordDialog.razor
+		MudDialog.Close(DialogResult.Ok("TEST"));
+	}
+}

@@ -22,8 +22,6 @@
 		<PackageReference Include="PSC.Blazor.Components.MarkdownEditor" Version="8.0.8" />
 	</ItemGroup>
 	<ItemGroup>
-		<Folder Include="Components\Pages\BaselineItemz\BaselineTraceability\" />
-		<Folder Include="Components\Pages\Baseline\" />
 		<Folder Include="Components\Pages\ChangeLog\" />
 		<Folder Include="Components\Pages\Traceability\" />
 		<Folder Include="wwwroot\icons\" />
