@@ -117,9 +117,12 @@
 
                     case "baselineitemz":
                         <BaselineItemzReadOnlyComponentForJson BaselineItemzId="@selectedItem.Value"
+                                                               IsIncluded="@selectedItem.IsIncluded"
                                                                OnNavigatePrevious="NavigatePrevious"
                                                                OnNavigateNext="NavigateNext"
                                                                OnOpenTraceTarget="NavigateToTraceTarget" />
+                        break;
+
                         break;
 
                     default:
