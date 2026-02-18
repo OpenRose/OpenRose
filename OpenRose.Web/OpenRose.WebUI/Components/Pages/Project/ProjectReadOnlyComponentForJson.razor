@@ -7,7 +7,9 @@
 
 @using OpenRose.WebUI.Client.Services.JsonFile
 @using OpenRose.WebUI.Client.SharedModels
+@using OpenRose.WebUI.Components.EventServices
 @using OpenRose.WebUI.Components.Pages.Common
+@inject TreeNodeItemzSelectionServiceForJson ItemzSelectionServiceForJson
 @inject IJSRuntime JS
 @inject JsonFileDataSourceService JsonService
 
@@ -53,6 +55,9 @@
                         <MudStack Row="true" Spacing="2">
                             <MudText><strong>ID          : </strong></MudText>
                             <CopyableText TextToCopy="@_project.Id.ToString()" DisplayLength="8" />
+                            <MudTooltip Text="Show in Tree View">
+                                <MudIcon Icon="@Icons.Material.Filled.Park" Size="Size.Small" Class="mouse-pointer-icon" @onclick="async () => await findAndShowInTreeViewAsync()" />
+                            </MudTooltip>
                         </MudStack>
                         <MudText><strong> || Status      : </strong> @_project.Status</MudText>
                     </MudStack>
@@ -96,5 +101,10 @@
 
         initializingPage = false;
         StateHasChanged();
+    }
+
+    private async Task findAndShowInTreeViewAsync()
+    {
+        await ItemzSelectionServiceForJson.ScrollToTreeViewNodeAsync(ProjectId);
     }
 }

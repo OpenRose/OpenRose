@@ -7,10 +7,12 @@
 
 @using OpenRose.WebUI.Client.Services.JsonFile
 @using OpenRose.WebUI.Client.SharedModels
+@using OpenRose.WebUI.Components.EventServices
 @using OpenRose.WebUI.Components.Pages.Itemz
 @using OpenRose.WebUI.Components.Pages.ItemzType
 @using OpenRose.WebUI.Helper.TreeViewNodes
 @inject JsonFileDataSourceService JsonFileDataSource
+@inject TreeNodeItemzSelectionServiceForJson ItemzSelectionServiceForJson
 @inject IJSRuntime JS
 
 <MudExtensions.MudSplitter @bind-Dimension="@_percentage"
@@ -182,6 +184,12 @@
 
     protected override async Task OnInitializedAsync()
     {
+
+        ItemzSelectionServiceForJson.OnScrollToTreeViewNode += async (recordId) =>
+        {
+            await HandleScrollToTreeViewNode(recordId);
+        };
+
         try
         {
             var nested = await JsonFileDataSource.GetAllChildrenHierarchyByGuidAsync(RootId);
@@ -291,6 +299,11 @@
 
         await UpdateSelectedItemAsync(presenter.Value);
         StateHasChanged();
+    }
+
+    private async Task HandleScrollToTreeViewNode(Guid recordId)
+    {
+        await ScrollToNodeAsync($"project-json-node-{recordId}");
     }
 
     private async Task UpdateSelectedItemAsync(Guid id)
@@ -406,5 +419,9 @@
             await InvokeAsync(StateHasChanged);
     }
 
+    public void Dispose()
+    {
+        ItemzSelectionServiceForJson.OnScrollToTreeViewNode -= HandleScrollToTreeViewNode;
+    }
 
 }
