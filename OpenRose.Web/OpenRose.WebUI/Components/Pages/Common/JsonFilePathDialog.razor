@@ -32,10 +32,6 @@
 					</MudText>
 				</MudCardContent>
 			</MudCard>
-
-			<MudText Typo="Typo.caption" Color="Color.Secondary">
-				You can copy this path and share it with others who want to open the same file.
-			</MudText>
 		</MudStack>
 	</DialogContent>
 
@@ -43,7 +39,7 @@
 		<MudButton Color="Color.Primary" OnClick="@CopyPathToClipboardAsync">
 			📋 Copy to Clipboard
 		</MudButton>
-		<MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="@CloseDialogAsync">
+		<MudButton Variant="Variant.Filled" Color="Color.Warning" OnClick="@CloseDialogAsync">
 			Close
 		</MudButton>
 	</DialogActions>

@@ -61,9 +61,26 @@
 
 	.file-path-footer-button {
 		cursor: pointer;
-		color: #1976d2;
+		/* color: #1976d2; */
+		margin-left: 8px;
 		text-decoration: underline;
 	}
+
+/* 	html, body {
+		height: 100%;
+		margin: 0;
+	}
+
+	.mud-layout {
+		height: 100vh;
+	}
+	 */
+
+	.main-scroll-area {
+		height: calc(100vh);
+		overflow-y: auto;
+	}
+
 </style>
 
 <MudLayout>
@@ -81,13 +98,18 @@
 		<MudLink Href="/" Class="product-title-link">
 			@CurrentPageTitle
 			<!-- NEW: Show indicator that we're in JSON file mode -->
-			@if (DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState.CurrentDataSourceType == DataSourceStateService.DataSourceType.JsonFile)
-			{
-				<MudText Typo="Typo.caption" Style="margin-left: 8px; opacity: 0.8;">
-					[JSON FILE MODE]
-				</MudText>
-			}
+
+
 		</MudLink>
+		@if (DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState.CurrentDataSourceType == DataSourceStateService.DataSourceType.JsonFile)
+		{
+		<MudText Typo="Typo.caption" Style="margin-left: 8px;">
+			[OFFLINE MODE]
+		</MudText>
+			<span class="file-path-footer-button" @onclick="ShowJsonFilePathDetailsAsync">
+			📋 View Data Path
+		</span>
+		}
 
 		<MudSpacer />
 
@@ -154,7 +176,8 @@
 		</MudNavMenu>
 	</MudDrawer>
 
-	<MudMainContent Class="mt-1">
+	<MudMainContent Class="main-scroll-area">
+	@* <MudMainContent>  *@
 		<CascadingValue Name="AppLayout" Value="this">
 			<MudContainer Gutters="false" MaxWidth="MaxWidth.False" Class="pa-2">
 				@Body
@@ -162,22 +185,7 @@
 		</CascadingValue>
 	</MudMainContent>
 
-	<!--
-		NEW FEATURE: Footer showing JSON file path when in JSON file mode
-		Displays file name and provides button to show full path in dialog
-	-->
-	@if (DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState.CurrentDataSourceType == DataSourceStateService.DataSourceType.JsonFile &&
-		!string.IsNullOrWhiteSpace(DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState.JsonFileNameForDisplay))
-	{
-		<footer class="file-path-footer">
-			<span class="file-path-footer-text">
-				<strong>Data Source:</strong> @DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState.JsonFileNameForDisplay
-			</span>
-			<span class="file-path-footer-button" @onclick="ShowJsonFilePathDetailsAsync">
-				📋 View Full Path
-			</span>
-		</footer>
-	}
+
 </MudLayout>
 
 @code {

@@ -16,7 +16,8 @@
 <MudGrid>
     @if (initializingPage)
     {
-        <MudPaper Height="calc(100vh - 100px);" Width="100%">
+        @* <MudPaper Height="calc(100vh - 100px);" Width="100%"> *@
+        <MudPaper Width="100%">
             <MudOverlay Visible="true" DarkBackground="true" Absolute="true">
                 <MudText Typo="Typo.h4" Align="Align.Center">Loading ...</MudText>
                 <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
@@ -26,7 +27,8 @@
     else
     {
         <MudItem xs="12">
-            <MudCard style="background-color:#FABBBB; position:sticky; top:0; z-index:10;">
+            @* <MudCard style="background-color:#FABBBB; position:sticky; top:0; z-index:10;"> *@
+            <MudCard style="background-color:#FABBBB; top:0; z-index:10;">
                 <MudCardContent>
                     <MudGrid>
                         <MudItem xs="12" sm="12" md="7" lg="7">
