@@ -229,8 +229,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // BaselineItemzSelectionServiceForJson.OnScrollToTreeViewNode += HandleScrollToTreeViewNode;
-
         BaselineItemzSelectionServiceForJson.OnScrollToTreeViewNode += async (recordId) =>
         {
             await HandleScrollToTreeViewNode(recordId);
@@ -477,14 +475,7 @@
 
     public void Dispose()
     {
-        // BaselineItemzSelectionServiceForJson.OnScrollToTreeViewNode -= async (recordId) =>
-        // {
-        //     await HandleScrollToTreeViewNode(recordId);
-        // };
-
         BaselineItemzSelectionServiceForJson.OnScrollToTreeViewNode -= HandleScrollToTreeViewNode;
-//        BaselineItemzSelectionService.OnBaselineTreeNodeItemzSelected -= HandleItemzSelectedAsync;
-
     }
 
 }
