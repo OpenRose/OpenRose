@@ -233,6 +233,7 @@ builder.Services.AddScoped<DataSourceStateService>(); // This service tracks whe
 builder.Services.AddScoped<JsonFileSchemaValidationService>(); // This service validates JSON files against the OpenRose export schema
 builder.Services.AddScoped<JsonFileDataSourceService>(); // This service provides hierarchy/project data queries from loaded JSON files
 builder.Services.AddScoped<BaselineTreeNodeItemzSelectionServiceForJson>(); // Register the service
+builder.Services.AddScoped<TreeNodeItemzSelectionServiceForJson>(); // Register the service
 
 
 
