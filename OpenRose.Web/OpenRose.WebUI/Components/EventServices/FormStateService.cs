@@ -20,6 +20,8 @@ namespace OpenRose.WebUI.Components.EventServices
 
 		public bool IsDirty(Guid recordId) => _dirtyRecords.ContainsKey(recordId);
 
+		public bool AnyDirtyRecords() => _dirtyRecords.Count > 0;
+
 		public void SetDirty(Guid recordId, bool isDirty)
 		{
 			if (isDirty)
@@ -32,6 +34,7 @@ namespace OpenRose.WebUI.Components.EventServices
 			}
 		}
 		public IEnumerable<Guid> GetDirtyRecords() => _dirtyRecords.Keys;
+		
 		public void ClearAll() => _dirtyRecords.Clear();
 
 		// 🔑 New helper: standard unsaved changes dialog
@@ -50,5 +53,27 @@ namespace OpenRose.WebUI.Components.EventServices
 			return result.Canceled == false && result.Data is bool b && b;
 		}
 
+		public async Task<bool> ConfirmDiscardAllChangesAsync()
+		{
+			if (!AnyDirtyRecords())
+				return true;
+
+			var parameters = new DialogParameters();
+			var options = new DialogOptions { CloseOnEscapeKey = true, BackdropClick = true };
+
+			var dialog = await _dialogService.ShowAsync<UnsavedChangesDialog>(
+				"Unsaved Changes",
+				parameters,
+				options);
+
+			var result = await dialog.Result;
+
+			// Ok(true) = discard, Cancel = stay
+			if (result.Canceled || result.Data is not bool b || b == false)
+				return false;
+
+			ClearAll();
+			return true;
+		}
 	}
 }
