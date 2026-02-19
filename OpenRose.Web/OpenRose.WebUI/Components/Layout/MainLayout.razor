@@ -66,21 +66,6 @@
 		text-decoration: underline;
 	}
 
-/* 	html, body {
-		height: 100%;
-		margin: 0;
-	}
-
-	.mud-layout {
-		height: 100vh;
-	}
-	 */
-
-	.main-scroll-area {
-		height: calc(100vh);
-		overflow-y: auto;
-	}
-
 </style>
 
 <MudLayout>
@@ -176,10 +161,10 @@
 		</MudNavMenu>
 	</MudDrawer>
 
-	<MudMainContent Class="main-scroll-area">
-	@* <MudMainContent>  *@
+	<MudMainContent> 
 		<CascadingValue Name="AppLayout" Value="this">
-			<MudContainer Gutters="false" MaxWidth="MaxWidth.False" Class="pa-2">
+			@* <MudContainer Gutters="false" MaxWidth="MaxWidth.False" Class="pa-2"> *@
+			<MudContainer Gutters="false" MaxWidth="MaxWidth.False">
 				@Body
 			</MudContainer>
 		</CascadingValue>
@@ -223,9 +208,9 @@
 	/// Callback method that fires whenever the data source state changes.
 	/// Used to trigger component re-render so UI reflects new state (colors, menus, etc.)
 	/// </summary>
-	private void OnDataSourceStateChangedCallback()
+	private Task OnDataSourceStateChangedCallback()
 	{
-		StateHasChanged();
+		return InvokeAsync(StateHasChanged);
 	}
 
 	/// <summary>
@@ -407,7 +392,7 @@
 
 		// EXPLANATION: Optionally navigate to home page to reset page state
 		// This can be uncommented if desired:
-		// await NavManager.NavigateAsync("/", forceLoad: true);
+		NavManager.NavigateTo("/", forceLoad: true);
 	}
 
 	/// <summary>

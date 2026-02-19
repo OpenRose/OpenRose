@@ -121,7 +121,7 @@ namespace OpenRose.WebUI.Components.EventServices
 		/// Components can subscribe to this event to be notified of state transitions.
 		/// Example: MainLayout subscribes to this to change title bar color.
 		/// </summary>
-		public event Action? OnDataSourceChanged;
+		public event Func<Task>? OnDataSourceChanged;
 
 		// ========================================================================
 		// PUBLIC METHODS
