@@ -13,6 +13,7 @@ using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Schema;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -278,8 +279,7 @@ namespace ItemzApp.API.Controllers
 				var json = System.Text.Json.JsonSerializer.Serialize(exportDto, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
 
 				// Validate JSON before returning
-				var schemaJson = await System.IO.File.ReadAllTextAsync("Schemas/OpenRose.Export.schema.1.0.json");
-				var schema = JSchema.Parse(schemaJson);
+				var schema = await SchemaLoader.LoadSchemaAsync();
 
 				var exportJObject = JObject.Parse(json);
 				if (!exportJObject.IsValid(schema, out IList<string> errors))
