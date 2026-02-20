@@ -1,0 +1,116 @@
+﻿﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+
+@using OpenRose.WebUI.Client.Services.JsonFile
+@using OpenRose.WebUI.Client.SharedModels
+@using OpenRose.WebUI.Components.EventServices
+@using OpenRose.WebUI.Components.Pages.Common
+@inject BaselineTreeNodeItemzSelectionServiceForJson BaselineItemzSelectionServiceForJson
+@inject IJSRuntime JS
+@inject JsonFileDataSourceService JsonService
+
+<MudGrid>
+    @if (initializingPage)
+    {
+        @* <MudPaper Height="calc(100vh - 100px);" Width="100%"> *@
+        <MudPaper Width="100%">
+            <MudOverlay Visible="true" DarkBackground="true" Absolute="true">
+                <MudText Typo="Typo.h4" Align="Align.Center">Loading ...</MudText>
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+            </MudOverlay>
+        </MudPaper>
+    }
+    else
+    {
+        <MudItem xs="12">
+            @* <MudCard style="background-color:#FABBBB; position:sticky; top:0; z-index:10;"> *@
+            <MudCard style="background-color:#FABBBB; top:0; z-index:10;">
+                <MudCardContent>
+                    <MudGrid>
+                        <MudItem xs="12" sm="12" md="7" lg="7">
+                            <MudText Typo="Typo.h5" Align="Align.Left">
+                                <strong>@_baselineItemzType.Name</strong>
+                            </MudText>
+                        </MudItem>
+                        <MudItem xs="12" sm="12" md="5" lg="5" Class="d-flex justify-end align-center">
+                            <MudIconButton Icon="@Icons.Material.Filled.ArrowCircleUp"
+                                           Color="Color.Success"
+                                           Size="Size.Medium"
+                                           IconSize="Size.Large"
+                                           Variant="Variant.Filled"
+                                           Class="mud-rounded-circle me-2"
+                                           OnClick="@(() => { if (OnNavigatePrevious.HasDelegate) OnNavigatePrevious.InvokeAsync(BaselineItemzTypeId); })" />
+
+                            <MudIconButton Icon="@Icons.Material.Filled.ArrowCircleDown"
+                                           Color="Color.Success"
+                                           Size="Size.Medium"
+                                           IconSize="Size.Large"
+                                           Variant="Variant.Filled"
+                                           Class="mud-rounded-circle"
+                                           OnClick="@(() => { if (OnNavigateNext.HasDelegate) OnNavigateNext.InvokeAsync(BaselineItemzTypeId); })" />
+                        </MudItem>
+                    </MudGrid>
+                </MudCardContent>
+            </MudCard>
+
+            <MudCard Elevation="0" Style="background-color:transparent;">
+                <MudCardContent>
+                    <MudStack Row="true" Spacing="2">
+                        <MudText><strong>ID:</strong></MudText>
+                        <CopyableText TextToCopy="@_baselineItemzType.Id.ToString()" DisplayLength="8" />
+                        <MudTooltip Text="Show in Tree View">
+                            <MudIcon Icon="@Icons.Material.Filled.Park" Size="Size.Small" Class="mouse-pointer-icon" @onclick="async () => await findAndShowInTreeViewAsync()" />
+                        </MudTooltip>
+                        <MudText><strong> || Status:</strong> @_baselineItemzType.Status</MudText>
+                    </MudStack>
+
+                    <br />
+
+                    @if (!string.IsNullOrEmpty(_baselineItemzType.Description))
+                    {
+                        <div class="markdown-body">@((MarkupString)_convertedMarkdown)</div>
+                    }
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    }
+</MudGrid>
+
+@code {
+    [Parameter] public Guid BaselineItemzTypeId { get; set; }
+    [Parameter] public EventCallback<Guid> OnNavigatePrevious { get; set; }
+    [Parameter] public EventCallback<Guid> OnNavigateNext { get; set; }
+
+    private bool initializingPage = true;
+    private GetBaselineItemzTypeDTO _baselineItemzType = new();
+    private MarkupString _convertedMarkdown;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        initializingPage = true;
+
+        _baselineItemzType = await JsonService.GetBaselineItemzTypeDetailsAsync(BaselineItemzTypeId);
+
+        if (!string.IsNullOrEmpty(_baselineItemzType.Description))
+        {
+            var html = await JS.InvokeAsync<string>("markdownToHtml", _baselineItemzType.Description);
+            _convertedMarkdown = (MarkupString)html;
+        }
+        else
+        {
+            _convertedMarkdown = default;
+        }
+
+        initializingPage = false;
+    }
+
+    private async Task findAndShowInTreeViewAsync()
+    {
+        await BaselineItemzSelectionServiceForJson.ScrollToTreeViewNodeAsync(BaselineItemzTypeId);
+    }
+
+}

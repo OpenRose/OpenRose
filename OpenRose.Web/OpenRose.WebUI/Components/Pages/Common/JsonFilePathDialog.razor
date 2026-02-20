@@ -1,0 +1,70 @@
+﻿@* 
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0. 
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+@using MudBlazor
+@inject IJSRuntime JsRuntimeForClipboardAccess
+
+<MudDialog>
+	<TitleContent>
+		<MudText Color="Color.Primary">JSON Data File Name</MudText>
+	</TitleContent>
+
+	<DialogContent>
+		<MudStack Spacing="2">
+			<MudText Typo="Typo.body2">
+				<strong>Currently Loaded JSON File:</strong>
+			</MudText>
+
+			<MudCard>
+				<MudCardContent Class="pa-3">
+					<MudText Typo="Typo.body2" Style="word-break: break-all; font-family: monospace;">
+						@JsonFilePathToShow
+					</MudText>
+				</MudCardContent>
+			</MudCard>
+		</MudStack>
+	</DialogContent>
+
+	<DialogActions>
+		<MudButton Color="Color.Primary" OnClick="@CopyPathToClipboardAsync">
+			📋 Copy to Clipboard
+		</MudButton>
+		<MudButton Variant="Variant.Filled" Color="Color.Warning" OnClick="@CloseDialogAsync">
+			Close
+		</MudButton>
+	</DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; }
+
+    [Parameter]
+    public string JsonFilePathToShow { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Copies the JSON file path to the user's clipboard.
+    /// </summary>
+    private async Task CopyPathToClipboardAsync()
+    {
+        try
+        {
+            await JsRuntimeForClipboardAccess.InvokeVoidAsync("navigator.clipboard.writeText", JsonFilePathToShow);
+        }
+        catch (Exception exceptionDuringClipboardCopy)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error copying to clipboard: {exceptionDuringClipboardCopy.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Closes the dialog.
+    /// </summary>
+    private void CloseDialogAsync()
+    {
+		MudDialog.Close(DialogResult.Ok(true));
+	}
+}

@@ -5,8 +5,10 @@
 *@
 
 @page "/settings/"
+@using OpenRose.WebUI.Components.EventServices
 @using OpenRose.WebUI.Components.Pages.Orphan.DeleteAllOrphan
 @using OpenRose.WebUI.Services
+@inject DataSourceStateService DataSourceStateServiceForDataSourceTracking
 @inject AssemblyInfoService AssemblyInfo
 
 <MudPaper Class="pa-3 mb-3 align-start d-flex" Outlined="false">
@@ -23,27 +25,32 @@
         <MudChip T="string" Icon="@Icons.Material.Filled.Web" Size="Size.Small" Color="Color.Primary">
             WebUI Version - @version
         </MudChip>
-        <MudChip T="string" Icon="@Icons.Material.Filled.Api" Size="Size.Small" Color="Color.Primary">
-            API Version - @(ConfigService.ApiVersion ?? "Not Connected")
+		@if (DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState.CurrentDataSourceType == DataSourceStateService.DataSourceType.ApiServer)
+        {
+            <MudChip T="string" Icon="@Icons.Material.Filled.Api" Size="Size.Small" Color="Color.Primary">
+                API Version - @(ConfigService.ApiVersion ?? "Not Connected")
         </MudChip>
+        }
     </MudStack>
 </MudPaper>
 
-@if (!string.IsNullOrEmpty(ConfigService.ApiVersionMismatchMessage))
+@if (DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState.CurrentDataSourceType == DataSourceStateService.DataSourceType.ApiServer)
 {
-    <MudText Typo="Typo.body1" Color="Color.Error">
-        @ConfigService.ApiVersionMismatchMessage
-    </MudText>
+
+    @if (!string.IsNullOrEmpty(ConfigService.ApiVersionMismatchMessage))
+    {
+        <MudText Typo="Typo.body1" Color="Color.Error">
+            @ConfigService.ApiVersionMismatchMessage
+        </MudText>
+    }
+
+    <br />
+
+    @if (ConfigService.IsOpenRoseAPIConfigured || string.IsNullOrEmpty(ConfigService.ApiVersionMismatchMessage))
+    {
+        <DeleteAllOrphanComponent />
+    }
 }
-
-<br />
-
-@if (ConfigService.IsOpenRoseAPIConfigured ||
-        string.IsNullOrEmpty(ConfigService.ApiVersionMismatchMessage))
-{
-    <DeleteAllOrphanComponent />
-}
-
 @code {
 
     [Inject] private ConfigurationService ConfigService { get; set; } = default!;

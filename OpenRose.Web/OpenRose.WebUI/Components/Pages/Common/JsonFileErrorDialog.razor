@@ -1,0 +1,76 @@
+﻿@* 
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0. 
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+<!--
+	NEW DIALOG COMPONENT FOR JSON FILE DATA SOURCE FEATURE
+
+	This dialog displays an error message when JSON file validation or loading fails.
+	It informs the user about what went wrong in user-friendly terms.
+	This dialog is shown when MainLayout encounters an error loading the JSON file.
+-->
+@using MudBlazor
+
+<MudDialog>
+	<TitleContent>
+		<MudText Color="Color.Error">Failed to Load JSON File</MudText>
+	</TitleContent>
+
+	<DialogContent>
+		<MudStack Spacing="2">
+			<MudAlert Severity="Severity.Error" Variant="Variant.Filled">
+				@ErrorMessageForDisplay
+			</MudAlert>
+
+			<MudText Typo="Typo.body2">
+				Please check the following:
+			</MudText>
+
+			<MudList T="string">
+				<MudListItem>
+					File path is correct and file exists
+				</MudListItem>
+				<MudListItem>
+					You have read permissions for the file
+				</MudListItem>
+				<MudListItem>
+					File is a valid OpenRose export (exported from OpenRose application)
+				</MudListItem>
+				<MudListItem>
+					File contains valid JSON format
+				</MudListItem>
+			</MudList>
+
+			<MudText Typo="Typo.caption" Color="Color.Secondary">
+				The application has remained in API Server mode. Please try again with a valid file.
+			</MudText>
+		</MudStack>
+	</DialogContent>
+
+	<DialogActions>
+		<MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="@CloseDialogAsync">
+			OK
+		</MudButton>
+	</DialogActions>
+</MudDialog>
+
+@code {
+	// CORRECTED: Following MudBlazor 7+ pattern from SelectSourceRecordDialog.razor
+	[CascadingParameter]
+	private IMudDialogInstance MudDialog { get; set; }
+
+	[Parameter]
+	public string ErrorMessageForDisplay { get; set; } = "An unknown error occurred.";
+
+	/// <summary>
+	/// NEW METHOD: Closes the error dialog.
+	/// CORRECTED: Using MudDialogInstance.Close() following MudBlazor 7+ pattern
+	/// </summary>
+	private void CloseDialogAsync()
+	{
+		// CORRECTED: Simple Close() call like SelectSourceRecordDialog.razor
+		MudDialog.Close(DialogResult.Ok("TEST"));
+	}
+}

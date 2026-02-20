@@ -1,0 +1,108 @@
+﻿@* 
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0. 
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+@using MudBlazor
+
+<MudDialog>
+	<TitleContent>
+		<MudText Color="Color.Primary">Open OpenRose JSON File</MudText>
+	</TitleContent>
+
+	<DialogContent>
+		<MudStack Spacing="3">
+
+			<InputFile OnChange="@HandleJsonFileSelectedFromFileBrowserAsync" accept=".json" />
+
+			@if (!string.IsNullOrWhiteSpace(errorMessageFromValidationToDisplay))
+			{
+				<MudAlert Severity="Severity.Error">
+					@errorMessageFromValidationToDisplay
+				</MudAlert>
+			}
+		</MudStack>
+	</DialogContent>
+
+	<DialogActions>
+		<MudButton Variant="Variant.Filled" 
+				   Color="Color.Success" 
+				   OnClick="@SubmitJsonFilePathAsync"
+				   Disabled="@string.IsNullOrWhiteSpace(userProvidedJsonFilePathInput)">
+			Open File
+		</MudButton>
+		<MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="@CancelDialogAsync">
+			Cancel
+		</MudButton>
+	</DialogActions>
+</MudDialog>
+
+@code {
+
+	[CascadingParameter]
+	private IMudDialogInstance MudDialog { get; set; }
+
+	private string userProvidedJsonFilePathInput = string.Empty;
+	private string selectedJsonFileNameForDisplay = string.Empty;
+	private string errorMessageFromValidationToDisplay = string.Empty;
+
+	private IBrowserFile selectedJsonBrowserFile;
+
+	/// <summary>
+	/// Handles when user types or pastes a file path in the text input field.
+	/// </summary>
+	private void OnJsonFilePathInputChangedCallback(string newInputValueFromUser)
+	{
+		userProvidedJsonFilePathInput = newInputValueFromUser;
+		errorMessageFromValidationToDisplay = string.Empty;
+
+		if (!string.IsNullOrWhiteSpace(userProvidedJsonFilePathInput))
+		{
+			selectedJsonFileNameForDisplay = System.IO.Path.GetFileName(userProvidedJsonFilePathInput);
+		}
+	}
+
+	/// <summary>
+	/// Handles file selection from the file browser input.
+	/// Extracts the file path (if available) or file name.
+	/// </summary>
+	private async Task HandleJsonFileSelectedFromFileBrowserAsync(InputFileChangeEventArgs fileSelectionEventArgsFromBrowser)
+	{
+		try
+		{
+			selectedJsonBrowserFile = fileSelectionEventArgsFromBrowser.File;   // <-- STORE IT HERE
+			selectedJsonFileNameForDisplay = selectedJsonBrowserFile.Name;
+
+			// EXPLANATION: In browser environment, we typically can't get the full file path
+			// for security reasons. We store the name and let backend handle file lookup
+			// or user will need to provide path manually.
+			userProvidedJsonFilePathInput = selectedJsonBrowserFile.Name;
+		}
+		catch (Exception exceptionFromFileSelection)
+		{
+			errorMessageFromValidationToDisplay = "Error selecting file. Please enter path manually.";
+		}
+	}
+
+		/// <summary>
+	/// Submits the JSON file path back to the parent component (MainLayout).
+	/// </summary>
+	private void SubmitJsonFilePathAsync()
+	{
+		if (selectedJsonBrowserFile != null)
+		{
+			MudDialog.Close(DialogResult.Ok(selectedJsonBrowserFile));
+			return;
+		}
+		errorMessageFromValidationToDisplay = "Please select or enter a JSON file path.";
+	}
+
+	/// <summary>
+	/// Cancels the dialog without submitting.
+	/// </summary>
+	private void CancelDialogAsync()
+	{
+		MudDialog.Cancel();
+	}
+}

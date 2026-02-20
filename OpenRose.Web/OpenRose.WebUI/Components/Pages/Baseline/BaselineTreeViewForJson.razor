@@ -1,0 +1,485 @@
+﻿@* 
+ * BaselineTreeViewForJson.razor
+ * Read‑only baseline hierarchy from JSON (via existing JsonFileDataSourceService APIs)
+*@
+
+@using OpenRose.WebUI.Client.Services.JsonFile
+@using OpenRose.WebUI.Client.SharedModels
+@using OpenRose.WebUI.Components.EventServices
+@using OpenRose.WebUI.Components.Pages.BaselineItemz
+@using OpenRose.WebUI.Components.Pages.BaselineItemzType
+@using OpenRose.WebUI.Components.Pages.Common
+@using OpenRose.WebUI.Helper.TreeViewNodes
+@inject JsonFileDataSourceService JsonFileDataSource
+@inject BaselineTreeNodeItemzSelectionServiceForJson BaselineItemzSelectionServiceForJson
+@inject IJSRuntime JS
+
+<MudExtensions.MudSplitter @bind-Dimension="@_percentage"
+                            Height="@_height"
+                            EnableSlide="true"
+                            EnableMargin="true"
+                            Bordered="false">
+
+    <!-- LEFT: TREE -->
+    <StartContent>
+        <MudPaper Elevation="0" Class="full-width">
+            @if (_loading)
+            {
+                <MudText Typo="Typo.button" Color="Color.Secondary" HtmlTag="h3" Align="Align.Center">
+                    Loading baseline hierarchy from JSON...
+                </MudText>
+                <MudProgressLinear Color="Color.Secondary" Indeterminate="true" Class="my-7" />
+            }
+            else if (_loadError is not null)
+            {
+                <MudAlert Severity="Severity.Error">
+                    @_loadError
+                </MudAlert>
+            }
+            else
+            {
+                <MudPaper Elevation="1" Class="d-flex align-center pa-2 mb-2">
+                    <MudButton OnClick="@(() => baselineMudTreeView.ExpandAllAsync())"
+                               Variant="Variant.Filled">
+                        Expand All
+                    </MudButton>
+                    <MudText Class="ms-4" Color="Color.Secondary">
+                        Read‑Only Baseline View
+                    </MudText>
+                </MudPaper>
+
+                <MudTreeView @ref="baselineMudTreeView"
+                             Items="@InitialTreeItems"
+                             Color="Color.Secondary"
+                             Hover="true"
+                             ExpandOnDoubleClick="true"
+                             Class="full-width"
+                             SelectedValue="@SelectedValue"
+                             AutoExpand="true">
+                    <ItemTemplate>
+                        @{
+                            var presenter = context as TreeItemPresenter;
+                        }
+@*                         <MudTreeViewItem Value="@context.Value"
+                                         Id="@($"baseline-json-node-{context.Value}")"
+                                         Text="@context.Text"
+                                         @bind-Selected="presenter.IsSelected"
+                                         @bind-Expanded="context.Expanded"
+                                         Icon="@presenter.Icon"
+                                         Expandable="@(context.Children.Any())"
+                                         LoadingIconColor="Color.Info"
+                                         Items="@context.Children"
+                                         EndText="@GetEndText(presenter)"
+                                         @onclick="async () => await OnItemClick(presenter)" /> *@
+
+                        <MudTreeViewItem Value="@context.Value"
+                                         Id="@($"baseline-json-node-{context.Value}")"
+                                         Text="@context.Text"
+                                         @bind-Selected="presenter.IsSelected"
+                                         @bind-Expanded="context.Expanded"
+                                         Icon="@(presenter.IsIncluded? presenter.Icon: Icons.Material.Filled.Close)"
+                                         IconColor="@(presenter.IsIncluded? Color.Inherit: Color.Error)"
+                                         ExpandButtonIconColor="@(presenter.IsIncluded? Color.Inherit: Color.Error)"
+                                         EndIconColor="@(presenter.IsIncluded? Color.Inherit: Color.Error)"
+                                         Expandable="@(context.Children.Any())"
+                                         LoadingIconColor="Color.Info"
+                                         Items="@context.Children"
+                                         EndText="@GetEndText(presenter)"
+                                         @onclick="async () => await OnItemClick(presenter)" />
+                    </ItemTemplate>
+                </MudTreeView>
+            }
+        </MudPaper>
+    </StartContent>
+
+    <!-- RIGHT: DETAILS -->
+    <EndContent>
+        <MudPaper Elevation="0" Class="full-width pa-2">
+            @if (selectedItem is null)
+            {
+                <MudText Typo="Typo.subtitle1" Color="Color.Secondary">
+                    Select a node in the tree to see details.
+                </MudText>
+            }
+            else
+            {
+                @switch (selectedItem.RecordType.ToLower())
+                {
+                    case "baseline":
+                        <BaselineReadOnlyComponentForJson BaselineId="@selectedItem.Value"
+                                                          OnNavigateNext="NavigateNext" />
+                        break;
+
+                    case "baselineitemztype": 
+                        <BaselineItemzTypeReadOnlyComponentForJson BaselineItemzTypeId="@selectedItem.Value"
+                                                                   OnNavigatePrevious="NavigatePrevious"
+                                                                   OnNavigateNext="NavigateNext" />
+                        break;
+
+                    case "baselineitemz":
+                        <BaselineItemzReadOnlyComponentForJson BaselineItemzId="@selectedItem.Value"
+                                                               IsIncluded="@selectedItem.IsIncluded"
+                                                               OnNavigatePrevious="NavigatePrevious"
+                                                               OnNavigateNext="NavigateNext"
+                                                               OnOpenTraceTarget="NavigateToTraceTarget" />
+                        break;
+
+                        break;
+
+                    default:
+                        <MudCard Elevation="1">
+                            <MudCardContent>
+                                <MudText Typo="Typo.h5">
+                                    @selectedItem.Text
+                                </MudText>
+                                <MudDivider Class="my-2" />
+                                <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                                    <MudText><strong>ID:</strong></MudText>
+                                    <CopyableText TextToCopy="@selectedItem.Value.ToString()" DisplayLength="8" />
+                                </MudStack>
+                                <MudText Class="mt-1">
+                                    <strong>Type:</strong> @selectedItem.RecordType
+                                </MudText>
+                                <MudText Class="mt-1">
+                                    <strong>Level:</strong> @selectedItem.Level
+                                </MudText>
+                                @if (!string.IsNullOrWhiteSpace(selectedItem.HierarchyId))
+                                {
+                                    <MudText Class="mt-1">
+                                        <strong>HierarchyId:</strong> @selectedItem.HierarchyId
+                                    </MudText>
+                                }
+                            </MudCardContent>
+                        </MudCard>
+                        break;
+                }
+            }
+        </MudPaper>
+    </EndContent>
+</MudExtensions.MudSplitter>
+
+@code {
+    /// <summary>
+    /// Root record ID inside the JSON hierarchy (Baseline / BaselineItemzType / BaselineItemz).
+    /// Parent page decides which one to pass.
+    /// </summary>
+    [Parameter]
+    public Guid RootId { get; set; }
+
+    public MudTreeView<Guid> baselineMudTreeView;
+
+    private bool _loading = true;
+    private string? _loadError;
+
+    private List<TreeItemData<Guid>> InitialTreeItems { get; set; } = new();
+
+    private Guid _selectedValue;
+    private TreeItemPresenter? selectedItem;
+
+    private Dictionary<Guid, TreeItemPresenter> _nodeLookup
+    = new Dictionary<Guid, TreeItemPresenter>();
+
+
+    private List<TreeItemPresenter> _flatList;
+
+    // splitter layout
+    string _height = "calc(100vh - 80px)";
+    double _percentage = 27;
+
+    public class TreeItemPresenter : MudBlazor.TreeItemData<Guid>
+    {
+        public string RecordType { get; set; } = string.Empty;
+        public int Level { get; set; }
+        public bool IsSelected { get; set; }
+        public string? HierarchyId { get; set; }
+        public string Icon { get; set; } = Icons.Material.Filled.Help;
+        public TreeItemPresenter? Parent { get; set; }
+        public bool IsIncluded { get; set; } = true;
+
+
+
+
+        public TreeItemPresenter(Guid value,
+                                 string text,
+                                 string icon,
+                                 string recordType,
+                                 int level,
+                                 bool expandable,
+                                 string? hierarchyId) : base(value)
+        {
+            Value = value;
+            Text = text;
+            Icon = icon;
+            RecordType = recordType;
+            Level = level;
+            Expandable = expandable;
+            HierarchyId = hierarchyId;
+            Children = new List<TreeItemData<Guid>>();
+        }
+    }
+
+    private Guid SelectedValue
+    {
+        get => _selectedValue;
+        set
+        {
+            if (_selectedValue != value)
+            {
+                _selectedValue = value;
+                _ = UpdateSelectedItemAsync(value);
+            }
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        BaselineItemzSelectionServiceForJson.OnScrollToTreeViewNode += async (recordId) =>
+        {
+            await HandleScrollToTreeViewNode(recordId);
+        };
+
+        try
+        {
+            // Use existing JSON hierarchy API that returns NestedHierarchyIdRecordDetailsDTO
+            var nested = await JsonFileDataSource.GetAllChildrenHierarchyByGuidAsync(RootId);
+
+            if (nested == null || nested.Count == 0)
+            {
+                _loadError = $"No hierarchy data found in JSON for root id {RootId}.";
+                _loading = false;
+                return;
+            }
+
+            InitialTreeItems = BuildTree(nested);
+
+            foreach (var root in InitialTreeItems.OfType<TreeItemPresenter>())
+            {
+                AssignParents(root);
+            }
+
+            BuildNodeLookup();
+
+            _flatList = InitialTreeItems
+                .Flatten()
+                .OfType<TreeItemPresenter>()
+                .ToList();
+
+            if (InitialTreeItems.Count > 0)
+            {
+                _selectedValue = InitialTreeItems[0].Value;
+                await UpdateSelectedItemAsync(_selectedValue);
+            }
+        }
+        catch (Exception ex)
+        {
+            _loadError = $"Error loading baseline hierarchy from JSON: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private List<TreeItemData<Guid>> BuildTree(ICollection<NestedHierarchyIdRecordDetailsDTO> roots)
+    {
+        var list = new List<TreeItemData<Guid>>();
+
+        foreach (var root in roots)
+        {
+            var node = CreatePresenterFromDto(root);
+            if (root.Children != null && root.Children.Count > 0)
+            {
+                AddChildren(node, root.Children);
+            }
+            list.Add(node);
+        }
+
+        return list;
+    }
+
+    private void BuildNodeLookup()
+    {
+        _nodeLookup = InitialTreeItems
+            .Flatten()
+            .OfType<TreeItemPresenter>()
+            .ToDictionary(x => x.Value, x => x);
+    }
+
+
+    private void AddChildren(TreeItemData<Guid> parent, ICollection<NestedHierarchyIdRecordDetailsDTO> children)
+    {
+        foreach (var child in children)
+        {
+            var childNode = CreatePresenterFromDto(child);
+            if (child.Children != null && child.Children.Count > 0)
+            {
+                AddChildren(childNode, child.Children);
+            }
+            parent.Children.Add(childNode);
+        }
+    }
+
+    private TreeItemPresenter CreatePresenterFromDto(NestedHierarchyIdRecordDetailsDTO dto)
+    {
+        var icon = dto.RecordType?.ToLower() switch
+        {
+            "baseline" => Icons.Material.Filled.ContentCopy,
+            "baselineitemztype" => Icons.Material.Filled.Pix,
+            "baselineitemz" => Icons.Material.Filled.Stream,
+            _ => Icons.Material.Filled.Cancel
+        };
+
+        var presenter = new TreeItemPresenter(
+            value: dto.RecordId,
+            text: dto.Name ?? "(no name)",
+            icon: icon,
+            recordType: (dto.RecordType ?? "Unknown").ToLower(),
+            level: dto.Level ?? 0,
+            expandable: dto.Children != null && dto.Children.Count > 0,
+            hierarchyId: dto.HierarchyId
+        );
+
+        // ADDING INCLUDED FLAG FOR BASELINEITEMZ NODES ONLY.
+        if (presenter.RecordType.ToLower() == "baselineitemz")
+        {
+            if (JsonFileDataSource.TryGetIsIncluded(dto.RecordId, out var included))
+            {
+                presenter.IsIncluded = included;
+            }
+        }
+
+        return presenter;
+    }
+
+
+    private async Task OnItemClick(TreeItemPresenter presenter)
+    {
+        if (presenter is null)
+            return;
+
+        if (_selectedValue == presenter.Value)
+            return;
+
+        _selectedValue = presenter.Value;
+        presenter.IsSelected = true;
+        baselineMudTreeView.SelectedValue = presenter.Value;
+
+        await UpdateSelectedItemAsync(presenter.Value);
+        StateHasChanged();
+    }
+
+    private async Task HandleScrollToTreeViewNode(Guid recordId)
+    {
+        await ScrollToNodeAsync($"baseline-json-node-{recordId}");
+    }
+
+    private async Task UpdateSelectedItemAsync(Guid id)
+    {
+        if (_nodeLookup.TryGetValue(id, out var node))
+        {
+            selectedItem = node;
+            // await ScrollToNodeAsync($"baseline-json-node-{id}");
+        }
+    }
+
+    private string GetEndText(TreeItemPresenter presenter)
+    {
+        var parts = new List<string>();
+        if (presenter.Children.Any())
+            parts.Add($"[C{presenter.Children.Count()}]");
+        if (presenter.Level > 0)
+            parts.Add($"[L{presenter.Level}]");
+        return string.Join("", parts);
+    }
+
+    private async Task ScrollToNodeAsync(string elementId)
+    {
+        await JS.InvokeVoidAsync("scrollToElementById", elementId);
+    }
+
+    private void NavigateToTraceTarget(Guid id)
+        => SelectNodeById(id);
+
+    private async void SelectNodeById(Guid id)
+    {
+        if (!_nodeLookup.TryGetValue(id, out var node))
+            return;
+
+        await ExpandPathToNode(node);
+
+        foreach (var n in _nodeLookup.Values)
+            n.IsSelected = false;
+
+        node.IsSelected = true;
+
+        _selectedValue = id;
+        selectedItem = node;
+        baselineMudTreeView.SelectedValue = id;
+
+        await InvokeAsync(StateHasChanged);
+
+        await ScrollToNodeAsync($"baseline-json-node-{id}");
+    }
+
+
+    private Guid? GetPrevious(Guid id)
+    {
+        var index = _flatList.FindIndex(x => x.Value == id);
+        if (index > 0)
+            return _flatList[index - 1].Value;
+
+        return null;
+    }
+
+    private Guid? GetNext(Guid id)
+    {
+        var index = _flatList.FindIndex(x => x.Value == id);
+        if (index >= 0 && index < _flatList.Count - 1)
+            return _flatList[index + 1].Value;
+
+        return null;
+    }
+
+    private void NavigatePrevious(Guid id)
+    {
+        var prev = GetPrevious(id);
+        if (prev.HasValue)
+            SelectNodeById(prev.Value);
+    }
+
+    private void NavigateNext(Guid id)
+    {
+        var next = GetNext(id);
+        if (next.HasValue)
+            SelectNodeById(next.Value);
+    }
+
+
+    private void AssignParents(TreeItemPresenter parent)
+    {
+        foreach (var child in parent.Children.OfType<TreeItemPresenter>())
+        {
+            child.Parent = parent;
+            AssignParents(child);
+        }
+    }
+
+    private async Task ExpandPathToNode(TreeItemPresenter node)
+    {
+        var current = node.Parent;
+
+        while (current != null)
+        {
+            current.Expanded = true;
+            current = current.Parent;
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        BaselineItemzSelectionServiceForJson.OnScrollToTreeViewNode -= HandleScrollToTreeViewNode;
+    }
+
+}
