@@ -23,6 +23,10 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <Content Remove="Schemas\OpenRose.Export.schema.1.0.json" />
+	</ItemGroup>
+
+	<ItemGroup>
 	  <None Remove="DbContexts\UserStoredProcedure\userProcCopyRecordWithChildrenByRecordID_202503221207.sql" />
 	  <None Remove="DbContexts\UserStoredProcedure\userProcCopyRecordWithChildrenByRecordID_202512251653.sql" />
 	  <None Remove="DbContexts\UserStoredProcedure\userProcCreateBaselineByExistingBaselineID_202511051622.sql" />
@@ -56,6 +60,7 @@
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcDeleteItemzHierarchyRecordsByProjectId_202412090713.sql" />
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcDeleteSingleItemzByItemzID_202406081944.sql" />
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcUpdateBaselineItemz_202408060015.sql" />
+		<EmbeddedResource Include="Schemas\OpenRose.Export.schema.1.0.json" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -78,10 +83,6 @@
 		<PackageReference Include="Swashbuckle.AspNetCore.Newtonsoft" Version="9.0.6" />
 		<PackageReference Include="System.Linq.Dynamic.Core" Version="1.6.10" />
 		<PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Schemas\" />
 	</ItemGroup>
 
 </Project>
