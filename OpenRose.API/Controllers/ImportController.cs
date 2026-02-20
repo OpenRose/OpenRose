@@ -53,8 +53,7 @@ namespace ItemzApp.API.Controllers
 				using var reader = new StreamReader(stream, Encoding.UTF8); // EXPLICITE UTF8 Encoding
 				var jsonText = await reader.ReadToEndAsync();
 
-				var schemaJson = await System.IO.File.ReadAllTextAsync("Schemas/OpenRose.Export.schema.1.0.json");
-				var schema = JSchema.Parse(schemaJson);
+				var schema = await SchemaLoader.LoadSchemaAsync();
 
 				var importJObject = JObject.Parse(jsonText);
 				if (!importJObject.IsValid(schema, out IList<string> errors))
