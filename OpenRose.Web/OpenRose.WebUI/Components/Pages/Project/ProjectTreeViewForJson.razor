@@ -200,22 +200,42 @@
                 return;
             }
 
+            // 1. Build the tree from JSON
             InitialTreeItems = BuildTree(nested);
 
+            // 2. Hide Parking Lot if empty (JSON view is always read-only)
+            RemoveParkingLotIfEmpty(InitialTreeItems);
+
+            // 3. Assign parent references (must happen AFTER filtering)
             foreach (var root in InitialTreeItems.OfType<TreeItemPresenter>())
             {
                 AssignParents(root);
             }
 
+            // 4. Build lookup dictionary (AFTER filtering)
             BuildNodeLookup();
 
+            // 5. Build flat list (AFTER filtering)
             _flatList = InitialTreeItems
                 .Flatten()
                 .OfType<TreeItemPresenter>()
                 .ToList();
 
+            // 6. Fix selection if Parking Lot was selected but removed
+            if (selectedItem != null &&
+                selectedItem.RecordType.Equals("itemztype", StringComparison.OrdinalIgnoreCase) &&
+                selectedItem.Text.Equals("Parking Lot", StringComparison.OrdinalIgnoreCase))
+            {
+                var root = InitialTreeItems.FirstOrDefault();
+                if (root != null)
+                {
+                    _selectedValue = root.Value;
+                    await UpdateSelectedItemAsync(root.Value);
+                }
+            }
 
-            if (InitialTreeItems.Count > 0)
+            // 7. Default selection to root if nothing selected
+            if (InitialTreeItems.Count > 0 && _selectedValue == Guid.Empty)
             {
                 _selectedValue = InitialTreeItems[0].Value;
                 await UpdateSelectedItemAsync(_selectedValue);
@@ -230,6 +250,7 @@
             _loading = false;
         }
     }
+
 
     private List<TreeItemData<Guid>> BuildTree(ICollection<NestedHierarchyIdRecordDetailsDTO> roots)
     {
@@ -418,6 +439,28 @@
         if (changed)
             await InvokeAsync(StateHasChanged);
     }
+
+    private void RemoveParkingLotIfEmpty(List<TreeItemData<Guid>> tree)
+    {
+        var projectNode = tree.FirstOrDefault();
+        if (projectNode == null)
+            return;
+
+        var parkingLotNode = projectNode.Children
+            .OfType<TreeItemPresenter>()
+            .FirstOrDefault(n =>
+                n.RecordType.Equals("itemztype", StringComparison.OrdinalIgnoreCase) &&
+                n.Text.Equals("Parking Lot", StringComparison.OrdinalIgnoreCase));
+
+        if (parkingLotNode == null)
+            return;
+
+        if (parkingLotNode.Children.Count == 0)
+        {
+            projectNode.Children.Remove(parkingLotNode);
+        }
+    }
+
 
     public void Dispose()
     {
