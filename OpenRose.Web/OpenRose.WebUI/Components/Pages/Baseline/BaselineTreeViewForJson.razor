@@ -1,7 +1,9 @@
-﻿@* 
- * BaselineTreeViewForJson.razor
- * Read‑only baseline hierarchy from JSON (via existing JsonFileDataSourceService APIs)
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 *@
+
 
 @using OpenRose.WebUI.Client.Services.JsonFile
 @using OpenRose.WebUI.Client.SharedModels
@@ -250,20 +252,28 @@
                 return;
             }
 
+            // 1. Build tree from JSON
             InitialTreeItems = BuildTree(nested);
 
+            // 2. Hide Parking Lot if empty (JSON view is always read-only)
+            RemoveParkingLotIfEmpty(InitialTreeItems);
+
+            // 3. Assign parents AFTER filtering
             foreach (var root in InitialTreeItems.OfType<TreeItemPresenter>())
             {
                 AssignParents(root);
             }
 
+            // 4. Build lookup AFTER filtering
             BuildNodeLookup();
 
+            // 5. Build flat list AFTER filtering
             _flatList = InitialTreeItems
                 .Flatten()
                 .OfType<TreeItemPresenter>()
                 .ToList();
 
+            // 6. Default selection to root
             if (InitialTreeItems.Count > 0)
             {
                 _selectedValue = InitialTreeItems[0].Value;
@@ -279,6 +289,7 @@
             _loading = false;
         }
     }
+
 
     private List<TreeItemData<Guid>> BuildTree(ICollection<NestedHierarchyIdRecordDetailsDTO> roots)
     {
@@ -476,6 +487,28 @@
 
         await InvokeAsync(StateHasChanged);
     }
+
+    private void RemoveParkingLotIfEmpty(List<TreeItemData<Guid>> tree)
+    {
+        var baselineNode = tree.FirstOrDefault();
+        if (baselineNode == null)
+            return;
+
+        var parkingLotNode = baselineNode.Children
+            .OfType<TreeItemPresenter>()
+            .FirstOrDefault(n =>
+                n.RecordType.Equals("baselineitemztype", StringComparison.OrdinalIgnoreCase) &&
+                n.Text.Equals("Parking Lot", StringComparison.OrdinalIgnoreCase));
+
+        if (parkingLotNode == null)
+            return;
+
+        if (parkingLotNode.Children.Count == 0)
+        {
+            baselineNode.Children.Remove(parkingLotNode);
+        }
+    }
+
 
     public void Dispose()
     {

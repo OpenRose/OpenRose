@@ -510,6 +510,9 @@
             await Task.Delay(300);
             // Load Entire Baseline Hierarchy data
             InitialTreeItems = await LoadAllBaselineHierarchyData(BaselineId);
+            
+            // Hide Parking Lot in read-only mode if empty 
+            RemoveParkingLotIfEmpty(InitialTreeItems);
 
             _linearIds = InitialTreeItems.Flatten()
                                          .Select(x => x.Value)
@@ -761,7 +764,7 @@
     {
         // Check if current record has unsaved changes
         bool canChange = await FormStateService.ConfirmDiscardChangesAsync(_selectedValue);
-
+        
         if (!canChange)
         {
             // User cancelled → revert switch back to previous value
@@ -773,10 +776,34 @@
         // User confirmed discard → clear dirty state for current record
         FormStateService.SetDirty(_selectedValue, false);
 
+        // Capture whether Parking Lot is currently selected BEFORE reload
+        bool wasParkingLotSelected =
+            selectedItem?.RecordType.Equals("BaselineItemzType", StringComparison.OrdinalIgnoreCase) == true &&
+            selectedItem?.Text.Equals("Parking Lot", StringComparison.OrdinalIgnoreCase) == true;
+
         // Apply the new setting
         ViewSettings.ReadOnlyView = newValue;
         await SessionStorage.SetAsync("READONLYVIEW", newValue);
 
+        // Reload hierarchy because visibility depends on mode
+        InitialTreeItems = await LoadAllBaselineHierarchyData(BaselineId);
+
+        // Apply Parking Lot hiding logic
+        RemoveParkingLotIfEmpty(InitialTreeItems);
+
+        // If entering read-only and Parking Lot was selected → move to root
+        if (newValue && wasParkingLotSelected)
+        {
+            var root = InitialTreeItems.FirstOrDefault();
+            if (root != null)
+            {
+                _selectedValue = root.Value;
+                baselineMudTreeView.SelectedValue = root.Value;
+                await UpdateSelectedItem(root.Value);
+            }
+        }
+
+        // Build / clear flat navigation list
         if (newValue)
         {
             _linearIds = InitialTreeItems.Flatten()
@@ -794,6 +821,7 @@
         StateHasChanged();
     }
 
+
     private async Task NavigateToPreviousBaselineNode(Guid currentId)
     {
         if (_currentIndex > 0)
@@ -809,6 +837,31 @@
             await TryUpdateSelectedItemAsync(_linearIds[_currentIndex + 1]);
         }
     }
+
+    private void RemoveParkingLotIfEmpty(List<TreeItemData<Guid>> tree)
+    {
+        if (!ViewSettings.ReadOnlyView)
+            return;
+
+        var baselineNode = tree.FirstOrDefault();
+        if (baselineNode == null)
+            return;
+
+        var parkingLotNode = baselineNode.Children
+            .OfType<TreeItemPresenter>()
+            .FirstOrDefault(n =>
+                n.RecordType.Equals("BaselineItemzType", StringComparison.OrdinalIgnoreCase) &&
+                n.Text.Equals("Parking Lot", StringComparison.OrdinalIgnoreCase));
+
+        if (parkingLotNode == null)
+            return;
+
+        if (parkingLotNode.Children.Count == 0)
+        {
+            baselineNode.Children.Remove(parkingLotNode);
+        }
+    }
+
 
     public void Dispose()
     {
