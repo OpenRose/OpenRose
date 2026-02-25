@@ -40,6 +40,12 @@
 
 						<!-- Right side: Up + Down buttons -->
 						<MudItem xs="12" sm="12" md="5" lg="5" Class="d-flex justify-end align-center">
+							@if (!IsIncluded)
+							{
+								<MudTooltip Text="Excluded from Baseline">
+									<MudChip T="string" Color="Color.Error">Excluded</MudChip>
+								</MudTooltip>
+							}
 							<MudIconButton Icon="@Icons.Material.Filled.ArrowCircleUp"
 										   Color="Color.Success"
 										   Size="Size.Medium"
@@ -102,6 +108,9 @@
 
 	[Parameter] public EventCallback<Guid> OnNavigatePrevious { get; set; }
 	[Parameter] public EventCallback<Guid> OnNavigateNext { get; set; }
+
+	[Parameter]
+	public bool IsIncluded { get; set; } = true;
 
 	[Inject]
 	public IBaselineItemzService BaselineItemzService { get; set; }

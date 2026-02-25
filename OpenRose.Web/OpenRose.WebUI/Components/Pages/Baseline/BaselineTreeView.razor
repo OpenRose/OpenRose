@@ -134,6 +134,7 @@
                     if (ViewSettings.ReadOnlyView)
                     {
                         <BaselineItemzReadOnlyComponent BaselineItemzId="@selectedItem.Value"
+                                                        IsIncluded="@selectedItem.IsIncluded"
                                                         OnNavigatePrevious="NavigateToPreviousBaselineNode"
                                                         OnNavigateNext="NavigateToNextBaselineNode"
                                                         @key="selectedItem.Value" />
