@@ -47,7 +47,16 @@ namespace ItemzApp.API.Entities
         [MaxLength(128)]
         public string? Severity { get; set; }
 
-        public List<BaselineItemzTypeJoinBaselineItemz>? BaselineItemzTypeJoinBaselineItemz { get; set; }
+		// EXPLANATION: TAGGING SUPPORT FOR BASELINE ITEMZ
+		// BaselineItemz inherit tags from the source Itemz they were created from.
+		// This allows baselines to capture the tagged state of requirements at a specific point in time.
+		// Tags are stored in the same format as Itemz (| delimiter).
+		// When a baseline is created, tags from the source Itemz are copied to BaselineItemz.
+		[Column(TypeName = "NVARCHAR(512)")]
+		[MaxLength(512)]
+		public string? Tags { get; set; }
+
+		public List<BaselineItemzTypeJoinBaselineItemz>? BaselineItemzTypeJoinBaselineItemz { get; set; }
 
         public virtual List<BaselineItemz>? BaselineFromItemzJoinItemzTrace { get; set; }
 
