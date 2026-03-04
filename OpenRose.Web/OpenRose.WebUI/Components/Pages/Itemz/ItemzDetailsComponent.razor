@@ -12,6 +12,7 @@
 @using OpenRose.WebUI.Components.FindServices
 @using OpenRose.WebUI.Components.Pages.Breadcrums
 @using OpenRose.WebUI.Components.Pages.Itemz.ChangeLog
+@using OpenRose.WebUI.Components.Pages.Itemz.Tags
 @using OpenRose.WebUI.Components.Pages.Itemz.Traceability
 @using OpenRose.WebUI.Components.Pages.Common
 @using OpenRose.WebUI.Components.Pages.Project
@@ -147,7 +148,7 @@
 			<MudCardContent>
 				<MudStack Row="true" Spacing="2">
 				<MudText><strong>Itemz Id: </strong></MudText>
-				<CopyableText TextToCopy="@ItemzId.ToString()" />
+				<CopyableText TextToCopy="@ItemzId.ToString()" DisplayLength="8"/>
 				</MudStack>
 
 				<!-- EXPLANATION: NEW TAGGING UI SECTION
@@ -161,7 +162,7 @@
 						4. Validates tag input before saving
 				-->
 				@* Add this section after the Severity field in ItemzDetailsComponent.razor *@
-
+@* 
 				<MudStack Row="false" Spacing="2" Class="mt-3">
 					<MudChipSet T="string" @bind-SelectedValues="selectedTags" 
 											AllClosable="true"
@@ -170,8 +171,7 @@
 						{
 							@foreach (var tag in tagsList)
 							{
-								<MudChip Text="@tag" Color="Color.Primary" Variant="Variant.Outlined" 
-										/>
+								<MudChip Text="@tag" Color="Color.Primary" Variant="Variant.Outlined" />
 
 							}
 						}
@@ -201,7 +201,60 @@
 							<text>@currentTagLength / 512 characters</text>
 						}
 					</MudText>
+				</MudStack> *@
+
+				<MudStack Row="false" Spacing="2" Class="mt-3">
+
+					<MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+						<MudText Typo="Typo.subtitle2">Tags</MudText>
+
+@* 						<MudButton Variant="Variant.Text"
+									Color="Color.Primary"
+									Size="Size.Small"
+									OnClick="OpenAddTagDialog">
+							Add Tag
+						</MudButton> *@
+
+
+					<MudChipSet T="string"
+								AllClosable="true"
+								OnClose="RemoveTag">
+						@foreach (var tag in tagsList)
+						{
+							<MudChip Text="@tag"
+										Value="@tag"
+										Color="Color.Primary"
+										Variant="Variant.Outlined"
+										OnClick="() => OpenEditTagDialog(tag)" />
+						}
+						<MudTooltip Text="Add Tag">
+							<MudIconButton Icon="@Icons.Material.Filled.AddCircleOutline"
+											Variant="Variant.Outlined"
+											Color="Color.Tertiary"
+											Size="Size.Small"
+											OnClick="OpenAddTagDialog" />
+						</MudTooltip>
+					</MudChipSet>
+
+					</MudStack>
+
+
+					@if (currentTagLength > 512)
+					{
+						<MudText Typo="Typo.caption" Color="Color.Warning">
+
+								<text>⚠️ Tags exceed 512 character limit (@currentTagLength/512)</text>
+						</MudText>
+					}
+
 				</MudStack>
+
+
+
+
+
+
+
 
 
 
@@ -391,7 +444,7 @@
 
 
 	private IReadOnlyCollection<string> selectedTags;
-	private List<string>? tagsList;
+	private List<string>? tagsList = new List<string>();
 	private string? newTag;
 	private int currentTagLength;
 
@@ -880,6 +933,36 @@
 		await formFieldChanged();
 
 		StateHasChanged();
+	}
+
+	private async Task OpenAddTagDialog()
+	{
+		var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+		var dialog = await DialogService.ShowAsync<AddTagDialog>(title: "Add Tag", options:options);
+		var result = await dialog.Result;
+
+		if (!result.Canceled && result.Data is string newTag)
+		{
+			tagsList.Add(newTag.Trim());
+			UpdateTagLength();
+			await formFieldChanged();
+		}
+	}
+
+	private async Task OpenEditTagDialog(string oldTag)
+	{
+		var parameters = new DialogParameters { ["ExistingTag"] = oldTag };
+		var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+		var dialog = await DialogService.ShowAsync<EditTagDialog>(title:"Edit Tag", parameters:parameters, options:options);
+		var result = await dialog.Result;
+
+		if (!result.Canceled && result.Data is string newTag)
+		{
+			tagsList.Remove(oldTag);
+			tagsList.Add(newTag.Trim());
+			UpdateTagLength();
+			await formFieldChanged();
+		}
 	}
 
 
