@@ -163,12 +163,15 @@
 				@* Add this section after the Severity field in ItemzDetailsComponent.razor *@
 
 				<MudStack Row="false" Spacing="2" Class="mt-3">
-					<MudChipSet T="string" @bind-SelectedValues="selectedTags" AllClosable="true" MultiSelection="true">
+					<MudChipSet T="string" @bind-SelectedValues="selectedTags" 
+											AllClosable="true"
+											OnClose="@RemoveTag">
 						@if (tagsList != null && tagsList.Any())
 						{
 							@foreach (var tag in tagsList)
 							{
-								<MudChip Text="@tag" Color="Color.Primary" Variant="Variant.Outlined" />
+								<MudChip Text="@tag" Color="Color.Primary" Variant="Variant.Outlined" 
+										/>
 
 							}
 						}
@@ -850,11 +853,35 @@
 			currentTagLength = tagsString.Length;
 
 			// Update the itemz object with the new tags string
-		if (singleItemz != null)
+			if (singleItemz != null)
 			{
-			singleItemz.Tags = tagsString;
+				singleItemz.Tags = tagsString;
 			}
 		}
+
+		// private void RemoveTag(MudChip<string> chip)
+		// {
+		// 	if (tagsList == null)
+		// 		return;
+
+		// 	tagsList.Remove(chip.Text);
+		// 	UpdateTagLength();
+		// }
+
+	private async Task RemoveTag(MudChip<string> chip)
+	{
+		if (tagsList == null)
+			return;
+
+		tagsList.Remove(chip.Text);
+		UpdateTagLength();
+
+		// Mark form as dirty so Save/Cancel buttons enable
+		await formFieldChanged();
+
+		StateHasChanged();
+	}
+
 
 	#endregion
 }
