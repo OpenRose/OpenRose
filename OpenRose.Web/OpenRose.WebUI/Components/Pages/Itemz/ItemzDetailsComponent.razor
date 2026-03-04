@@ -148,73 +148,20 @@
 			<MudCardContent>
 				<MudStack Row="true" Spacing="2">
 				<MudText><strong>Itemz Id: </strong></MudText>
-				<CopyableText TextToCopy="@ItemzId.ToString()" DisplayLength="8"/>
+				<CopyableText TextToCopy="@ItemzId.ToString()" />
 				</MudStack>
 
-				<!-- EXPLANATION: NEW TAGGING UI SECTION
-						This section should be added to the existing ItemzDetailsComponent.razor
-						where other itemz properties are displayed.
-
-						The section:
+				<!-- EXPLANATION: TAGGING UI SECTION
 						1. Shows MudChips for each parsed tag
 						2. Only displays when tags exist
 						3. Allows adding/removing tags with a text input field
 						4. Validates tag input before saving
 				-->
-				@* Add this section after the Severity field in ItemzDetailsComponent.razor *@
-@* 
-				<MudStack Row="false" Spacing="2" Class="mt-3">
-					<MudChipSet T="string" @bind-SelectedValues="selectedTags" 
-											AllClosable="true"
-											OnClose="@RemoveTag">
-						@if (tagsList != null && tagsList.Any())
-						{
-							@foreach (var tag in tagsList)
-							{
-								<MudChip Text="@tag" Color="Color.Primary" Variant="Variant.Outlined" />
-
-							}
-						}
-					</MudChipSet>
-
-					<MudStack Row="true" Spacing="1">
-						<MudTextField @bind-Value="newTag"
-										Placeholder="Enter tag and press Enter"
-										FullWidth="true"
-										Variant="Variant.Outlined"
-										Size="Size.Small"
-										OnKeyDown="@AddTagOnEnter" />
-						<MudButton Variant="Variant.Outlined"
-									Size="Size.Small"
-									OnClick="@AddTag">
-							Add
-						</MudButton>
-					</MudStack>
-
-					<MudText Typo="Typo.caption" Color="Color.Warning">
-						@if (currentTagLength > 512)
-						{
-							<text>⚠️ Tags exceed 512 character limit (@currentTagLength/512)</text>
-						}
-						else
-						{
-							<text>@currentTagLength / 512 characters</text>
-						}
-					</MudText>
-				</MudStack> *@
 
 				<MudStack Row="false" Spacing="2" Class="mt-3">
 
 					<MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-						<MudText Typo="Typo.subtitle2">Tags</MudText>
-
-@* 						<MudButton Variant="Variant.Text"
-									Color="Color.Primary"
-									Size="Size.Small"
-									OnClick="OpenAddTagDialog">
-							Add Tag
-						</MudButton> *@
-
+						<MudText Typo="Typo.subtitle2">Tags :</MudText>
 
 					<MudChipSet T="string"
 								AllClosable="true"
@@ -223,13 +170,13 @@
 						{
 							<MudChip Text="@tag"
 										Value="@tag"
-										Color="Color.Primary"
+										Color="Color.Success"
 										Variant="Variant.Outlined"
 										OnClick="() => OpenEditTagDialog(tag)" />
 						}
 						<MudTooltip Text="Add Tag">
 							<MudIconButton Icon="@Icons.Material.Filled.AddCircleOutline"
-											Variant="Variant.Outlined"
+											Variant="Variant.Filled"
 											Color="Color.Tertiary"
 											Size="Size.Small"
 											OnClick="OpenAddTagDialog" />
@@ -237,7 +184,6 @@
 					</MudChipSet>
 
 					</MudStack>
-
 
 					@if (currentTagLength > 512)
 					{
@@ -879,47 +825,38 @@
 
     #region EXPLANATION :: TAGGING RELATED METHODS
 
-		private void AddTag()
+	private void AddTag()
+	{
+		if (string.IsNullOrWhiteSpace(newTag))
+			return;
+
+		if (tagsList == null)
+			tagsList = new List<string>();
+
+		tagsList.Add(newTag.Trim());
+		newTag = string.Empty;
+		UpdateTagLength();
+	}
+
+	private async Task AddTagOnEnter(KeyboardEventArgs e)
+	{
+		if (e.Key == "Enter")
 		{
-			if (string.IsNullOrWhiteSpace(newTag))
-				return;
-
-			if (tagsList == null)
-				tagsList = new List<string>();
-
-			tagsList.Add(newTag.Trim());
-			newTag = string.Empty;
-			UpdateTagLength();
+			AddTag();
 		}
+	}
 
-		private async Task AddTagOnEnter(KeyboardEventArgs e)
+	private void UpdateTagLength()
+	{
+		var tagsString = TagParsingUtility.JoinTags(tagsList);
+		currentTagLength = tagsString.Length;
+
+		// Update the itemz object with the new tags string
+		if (singleItemz != null)
 		{
-			if (e.Key == "Enter")
-			{
-				AddTag();
-			}
+			singleItemz.Tags = tagsString;
 		}
-
-		private void UpdateTagLength()
-		{
-			var tagsString = TagParsingUtility.JoinTags(tagsList);
-			currentTagLength = tagsString.Length;
-
-			// Update the itemz object with the new tags string
-			if (singleItemz != null)
-			{
-				singleItemz.Tags = tagsString;
-			}
-		}
-
-		// private void RemoveTag(MudChip<string> chip)
-		// {
-		// 	if (tagsList == null)
-		// 		return;
-
-		// 	tagsList.Remove(chip.Text);
-		// 	UpdateTagLength();
-		// }
+	}
 
 	private async Task RemoveTag(MudChip<string> chip)
 	{
