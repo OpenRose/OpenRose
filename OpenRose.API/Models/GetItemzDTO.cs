@@ -45,5 +45,12 @@ namespace ItemzApp.API.Models
         /// Severity of the Itemz
         /// </summary>
         public string? Severity { get; set; }
-    }
+
+		/// <summary>
+		/// Tags associated with this Itemz.
+		/// Tags are returned as a delimited string using pipe (|) as separator.
+		/// The UI layer will parse this string and display tags using MudChips.
+		/// </summary>
+		public string? Tags { get; set; }
+	}
 }
