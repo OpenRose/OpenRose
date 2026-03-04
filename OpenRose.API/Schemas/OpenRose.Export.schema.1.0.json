@@ -235,10 +235,11 @@
         "Tags": {
           "type": [ "string", "null" ],
           "maxLength": 512
-        },
+        }
+      },
         "required": [ "Id", "Name", "Status", "Priority", "CreatedBy", "CreatedDate", "Severity" ],
         "additionalProperties": false
-      },
+     },
     "ItemzTraceExportNode": {
       "type": "object",
       "properties": {
@@ -378,6 +379,7 @@
         "Tags": {
           "type": [ "string", "null" ],
           "maxLength": 512
+        }
         },
         "required": [
           "Id",
