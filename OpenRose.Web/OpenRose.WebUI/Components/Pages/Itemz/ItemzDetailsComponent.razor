@@ -466,10 +466,19 @@
 			_originalDescription = singleItemz.Description ?? string.Empty;
 			MyContent = _originalDescription;
 
-			if (singleItemz?.Tags != null)
+			if (!string.IsNullOrWhiteSpace(singleItemz?.Tags))
 			{
-				tagsList = TagParsingUtility.ParseTags(singleItemz.Tags);
+				// Normalize incoming tags (removes duplicates, trims, preserves order)
+				var normalized = TagParsingUtility.NormalizeAndRemoveDuplicates(singleItemz.Tags);
+
+				// Parse into list
+				tagsList = TagParsingUtility.ParseTags(normalized);
+
 				UpdateTagLength();
+			}
+			else
+			{
+				tagsList = new List<string>();
 			}
 		}
 
@@ -550,7 +559,9 @@
 				updateItemzDTO.Description = singleItemz.Description;
 				updateItemzDTO.Priority = String.IsNullOrEmpty(singleItemz.Priority) ? "" : singleItemz.Priority;
 				updateItemzDTO.Severity = String.IsNullOrEmpty(singleItemz.Severity) ? "" : singleItemz.Severity;
-				updateItemzDTO.Tags = tagsList != null ? TagParsingUtility.JoinTags(tagsList) : string.Empty;
+				updateItemzDTO.Tags = tagsList != null ? 
+					TagParsingUtility.NormalizeAndRemoveDuplicates(TagParsingUtility.JoinTags(tagsList))
+					: string.Empty;
 				await ItemzService.__PUT_Update_Itemz_By_GUID_ID__Async(ItemzId, updateItemzDTO);
 				TreeNodeItemzSelectionService.UpdateTreeNodeItemzName(ItemzId, updateItemzDTO.Name);
 				// TODO :: SEND ITEMZ NAME UPDATE TO BREADCRUMS AS WELL.
@@ -822,28 +833,7 @@
 
     #region EXPLANATION :: TAGGING RELATED METHODS
 
-	private void AddTag()
-	{
-		if (string.IsNullOrWhiteSpace(newTag))
-			return;
-
-		if (tagsList == null)
-			tagsList = new List<string>();
-
-		tagsList.Add(newTag.Trim());
-		newTag = string.Empty;
-		UpdateTagLength();
-	}
-
-	private async Task AddTagOnEnter(KeyboardEventArgs e)
-	{
-		if (e.Key == "Enter")
-		{
-			AddTag();
-		}
-	}
-
-	private void UpdateTagLength()
+		private void UpdateTagLength()
 	{
 		var tagsString = TagParsingUtility.JoinTags(tagsList);
 		currentTagLength = tagsString.Length;
@@ -877,9 +867,29 @@
 
 		if (!result.Canceled && result.Data is string newTag)
 		{
+			// Snapshot BEFORE
+			var beforeList = tagsList.ToList();
+
+			// Add new tag
 			tagsList.Add(newTag.Trim());
-			UpdateTagLength();
-			await formFieldChanged();
+
+			// Normalize
+			var normalized = TagParsingUtility.NormalizeAndRemoveDuplicates(
+				TagParsingUtility.JoinTags(tagsList)
+			);
+
+			// Parse back into list
+			var afterList = TagParsingUtility.ParseTags(normalized);
+
+			// Replace UI list
+			tagsList = afterList;
+
+			// Compare lists (order + values)
+			if (!TagParsingUtility.ListsAreEqual(beforeList, afterList, StringComparison.OrdinalIgnoreCase))
+			{
+				UpdateTagLength();
+				await formFieldChanged();
+			}
 		}
 	}
 
@@ -887,18 +897,40 @@
 	{
 		var parameters = new DialogParameters { ["ExistingTag"] = oldTag };
 		var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
-		var dialog = await DialogService.ShowAsync<EditTagDialog>(title:"Edit Tag", parameters:parameters, options:options);
+		var dialog = await DialogService.ShowAsync<EditTagDialog>("Edit Tag", parameters, options);
 		var result = await dialog.Result;
 
 		if (!result.Canceled && result.Data is string newTag)
 		{
-			tagsList.Remove(oldTag);
-			tagsList.Add(newTag.Trim());
-			UpdateTagLength();
-			await formFieldChanged();
+			// Snapshot BEFORE
+			var beforeList = tagsList.ToList();
+
+			// Find and replace in-place (case-sensitive match)
+			var index = tagsList.FindIndex(t => string.Equals(t, oldTag, StringComparison.Ordinal));
+			if (index >= 0)
+			{
+				tagsList[index] = newTag.Trim();
+			}
+
+			// Normalize (removes duplicates but preserves order)
+			var normalized = TagParsingUtility.NormalizeAndRemoveDuplicates(
+				TagParsingUtility.JoinTags(tagsList)
+			);
+
+			// Parse back into list
+			var afterList = TagParsingUtility.ParseTags(normalized);
+
+			// Replace UI list
+			tagsList = afterList;
+
+			// Compare lists (order + values) — case-sensitive for Edit Tag
+			if (!TagParsingUtility.ListsAreEqual(beforeList, afterList, StringComparison.Ordinal))
+			{
+				UpdateTagLength();
+				await formFieldChanged();
+			}
 		}
 	}
-
 
 	#endregion
 }

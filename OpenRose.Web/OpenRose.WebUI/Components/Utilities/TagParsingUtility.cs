@@ -42,6 +42,52 @@ namespace OpenRose.WebUI.Components.Utilities
 		}
 
 		/// <summary>
+		/// Cleans a '|'‑delimited tag string by trimming entries and removing
+		/// duplicates using case‑insensitive comparison.
+		/// </summary>
+		/// <param name="tags">The raw '|'‑separated tag string.</param>
+		/// <returns>
+		/// A normalized string containing unique, trimmed tags, or an empty
+		/// string if no valid tags are found.
+		/// </returns>
+		public static string NormalizeAndRemoveDuplicates(string? tags)
+		{
+			if (string.IsNullOrWhiteSpace(tags))
+				return string.Empty;
+
+			tags = tags.Trim();
+
+			var uniqueTags = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+			var cleanedTags = new List<string>();
+
+			foreach (var tag in tags.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+			{
+				if (uniqueTags.Add(tag))
+					cleanedTags.Add(tag);
+			}
+
+			return string.Join(" | ", cleanedTags);
+		}
+
+		public static bool ListsAreEqual(
+			IReadOnlyList<string> a,
+			IReadOnlyList<string> b,
+			StringComparison comparison)
+		{
+			if (a.Count != b.Count)
+				return false;
+
+			for (int i = 0; i < a.Count; i++)
+			{
+				if (!string.Equals(a[i], b[i], comparison))
+					return false;
+			}
+
+			return true;
+		}
+
+
+		/// <summary>
 		/// Validates that the combined tags string doesn't exceed the 512 character limit.
 		/// </summary>
 		/// <param name="tagsString">The pipe-delimited string to validate</param>
