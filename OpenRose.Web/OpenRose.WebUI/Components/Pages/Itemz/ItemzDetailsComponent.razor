@@ -41,7 +41,7 @@
 	}
 }
 
-<MudPaper Class="pa-4 mb-5 align-start d-flex" Style="width: 100%;" Outlined="false">
+<MudPaper Class="pa-1 mb-1 align-start d-flex" Style="width: 100%;" Outlined="false">
 	<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Class="w-100">
 		<MudText Typo="Typo.h6" Align="Align.Left">Itemz Details</MudText>
 		<MudSpacer />
@@ -50,21 +50,19 @@
 			<MudButton Variant="Variant.Filled" Color="Color.Success"
 					   Disabled="FormStateService.IsDirty(ItemzId)"
 					   Size="Size.Medium"
-					   style="margin: 10px"
 					   OnClick="(async () => await HandleCreateTreeViewSiblingItemzClicked())">
 				<MudText>Create Sibling Itemz</MudText>
 			</MudButton>
 			<MudButton Variant="Variant.Filled" Color="Color.Success"
 					   Disabled="FormStateService.IsDirty(ItemzId)"
 					   Size="Size.Medium"
-					   style="margin: 10px"
 					   OnClick="(async () => await HandleCreateTreeViewChildItemzClicked())">
 				<MudText>Create Child Itemz</MudText>
 			</MudButton>
 		}
 	</MudStack>
 </MudPaper>
-<MudGrid>
+<MudGrid Class="pa-2">
 	@if (initializingPage)
 	{
 		<MudPaper Height="calc(100vh - 100px);" Width="100%">
@@ -77,8 +75,8 @@
 	}
 	else
 	{
-		<MudItem Class="pa-6 mb-5" xs="12" sm="12">
-		<MudPaper Class="mb-5">
+		<MudItem Class="pa-2 mb-5" xs="12" sm="12" Outline="false">
+		<MudPaper Class="mb-5" Outlined="false">
 		<MudContainer Class="pa-1 mb-5" MaxWidth="MaxWidth.ExtraLarge">
 		<MudTabs Outlined="true" Position="Position.Top" Rounded="true" Border="true" 
 					 IconColor="Color.Secondary" ScrollIconColor="Color.Secondary" SliderColor = "Color.Secondary"
@@ -94,14 +92,14 @@
 						}
 					</MudPaper>
 				}
-				<MudPaper Class="pa-4 mud-height-full" Width="100%">
+				<MudPaper Class="pa-1 mud-height-full" Width="100%">
 				<MudForm Model="@singleItemz" @ref="form" @bind-IsValid="@success" @bind-Errors="@errors" FieldChanged="formFieldChanged" >
-			<MudCardActions>
+			<MudCardActions Class="pa-1">
 				<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Class="w-100"> 
 				<MudButton Variant="Variant.Filled" Color="Color.Primary"
 						Disabled="@(disableUpdateItemzDetailsButton || !FormStateService.IsDirty(ItemzId))"
 						Size="Size.Large"
-						style="gap: 10px; margin : 10px"
+						style="gap: 10px; margin : 1px"
 						OnClick="(() => HandleItemzDetailsPatchSubmission())">
 					<MudText>Save</MudText>
 				</MudButton>
@@ -110,7 +108,7 @@
 				{
 				<MudButton Variant="Variant.Filled" Color="Color.Primary"
 							Size="Size.Large"
-							style="gap: 10px; margin : 10px"
+							style="gap: 10px; margin : 1px"
 							OnClick="(() => HandleGoToDetailsView())">
 					<MudText>Details View</MudText>
 				</MudButton>
@@ -121,7 +119,7 @@
 					{
 						<MudButton Variant="Variant.Filled" Color="Color.Primary"
 									Size="Size.Large"
-									style="gap: 10px; margin : 10px"
+									style="gap: 10px; margin : 1px"
 									OnClick="(() => HandleGoToTreeView())">
 							<MudText>Tree View</MudText>
 						</MudButton>
@@ -129,7 +127,7 @@
 				}
 				<MudButton Variant="Variant.Filled" Color="Color.Warning"
 							Disabled="!FormStateService.IsDirty(ItemzId)"
-							Size="Size.Large" style="gap: 10px; margin-left : 10px"
+							Size="Size.Large" style="gap: 10px; margin : 1px"
 							OnClick="(async () => await LoadDataAsync())">
 					<MudText>Cancel</MudText>
 				</MudButton>
@@ -145,7 +143,7 @@
 				}
 				</MudStack>
 			</MudCardActions>
-			<MudCardContent Style="padding : 6px">
+			<MudCardContent Style="padding : 0px">
 				<!-- EXPLANATION: TAGGING UI SECTION
 						1. Shows MudChips for each parsed tag
 						2. Only displays when tags exist
@@ -153,7 +151,7 @@
 						4. Validates tag input before saving
 				-->
 
-				<MudStack Row="false" Spacing="0" Class="mt-3">
+				<MudStack Row="false" Spacing="0" Class="mt-1">
 
 					<MudStack Row="true" AlignItems="AlignItems.Center" Spacing="0">
 						@* <MudText Typo="Typo.subtitle2">Tags :</MudText> *@
@@ -170,15 +168,13 @@
 										Variant="Variant.Outlined"
 										OnClick="() => OpenEditTagDialog(tag)" />
 						}
-						<MudTooltip Text="Add Tag">
-							<MudButton Variant="Variant.Filled"
-											Color="Color.Tertiary"
-											Size="Size.Small"
-											OnClick="OpenAddTagDialog" >
-                                <MudIcon Icon="@Icons.Material.Filled.AddCircleOutline" Size="Size.Medium" />
-								<MudText>Add Tag</MudText>
-							</MudButton>
-						</MudTooltip>
+						<MudButton Variant="Variant.Filled"
+										Color="Color.Tertiary"
+										Size="Size.Small"
+										OnClick="OpenAddTagDialog" >
+                            <MudIcon Icon="@Icons.Material.Filled.AddCircleOutline" Size="Size.Medium" />
+							<MudText>Add Tag</MudText>
+						</MudButton>
 					</MudChipSet>
 
 					</MudStack>
@@ -203,7 +199,7 @@
 
 
 
-				<MudStack Row="true" Spacing="2">
+				<MudStack Row="true" Spacing="2" Class="mt-2">
 					<MudText><strong>Itemz Id: </strong></MudText>
 					<CopyableText TextToCopy="@ItemzId.ToString()" />
 				</MudStack>
@@ -283,7 +279,7 @@
 			{
 			<MudTabPanel Icon="@Icons.Material.Filled.Hub" Text="Traceability">
 				<MudItem xs="12" sm="12" md="12" lg="12">
-					<MudPaper Class="pa-4 mud-height-full" Width="100%">
+					<MudPaper Class="pa-0 mud-height-full" Width="100%" Outlined="false">
 						<TraceabilityComponent ItemzId="@ItemzId" CalledFrom="@CalledFrom" /> @* // TODO :: Perhaps we can change @nameof with Cascading Parameter in future *@
 				 	</MudPaper> 
 				</MudItem>
