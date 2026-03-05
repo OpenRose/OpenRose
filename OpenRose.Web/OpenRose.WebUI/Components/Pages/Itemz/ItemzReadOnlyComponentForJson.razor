@@ -10,6 +10,7 @@
 @using OpenRose.WebUI.Components.EventServices
 @using OpenRose.WebUI.Components.Pages.Common
 @using OpenRose.WebUI.Components.Pages.Itemz.Traceability
+@using OpenRose.WebUI.Components.Utilities
 @inject TreeNodeItemzSelectionServiceForJson ItemzSelectionServiceForJson
 @inject IJSRuntime JS
 @inject JsonFileDataSourceService JsonService
@@ -29,7 +30,7 @@
     {
         <MudItem xs="12" sm="12">
             <MudCard style="background-color:#FABBBB; top:0; z-index:10;">
-                <MudCardContent>
+                <MudCardContent Style="padding : 6px">
                     <MudGrid>
                         <MudItem xs="12" sm="12" md="7" lg="7">
                             <MudText Typo="Typo.h5" Align="Align.Left">
@@ -59,7 +60,23 @@
             </MudCard>
 
             <MudCard Elevation="0" Outlined="false" Style="background-color:transparent; overflow-y:auto; max-height:calc(100vh - 200px);">
-                <MudCardContent>
+                <MudCardContent Style="padding : 6px">
+                    @if (tagsList is { Count: > 0 })
+                    {
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                            @* <MudText Typo="Typo.subtitle2">Tags :</MudText> *@
+                            <MudChipSet T="string"
+                                        AllClosable="false">
+                                @foreach (var tag in tagsList)
+                                {
+                                    <MudChip Text="@tag"
+                                             Value="@tag"
+                                             Color="Color.Success"
+                                             Variant="Variant.Outlined" />
+                                }
+                            </MudChipSet>
+                        </MudStack>
+                    }
                     <MudStack Row="true" Spacing="2" StretchItems="StretchItems.None" AlignItems="AlignItems.Start" Class="w-100">
                         <MudStack Row="true" Spacing="2">
                             <MudText><strong>ID          : </strong></MudText>
@@ -100,6 +117,9 @@
     private GetItemzDTO _itemz = new();
     private MarkupString _convertedMarkdown;
 
+    private List<string>? tagsList = new List<string>();
+
+
     protected override async Task OnParametersSetAsync()
     {
         initializingPage = true;
@@ -116,6 +136,16 @@
             else
             {
                 _convertedMarkdown = default;
+            }
+
+            if (_itemz?.Tags != null)
+            {
+                tagsList = TagParsingUtility.ParseTags(_itemz.Tags);
+            }
+            else
+            {
+                tagsList = new List<string>(); // Ensure tagsList is EMPTY if there are no tags
+
             }
         }
         finally
