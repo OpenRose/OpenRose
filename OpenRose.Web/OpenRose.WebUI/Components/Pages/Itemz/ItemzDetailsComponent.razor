@@ -145,12 +145,7 @@
 				}
 				</MudStack>
 			</MudCardActions>
-			<MudCardContent>
-				<MudStack Row="true" Spacing="2">
-				<MudText><strong>Itemz Id: </strong></MudText>
-				<CopyableText TextToCopy="@ItemzId.ToString()" />
-				</MudStack>
-
+			<MudCardContent Style="padding : 6px">
 				<!-- EXPLANATION: TAGGING UI SECTION
 						1. Shows MudChips for each parsed tag
 						2. Only displays when tags exist
@@ -158,13 +153,14 @@
 						4. Validates tag input before saving
 				-->
 
-				<MudStack Row="false" Spacing="2" Class="mt-3">
+				<MudStack Row="false" Spacing="0" Class="mt-3">
 
-					<MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
-						<MudText Typo="Typo.subtitle2">Tags :</MudText>
+					<MudStack Row="true" AlignItems="AlignItems.Center" Spacing="0">
+						@* <MudText Typo="Typo.subtitle2">Tags :</MudText> *@
 
 					<MudChipSet T="string"
 								AllClosable="true"
+								SelectionMode="SelectionMode.SingleSelection"
 								OnClose="RemoveTag">
 						@foreach (var tag in tagsList)
 						{
@@ -175,11 +171,13 @@
 										OnClick="() => OpenEditTagDialog(tag)" />
 						}
 						<MudTooltip Text="Add Tag">
-							<MudIconButton Icon="@Icons.Material.Filled.AddCircleOutline"
-											Variant="Variant.Filled"
+							<MudButton Variant="Variant.Filled"
 											Color="Color.Tertiary"
 											Size="Size.Small"
-											OnClick="OpenAddTagDialog" />
+											OnClick="OpenAddTagDialog" >
+                                <MudIcon Icon="@Icons.Material.Filled.AddCircleOutline" Size="Size.Medium" />
+								<MudText>Add Tag</MudText>
+							</MudButton>
 						</MudTooltip>
 					</MudChipSet>
 
@@ -205,7 +203,10 @@
 
 
 
-
+				<MudStack Row="true" Spacing="2">
+					<MudText><strong>Itemz Id: </strong></MudText>
+					<CopyableText TextToCopy="@ItemzId.ToString()" />
+				</MudStack>
 				<br />
 				<MudTextField T="string" Label="Name" Required="true" RequiredError="Name is required!"
 					@bind-Value="singleItemz.Name"
@@ -299,7 +300,7 @@
  			<MudItem xs="12" sm="12" md="12" lg="12">
 				<MudStack Row="true" Spacing="2" StretchItems="StretchItems.None" AlignItems="AlignItems.Start" Class="w-100">
 					<MudCard style="margin: 16px;" Class="w-100">
-						<MudCardContent>
+						<MudCardContent Style="padding : 6px">
 							<MudStack Row="true" Spacing="2">
 								<MudText><strong>ID          : </strong></MudText>
 								<CopyableText TextToCopy="@singleItemz.Id.ToString()" />
