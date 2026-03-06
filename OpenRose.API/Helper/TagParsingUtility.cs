@@ -2,7 +2,11 @@
 // Licensed under the Apache License, Version 2.0. 
 // See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 
-namespace OpenRose.WebUI.Components.Utilities
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace ItemzApp.API.Helper
 {
 	/// <summary>
 	/// EXPLANATION: NEW TAG PARSING UTILITY
@@ -50,6 +54,7 @@ namespace OpenRose.WebUI.Components.Utilities
 		/// A normalized string containing unique, trimmed tags, or an empty
 		/// string if no valid tags are found.
 		/// </returns>
+
 		public static string NormalizeAndRemoveDuplicates(string? tags)
 		{
 			if (string.IsNullOrWhiteSpace(tags))
@@ -65,6 +70,25 @@ namespace OpenRose.WebUI.Components.Utilities
 
 			return JoinTags(cleaned); // uses "tag1|tag2|tag3"
 		}
+
+		//public static string NormalizeAndRemoveDuplicates_Deprecated(string? tags)
+		//{
+		//	if (string.IsNullOrWhiteSpace(tags))
+		//		return string.Empty;
+
+		//	tags = tags.Trim();
+
+		//	var uniqueTags = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		//	var cleanedTags = new List<string>();
+
+		//	foreach (var tag in tags.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+		//	{
+		//		if (uniqueTags.Add(tag))
+		//			cleanedTags.Add(tag);
+		//	}
+
+		//	return string.Join(" | ", cleanedTags);
+		//}
 
 		public static bool ListsAreEqual(
 			IReadOnlyList<string> a,
