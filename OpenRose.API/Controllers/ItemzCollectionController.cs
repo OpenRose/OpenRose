@@ -96,8 +96,14 @@ namespace ItemzApp.API.Controllers
 			var itemzEntities = _mapper.Map<IEnumerable<Entities.Itemz>>(itemzCollection);
 			foreach (var itemz in itemzEntities)
 			{
+				// Normalize tags
+				itemz.Tags = TagParsingUtility.NormalizeAndRemoveDuplicates(itemz.Tags);
+				if (!TagParsingUtility.ValidateTagsLength(itemz.Tags))
+					return BadRequest("Tags exceed the maximum allowed length of 512 characters after normalization.");
+
 				_itemzRepository.AddItemz(itemz);
 			}
+
 			await _itemzRepository.SaveAsync();
 
 			var itemzCollectionToReturn = _mapper.Map<IEnumerable<GetItemzDTO>>(itemzEntities);
