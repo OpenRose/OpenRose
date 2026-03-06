@@ -27,6 +27,17 @@
 @inject IJSRuntime JS
 @inject IServiceProvider serviceProvider
 
+
+<style>
+	.rounded-add-tag-btn {
+		border-radius: 9999px;
+		padding-left: 12px;
+		padding-right: 12px;
+		min-height: 32px;
+	}
+</style>
+
+
 @if (FormStateService.IsDirty(ItemzId))
 {
 	<NavigationLock ConfirmExternalNavigation="true"
@@ -171,7 +182,8 @@
 						<MudButton Variant="Variant.Filled"
 										Color="Color.Tertiary"
 										Size="Size.Small"
-										OnClick="OpenAddTagDialog" >
+										OnClick="OpenAddTagDialog"
+										Class="rounded-add-tag-btn">
                             <MudIcon Icon="@Icons.Material.Filled.AddCircleOutline" Size="Size.Medium" />
 							<MudText>Add Tag</MudText>
 						</MudButton>
