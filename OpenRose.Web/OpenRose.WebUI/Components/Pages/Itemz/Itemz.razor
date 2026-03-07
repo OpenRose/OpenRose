@@ -14,6 +14,7 @@
 @using OpenRose.WebUI.Components.FindServices
 @using OpenRose.WebUI.Components.Pages.Breadcrums
 @using OpenRose.WebUI.Components.Pages.Common
+@using OpenRose.WebUI.Components.Utilities
 @using OpenRose.WebUI.Services
 @using Microsoft.AspNetCore.Components.Forms
 @inject NavigationManager NavManager
@@ -84,6 +85,20 @@
 			</MudCard>
 			<MudCard>
 				<MudCardContent>
+					<MudStack Row="true" AlignItems="AlignItems.Center" Spacing="0">
+						<MudChipSet T="string"
+									AllClosable="false"
+									SelectionMode="SelectionMode.SingleSelection" >
+							@foreach (var tag in tagsList)
+							{
+								<MudChip Text="@tag"
+											Value="@tag"
+											Color="Color.Success"
+											Variant="Variant.Outlined" />
+							}
+						</MudChipSet>
+					</MudStack>
+
 				<MudStack Row="true" Spacing="2" StretchItems="StretchItems.None" AlignItems="AlignItems.Start" Class="w-100">
 					<MudStack Row="true" Spacing="2">
 						<MudText><strong>ID          : </strong></MudText>
@@ -197,6 +212,9 @@
 
 	private MarkupString convertedMarkdown;
 
+	private List<string>? tagsList = new List<string>();
+
+
 	protected override async Task OnInitializedAsync()
 	{
 		initializingPage = true;
@@ -210,6 +228,19 @@
 			BreadcrumsParameter.Id = singleItemz.Id;
 			BreadcrumsParameter.Name = singleItemz.Name;
 			BreadcrumsParameter.RecordType = "itemz"; // TODO :: USE CONSTANT
+
+			if (!string.IsNullOrWhiteSpace(singleItemz?.Tags))
+			{
+				// Normalize incoming tags (removes duplicates, trims, preserves order)
+				var normalized = TagParsingUtility.NormalizeAndRemoveDuplicates(singleItemz.Tags);
+
+				// Parse into list
+				tagsList = TagParsingUtility.ParseTags(normalized);
+			}
+			else
+			{
+				tagsList = new List<string>();
+			}
 
 			var returnedItemzList = await HierarchyService.__Get_Immediate_Children_Hierarchy_By_GUID__Async(ItemzId);
 
