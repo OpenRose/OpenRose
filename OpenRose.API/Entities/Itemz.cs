@@ -153,11 +153,23 @@ namespace ItemzApp.API.Entities
             }
         }
 
-        // TODO: We are now replacing ProjeectJoinItemz with ItemzTypeJoinItemz.
-        // So at some point we will have to remove ProjectJoinItemz from below.
-        //public List<ProjectJoinItemz> ProjectJoinItemz { get; set; }
+		// TODO: We are now replacing ProjeectJoinItemz with ItemzTypeJoinItemz.
+		// So at some point we will have to remove ProjectJoinItemz from below.
+		//public List<ProjectJoinItemz> ProjectJoinItemz { get; set; }
 
-        public List<ItemzTypeJoinItemz>? ItemzTypeJoinItemz { get; set; }
+		// EXPLANATION: TAGGING SUPPORT
+		// Tags property supports multiple tags stored as a delimited string
+		// This design supports:
+		// - Unicode characters (emojis, international languages)
+		// - Special characters (hyphens, underscores, spaces, currency symbols)
+		// - Easy parsing and serialization for export/import
+		// multiple tags (e.g., ~10-15 typical tags of varying length).
+		[Column(TypeName = "NVARCHAR(512)")]
+		[MaxLength(512)]
+		public string? Tags { get; set; }
+
+
+		public List<ItemzTypeJoinItemz>? ItemzTypeJoinItemz { get; set; }
 
         public virtual List<Itemz>? FromItemzJoinItemzTrace { get; set; }
 

@@ -1,0 +1,35 @@
+﻿<MudDialog>
+    <DialogContent>
+        <MudTextField @bind-Value="tagValue"
+                      Label="Tag"
+                      Placeholder="Enter tag"
+                      Immediate="true"
+                      Variant="Variant.Outlined"
+                      FullWidth="true" />
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Success"
+                   Disabled="@string.IsNullOrWhiteSpace(tagValue)"
+                   OnClick="Submit">
+            Save
+        </MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="Cancel">Cancel</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; }
+    [Parameter] public string ExistingTag { get; set; }
+
+    private string tagValue;
+
+    protected override void OnInitialized()
+    {
+        tagValue = ExistingTag;
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+    private void Submit() => MudDialog.Close(DialogResult.Ok(tagValue));
+}

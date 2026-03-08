@@ -292,9 +292,15 @@ namespace ItemzApp.API.Controllers
             Itemz itemzEntity;
             try
             {
-                itemzEntity = _mapper.Map<Entities.Itemz>(createItemzDTO);
-            }
-            catch (AutoMapper.AutoMapperMappingException amm_ex)
+				itemzEntity = _mapper.Map<Entities.Itemz>(createItemzDTO);
+
+				// Normalize tags
+				itemzEntity.Tags = TagParsingUtility.NormalizeAndRemoveDuplicates(itemzEntity.Tags);
+				if (!TagParsingUtility.ValidateTagsLength(itemzEntity.Tags))
+					return BadRequest("Tags exceed the maximum allowed length of 512 characters after normalization.");
+
+			}
+			catch (AutoMapper.AutoMapperMappingException amm_ex)
             {
                 _logger.LogDebug("{FormattedControllerAndActionNames}Could not create new Itemz due to issue with value provided for {fieldname}",
                         ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
@@ -363,9 +369,15 @@ namespace ItemzApp.API.Controllers
 
             try
             {
-                itemzEntity = _mapper.Map<Entities.Itemz>(createItemzDTO);
-            }
-            catch (AutoMapper.AutoMapperMappingException amm_ex)
+				itemzEntity = _mapper.Map<Entities.Itemz>(createItemzDTO);
+
+				// Normalize tags
+				itemzEntity.Tags = TagParsingUtility.NormalizeAndRemoveDuplicates(itemzEntity.Tags);
+				if (!TagParsingUtility.ValidateTagsLength(itemzEntity.Tags))
+					return BadRequest("Tags exceed the maximum allowed length of 512 characters after normalization.");
+
+			}
+			catch (AutoMapper.AutoMapperMappingException amm_ex)
             {
                 _logger.LogDebug("{FormattedControllerAndActionNames}Could not create new Itemz due to issue with value provided for {fieldname}",
                         ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
@@ -604,6 +616,12 @@ namespace ItemzApp.API.Controllers
 			try
 			{
 				_mapper.Map(itemzToBeUpdated, itemzFromRepo);
+
+				// 🔧 Normalize tags
+				itemzFromRepo.Tags = TagParsingUtility.NormalizeAndRemoveDuplicates(itemzFromRepo.Tags);
+				if (!TagParsingUtility.ValidateTagsLength(itemzFromRepo.Tags))
+					return BadRequest("Tags exceed the maximum allowed length of 512 characters after normalization.");
+
 			}
 			catch (AutoMapper.AutoMapperMappingException amm_ex)
 			{
@@ -721,6 +739,12 @@ namespace ItemzApp.API.Controllers
 			try
 			{
 				_mapper.Map(itemzToPatch, itemzFromRepo);
+
+				// Normalize tags
+				itemzFromRepo.Tags = TagParsingUtility.NormalizeAndRemoveDuplicates(itemzFromRepo.Tags);
+				if (!TagParsingUtility.ValidateTagsLength(itemzFromRepo.Tags))
+					return BadRequest("Tags exceed the maximum allowed length of 512 characters after normalization.");
+
 			}
 			catch (AutoMapper.AutoMapperMappingException amm_ex)
 			{

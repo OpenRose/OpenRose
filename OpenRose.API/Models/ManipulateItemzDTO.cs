@@ -48,5 +48,20 @@ namespace ItemzApp.API.Models
         /// </summary>
         [MaxLength(128)]
         public string Severity { get; set; } = EntityPropertyDefaultValues.ItemzSeverityDefaultValue;
-    }
+
+    	/// <summary>
+		/// Tags property allows multiple tags to be applied to a requirement.
+		/// Tags are provided as a delimited string using pipe (|) as separator.
+		/// 
+		/// Examples:
+		/// - "April2026|A108|New York"
+		/// - "Monday & Tuesday|Delivery_Completed|01-03-2026"
+		/// 
+		/// The property is marked as optional to maintain backward compatibility.
+		/// Existing code that doesn't use tags can continue to work without modification.
+		/// Tags are marked as nullable and optional in validation.
+		/// </summary>
+		[MaxLength(512)]
+		public string? Tags { get; set; }
+	}
 }

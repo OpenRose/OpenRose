@@ -241,8 +241,13 @@ namespace ItemzApp.API.Controllers
             try
             {
                 itemzEntity = _mapper.Map<Entities.Itemz>(createItemzDTO);
-            }
-            catch (AutoMapper.AutoMapperMappingException amm_ex)
+
+				itemzEntity.Tags = TagParsingUtility.NormalizeAndRemoveDuplicates(itemzEntity.Tags);
+				if (!TagParsingUtility.ValidateTagsLength(itemzEntity.Tags))
+					return BadRequest("Tags exceed the maximum allowed length of 512 characters after normalization.");
+
+			}
+			catch (AutoMapper.AutoMapperMappingException amm_ex)
             {
                 _logger.LogDebug("{FormattedControllerAndActionNames}Could not create new Itemz due to issue with value provided for {fieldname}",
                         ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
@@ -292,17 +297,23 @@ namespace ItemzApp.API.Controllers
             }
 
             var itemzEntities = _mapper.Map<IEnumerable<Entities.Itemz>>(itemzCollection);
-            foreach (var itemz in itemzEntities)
-            {
-                _itemzRepository.AddItemzByItemzType(itemz, ItemzTypeId);
-            }
+			foreach (var itemz in itemzEntities)
+			{
+				// Normalize tags
+				itemz.Tags = TagParsingUtility.NormalizeAndRemoveDuplicates(itemz.Tags);
+				if (!TagParsingUtility.ValidateTagsLength(itemz.Tags))
+					return BadRequest("Tags exceed the maximum allowed length of 512 characters after normalization.");
 
-            // EXPLANATION: WE SAVE ALL ITEMZ IN THE REPOSITORY FIRST BECAUSE WE ARE ADDING
-            // ONE HIERARCHY RECORD AT A TIME AND SAVING EACH RECORD INDIVIDUALLY. WE MAY 
-            // HAVE TO COME-UP WITH BETTER OPTION IN THE FUTURE BUT FOR NOW WE ARE FIRST SAVING
-            // ALL ITEMZ RECORDS BEFORE WE ADD CORRESPONDING ITEMZ HIERARCHY RECORD IN THE REPOSITORY
+				_itemzRepository.AddItemzByItemzType(itemz, ItemzTypeId);
+			}
 
-             await _itemzRepository.SaveAsync(); 
+
+			// EXPLANATION: WE SAVE ALL ITEMZ IN THE REPOSITORY FIRST BECAUSE WE ARE ADDING
+			// ONE HIERARCHY RECORD AT A TIME AND SAVING EACH RECORD INDIVIDUALLY. WE MAY 
+			// HAVE TO COME-UP WITH BETTER OPTION IN THE FUTURE BUT FOR NOW WE ARE FIRST SAVING
+			// ALL ITEMZ RECORDS BEFORE WE ADD CORRESPONDING ITEMZ HIERARCHY RECORD IN THE REPOSITORY
+
+			await _itemzRepository.SaveAsync(); 
 
             foreach (var itemz in itemzEntities)
             {

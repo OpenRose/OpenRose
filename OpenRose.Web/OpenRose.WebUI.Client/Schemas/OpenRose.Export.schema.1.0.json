@@ -231,10 +231,14 @@
           "type": "string",
           "format": "date-time"
         },
-        "Severity": { "type": "string" }
+        "Severity": { "type": "string" },
+        "Tags": {
+          "type": [ "string", "null" ],
+          "maxLength": 512
+        }
       },
-      "required": [ "Id", "Name", "Status", "Priority", "CreatedBy", "CreatedDate", "Severity" ],
-      "additionalProperties": false
+        "required": [ "Id", "Name", "Status", "Priority", "CreatedBy", "CreatedDate", "Severity" ],
+        "additionalProperties": false
     },
     "ItemzTraceExportNode": {
       "type": "object",
@@ -371,22 +375,26 @@
           "format": "date-time"
         },
         "Severity": { "type": "string" },
-        "isIncluded": { "type": "boolean" }
+        "isIncluded": { "type": "boolean" },
+        "Tags": {
+          "type": [ "string", "null" ],
+          "maxLength": 512
+        }
+       },
+        "required": [
+          "Id",
+          "ItemzId",
+          "Name",
+          "Status",
+          "Priority",
+          "Description",
+          "CreatedBy",
+          "CreatedDate",
+          "Severity",
+          "isIncluded"
+        ],
+        "additionalProperties": false
       },
-      "required": [
-        "Id",
-        "ItemzId",
-        "Name",
-        "Status",
-        "Priority",
-        "Description",
-        "CreatedBy",
-        "CreatedDate",
-        "Severity",
-        "isIncluded"
-      ],
-      "additionalProperties": false
-    },
     "BaselineItemzTraceExportNode": {
       "type": "object",
       "properties": {

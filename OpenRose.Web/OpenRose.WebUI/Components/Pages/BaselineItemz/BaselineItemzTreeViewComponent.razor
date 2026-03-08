@@ -14,6 +14,7 @@
 @using OpenRose.WebUI.Components.Pages.Common
 @using Microsoft.AspNetCore.Components.Forms
 @using System.Globalization
+@using OpenRose.WebUI.Components.Utilities
 @* @inject NavigationManager NavManager *@
 @inject IFindProjectAndBaselineIdsByBaselineItemzIdService FindProjectAndBaselineIdsByBaselineItemzIdService
 @inject IDialogService DialogService
@@ -59,7 +60,20 @@
 						</MudCardContent>
 					</MudCard>
 					<MudCard>
-						<MudCardContent>
+					<MudCardContent>
+						<MudStack Row="true" AlignItems="AlignItems.Center" Spacing="0">
+							<MudChipSet T="string"
+										AllClosable="false"
+										SelectionMode="SelectionMode.SingleSelection">
+								@foreach (var tag in tagsList)
+								{
+									<MudChip Text="@tag"
+												Value="@tag"
+												Color="Color.Success"
+												Variant="Variant.Outlined" />
+								}
+							</MudChipSet>
+						</MudStack>
 						<MudStack Row="true" Spacing="2">
 						<MudText><strong>ID                   : </strong></MudText>
 						<CopyableText TextToCopy="@singleBaselineItemz.Id.ToString()" />
@@ -135,6 +149,8 @@
 
 	private MarkupString convertedMarkdown;
 
+	private List<string>? tagsList = new List<string>();
+
 	protected override async Task OnAfterRenderAsync(bool firstRender)
 	{
 		if (firstRender)
@@ -146,6 +162,20 @@
 			if (singleBaselineItemz != null)
 			{
 				BaselineItemzSelectionService.LoadingOfBaselineItemzTreeViewComponent(BaselineItemzId, singleBaselineItemz.isIncluded);
+
+				// Obtain tags list from the singleBaselineItemz.
+				if (!string.IsNullOrWhiteSpace(singleBaselineItemz?.Tags))
+				{
+					// Normalize incoming tags (removes duplicates, trims, preserves order)
+					var normalized = TagParsingUtility.NormalizeAndRemoveDuplicates(singleBaselineItemz.Tags);
+
+					// Parse into list
+					tagsList = TagParsingUtility.ParseTags(normalized);
+				}
+				else
+				{
+					tagsList = new List<string>();
+				}
 			}
 			await UpdateAllChildBaselineItemzFromServer();
 

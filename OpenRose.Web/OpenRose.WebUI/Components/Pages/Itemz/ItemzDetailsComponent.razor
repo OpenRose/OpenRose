@@ -12,10 +12,12 @@
 @using OpenRose.WebUI.Components.FindServices
 @using OpenRose.WebUI.Components.Pages.Breadcrums
 @using OpenRose.WebUI.Components.Pages.Itemz.ChangeLog
+@using OpenRose.WebUI.Components.Pages.Itemz.Tags
 @using OpenRose.WebUI.Components.Pages.Itemz.Traceability
 @using OpenRose.WebUI.Components.Pages.Common
 @using OpenRose.WebUI.Components.Pages.Project
 @using Microsoft.AspNetCore.Components.Forms
+@using OpenRose.WebUI.Components.Utilities
 @using PSC.Blazor.Components.MarkdownEditor
 @using PSC.Blazor.Components.MarkdownEditor.EventsArgs
 @inject NavigationManager NavManager
@@ -24,6 +26,17 @@
 @inject BreadcrumsService breadcrumsService
 @inject IJSRuntime JS
 @inject IServiceProvider serviceProvider
+
+
+<style>
+	.rounded-add-tag-btn {
+		border-radius: 9999px;
+		padding-left: 12px;
+		padding-right: 12px;
+		min-height: 32px;
+	}
+</style>
+
 
 @if (FormStateService.IsDirty(ItemzId))
 {
@@ -39,7 +52,7 @@
 	}
 }
 
-<MudPaper Class="pa-4 mb-5 align-start d-flex" Style="width: 100%;" Outlined="false">
+<MudPaper Class="pa-1 mb-1 align-start d-flex" Style="width: 100%;" Outlined="false">
 	<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Class="w-100">
 		<MudText Typo="Typo.h6" Align="Align.Left">Itemz Details</MudText>
 		<MudSpacer />
@@ -48,21 +61,19 @@
 			<MudButton Variant="Variant.Filled" Color="Color.Success"
 					   Disabled="FormStateService.IsDirty(ItemzId)"
 					   Size="Size.Medium"
-					   style="margin: 10px"
 					   OnClick="(async () => await HandleCreateTreeViewSiblingItemzClicked())">
 				<MudText>Create Sibling Itemz</MudText>
 			</MudButton>
 			<MudButton Variant="Variant.Filled" Color="Color.Success"
 					   Disabled="FormStateService.IsDirty(ItemzId)"
 					   Size="Size.Medium"
-					   style="margin: 10px"
 					   OnClick="(async () => await HandleCreateTreeViewChildItemzClicked())">
 				<MudText>Create Child Itemz</MudText>
 			</MudButton>
 		}
 	</MudStack>
 </MudPaper>
-<MudGrid>
+<MudGrid Class="pa-2">
 	@if (initializingPage)
 	{
 		<MudPaper Height="calc(100vh - 100px);" Width="100%">
@@ -75,8 +86,8 @@
 	}
 	else
 	{
-		<MudItem Class="pa-6 mb-5" xs="12" sm="12">
-		<MudPaper Class="mb-5">
+		<MudItem Class="pa-2 mb-5" xs="12" sm="12" Outline="false">
+		<MudPaper Class="mb-5" Outlined="false">
 		<MudContainer Class="pa-1 mb-5" MaxWidth="MaxWidth.ExtraLarge">
 		<MudTabs Outlined="true" Position="Position.Top" Rounded="true" Border="true" 
 					 IconColor="Color.Secondary" ScrollIconColor="Color.Secondary" SliderColor = "Color.Secondary"
@@ -92,14 +103,14 @@
 						}
 					</MudPaper>
 				}
-				<MudPaper Class="pa-4 mud-height-full" Width="100%">
+				<MudPaper Class="pa-1 mud-height-full" Width="100%">
 				<MudForm Model="@singleItemz" @ref="form" @bind-IsValid="@success" @bind-Errors="@errors" FieldChanged="formFieldChanged" >
-			<MudCardActions>
+			<MudCardActions Class="pa-1">
 				<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Class="w-100"> 
 				<MudButton Variant="Variant.Filled" Color="Color.Primary"
 						Disabled="@(disableUpdateItemzDetailsButton || !FormStateService.IsDirty(ItemzId))"
 						Size="Size.Large"
-						style="gap: 10px; margin : 10px"
+						style="gap: 10px; margin : 1px"
 						OnClick="(() => HandleItemzDetailsPatchSubmission())">
 					<MudText>Save</MudText>
 				</MudButton>
@@ -108,7 +119,7 @@
 				{
 				<MudButton Variant="Variant.Filled" Color="Color.Primary"
 							Size="Size.Large"
-							style="gap: 10px; margin : 10px"
+							style="gap: 10px; margin : 1px"
 							OnClick="(() => HandleGoToDetailsView())">
 					<MudText>Details View</MudText>
 				</MudButton>
@@ -119,7 +130,7 @@
 					{
 						<MudButton Variant="Variant.Filled" Color="Color.Primary"
 									Size="Size.Large"
-									style="gap: 10px; margin : 10px"
+									style="gap: 10px; margin : 1px"
 									OnClick="(() => HandleGoToTreeView())">
 							<MudText>Tree View</MudText>
 						</MudButton>
@@ -127,7 +138,7 @@
 				}
 				<MudButton Variant="Variant.Filled" Color="Color.Warning"
 							Disabled="!FormStateService.IsDirty(ItemzId)"
-							Size="Size.Large" style="gap: 10px; margin-left : 10px"
+							Size="Size.Large" style="gap: 10px; margin : 1px"
 							OnClick="(async () => await LoadDataAsync())">
 					<MudText>Cancel</MudText>
 				</MudButton>
@@ -143,10 +154,66 @@
 				}
 				</MudStack>
 			</MudCardActions>
-			<MudCardContent>
-				<MudStack Row="true" Spacing="2">
-				<MudText><strong>Itemz Id: </strong></MudText>
-				<CopyableText TextToCopy="@ItemzId.ToString()" />
+			<MudCardContent Style="padding : 0px">
+				<!-- EXPLANATION: TAGGING UI SECTION
+						1. Shows MudChips for each parsed tag
+						2. Only displays when tags exist
+						3. Allows adding/removing tags with a text input field
+						4. Validates tag input before saving
+				-->
+
+				<MudStack Row="false" Spacing="0" Class="mt-1">
+
+					<MudStack Row="true" AlignItems="AlignItems.Center" Spacing="0">
+						@* <MudText Typo="Typo.subtitle2">Tags :</MudText> *@
+
+					<MudChipSet T="string"
+								AllClosable="true"
+								SelectionMode="SelectionMode.SingleSelection"
+								OnClose="RemoveTag">
+						@foreach (var tag in tagsList)
+						{
+							<MudChip Text="@tag"
+										Value="@tag"
+										Color="Color.Success"
+										Variant="Variant.Outlined"
+										OnClick="() => OpenEditTagDialog(tag)" />
+						}
+						<MudButton Variant="Variant.Filled"
+										Color="Color.Tertiary"
+										Size="Size.Small"
+										OnClick="OpenAddTagDialog"
+										Class="rounded-add-tag-btn">
+                            <MudIcon Icon="@Icons.Material.Filled.AddCircleOutline" Size="Size.Medium" />
+							<MudText>Add Tag</MudText>
+						</MudButton>
+					</MudChipSet>
+
+					</MudStack>
+
+					@if (currentTagLength > 512)
+					{
+						<MudText Typo="Typo.caption" Color="Color.Warning">
+
+								<text>⚠️ Tags exceed 512 character limit (@currentTagLength/512)</text>
+						</MudText>
+					}
+
+				</MudStack>
+
+
+
+
+
+
+
+
+
+
+
+				<MudStack Row="true" Spacing="2" Class="mt-2">
+					<MudText><strong>Itemz Id: </strong></MudText>
+					<CopyableText TextToCopy="@ItemzId.ToString()" />
 				</MudStack>
 				<br />
 				<MudTextField T="string" Label="Name" Required="true" RequiredError="Name is required!"
@@ -224,7 +291,7 @@
 			{
 			<MudTabPanel Icon="@Icons.Material.Filled.Hub" Text="Traceability">
 				<MudItem xs="12" sm="12" md="12" lg="12">
-					<MudPaper Class="pa-4 mud-height-full" Width="100%">
+					<MudPaper Class="pa-0 mud-height-full" Width="100%" Outlined="false">
 						<TraceabilityComponent ItemzId="@ItemzId" CalledFrom="@CalledFrom" /> @* // TODO :: Perhaps we can change @nameof with Cascading Parameter in future *@
 				 	</MudPaper> 
 				</MudItem>
@@ -241,7 +308,7 @@
  			<MudItem xs="12" sm="12" md="12" lg="12">
 				<MudStack Row="true" Spacing="2" StretchItems="StretchItems.None" AlignItems="AlignItems.Start" Class="w-100">
 					<MudCard style="margin: 16px;" Class="w-100">
-						<MudCardContent>
+						<MudCardContent Style="padding : 6px">
 							<MudStack Row="true" Spacing="2">
 								<MudText><strong>ID          : </strong></MudText>
 								<CopyableText TextToCopy="@singleItemz.Id.ToString()" />
@@ -331,6 +398,11 @@
 	private bool isOrphaned { get; set; } = false;
 
 
+	// private IReadOnlyCollection<string> selectedTags;
+	private List<string>? tagsList = new List<string>();
+	private string? newTag;
+	private int currentTagLength;
+
 	// private string _Content = string.Empty;
 	private string MyContent
 	{
@@ -405,6 +477,21 @@
 
 			_originalDescription = singleItemz.Description ?? string.Empty;
 			MyContent = _originalDescription;
+
+			if (!string.IsNullOrWhiteSpace(singleItemz?.Tags))
+			{
+				// Normalize incoming tags (removes duplicates, trims, preserves order)
+				var normalized = TagParsingUtility.NormalizeAndRemoveDuplicates(singleItemz.Tags);
+
+				// Parse into list
+				tagsList = TagParsingUtility.ParseTags(normalized);
+
+				UpdateTagLength();
+			}
+			else
+			{
+				tagsList = new List<string>();
+			}
 		}
 
 		if (form != null)
@@ -484,6 +571,9 @@
 				updateItemzDTO.Description = singleItemz.Description;
 				updateItemzDTO.Priority = String.IsNullOrEmpty(singleItemz.Priority) ? "" : singleItemz.Priority;
 				updateItemzDTO.Severity = String.IsNullOrEmpty(singleItemz.Severity) ? "" : singleItemz.Severity;
+				updateItemzDTO.Tags = tagsList != null ? 
+					TagParsingUtility.NormalizeAndRemoveDuplicates(TagParsingUtility.JoinTags(tagsList))
+					: string.Empty;
 				await ItemzService.__PUT_Update_Itemz_By_GUID_ID__Async(ItemzId, updateItemzDTO);
 				TreeNodeItemzSelectionService.UpdateTreeNodeItemzName(ItemzId, updateItemzDTO.Name);
 				// TODO :: SEND ITEMZ NAME UPDATE TO BREADCRUMS AS WELL.
@@ -752,4 +842,107 @@
 			.Replace("\r\n", "\n")   // unify line endings
 			.Trim();                 // remove leading/trailing whitespace
 	}
+
+    #region EXPLANATION :: TAGGING RELATED METHODS
+
+		private void UpdateTagLength()
+	{
+		var tagsString = TagParsingUtility.JoinTags(tagsList);
+		currentTagLength = tagsString.Length;
+
+		// Update the itemz object with the new tags string
+		if (singleItemz != null)
+		{
+			singleItemz.Tags = tagsString;
+		}
+	}
+
+	private async Task RemoveTag(MudChip<string> chip)
+	{
+		if (tagsList == null)
+			return;
+
+		tagsList.Remove(chip.Text);
+		UpdateTagLength();
+
+		// Mark form as dirty so Save/Cancel buttons enable
+		await formFieldChanged();
+
+		StateHasChanged();
+	}
+
+	private async Task OpenAddTagDialog()
+	{
+		var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+		var dialog = await DialogService.ShowAsync<AddTagDialog>(title: "Add Tag", options:options);
+		var result = await dialog.Result;
+
+		if (!result.Canceled && result.Data is string newTag)
+		{
+			// Snapshot BEFORE
+			var beforeList = tagsList.ToList();
+
+			// Add new tag
+			tagsList.Add(newTag.Trim());
+
+			// Normalize
+			var normalized = TagParsingUtility.NormalizeAndRemoveDuplicates(
+				TagParsingUtility.JoinTags(tagsList)
+			);
+
+			// Parse back into list
+			var afterList = TagParsingUtility.ParseTags(normalized);
+
+			// Replace UI list
+			tagsList = afterList;
+
+			// Compare lists (order + values)
+			if (!TagParsingUtility.ListsAreEqual(beforeList, afterList, StringComparison.OrdinalIgnoreCase))
+			{
+				UpdateTagLength();
+				await formFieldChanged();
+			}
+		}
+	}
+
+	private async Task OpenEditTagDialog(string oldTag)
+	{
+		var parameters = new DialogParameters { ["ExistingTag"] = oldTag };
+		var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true };
+		var dialog = await DialogService.ShowAsync<EditTagDialog>("Edit Tag", parameters, options);
+		var result = await dialog.Result;
+
+		if (!result.Canceled && result.Data is string newTag)
+		{
+			// Snapshot BEFORE
+			var beforeList = tagsList.ToList();
+
+			// Find and replace in-place (case-sensitive match)
+			var index = tagsList.FindIndex(t => string.Equals(t, oldTag, StringComparison.Ordinal));
+			if (index >= 0)
+			{
+				tagsList[index] = newTag.Trim();
+			}
+
+			// Normalize (removes duplicates but preserves order)
+			var normalized = TagParsingUtility.NormalizeAndRemoveDuplicates(
+				TagParsingUtility.JoinTags(tagsList)
+			);
+
+			// Parse back into list
+			var afterList = TagParsingUtility.ParseTags(normalized);
+
+			// Replace UI list
+			tagsList = afterList;
+
+			// Compare lists (order + values) — case-sensitive for Edit Tag
+			if (!TagParsingUtility.ListsAreEqual(beforeList, afterList, StringComparison.Ordinal))
+			{
+				UpdateTagLength();
+				await formFieldChanged();
+			}
+		}
+	}
+
+	#endregion
 }

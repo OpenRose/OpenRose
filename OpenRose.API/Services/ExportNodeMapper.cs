@@ -4,6 +4,7 @@
 
 
 using AutoMapper;
+using ItemzApp.API.Helper;
 using ItemzApp.API.Models;
 using System;
 using System.Collections.Generic;
@@ -92,11 +93,15 @@ namespace ItemzApp.API.Services
 			var itemzEntity = await _itemzRepository.GetItemzAsync(node.RecordId);
 			var itemzDto = _mapper.Map<GetItemzDTO>(itemzEntity);
 
+			// --- TAG NORMALIZATION FOR EXPORT ---
+			itemzDto.Tags = TagParsingUtility.NormalizeAndRemoveDuplicates(itemzDto.Tags);
+
 			// Recursively map sub-Itemz
 			var subItemzExportNodes = new List<ItemzExportNode>();
 			if (node.Children != null)
 			{
-				foreach (var child in node.Children.Where(c => string.Equals(c.RecordType, "Itemz", StringComparison.OrdinalIgnoreCase)))
+				foreach (var child in node.Children.Where(c =>
+					string.Equals(c.RecordType, "Itemz", StringComparison.OrdinalIgnoreCase)))
 				{
 					var subItemzNode = await ConvertToItemzExportNode(child);
 					subItemzExportNodes.Add(subItemzNode);
@@ -109,6 +114,8 @@ namespace ItemzApp.API.Services
 				SubItemz = subItemzExportNodes.Any() ? subItemzExportNodes : null
 			};
 		}
+
+
 
 		public async Task<BaselineExportNode> ConvertToBaselineExportNode(NestedBaselineHierarchyIdRecordDetailsDTO node)
 		{
@@ -163,11 +170,15 @@ namespace ItemzApp.API.Services
 			var baselineItemzEntity = await _baselineItemzRepository.GetBaselineItemzAsync(node.RecordId);
 			var baselineItemzDto = _mapper.Map<GetBaselineItemzDTO>(baselineItemzEntity);
 
+			// --- TAG NORMALIZATION FOR EXPORT ---
+			baselineItemzDto.Tags = TagParsingUtility.NormalizeAndRemoveDuplicates(baselineItemzDto.Tags);
+
 			// Recursively map sub BaselineItemz (if any)
 			var baselineSubItemzExportNodes = new List<BaselineItemzExportNode>();
 			if (node.Children != null)
 			{
-				foreach (var child in node.Children.Where(c => string.Equals(c.RecordType, "BaselineItemz", StringComparison.OrdinalIgnoreCase)))
+				foreach (var child in node.Children.Where(c =>
+					string.Equals(c.RecordType, "BaselineItemz", StringComparison.OrdinalIgnoreCase)))
 				{
 					var subBaselineItemzNode = await ConvertToBaselineItemzExportNode(child);
 					baselineSubItemzExportNodes.Add(subBaselineItemzNode);
@@ -180,6 +191,7 @@ namespace ItemzApp.API.Services
 				BaselineSubItemz = baselineSubItemzExportNodes.Any() ? baselineSubItemzExportNodes : null
 			};
 		}
+
 
 	}
 }

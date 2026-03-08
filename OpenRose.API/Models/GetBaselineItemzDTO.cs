@@ -53,5 +53,14 @@ namespace ItemzApp.API.Models
         /// Indicates if BaselineItemz is included in the Baseline
         /// </summary>
         public bool isIncluded { get; set; }
-    }
+
+		/// <summary>
+    	/// Tags associated with this BaselineItemz.
+		/// Tags are returned as a delimited string using pipe (|) as separator.
+		/// The UI layer will parse this string and display tags using MudChips.
+		/// These tags are captured from the source Itemz when the baseline is created,
+		/// providing a snapshot of the tagged state at that point in time.
+		/// </summary>
+		public string? Tags { get; set; }
+	}
 }

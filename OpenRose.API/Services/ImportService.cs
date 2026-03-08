@@ -111,6 +111,9 @@ namespace ItemzApp.API.Services
 				var tempDto = _mapper.Map<CreateItemzDTO>(itemzDto);
 				var rootEntity = _mapper.Map<Itemz>(tempDto);
 
+				// Normalize tags BEFORE saving
+				rootEntity.Tags = TagParsingUtility.NormalizeAndRemoveDuplicates(rootEntity.Tags);
+
 				_itemzRepository.AddItemz(rootEntity);
 				await _itemzRepository.SaveAsync(); // Root Itemz created
 
@@ -204,6 +207,9 @@ namespace ItemzApp.API.Services
 
 			var tempItemzDTO = _mapper.Map<CreateItemzDTO>(itemzDto);
 			var itemzEntity = _mapper.Map<Itemz>(tempItemzDTO);
+
+			// Normalize tags BEFORE saving
+			itemzEntity.Tags = TagParsingUtility.NormalizeAndRemoveDuplicates(itemzEntity.Tags);
 
 			_itemzRepository.AddItemz(itemzEntity);
 			await _itemzRepository.SaveAsync();
