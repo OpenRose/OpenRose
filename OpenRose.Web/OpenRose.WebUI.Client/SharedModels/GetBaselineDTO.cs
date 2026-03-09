@@ -32,5 +32,9 @@ namespace OpenRose.WebUI.Client.SharedModels
         /// Date and Time when Baseline was created
         /// </summary>
         public DateTimeOffset CreatedDate { get; set; }
-    }
+		/// <summary>
+		/// Baseline is contained within provided ProjectId
+		/// </summary>
+		public Guid ProjectId { get; set; }
+	}
 }
