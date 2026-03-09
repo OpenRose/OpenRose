@@ -103,14 +103,13 @@
             if (RecordId != null && RecordId != Guid.Empty)
             {
                 targetGuidText = RecordId.ToString();
-                await GoToRecordAsync(true);
+                await GoToRecordAsync(true); // true = auto mode, so don't open new tab
             }
         }
     }
 
 
-
-    private async Task GoToRecordAsync(bool autoFromUrl = false)
+        private async Task GoToRecordAsync(bool autoFromUrl = false)
     {
         if (!IsGuidInputValid())
             return;
