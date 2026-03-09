@@ -80,25 +80,34 @@
     {
         if (firstRender)
         {
-            // Support for /goto?recordId=... as well as /goto/{RecordId}
             var uri = NavManager.ToAbsoluteUri(NavManager.Uri);
             var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+
+            // Support recordId from query
             if (RecordId == null && query.TryGetValue("recordId", out var queryRecordId))
             {
                 if (Guid.TryParse(queryRecordId, out var parsed))
-                {
                     RecordId = parsed;
-                }
+            }
+
+            // NEW: Support view=TreeView or view=DetailView
+            if (query.TryGetValue("view", out var viewParam))
+            {
+                var view = viewParam.ToString().Trim();
+                if (view.Equals("TreeView", StringComparison.OrdinalIgnoreCase))
+                    selectedViewOption = "TreeView";
+                else
+                    selectedViewOption = "DetailView";
             }
 
             if (RecordId != null && RecordId != Guid.Empty)
             {
-                //selectedViewOption = "DetailView";
                 targetGuidText = RecordId.ToString();
-                await GoToRecordAsync(true); // true = auto mode, so don't open new tab
+                await GoToRecordAsync(true);
             }
         }
     }
+
 
 
     private async Task GoToRecordAsync(bool autoFromUrl = false)
