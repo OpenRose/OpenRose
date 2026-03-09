@@ -63,7 +63,13 @@
 				<MudCardContent>
 					<MudStack Row="true" Spacing="2">
 					<MudText><strong>ID          : </strong></MudText>
-					<CopyableText TextToCopy="@singleBaseline.Id.ToString()" />
+					<CopyableText TextToCopy="@singleBaseline.Id.ToString()" DisplayLength="8"/>
+					<MudTooltip Text="GoTo Project" Placement="Placement.Top">
+						<MudIcon Icon="@Icons.Material.Filled.SportsBaseball"
+									Size="Size.Small"
+									Class="mouse-pointer-icon"
+									@onclick="async _ => await gotoBaselineProjectRecord(singleBaseline.Id.ToString())" />
+					</MudTooltip>
 					</MudStack>
 					<MudText><strong>Description : </strong></MudText>
 					<br />
@@ -211,5 +217,38 @@
 			// await JS.InvokeVoidAsync("applyMarkdownEditorFullscreenStyles");
 		}
 	}
+
+	private async Task OpenExceptionDialogAsync(string exceptionMessage)
+	{
+		var options = new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, Position = DialogPosition.Center };
+		var dialogPara = new DialogParameters();
+		dialogPara.Add("exceptionMessage", exceptionMessage);
+		var dialogref = await DialogService.ShowAsync<BaselineExceptionDialog>("CONFIRM", dialogPara, options);
+	}
+
+	public async Task gotoBaselineProjectRecord(string id)
+	{
+		// Validate GUID
+		if (!Guid.TryParse(id, out var baselineGuid))
+		{
+			await OpenExceptionDialogAsync($"Invalid GUID: {id}");
+			return;
+		}
+
+		// Fetch baseline
+		var baseline = await baselineService.__Single_Baseline_By_GUID_ID__Async(baselineGuid);
+		if (baseline == null)
+		{
+			await OpenExceptionDialogAsync($"Baseline with ID {id} could not be found!");
+			return;
+		}
+
+		// Build URL using NavigationManager (safer & future‑proof)
+		var url = NavManager.ToAbsoluteUri($"/goto/{baseline.ProjectId}").ToString();
+
+		// Open in new tab
+		await JS.InvokeVoidAsync("openInNewTab", url);
+	}
+
 
 }

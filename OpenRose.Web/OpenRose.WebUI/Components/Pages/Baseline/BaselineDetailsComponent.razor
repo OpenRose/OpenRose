@@ -35,7 +35,7 @@
 	}
 }
 
-<MudPaper Class="pa-4 mb-5 align-start d-flex" Style="width: auto" Outlined="false">	
+<MudPaper Class="pa-4 mb-5 align-start d-flex" Style="width: auto" Outlined="false">
 	<MudText Typo="Typo.h6" Align="Align.Left">Baseline Details</MudText>
 </MudPaper>
 
@@ -116,7 +116,13 @@
 				<MudCardContent>
 					<MudStack Row="true" Spacing="2">
 						<MudText><strong>Baseline Id: </strong></MudText>
-						<CopyableText TextToCopy="@BaselineId.ToString()" />
+						<CopyableText TextToCopy="@BaselineId.ToString()" DisplayLength="8" />
+						<MudTooltip Text="GoTo Project" Placement="Placement.Top">
+							<MudIcon Icon="@Icons.Material.Filled.SportsBaseball" 
+									Size="Size.Small" 
+									Class="mouse-pointer-icon"
+									@onclick="async _ => await gotoBaselineProjectRecord(BaselineId.ToString())" />
+						</MudTooltip>
 					</MudStack>
 					<br />
 					<MudTextField T="string" Label="Name" Required="true" RequiredError="Name is required!"
@@ -409,15 +415,15 @@
 				deletingBaseline = true;
 				await baselinesService.__DELETE_Baseline_By_GUID_ID__Async(BaselineId);
 			}
-            catch (Exception ex)
-            {
-                await OpenExceptionDialogAsync("Problem Deleting Baseline : " + ex.Message);
-                return;
-            }
+			catch (Exception ex)
+			{
+				await OpenExceptionDialogAsync("Problem Deleting Baseline : " + ex.Message);
+				return;
+			}
 			finally
 			{
-                deletingBaseline = false;
-            }
+				deletingBaseline = false;
+			}
 			NavManager.NavigateTo($"/project/{ParentId.ToString()}");
 			// TODO :: WE COULD DO AN OVERLAY IN MUDBLAZOR WHILE BASELINE IS GETTING DELETED TO GIVE FEEDBACK TO USER.
 		}
@@ -473,10 +479,39 @@
 			FormStateService.SetDirty(BaselineId, false);
 		}
 	}
-	
+
 	public async Task openBaselineTreeView(string Id)
 	{
 		var url = $"/baselineTreeView/{Id}?autoSelectedRecordId={Id}";
+		await JS.InvokeVoidAsync("openInNewTab", url);
+	}
+
+	public async Task gotoBaselineProjectRecord(string id)
+	{
+		// Validate GUID
+		if (!Guid.TryParse(id, out var baselineGuid))
+		{
+			await OpenExceptionDialogAsync($"Invalid GUID: {id}");
+			return;
+		}
+
+		// Fetch baseline
+		var baseline = await baselinesService.__Single_Baseline_By_GUID_ID__Async(baselineGuid);
+		if (baseline == null)
+		{
+			await OpenExceptionDialogAsync($"Baseline with ID {id} could not be found!");
+			return;
+		}
+
+		// Determine view mode
+		var view = CalledFrom == nameof(BaselineTreeView)
+			? "TreeView"
+			: "DetailView";
+
+		// Build URL using NavigationManager (safer & future‑proof)
+		var url = NavManager.ToAbsoluteUri($"/goto/{baseline.ProjectId}?view={view}").ToString();
+
+		// Open in new tab
 		await JS.InvokeVoidAsync("openInNewTab", url);
 	}
 
