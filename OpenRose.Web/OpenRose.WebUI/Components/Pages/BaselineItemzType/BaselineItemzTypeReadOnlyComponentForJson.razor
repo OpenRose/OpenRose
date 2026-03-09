@@ -56,7 +56,6 @@
                     </MudGrid>
                 </MudCardContent>
             </MudCard>
-
             <MudCard Elevation="0" Style="background-color:transparent;">
                 <MudCardContent>
                     <MudStack Row="true" Spacing="2">
@@ -66,6 +65,7 @@
                             <MudIcon Icon="@Icons.Material.Filled.Park" Size="Size.Small" Class="mouse-pointer-icon" @onclick="async () => await findAndShowInTreeViewAsync()" />
                         </MudTooltip>
                         <MudText><strong> || Status:</strong> @_baselineItemzType.Status</MudText>
+                        <MudText><strong> || Is System?  : </strong> @(_baselineItemzType.IsSystem ? "Yes" : "No")</MudText>
                     </MudStack>
 
                     <br />
