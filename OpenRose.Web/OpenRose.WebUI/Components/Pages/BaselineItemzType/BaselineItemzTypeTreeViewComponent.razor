@@ -4,16 +4,19 @@
  * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 *@
 
-@using OpenRose.WebUI.Client.Services.BaselineHierarchy
-@using OpenRose.WebUI.Client.Services.BaselineItemzTypes
+@* @using OpenRose.WebUI.Client.Services.BaselineHierarchy*@
+ @using OpenRose.WebUI.Client.Services.BaselineItemzTypes
 @using OpenRose.WebUI.Client.Services.Hierarchy
 @using OpenRose.WebUI.Client.SharedModels
 @using OpenRose.WebUI.Components.Dialogs
 @using OpenRose.WebUI.Components.EventServices
+@using OpenRose.WebUI.Components.FindServices
 @using OpenRose.WebUI.Components.Pages.Common
 @using System.Globalization
 @inject NavigationManager NavManager
 @inject BaselineTreeNodeItemzSelectionService BaselineItemzSelectionService
+@inject IFindProjectAndBaselineIdsByBaselineItemzIdService FindBaselineParents
+@inject IFindProjectOfItemzId FindProjectOfItemzId
 @inject IDialogService DialogService
 @inject IJSRuntime JS
 
@@ -61,12 +64,8 @@
 							<MudTooltip Text="Show in Tree View" Placement="Placement.Top">
 								<MudIcon Icon="@Icons.Material.Filled.Park" Size="Size.Small" Class="mouse-pointer-icon" @onclick="findAndShowInTreeView" />
 							</MudTooltip>
-							<MudTooltip Text="GoTo Origin" Placement="Placement.Top">
-								<MudIcon Icon="@Icons.Material.Filled.SportsBaseball"
-										 Size="Size.Small"
-										 Class="mouse-pointer-icon"
-										 @onclick="async _ => await gotoOriginalRecord(singleIBaselineItemzType.Id.ToString())" />
-							</MudTooltip>
+                            <GoToOriginalItemzTypeButton BaselineItemzTypeId="@singleIBaselineItemzType.Id"
+                                                         UseTreeView="true" />
 						</MudStack>
 						<MudText><strong> || Status      : </strong> @singleIBaselineItemzType.Status</MudText>
 						<MudText><strong> || Is System?  : </strong> @(singleIBaselineItemzType.IsSystem ? "Yes" : "No")</MudText>
@@ -104,11 +103,6 @@
     [Inject]
     public IBaselineItemzTypesService baselineItemzTypesService { get; set; }
 
-    [Inject]
-    public IBaselineHierarchyService baselineHierarchyService { get; set; }
-
-    [Inject]
-    public IHierarchyService hierarchyService { get; set; }
 
     public GetBaselineItemzTypeDTO singleIBaselineItemzType { get; set; } = new();
     public bool initializingPage { get; set; } = true;
@@ -157,109 +151,5 @@
             // await JS.InvokeVoidAsync("applyMarkdownEditorFullscreenStyles");
         }
     }
-
-    #region "Go To Original Record Logic"
-
-    // TODO :: This regional code has been duplicated in other BaselineItemzType components as well.
-
-
-    private async Task OpenExceptionDialogAsync(string exceptionMessage)
-    {
-        var parameters = new DialogParameters { ["Message"] = exceptionMessage };
-        var options = new DialogOptions { CloseButton = false, MaxWidth = MaxWidth.Small, FullWidth = true };
-        var dialogRef = await DialogService.ShowAsync<ErrorDialog>("Error", parameters, options);
-        await dialogRef.Result;
-    }
-
-    public async Task gotoOriginalRecord(string id)
-    {
-
-        Guid tempProjectIdThroughBaselineItemzType = Guid.Empty;
-        Guid tempProjectIdThroughOriginalItemzType = Guid.Empty;
-
-        // Validate GUID
-        if (!Guid.TryParse(id, out var baselineItemzTypeGuid))
-        {
-            await OpenExceptionDialogAsync($"Invalid GUID: {id}");
-            return;
-        }
-
-        // Fetch baseline
-        var tempBaselineItemzType = await baselineItemzTypesService.__Single_BaselineItemzType_By_GUID_ID__Async(baselineItemzTypeGuid);
-        if (tempBaselineItemzType == null)
-        {
-            await OpenExceptionDialogAsync($"Baseline ItemzType with ID {id} could not be found!");
-            return;
-        }
-
-        // Verify that original ItemzType is present in the hierarchy table.
-        var tempBaselineItemzTypeHierarchyRecord = await baselineHierarchyService.__Get_BaselineHierarchy_Record_Details_By_GUID__Async(baselineItemzTypeGuid);
-
-        if (tempBaselineItemzTypeHierarchyRecord != null
-                && tempBaselineItemzTypeHierarchyRecord.ParentRecordId != Guid.Empty)
-        {
-            var tempParentHierarchyRecordDetails = await baselineHierarchyService
-                                                .__Get_BaselineHierarchy_Record_Details_By_GUID__Async(
-                                                    tempBaselineItemzTypeHierarchyRecord.ParentRecordId);
-
-            tempProjectIdThroughBaselineItemzType = tempParentHierarchyRecordDetails.ParentRecordId;
-        }
-        else
-        {
-            await OpenExceptionDialogAsync($"The Baseline ItemzType with ID {id} is not properly linked in the hierarchy. Cannot navigate to original record.");
-            return;
-        }
-
-
-        // Find Original ItemzType record in hierarchy using BaselineItemzType's linked ItemzTypeId
-
-        var foundOriginalitemzTypeHierarchyRecord = await hierarchyService
-                                                    .__Get_Hierarchy_Record_Details_By_GUID__Async(
-                                                        tempBaselineItemzType.ItemzTypeId);
-
-        if (foundOriginalitemzTypeHierarchyRecord != null
-                && foundOriginalitemzTypeHierarchyRecord.ParentRecordId != Guid.Empty)
-        {
-            var tempOriginalParentHierarchyRecordDetails = await hierarchyService
-                                                    .__Get_Hierarchy_Record_Details_By_GUID__Async(
-                                                        foundOriginalitemzTypeHierarchyRecord.ParentRecordId);
-
-            tempProjectIdThroughOriginalItemzType = tempOriginalParentHierarchyRecordDetails.RecordId;
-        }
-        else
-        {
-            await OpenExceptionDialogAsync($"The original ItemzType record linked to this Baseline ItemzType could not be found. Cannot navigate to original record.");
-            return;
-        }
-
-
-        if (tempProjectIdThroughBaselineItemzType == Guid.Empty 
-            || tempProjectIdThroughOriginalItemzType == Guid.Empty)
-        {
-            await OpenExceptionDialogAsync($"Could not determine the project for the Baseline ItemzType or its linked original ItemzType. Cannot navigate to original record.");
-            return;
-        }
-
-        if (tempProjectIdThroughBaselineItemzType != tempProjectIdThroughOriginalItemzType)
-        {
-            var options = new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, Position = DialogPosition.Center };
-            var dialogPara = new DialogParameters();
-            dialogPara.Add("DialogMessage", $"Original ItemzType has been moved to another Project. Do you want to switch Project view? tempProjectIdThroughBaselineItemzType is {tempProjectIdThroughBaselineItemzType} and  tempProjectIdThroughOriginalItemzType is {tempProjectIdThroughOriginalItemzType}");
-            var dialogref = await DialogService.ShowAsync<OkCancelDialog>("CONFIRM", parameters: dialogPara, options);
-            var dialogresult = await dialogref.Result;
-			if ((dialogresult!.Canceled))
-			{
-                return;
-            }
-		}
-
-		// Build URL using NavigationManager (safer & future‑proof)
-        var url = NavManager.ToAbsoluteUri($"/goto/{tempBaselineItemzType.ItemzTypeId}?view=TreeView").ToString(); // TODO :: Use constant for TreeView
-
-		// Open in new tab
-		await JS.InvokeVoidAsync("openInNewTab", url);
-	}
-
-    #endregion
 }
 
