@@ -104,27 +104,30 @@ namespace OpenRose.WebUI.Client.Services.Hierarchy
 		#endregion
 
 		#region __Get_All_Parents_Hierarchy_By_GUID__Async
-		public async Task<ICollection<NestedHierarchyIdRecordDetailsDTO>> __Get_All_Parents_Hierarchy_By_GUID__Async(Guid recordId)
+		public async Task<ICollection<NestedHierarchyIdRecordDetailsDTO>>
+			__Get_All_Parents_Hierarchy_By_GUID__Async(Guid recordId)
 		{
 			return await __Get_All_Parents_Hierarchy_By_GUID__Async(recordId, CancellationToken.None);
 		}
 
-		public async Task<ICollection<NestedHierarchyIdRecordDetailsDTO>> __Get_All_Parents_Hierarchy_By_GUID__Async(Guid recordId, CancellationToken cancellationToken)
+		public async Task<ICollection<NestedHierarchyIdRecordDetailsDTO>>
+			__Get_All_Parents_Hierarchy_By_GUID__Async(Guid recordId, CancellationToken cancellationToken)
 		{
-
 			try
 			{
-				var response = await _httpClient.GetFromJsonAsync<ICollection<NestedHierarchyIdRecordDetailsDTO>>($"/api/Hierarchy/GetAllParents/{recordId}", cancellationToken);
+				var response = await _httpClient.GetFromJsonAsync<ICollection<NestedHierarchyIdRecordDetailsDTO>>(
+					$"/api/Hierarchy/GetAllParents/{recordId}", cancellationToken);
 
-				return response!;
+				// If API returns null, treat it as "no parents found"
+				return response ?? new List<NestedHierarchyIdRecordDetailsDTO>();
 			}
 			catch (Exception)
 			{
-                throw new NotImplementedException();
-            }
-			return default;
-
+				// Never throw here — return empty list so caller can handle "not found"
+				return new List<NestedHierarchyIdRecordDetailsDTO>();
+			}
 		}
+
 		#endregion
 
 		#region __Get_All_Children_Hierarchy_By_GUID__Async
