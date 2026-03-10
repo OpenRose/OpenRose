@@ -8,7 +8,7 @@ using OpenRose.WebUI.Client.SharedModels;
 
 namespace OpenRose.WebUI.Components.FindServices
 {
-    public class FindProjectOfItemzId
+    public class FindProjectOfItemzId : IFindProjectOfItemzId
     {
         private readonly IHierarchyService hierarchyService;
 
@@ -17,31 +17,51 @@ namespace OpenRose.WebUI.Components.FindServices
             this.hierarchyService = hierarchyService;
         }
 
-        public async Task<Guid> getProjectIdOfItemzId (Guid itemzId)
-        {
+		//public async Task<Guid> getProjectIdOfItemzId (Guid itemzId)
+		//{
 
-        List<NestedHierarchyIdRecordDetailsDTO> AllParentHierarchy = new List<NestedHierarchyIdRecordDetailsDTO>();
+		//List<NestedHierarchyIdRecordDetailsDTO> AllParentHierarchy = new List<NestedHierarchyIdRecordDetailsDTO>();
 
-        var returnedParentHierarchyList = await hierarchyService.__Get_All_Parents_Hierarchy_By_GUID__Async(itemzId);
+		//var returnedParentHierarchyList = await hierarchyService.__Get_All_Parents_Hierarchy_By_GUID__Async(itemzId);
 
-        if (returnedParentHierarchyList != null)
-        {
-            AllParentHierarchy = returnedParentHierarchyList.ToList();
-        }
+		//if (returnedParentHierarchyList != null)
+		//{
+		//    AllParentHierarchy = returnedParentHierarchyList.ToList();
+		//}
 
-        var matchingProjectRecord = FindRecordUsingLambda(hierarchy: AllParentHierarchy, recordType: "Project", level: 1);
+		//var matchingProjectRecord = FindRecordUsingLambda(hierarchy: AllParentHierarchy, recordType: "Project", level: 1);
 
-        if (matchingProjectRecord != null)
-        {
-            return matchingProjectRecord.RecordId;
-        }
-        return Guid.Empty;
+		//if (matchingProjectRecord != null)
+		//{
+		//    return matchingProjectRecord.RecordId;
+		//}
+		//return Guid.Empty;
 
-        }
+		//}
 
-        #region Finding_Record_In_Parent_Hierarchy_Nodes
+		public async Task<Guid> getProjectIdOfItemzId(Guid itemzId)
+		{
+			// Ask API for all allParentHierarchy of this ItemzType
+			var allParentHierarchy = await hierarchyService.__Get_All_Parents_Hierarchy_By_GUID__Async(itemzId);
 
-        public NestedHierarchyIdRecordDetailsDTO? FindRecordUsingLambda(List<NestedHierarchyIdRecordDetailsDTO> hierarchy, string recordType, int level)
+			// If the ItemzType was deleted or not found in hierarchy
+			if (allParentHierarchy == null || allParentHierarchy.Count == 0)
+				return Guid.Empty;
+
+			// Flatten and find the Project record
+			var projectRecord = FindRecordUsingLambda(
+				hierarchy: allParentHierarchy.ToList(),
+				recordType: "Project",
+				level: 1
+			);
+
+			return projectRecord?.RecordId ?? Guid.Empty;
+		}
+
+
+		#region Finding_Record_In_Parent_Hierarchy_Nodes
+
+		public NestedHierarchyIdRecordDetailsDTO? FindRecordUsingLambda(List<NestedHierarchyIdRecordDetailsDTO> hierarchy, string recordType, int level)
         {
             return hierarchy
                 .SelectMany(parent => GetAllRecords(parent))
