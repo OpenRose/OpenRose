@@ -1,0 +1,104 @@
+﻿@*
+    * OpenRose - Requirements Management
+    * Licensed under the Apache License, Version 2.0.
+    * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+@using OpenRose.WebUI.Client.Services.BaselineItemzTypes
+@using OpenRose.WebUI.Components.Dialogs
+@using OpenRose.WebUI.Components.FindServices
+@inject IBaselineItemzTypesService BaselineItemzTypesService
+@inject IFindProjectAndBaselineIdsByBaselineItemzIdService FindBaselineParents
+@inject IFindProjectOfItemzId FindProjectOfItemzId
+@inject IDialogService DialogService
+@inject NavigationManager NavManager
+@inject IJSRuntime JS
+
+<MudTooltip Text="Go To Origin" Placement="Placement.Top">
+    <MudIcon Icon="@Icon"
+                Size="@Size.Small"
+                Class="mouse-pointer-icon"
+                @onclick="OnClick" />
+</MudTooltip>
+
+@code {
+    [Parameter] public Guid BaselineItemzTypeId { get; set; }
+
+    // Optional: allow overriding the icon
+    [Parameter] public string Icon { get; set; } = Icons.Material.Filled.SportsBaseball;
+
+    [Parameter] public bool UseTreeView { get; set; } = false; // Default is Details View
+
+
+    private async Task ShowError(string message)
+    {
+        var parameters = new DialogParameters { ["Message"] = message };
+        var options = new DialogOptions { CloseButton = false, MaxWidth = MaxWidth.Small, FullWidth = true };
+        var dialogRef = await DialogService.ShowAsync<ErrorDialog>("Error", parameters, options);
+        await dialogRef.Result;
+    }
+
+    private async Task OnClick()
+    {
+        // 1. Load baseline record
+        var baselineItemzType =
+            await BaselineItemzTypesService.__Single_BaselineItemzType_By_GUID_ID__Async(BaselineItemzTypeId);
+
+        if (baselineItemzType == null)
+        {
+            await ShowError($"Baseline ItemzType with ID {BaselineItemzTypeId} could not be found!");
+            return;
+        }
+
+        // 2. Ensure it links to an original ItemzType
+        if (baselineItemzType.ItemzTypeId == Guid.Empty)
+        {
+            await ShowError("This Baseline ItemzType is not linked to an original ItemzType. It may have been deleted.");
+            return;
+        }
+
+        // 3. Get baseline project
+        var (baselineProjectId, _) =
+            await FindBaselineParents.GetProjectAndBaselineId(BaselineItemzTypeId);
+
+        if (baselineProjectId == Guid.Empty)
+        {
+            await ShowError("Could not determine the Project for this Baseline ItemzType.");
+            return;
+        }
+
+        // 4. Get original project
+        var originalProjectId =
+            await FindProjectOfItemzId.getProjectIdOfItemzId(baselineItemzType.ItemzTypeId);
+
+        if (originalProjectId == Guid.Empty)
+        {
+            await ShowError("The original ItemzType could not be found. It may have been deleted or removed from the repository.");
+            return;
+        }
+
+        // 5. Confirm if projects differ
+        if (baselineProjectId != originalProjectId)
+        {
+            var dialogPara = new DialogParameters
+            {
+                ["DialogMessage"] = "The original ItemzType is now present in a different Project. Switch Project view?"
+            };
+
+            var dialogRef = await DialogService.ShowAsync<OkCancelDialog>("Confirm", dialogPara);
+            var result = await dialogRef.Result;
+
+            if (result.Canceled)
+                return;
+        }
+
+        // 6. Navigate
+        var baseUrl = $"/goto/{baselineItemzType.ItemzTypeId}";
+        var url = UseTreeView
+            ? NavManager.ToAbsoluteUri($"{baseUrl}?view=TreeView").ToString()
+            : NavManager.ToAbsoluteUri(baseUrl).ToString();
+
+        await JS.InvokeVoidAsync("openInNewTab", url);
+
+    }
+}

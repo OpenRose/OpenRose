@@ -4,14 +4,20 @@
  * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 *@
 
-@using OpenRose.WebUI.Client.Services.BaselineHierarchy
-@using OpenRose.WebUI.Client.Services.BaselineItemzTypes
+@* @using OpenRose.WebUI.Client.Services.BaselineHierarchy*@
+ @using OpenRose.WebUI.Client.Services.BaselineItemzTypes
+@using OpenRose.WebUI.Client.Services.Hierarchy
 @using OpenRose.WebUI.Client.SharedModels
+@using OpenRose.WebUI.Components.Dialogs
 @using OpenRose.WebUI.Components.EventServices
+@using OpenRose.WebUI.Components.FindServices
 @using OpenRose.WebUI.Components.Pages.Common
 @using System.Globalization
 @inject NavigationManager NavManager
 @inject BaselineTreeNodeItemzSelectionService BaselineItemzSelectionService
+@inject IFindProjectAndBaselineIdsByBaselineItemzIdService FindBaselineParents
+@inject IFindProjectOfItemzId FindProjectOfItemzId
+@inject IDialogService DialogService
 @inject IJSRuntime JS
 
 <MudPaper Class="pa-4 mb-3 ml-1 align-start d-flex" Style="width: auto" Outlined="false">
@@ -55,9 +61,11 @@
 						<MudStack Row="true" Spacing="2">
 							<MudText><strong>ID          : </strong></MudText>
 							<CopyableText TextToCopy="@singleIBaselineItemzType.Id.ToString()" DisplayLength="8" />
-							<MudTooltip Text="Show in Tree View">
+							<MudTooltip Text="Show in Tree View" Placement="Placement.Top">
 								<MudIcon Icon="@Icons.Material.Filled.Park" Size="Size.Small" Class="mouse-pointer-icon" @onclick="findAndShowInTreeView" />
 							</MudTooltip>
+                            <GoToOriginalItemzTypeButton BaselineItemzTypeId="@singleIBaselineItemzType.Id"
+                                                         UseTreeView="true" />
 						</MudStack>
 						<MudText><strong> || Status      : </strong> @singleIBaselineItemzType.Status</MudText>
 						<MudText><strong> || Is System?  : </strong> @(singleIBaselineItemzType.IsSystem ? "Yes" : "No")</MudText>
@@ -89,58 +97,59 @@
 	}
 </MudGrid>
 @code {
-	[Parameter]
-	public Guid BaselineItemzTypeId { get; set; }
+    [Parameter]
+    public Guid BaselineItemzTypeId { get; set; }
 
-	[Inject]
-	public IBaselineItemzTypesService baselineItemzTypesService { get; set; }
+    [Inject]
+    public IBaselineItemzTypesService baselineItemzTypesService { get; set; }
 
-	public GetBaselineItemzTypeDTO singleIBaselineItemzType { get; set; } = new();
-	public bool initializingPage { get; set; } = true;
 
-	private MarkupString convertedMarkdown;
+    public GetBaselineItemzTypeDTO singleIBaselineItemzType { get; set; } = new();
+    public bool initializingPage { get; set; } = true;
 
-	protected override async Task OnAfterRenderAsync(bool firstRender)
-	{
-		if (firstRender)
-		{
-			initializingPage = true;
-			StateHasChanged();
-			//await Task.Delay(300);
-			singleIBaselineItemzType = await baselineItemzTypesService.__Single_BaselineItemzType_By_GUID_ID__Async(BaselineItemzTypeId);
+    private MarkupString convertedMarkdown;
 
-			// TODO :: THROW EXCEPTION IF BASELINE ITEMTYPE IS NOT FOUND!
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            initializingPage = true;
+            StateHasChanged();
+            //await Task.Delay(300);
+            singleIBaselineItemzType = await baselineItemzTypesService.__Single_BaselineItemzType_By_GUID_ID__Async(BaselineItemzTypeId);
 
-			initializingPage = false;
+            // TODO :: THROW EXCEPTION IF BASELINE ITEMTYPE IS NOT FOUND!
 
-			await ConvertMarkdownToHtml(singleIBaselineItemzType.Description);
+            initializingPage = false;
 
-			StateHasChanged();
-		}
-	}
-	private void findAndShowInTreeView()
-	{
-		BaselineItemzSelectionService.ScrollToTreeViewNode(BaselineItemzTypeId);
-	}
+            await ConvertMarkdownToHtml(singleIBaselineItemzType.Description);
 
-	public async Task openBaselineItemzTypeDetailsView(string Id)
-	{
-		var url = $"/baselineItemzType/{Id}";
-		await JS.InvokeVoidAsync("openInNewTab", url);
-	}
+            StateHasChanged();
+        }
+    }
+    private void findAndShowInTreeView()
+    {
+        BaselineItemzSelectionService.ScrollToTreeViewNode(BaselineItemzTypeId);
+    }
 
-	private async Task ConvertMarkdownToHtml(string markdown)
-	{
-		if (!string.IsNullOrEmpty(markdown))
-		{
-			var html = await JS.InvokeAsync<string>("markdownToHtml", markdown);
-			convertedMarkdown = (MarkupString)html;
-			StateHasChanged();
+    public async Task openBaselineItemzTypeDetailsView(string Id)
+    {
+        var url = $"/baselineItemzType/{Id}";
+        await JS.InvokeVoidAsync("openInNewTab", url);
+    }
 
-			// Apply fullscreen styles
-			// await Task.Delay(1000);
-			// await JS.InvokeVoidAsync("applyMarkdownEditorFullscreenStyles");
-		}
-	}
+    private async Task ConvertMarkdownToHtml(string markdown)
+    {
+        if (!string.IsNullOrEmpty(markdown))
+        {
+            var html = await JS.InvokeAsync<string>("markdownToHtml", markdown);
+            convertedMarkdown = (MarkupString)html;
+            StateHasChanged();
+
+            // Apply fullscreen styles
+            // await Task.Delay(1000);
+            // await JS.InvokeVoidAsync("applyMarkdownEditorFullscreenStyles");
+        }
+    }
 }
 

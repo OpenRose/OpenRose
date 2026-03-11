@@ -4,12 +4,13 @@
  * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 *@
 
-@using OpenRose.WebUI.Client.Services.Hierarchy
 @using OpenRose.WebUI.Client.Services.BaselineItemzTypes
+@using OpenRose.WebUI.Components.Dialogs
 @using OpenRose.WebUI.Client.SharedModels
 @using OpenRose.WebUI.Components.Pages.Common
 @using OpenRose.WebUI.Services
 @using Microsoft.AspNetCore.Components.Forms
+@inject NavigationManager NavManager
 @inject IDialogService DialogService
 @inject IJSRuntime JS
 
@@ -66,6 +67,8 @@
 						<MudStack Row="true" Spacing="2">
 							<MudText><strong>ID          : </strong></MudText>
 							<CopyableText TextToCopy="@singleBaselineItemzType.Id.ToString()" DisplayLength="8" />
+							<GoToOriginalItemzTypeButton BaselineItemzTypeId="@singleBaselineItemzType.Id"
+														 UseTreeView="true" />
 						</MudStack>
 						<MudText><strong> || Status      : </strong> @singleBaselineItemzType.Status</MudText>
 						<MudText><strong> || Is System?  : </strong> @(singleBaselineItemzType.IsSystem ? "Yes" : "No")</MudText>
@@ -106,6 +109,7 @@
 
 	[Inject]
 	public IBaselineItemzTypesService BaselineItemzTypeServices { get; set; }
+
 
 	public GetBaselineItemzTypeDTO singleBaselineItemzType { get; set; } = new();
 	public bool initializingPage { get; set; } = true;

@@ -10,6 +10,7 @@
 @using OpenRose.WebUI.Client.Services.Baselines
 @using OpenRose.WebUI.Client.SharedModels
 @using OpenRose.WebUI.Client.SharedModels.BetweenPagesAndComponent
+@using OpenRose.WebUI.Components.Dialogs
 @using OpenRose.WebUI.Components.FindServices
 @using OpenRose.WebUI.Components.Pages.Breadcrums
 @using OpenRose.WebUI.Components.Pages.Common
@@ -69,6 +70,7 @@
 						<MudStack Row="true" Spacing="2">
 							<MudText><strong>ID          : </strong></MudText>
 							<CopyableText TextToCopy="@singleIBaselineItemzType.Id.ToString()" DisplayLength="8" />
+							<GoToOriginalItemzTypeButton BaselineItemzTypeId="@singleIBaselineItemzType.Id" />
 						</MudStack>
 						<MudText><strong> || Status      : </strong> @singleIBaselineItemzType.Status</MudText>
 						<MudText><strong> || Is System?  : </strong> @(singleIBaselineItemzType.IsSystem ? "Yes" : "No")</MudText>
@@ -147,14 +149,17 @@
 	[Parameter]
 	public Guid ParentId { get; set; }
 
-	[Inject]
-	public IBaselinesService baselineService { get; set; }
+	// [Inject]
+	// public IBaselinesService baselineService { get; set; }
 
 	[Inject]
 	public IBaselineItemzTypesService baselineItemzTypesService { get; set; }
 
 	[Inject]
 	public IBaselineHierarchyService baselineHierarchyService { get; set; }
+
+	// [Inject]
+	// public IHierarchyService hierarchyService { get; set; }
 
 
 	public GetBaselineItemzTypeDTO singleIBaselineItemzType { get; set; } = new();
@@ -241,5 +246,4 @@
 			// await JS.InvokeVoidAsync("applyMarkdownEditorFullscreenStyles");
 		}
 	}
-
 }

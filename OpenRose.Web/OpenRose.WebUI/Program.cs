@@ -218,6 +218,8 @@ else
 	// EXPLAINATION :: "FindProjectAndBaselineIdsByBaselineItemzIdService" depens on "IBaselineHierarchyService" and so 
 	// we need to register it here within the else block where we know that OpenRose API settings are available.
 	builder.Services.AddScoped<IFindProjectAndBaselineIdsByBaselineItemzIdService, FindProjectAndBaselineIdsByBaselineItemzIdService>();
+	builder.Services.AddScoped<IFindProjectOfItemzId, FindProjectOfItemzId>();
+
 }
 
 builder.Services.AddMudServices();
