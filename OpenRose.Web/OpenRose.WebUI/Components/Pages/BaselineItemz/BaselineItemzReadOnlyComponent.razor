@@ -86,6 +86,7 @@
 						<MudStack Row="true" Spacing="2">
 							<MudText><strong>ID          : </strong></MudText>
 							<CopyableText TextToCopy="@singleBaselineItemz.Id.ToString()" DisplayLength="8" />
+							<GoToOriginalItemzButton BaselineItemzId="@singleBaselineItemz.Id" UseTreeView="true" />
 						</MudStack>
 						<MudText><strong> || Status      : </strong> @singleBaselineItemz.Status</MudText>
 						<MudText><strong> || Priority    : </strong> @singleBaselineItemz.Priority</MudText>

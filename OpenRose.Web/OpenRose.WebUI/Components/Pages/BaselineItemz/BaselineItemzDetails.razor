@@ -108,6 +108,7 @@
 				<MudStack Row="true" Spacing="2">
 					<MudText><strong>Baseline Itemz Id: </strong></MudText>
 					<CopyableText TextToCopy="@BaselineItemzId.ToString()" />
+					<GoToOriginalItemzButton BaselineItemzId="@singleBaselineItemz.Id" UseTreeView="false" />
 				</MudStack>
 				<br />
 				<MudTextField T="string" Label="Name" Required="true" RequiredError="Name is required!"
