@@ -1,0 +1,39 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * Export Records UI with details preview for all 6 record types.
+*@
+
+@using MudBlazor;
+
+<MudTooltip Text="Show Hierarchy Tree">
+    <MudIcon Icon="@Icon"
+             Size="Size.Small"
+             Class="mouse-pointer-icon"
+             Style="cursor:pointer"
+             @onclick="OpenDialog" />
+</MudTooltip>
+
+@code {
+    [Parameter] public Guid RecordId { get; set; }
+    [Parameter] public string Icon { get; set; } = Icons.Material.Filled.AccountTree;
+
+    [Inject] IDialogService DialogService { get; set; }
+
+    private async Task OpenDialog()
+    {
+        var parameters = new DialogParameters
+        {
+            ["RecordId"] = RecordId
+        };
+
+        var options = new DialogOptions
+        {
+            CloseButton = true,
+            MaxWidth = MaxWidth.Large,
+            FullWidth = true
+        };
+
+        await DialogService.ShowAsync<HierarchyTreeDialog>("Hierarchy Tree", parameters, options);
+    }
+}
