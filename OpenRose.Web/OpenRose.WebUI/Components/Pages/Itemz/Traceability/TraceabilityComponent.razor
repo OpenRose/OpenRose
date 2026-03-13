@@ -34,7 +34,10 @@
 	<Columns>
 		<PropertyColumn Property="x => x.Id" Title="Id" Filterable="false">
 			<CellTemplate>
+				<div style="display: flex; align-items: center; gap: 6px; white-space: nowrap;">
 				<CopyableText TextToCopy="@context.Item.Id.ToString()" DisplayLength="8" />
+				<ShowHierarchyTreeButton RecordId="@context.Item.Id" />
+				</div>
 			</CellTemplate>
 		</PropertyColumn>
 		<PropertyColumn Property="x => x.Name" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
@@ -85,9 +88,12 @@
 			 FixedHeader="true"
 			 HeaderClass="background-color: red;">
 	<Columns>
-		<PropertyColumn Property="x => x.Id" Title="Id">
+		<PropertyColumn Property="x => x.Id" Title="Id" >
 			<CellTemplate>
+				<div style="display: flex; align-items: center; gap: 6px; white-space: nowrap;">
 				<CopyableText TextToCopy="@context.Item.Id.ToString()" DisplayLength="8" />
+				<ShowHierarchyTreeButton RecordId="@context.Item.Id" />
+				</div>
 			</CellTemplate>
 		</PropertyColumn>
 		<PropertyColumn Property="x => x.Name" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
@@ -139,7 +145,6 @@
 	[Inject]
 	public IItemzCollectionService itemzCollectionService { get; set; }
 
-
 	private ItemzParentAndChildTraceDTO SingleItemzTraces { get; set; } = new ItemzParentAndChildTraceDTO();
 
 	private ICollection<TraceComponentViewModel> AllParentTraceViewModels { get; set; } = new List<TraceComponentViewModel>();
@@ -149,7 +154,6 @@
 	{
 		try
 		{
-
 			if (ItemzId == Guid.Empty)
 			{
 				Console.WriteLine("TraceabilityComponent: ItemzId is empty, skipping load.");
