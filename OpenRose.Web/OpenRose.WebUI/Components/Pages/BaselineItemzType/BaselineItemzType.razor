@@ -71,6 +71,7 @@
 							<MudText><strong>ID          : </strong></MudText>
 							<CopyableText TextToCopy="@singleIBaselineItemzType.Id.ToString()" DisplayLength="8" />
 							<GoToOriginalItemzTypeButton BaselineItemzTypeId="@singleIBaselineItemzType.Id" />
+							<ShowHierarchyTreeButton RecordId="@singleIBaselineItemzType.Id" />
 						</MudStack>
 						<MudText><strong> || Status      : </strong> @singleIBaselineItemzType.Status</MudText>
 						<MudText><strong> || Is System?  : </strong> @(singleIBaselineItemzType.IsSystem ? "Yes" : "No")</MudText>
