@@ -78,8 +78,6 @@
 
     private async Task<List<TreeItemData<Guid>>> LoadHierarchy(string recordType, Guid recordId)
     {
-        Console.WriteLine($"[DEBUG] LoadHierarchy called with recordType={recordType}, recordId={recordId}");
-
         TreeItemPresenter root = null;
         TreeItemPresenter current = null;
 
@@ -117,10 +115,6 @@
         else
         {
             var projectParents = await LoadProjectParentChain(recordId);
-
-            Console.WriteLine("[DEBUG] Project parent chain returned:");
-            foreach (var p in projectParents)
-                Console.WriteLine($"   - {p.RecordType} | {p.Name} | {p.RecordId}");
 
             foreach (var p in projectParents)
             {
@@ -160,10 +154,6 @@
             root = leaf;
         else
             current?.Children.Add(leaf);
-
-
-        Console.WriteLine("[DEBUG] Final tree structure:");
-        PrintTree(root, 0);
 
         return new List<TreeItemData<Guid>> { root };
     }
@@ -284,8 +274,6 @@
                 Console.WriteLine($"[ERROR] Live leaf lookup returned null for {recordType} | {recordId}");
                 return null;
             }
-
-            Console.WriteLine($"[DEBUG] Leaf node: {node.RecordType} | {node.Name} | {node.RecordId}");
 
             return new TreeItemPresenter(node.RecordId, node.Name, GetIcon(node.RecordType), node.RecordType, node.Level, false);
         }
