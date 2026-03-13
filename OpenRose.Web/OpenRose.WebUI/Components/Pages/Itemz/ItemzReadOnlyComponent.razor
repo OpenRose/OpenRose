@@ -86,13 +86,12 @@
                         <MudStack Row="true" Spacing="2">
                             <MudText><strong>ID          : </strong></MudText>
                             <CopyableText TextToCopy="@singleItemz.Id.ToString()" DisplayLength="8" />
+                            <ShowHierarchyTreeButton RecordId="@singleItemz.Id" />
                         </MudStack>
                         <MudText><strong> || Status      : </strong> @singleItemz.Status</MudText>
                         <MudText><strong> || Priority    : </strong> @singleItemz.Priority</MudText>
                         <MudText><strong> || Severity    : </strong> @singleItemz.Severity</MudText>
                     </MudStack>
-
-
                     <br />
                     <div class="custom-markdown-editor">
                         @if (!string.IsNullOrEmpty(singleItemz.Description))
