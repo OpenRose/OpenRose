@@ -33,7 +33,10 @@
 		<Columns>
 			<PropertyColumn Property="x => x.Id" Title="Id" Filterable="false">
 				<CellTemplate>
+					<div style="display: flex; align-items: center; gap: 6px; white-space: nowrap;">
 					<CopyableText TextToCopy="@context.Item.Id.ToString()" DisplayLength="8" />
+					<ShowHierarchyTreeButton RecordId="@context.Item.Id" />
+					</div>
 				</CellTemplate>
 			</PropertyColumn>
 			<PropertyColumn Property="x => x.Name" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
@@ -81,7 +84,10 @@
 		<Columns>
 			<PropertyColumn Property="x => x.Id" Title="Id">
 				<CellTemplate>
+					<div style="display: flex; align-items: center; gap: 6px; white-space: nowrap;">
 					<CopyableText TextToCopy="@context.Item.Id.ToString()" DisplayLength="8" />
+					<ShowHierarchyTreeButton RecordId="@context.Item.Id" />
+					</div>
 				</CellTemplate>
 			</PropertyColumn>
 			<PropertyColumn Property="x => x.Name" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
