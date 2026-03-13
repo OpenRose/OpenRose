@@ -1,0 +1,363 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * Export Records UI with details preview for all 6 record types.
+*@
+
+@using MudBlazor;
+@using OpenRose.WebUI.Client.Services.BaselineHierarchy
+@using OpenRose.WebUI.Client.Services.GoTo
+@using OpenRose.WebUI.Client.Services.Hierarchy
+@using OpenRose.WebUI.Client.SharedModels
+
+<MudDialog MaxWidth="MaxWidth.Medium" FullWidth="false">
+    <DialogContent>
+        @if (loading)
+        {
+            <MudProgressCircular Indeterminate="true" />
+        }
+        else
+        {
+            <div style="overflow-x: auto; max-width: 100%;">
+            <MudTreeView @ref="tree"
+                         Items="@TreeItems"
+                         Hover="true"
+                         AutoExpand="true"
+                         SelectedValue="@RecordId">
+                <ItemTemplate>
+                    @{
+                        var node = context as TreeItemPresenter;
+                    }
+                    <MudTreeViewItem Value="@node.Value"
+                                     Text="@node.Text"
+                                     Icon="@node.Icon"
+                                     Items="@node.Children"
+                                     Expandable="@node.Expandable" />
+                </ItemTemplate>
+            </MudTreeView>
+            </div>
+        }
+    </DialogContent>
+</MudDialog>
+
+@code {
+
+    [Parameter] public Guid RecordId { get; set; }
+
+    [Inject] public IGoToService GoToService { get; set; }
+    [Inject] public IHierarchyService HierarchyService { get; set; }
+    [Inject] public IBaselineHierarchyService BaselineHierarchyService { get; set; }
+
+    private bool loading = true;
+    private MudTreeView<Guid> tree;
+    private List<TreeItemData<Guid>> TreeItems = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        loading = true;
+
+        // 1. Ask GoToService what this GUID represents
+        var info = await GoToService.__Get_GoTo_Details_By_GUID__(RecordId);
+
+        if (info == null)
+        {
+            TreeItems = new();
+            loading = false;
+            return;
+        }
+
+        // 2. Load hierarchy
+        TreeItems = await LoadHierarchy(info.RecordType, info.RecordId);
+
+
+        // 3. Auto-expand path to the record
+        ExpandPathToRecord(TreeItems, RecordId);
+
+        loading = false;
+    }
+
+    private async Task<List<TreeItemData<Guid>>> LoadHierarchy(string recordType, Guid recordId)
+    {
+        Console.WriteLine($"[DEBUG] LoadHierarchy called with recordType={recordType}, recordId={recordId}");
+
+        var projectParents = await LoadProjectParentChain(recordId);
+
+        Console.WriteLine("[DEBUG] Project parent chain returned:");
+        foreach (var p in projectParents)
+            Console.WriteLine($"   - {p.RecordType} | {p.Name} | {p.RecordId}");
+
+        TreeItemPresenter root = null;
+        TreeItemPresenter current = null;
+
+        // 1. Build ancestor chain if any parents exist
+        foreach (var p in projectParents)
+        {
+            var newNode = new TreeItemPresenter(
+                p.RecordId,
+                p.Name,
+                GetIcon(p.RecordType),
+                p.RecordType,
+                p.Level,
+                true);
+
+            if (root == null)
+            {
+                root = newNode;
+                current = newNode;
+            }
+            else
+            {
+                current.Children.Add(newNode);
+                current = newNode;
+            }
+        }
+
+        // 2. Build the leaf node (actual record: Dadar)
+        var leaf = await BuildLeafNode(recordType, recordId);
+
+        // If there were no parents at all, the leaf itself becomes the root
+        if (root == null)
+        {
+            root = leaf;
+        }
+        else
+        {
+            current.Children.Add(leaf);
+        }
+
+        Console.WriteLine("[DEBUG] Final tree structure:");
+        PrintTree(root, 0);
+
+        return new List<TreeItemData<Guid>> { root };
+    }
+
+
+    #region Project version
+
+    private List<TreeItemData<Guid>> BuildTree( Guid rootId,
+                                                string rootName,
+                                                List<NestedHierarchyIdRecordDetailsDTO> children)
+    {
+        var root = new TreeItemPresenter(
+            rootId,
+            rootName,
+            Icons.Material.Filled.Folder,
+            "Project",
+            0,
+            true);
+
+        foreach (var child in children)
+            root.Children.Add(BuildNode(child));
+
+        return new List<TreeItemData<Guid>> { root };
+    }
+
+    private TreeItemPresenter BuildNode(NestedHierarchyIdRecordDetailsDTO dto)
+    {
+        var node = new TreeItemPresenter(
+            dto.RecordId,
+            dto.Name,
+            dto.RecordType.ToLower() switch
+            {
+                "itemztype" => Icons.Material.Filled.Pix,
+                "itemz" => Icons.Material.Filled.Stream,
+                _ => Icons.Material.Filled.Cancel
+            },
+            dto.RecordType,
+            dto.Level,
+            dto.Children.Any());
+
+        foreach (var child in dto.Children)
+            node.Children.Add(BuildNode(child));
+
+        return node;
+    }
+
+    #endregion
+
+
+    #region Baseline version
+
+    private List<TreeItemData<Guid>> BuildTree(
+    Guid rootId,
+    string rootName,
+    List<NestedBaselineHierarchyIdRecordDetailsDTO> children)
+    {
+        var root = new TreeItemPresenter(
+            rootId,
+            rootName,
+            Icons.Material.Filled.Folder,
+            "Baseline",
+            0,
+            true);
+
+        foreach (var child in children)
+            root.Children.Add(BuildNode(child));
+
+        return new List<TreeItemData<Guid>> { root };
+    }
+
+    private TreeItemPresenter BuildNode(NestedBaselineHierarchyIdRecordDetailsDTO dto)
+    {
+        var node = new TreeItemPresenter(
+            dto.RecordId,
+            dto.Name,
+            dto.RecordType.ToLower() switch
+            {
+                "baselineitemztype" => Icons.Material.Filled.Pix,
+                "baselineitemz" => Icons.Material.Filled.Stream,
+                _ => Icons.Material.Filled.Cancel
+            },
+            dto.RecordType,
+            dto.Level,
+            dto.Children.Any());
+
+        foreach (var child in dto.Children)
+            node.Children.Add(BuildNode(child));
+
+        return node;
+    }
+
+    #endregion
+    private void ExpandPathToRecord(List<TreeItemData<Guid>> nodes, Guid target)
+    {
+        foreach (var node in nodes)
+        {
+            if (node.Value == target)
+            {
+                node.Expanded = true;
+                return;
+            }
+
+            if (node.Children.Any())
+            {
+                ExpandPathToRecord(node.Children, target);
+
+                if (node.Children.Any(c => c.Expanded))
+                    node.Expanded = true;
+            }
+        }
+    }
+
+    private async Task<List<NestedHierarchyIdRecordDetailsDTO>> LoadProjectParentChain(Guid recordId)
+    {
+        // Get the full nested parent tree (parents only, no Dadar)
+        var parents = await HierarchyService.__Get_All_Parents_Hierarchy_By_GUID__Async(recordId);
+
+        if (parents == null || !parents.Any())
+            return new List<NestedHierarchyIdRecordDetailsDTO>();
+
+        // API returns a list with exactly one root node: Project
+        var root = parents.First();
+
+        var path = new List<NestedHierarchyIdRecordDetailsDTO>();
+        FlattenSinglePath(root, path);
+
+        return path;
+    }
+
+    private void FlattenSinglePath(NestedHierarchyIdRecordDetailsDTO node, List<NestedHierarchyIdRecordDetailsDTO> path)
+    {
+        path.Add(node);
+
+        // For this API, the parent tree is effectively a single chain
+        if (node.Children != null && node.Children.Any())
+        {
+            // Always follow the first child – it’s the next parent in the chain
+            FlattenSinglePath(node.Children.First(), path);
+        }
+    }
+
+
+    private async Task<List<NestedBaselineHierarchyIdRecordDetailsDTO>> LoadBaselineParentChain(Guid recordId)
+    {
+        var parents = await BaselineHierarchyService.__Get_All_Parents_Baseline_Hierarchy_By_GUID__Async(recordId);
+
+        var list = parents.ToList();
+        list.Reverse();
+
+        return list;
+    }
+
+
+    private async Task<TreeItemPresenter> BuildLeafNode(string recordType, Guid recordId)
+    {
+        if (recordType.StartsWith("baseline"))
+        {
+            var node = await BaselineHierarchyService.__Get_BaselineHierarchy_Record_Details_By_GUID__Async(recordId);
+            return new TreeItemPresenter(node.RecordId, node.Name, GetIcon(node.RecordType), node.RecordType, node.Level, false);
+        }
+        else
+        {
+            var node = await HierarchyService.__Get_Hierarchy_Record_Details_By_GUID__Async(recordId);
+
+            Console.WriteLine($"[DEBUG] Leaf node: {node.RecordType} | {node.Name} | {node.RecordId}");
+
+            return new TreeItemPresenter(node.RecordId, node.Name, GetIcon(node.RecordType), node.RecordType, node.Level, false);
+        }
+    }
+
+    private string GetIcon(string recordType)
+    {
+        return recordType.ToLower() switch
+        {
+            "project" => Icons.Material.Filled.Folder,
+            "itemztype" => Icons.Material.Filled.Pix,
+            "itemz" => Icons.Material.Filled.Stream,
+
+            "baseline" => Icons.Material.Filled.ContentCopy,
+            "baselineitemztype" => Icons.Material.Filled.Pix,
+            "baselineitemz" => Icons.Material.Filled.Stream,
+
+            _ => Icons.Material.Filled.Help
+        };
+    }
+
+    private void PrintTree(TreeItemPresenter node, int indent)
+    {
+        Console.WriteLine($"{new string(' ', indent * 2)}- {node.RecordType} | {node.Text} | {node.Value}");
+
+        foreach (var child in node.Children)
+        {
+            PrintTree(child as TreeItemPresenter, indent + 1);
+        }
+    }
+
+    private bool FindPath(NestedHierarchyIdRecordDetailsDTO node, Guid targetId, List<NestedHierarchyIdRecordDetailsDTO> path)
+    {
+        path.Add(node);
+
+        if (node.RecordId == targetId)
+            return true;
+
+        foreach (var child in node.Children)
+        {
+            if (FindPath(child, targetId, path))
+                return true;
+        }
+
+        path.RemoveAt(path.Count - 1);
+        return false;
+    }
+
+
+    public class TreeItemPresenter : MudBlazor.TreeItemData<Guid>
+    {
+        public string RecordType { get; set; }
+        public int? Level { get; set; }
+        public bool IsSelected { get; set; }
+
+        public TreeItemPresenter(Guid value, string text, string icon,
+                                 string recordType, int? level, bool expandable)
+            : base(value)
+        {
+            Value = value;
+            Text = text;
+            Icon = icon;
+            RecordType = recordType;
+            Level = level ?? 0;
+            Expandable = expandable;
+            Children = new List<TreeItemData<Guid>>();
+        }
+    }
+}

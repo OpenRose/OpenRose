@@ -30,10 +30,12 @@
         var options = new DialogOptions
         {
             CloseButton = true,
-            MaxWidth = MaxWidth.Large,
+            MaxWidth = MaxWidth.Small,
+            CloseOnEscapeKey = true,
+            Position = DialogPosition.Center,
             FullWidth = true
         };
 
-        await DialogService.ShowAsync<HierarchyTreeDialog>("Hierarchy Tree", parameters, options);
+        await DialogService.ShowAsync<HierarchyTreeDialog>("Parent Hierarchy Tree", parameters, options);
     }
 }
