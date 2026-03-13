@@ -139,6 +139,7 @@
 						<MudStack Row="true" Spacing="2">
 							<MudText><strong>ItemzType Id: </strong></MudText>
 							<CopyableText TextToCopy="@ItemzTypeId.ToString()" />
+							<ShowHierarchyTreeButton RecordId="@singleItemzType.Id" />
 						</MudStack>
 						<br />
 						<MudTextField T="string" Label="Name" Required="true" RequiredError="Name is required!"
