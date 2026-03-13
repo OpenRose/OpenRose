@@ -85,6 +85,7 @@
 							<MudText><strong>ID          : </strong></MudText>
 							<CopyableText TextToCopy="@singleBaselineItemz.Id.ToString()" DisplayLength="8" />
 							<GoToOriginalItemzButton BaselineItemzId="@singleBaselineItemz.Id" UseTreeView="false" />
+							<ShowHierarchyTreeButton RecordId="@singleBaselineItemz.Id" />
 						</MudStack>
 						<MudText><strong> || Status      : </strong> @singleBaselineItemz.Status</MudText>
 						<MudText><strong> || Priority    : </strong> @singleBaselineItemz.Priority</MudText>

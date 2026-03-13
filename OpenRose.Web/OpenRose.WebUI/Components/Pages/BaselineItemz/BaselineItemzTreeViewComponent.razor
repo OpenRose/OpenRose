@@ -84,6 +84,7 @@
 								@onclick="findAndShowInTreeView" />
 							</MudTooltip>
 							<GoToOriginalItemzButton BaselineItemzId="@singleBaselineItemz.Id" UseTreeView="true" />
+							<ShowHierarchyTreeButton RecordId="@singleBaselineItemz.Id" />
 							<MudText><strong> || Status      : </strong> @singleBaselineItemz.Status</MudText>
 							<MudText><strong> || Priority    : </strong> @singleBaselineItemz.Priority</MudText>
 							<MudText><strong> || Severity    : </strong> @singleBaselineItemz.Severity</MudText>
