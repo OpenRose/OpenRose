@@ -94,9 +94,9 @@
             {
                 var newNode = new TreeItemPresenter(
                     p.RecordId,
-                    p.Name,
-                    GetIcon(p.RecordType),
-                    p.RecordType,
+                    p.Name ?? "",
+                    GetIcon(p.RecordType ?? Icons.Material.Filled.Help),
+                    p.RecordType ?? "",
                     p.Level,
                     true);
 
@@ -120,9 +120,9 @@
             {
                 var newNode = new TreeItemPresenter(
                     p.RecordId,
-                    p.Name,
-                    GetIcon(p.RecordType),
-                    p.RecordType,
+                    p.Name ?? "",
+                    GetIcon(p.RecordType ?? Icons.Material.Filled.Help),
+                    p.RecordType ?? "",
                     p.Level,
                     true);
 
@@ -191,12 +191,12 @@
             return new List<NestedHierarchyIdRecordDetailsDTO>();
 
         var path = new List<NestedHierarchyIdRecordDetailsDTO>();
-        FlattenSinglePathSafe(root, path);
+        FlattenSinglePath(root, path);
 
         return path;
     }
 
-    private void FlattenSinglePathSafe(NestedHierarchyIdRecordDetailsDTO node,
+    private void FlattenSinglePath(NestedHierarchyIdRecordDetailsDTO node,
                                        List<NestedHierarchyIdRecordDetailsDTO> path)
     {
         if (node == null)
@@ -211,7 +211,7 @@
         if (firstChild == null)
             return;
 
-        FlattenSinglePathSafe(firstChild, path);
+        FlattenSinglePath(firstChild, path);
     }
 
 
@@ -294,16 +294,6 @@
 
             _ => Icons.Material.Filled.Help
         };
-    }
-
-    private void PrintTree(TreeItemPresenter node, int indent)
-    {
-        Console.WriteLine($"{new string(' ', indent * 2)}- {node.RecordType} | {node.Text} | {node.Value}");
-
-        foreach (var child in node.Children)
-        {
-            PrintTree(child as TreeItemPresenter, indent + 1);
-        }
     }
 
     public class TreeItemPresenter : MudBlazor.TreeItemData<Guid>
