@@ -97,7 +97,7 @@ if (configurationService.IsOpenRoseAPIConfigured)
 	builder.Services.AddSingleton<ApiVersionChecker>();
 
 	// Register both hosted services
-	builder.Services.AddHostedService<ApiVersionMonitorService>();
+	//builder.Services.AddHostedService<ApiVersionMonitorService>();
 	builder.Services.AddHostedService<ApiConnectionWatcherService>();
 
 }
