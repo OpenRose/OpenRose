@@ -66,6 +66,7 @@
 							</MudTooltip>
                             <GoToOriginalItemzTypeButton BaselineItemzTypeId="@singleIBaselineItemzType.Id"
                                                          UseTreeView="true" />
+							<ShowHierarchyTreeButton RecordId="@singleIBaselineItemzType.Id" />
 						</MudStack>
 						<MudText><strong> || Status      : </strong> @singleIBaselineItemzType.Status</MudText>
 						<MudText><strong> || Is System?  : </strong> @(singleIBaselineItemzType.IsSystem ? "Yes" : "No")</MudText>

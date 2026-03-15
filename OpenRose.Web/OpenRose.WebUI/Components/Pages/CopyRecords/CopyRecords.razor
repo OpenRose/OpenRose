@@ -26,7 +26,6 @@
 <MudItem xs="12" Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3">
 	<MudPaper Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3" style="padding: 16px;">
 		<div class="d-flex flex-column align-items-center justify-center w-100 h-100">
-
 		<MudStack Row="false" Spacing="2" AlignItems="AlignItems.Center" JustifyContent="Justify.Center">
 			<div>
 				<MudTooltip Text="Step 1 is to select Record Type for the data to be copied">
@@ -70,8 +69,9 @@
 							<MudDivider></MudDivider>
 							<MudText><strong>Name        : </strong> @copyItemz.Name </MudText>
 							<MudStack Row="true" Spacing="2">
-								<MudText><strong>ID          : </strong></MudText>
+							<MudText><strong>ID          : </strong></MudText>
 								<CopyableText TextToCopy="@copyItemz.Id.ToString()" />
+								<ShowHierarchyTreeButton RecordId="@copyItemz.Id" />
 							</MudStack>
 							<MudText><strong>Status      : </strong> @copyItemz.Status</MudText>
 							<MudText><strong>Priority    : </strong> @copyItemz.Priority</MudText>
@@ -93,6 +93,7 @@
 							<MudStack Row="true" Spacing="2">
 								<MudText><strong>ID          : </strong></MudText>
 								<CopyableText TextToCopy="@copyItemzType.Id.ToString()" />
+								<ShowHierarchyTreeButton RecordId="@copyItemzType.Id" />
 							</MudStack>
 							<MudText><strong>Status      : </strong> @copyItemzType.Status</MudText>
 							<MudText><strong>IsSystem    : </strong> @copyItemzType.IsSystem.ToString()</MudText>
@@ -103,7 +104,6 @@
 		}
 		else if (radioRecordType == "Project" && copyProject != null && copyProject.Id != Guid.Empty)
 		{
-
 			<MudStack Row="false" Spacing="2" AlignItems="AlignItems.Center" JustifyContent="Justify.Center">
 				<MudCard style="background-color : #FABBBB; margin: 16px;" Class="w-100">
 					<MudCardContent Class="d-flex flex-wrap">
@@ -114,6 +114,7 @@
 							<MudStack Row="true" Spacing="2">
 								<MudText><strong>ID          : </strong></MudText>
 								<CopyableText TextToCopy="@copyProject.Id.ToString()" />
+								<ShowHierarchyTreeButton RecordId="@copyProject.Id" />
 							</MudStack>
 							<MudText><strong>Status      : </strong> @copyProject.Status</MudText>
 						</div>

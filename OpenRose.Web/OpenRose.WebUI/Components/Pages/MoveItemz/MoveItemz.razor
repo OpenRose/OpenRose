@@ -43,6 +43,7 @@
 						<MudStack Row="true" Spacing="2">
 						<MudText><strong>ID          : </strong></MudText>
 						<CopyableText TextToCopy="@sourceItemz.Id.ToString()" />
+						<ShowHierarchyTreeButton RecordId="@sourceItemz.Id" />
 						</MudStack>
 						<MudText><strong>Status      : </strong> @sourceItemz.Status</MudText>
 						<MudText><strong>Priority    : </strong> @sourceItemz.Priority</MudText>
@@ -78,6 +79,7 @@
 					<MudStack Row="true" Spacing="2">
 					<MudText><strong>ID          : </strong></MudText>
 					<CopyableText TextToCopy="@targetItemz.Id.ToString()" />
+					<ShowHierarchyTreeButton RecordId="@targetItemz.Id" />
 					</MudStack>
 					<MudText><strong>Status      : </strong> @targetItemz.Status</MudText>
 					<MudText><strong>Priority    : </strong> @targetItemz.Priority</MudText>
@@ -97,6 +99,7 @@
 					<MudStack Row="true" Spacing="2">
 					<MudText><strong>ID          : </strong></MudText>
 					<CopyableText TextToCopy="@targetItemzType.Id.ToString()" />
+					<ShowHierarchyTreeButton RecordId="@targetItemzType.Id" />
 					</MudStack>
 					<MudText><strong>Status      : </strong> @targetItemzType.Status</MudText>
 				</MudCardContent>

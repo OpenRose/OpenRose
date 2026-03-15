@@ -45,6 +45,7 @@
 						<MudStack Row="true" Spacing="2">
 						<MudText><strong>ID          : </strong></MudText>
 						<CopyableText TextToCopy="@sourceItemzType.Id.ToString()" />
+						<ShowHierarchyTreeButton RecordId="@sourceItemzType.Id" />
 						</MudStack>
 						<MudText><strong>Status      : </strong> @sourceItemzType.Status</MudText>
 						<MudText Color="@(sourceItemzType.IsSystem ? Color.Error : Color.Inherit)" ><strong>IsSystem?   : </strong> @sourceItemzType.IsSystem</MudText>
@@ -79,6 +80,7 @@
 					<MudStack Row="true" Spacing="2">
 					<MudText><strong>ID          : </strong></MudText>
 					<CopyableText TextToCopy="@targetProject.Id.ToString()" />
+					<ShowHierarchyTreeButton RecordId="@targetProject.Id" />
 					</MudStack>
 					<MudText><strong>Status      : </strong> @targetProject.Status</MudText>
 				</MudCardContent>
