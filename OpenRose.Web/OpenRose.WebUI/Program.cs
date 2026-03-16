@@ -59,6 +59,11 @@ builder.Configuration.AddEnvironmentVariables(); // Add environment variables to
 // Configure API settings
 builder.Services.Configure<APISettings>(builder.Configuration.GetSection("ApiSettings"));
 
+// EXPLANATION: Bind OfflineContent settings from appsettings.json.
+// This config controls where server-side JSON files are stored and how offline mode behaves.
+builder.Services.Configure<OfflineContentSettings>(builder.Configuration.GetSection("OfflineContent"));
+
+
 // Retrieve API settings
 var apiSettings = builder.Configuration.GetSection("APISettings").Get<APISettings>();
 
