@@ -246,6 +246,14 @@ builder.Services.AddScoped<TreeNodeItemzSelectionServiceForJson>(); // Register 
 
 builder.Services.AddSingleton<AssemblyInfoService>(); // Register the service
 
+// EXPLANATION: Register server-side offline catalog repository.
+// This service manages JSON files stored in the OfflineContent.StorageFolder.
+builder.Services.AddSingleton<OfflineCatalogRepository>();
+
+// EXPLANATION: Register the startup resolver that determines whether to start in API or Offline JSON mode.
+builder.Services.AddSingleton<OfflineStartupResolver>();
+
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -265,5 +273,26 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode()
     .AddInteractiveWebAssemblyRenderMode()
     .AddAdditionalAssemblies(typeof(OpenRose.WebUI.Client._Imports).Assembly);
+
+// EXPLANATION:
+// Run the startup resolver to determine whether to start in API mode or Offline JSON mode.
+// This must run AFTER DI is built but BEFORE the app begins handling requests.
+using (var scope = app.Services.CreateScope())
+{
+	var resolver = scope.ServiceProvider.GetRequiredService<OfflineStartupResolver>();
+	var result = await resolver.ResolveStartupModeAsync();
+
+	var dataSourceState = scope.ServiceProvider.GetRequiredService<DataSourceStateService>();
+	var viewSettings = scope.ServiceProvider.GetRequiredService<ViewSettingsService>();
+
+	if (result == OfflineStartupResolver.StartupResult.OfflineMode)
+	{
+		viewSettings.IsOperatingInJsonFileDataSourceMode = true;
+	}
+	else
+	{
+		viewSettings.IsOperatingInJsonFileDataSourceMode = false;
+	}
+}
 
 app.Run();
