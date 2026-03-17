@@ -243,7 +243,6 @@ builder.Services.AddScoped<BaselineTreeNodeItemzSelectionServiceForJson>(); // R
 builder.Services.AddScoped<TreeNodeItemzSelectionServiceForJson>(); // Register the service
 
 
-
 builder.Services.AddSingleton<AssemblyInfoService>(); // Register the service
 
 // EXPLANATION: Register server-side offline catalog repository.
@@ -251,8 +250,7 @@ builder.Services.AddSingleton<AssemblyInfoService>(); // Register the service
 builder.Services.AddSingleton<OfflineCatalogRepository>();
 
 // EXPLANATION: Register the startup resolver that determines whether to start in API or Offline JSON mode.
-builder.Services.AddSingleton<OfflineStartupResolver>();
-
+builder.Services.AddScoped<OfflineStartupResolver>();
 
 var app = builder.Build();
 
