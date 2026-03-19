@@ -308,10 +308,14 @@
 
     private async Task HandleStateChangedAsync()
     {
+
+        // Reset selection BEFORE rebuilding the tree
+        selectedItem = null;
+        _selectedValue = Guid.Empty;
+
         await ReloadTreeAsync();
         await InvokeAsync(StateHasChanged);
     }
-
 
     private async Task ReloadTreeAsync()
     {
@@ -351,11 +355,44 @@
                 .OfType<TreeItemPresenter>()
                 .ToList();
 
-            // 6. Default selection to root
-            if (InitialTreeItems.Count > 0)
+            // 6. if current selection no longer exists in this JSON, clear it
+            if (selectedItem != null && !_nodeLookup.ContainsKey(selectedItem.Value))
+            {
+                selectedItem = null;
+                _selectedValue = Guid.Empty;
+            }
+
+            // // 7. Fix selection if Parking Lot was selected but removed
+            // if (selectedItem != null &&
+            //     selectedItem.RecordType.Equals("baselineitemztype", StringComparison.OrdinalIgnoreCase) &&
+            //     selectedItem.Text.Equals("Parking Lot", StringComparison.OrdinalIgnoreCase))
+            // {
+            //     if (!_nodeLookup.ContainsKey(selectedItem.Value))
+            //     {
+            //         var root = InitialTreeItems.FirstOrDefault();
+            //         if (root != null)
+            //         {
+            //             _selectedValue = root.Value;
+            //             await UpdateSelectedItemAsync(root.Value);
+            //         }
+            //     }
+            // }
+
+            // 7. Default selection to root
+            if (InitialTreeItems.Count > 0 && _selectedValue == Guid.Empty)
             {
                 _selectedValue = InitialTreeItems[0].Value;
                 await UpdateSelectedItemAsync(_selectedValue);
+            }
+
+            // 8. Expand the root node manually after loading JSON
+            if (InitialTreeItems.Count > 0)
+            {
+                var root = InitialTreeItems[0] as TreeItemPresenter;
+                if (root != null)
+                {
+                    root.Expanded = true;
+                }
             }
         }
         catch (Exception ex)

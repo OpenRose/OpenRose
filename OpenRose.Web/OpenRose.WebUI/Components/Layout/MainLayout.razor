@@ -402,13 +402,11 @@
 	}
 
 
-
 	/// <summary>
 	/// Attempts to load JSON file, validate it, and switch to JSON file data source mode.
 	/// If validation fails, shows error dialog and stays in API mode.
 	/// </summary>
 	private async Task AttemptToLoadAndSwitchToJsonFileDataSourceAsync(IBrowserFile jsonBrowserFile)
-
 	{
 		try
 		{
@@ -428,14 +426,16 @@
 				return;
 			}
 
-
 			// Step 2: Validate JSON file against schema
-			var jsonValidationServiceFromDependencyInjection = ServiceProviderForDependencyInjection.GetRequiredService<JsonFileSchemaValidationService>();
+			var jsonValidationServiceFromDependencyInjection =
+				ServiceProviderForDependencyInjection.GetRequiredService<JsonFileSchemaValidationService>();
+
 			try
 			{
-				bool isJsonFileValidAgainstSchema = jsonValidationServiceFromDependencyInjection.ValidateJsonFileContentAgainstSchema(
-					jsonFileContentAsStringReadFromDisk
-				);
+				bool isJsonFileValidAgainstSchema =
+					jsonValidationServiceFromDependencyInjection.ValidateJsonFileContentAgainstSchema(
+						jsonFileContentAsStringReadFromDisk
+					);
 			}
 			catch (JsonFileValidationException jsonValidationException)
 			{
@@ -445,7 +445,17 @@
 				return;
 			}
 
-			// Step 3: Load JSON data into memory (parse and build lookup dictionary)
+			// Step 3: Switch data source state FIRST (before loading JSON)
+			DataSourceStateServiceForDataSourceTracking.SwitchToClientSideJsonFile(jsonBrowserFile.Name);
+
+			// Step 4: Update view settings to reflect JSON file mode
+			ViewSettingsServiceForUiState.IsOperatingInJsonFileDataSourceMode = true;
+
+			// Step 5: Navigate immediately BEFORE loading JSON
+			// This prevents the JSON viewer from rendering twice in the same circuit.
+			NavManager.NavigateTo("/jsonviewer", forceLoad: true);
+			
+			// Step 6: Load JSON data into memory (parse and build lookup dictionary)
 			var jsonDataSourceServiceFromDependencyInjection =
 				ServiceProviderForDependencyInjection.GetRequiredService<JsonFileDataSourceService>();
 
@@ -471,15 +481,6 @@
 				return;
 			}
 
-
-			// Step 4: Switch data source state to JSON file mode
-			DataSourceStateServiceForDataSourceTracking.SwitchToClientSideJsonFile(jsonBrowserFile.Name);
-
-			// Step 5: Update view settings to reflect JSON file mode
-			ViewSettingsServiceForUiState.IsOperatingInJsonFileDataSourceMode = true;
-
-			// Success - data source has been switched to JSON file mode
-			NavManager.NavigateTo($"/jsonviewer", forceLoad: true);
 		}
 		catch (Exception unexpectedException)
 		{
