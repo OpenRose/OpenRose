@@ -91,6 +91,8 @@
     private bool initializingPage = true;
     private GetItemzTypeDTO _itemzType = new();
     private MarkupString _convertedMarkdown;
+    private bool _needsRender = false;
+
 
     protected override async Task OnParametersSetAsync()
     {
@@ -102,8 +104,9 @@
 
             if (!string.IsNullOrEmpty(_itemzType.Description))
             {
-                var html = await JS.InvokeAsync<string>("markdownToHtml", _itemzType.Description);
-                _convertedMarkdown = (MarkupString)html;
+                _needsRender = true;
+                // var html = await JS.InvokeAsync<string>("markdownToHtml", _itemzType.Description);
+                // _convertedMarkdown = (MarkupString)html;
             }
             else
             {
@@ -113,6 +116,21 @@
         finally
         {
             initializingPage = false;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_needsRender)
+        {
+            _needsRender = false;
+
+            if (_itemzType?.Description != null)
+            {
+                var _html = await JS.InvokeAsync<string>("markdownToHtml", _itemzType.Description);
+                _convertedMarkdown = (MarkupString)_html;
+                await InvokeAsync(StateHasChanged);
+            }
         }
     }
 

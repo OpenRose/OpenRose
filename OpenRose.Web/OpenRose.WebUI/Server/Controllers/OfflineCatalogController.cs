@@ -100,7 +100,8 @@ namespace OpenRose.WebUI.Server.Controllers
 				return Ok(new
 				{
 					success = true,
-					activeFile = request.FileName
+					activeFile = request.FileName,
+					fullPath = fullPath
 				});
 			}
 			catch (Exception ex)

@@ -1,0 +1,153 @@
+﻿@using OpenRose.WebUI.Client.Services.JsonFile
+@using OpenRose.WebUI.Client.SharedModels.ClientSideUIOnlyModel
+@using OpenRose.WebUI.Components.EventServices
+@using OpenRose.WebUI.Services
+@* @inject HttpClient Http *@
+@inject IHttpClientFactory ClientFactory
+@inject DataSourceStateService DataSourceStateService
+@inject IServiceProvider ServiceProviderForDependencyInjection
+@inject ViewSettingsService ViewSettingsService
+@inject NavigationManager NavManager
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Select Server‑Side JSON Data File</MudText>
+    </TitleContent>
+
+    <DialogContent>
+
+        @if (isLoading)
+        {
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+        }
+        else if (loadError != null)
+        {
+            <MudAlert Severity="Severity.Error">@loadError</MudAlert>
+        }
+        else
+        {
+            <MudSelect T="string"
+                       Label="Available JSON Files"
+                       @bind-Value="selectedFile"
+                       Dense="true"
+                       Required="true"
+                       Class="mb-4">
+
+                @foreach (var file in availableFiles)
+                {
+                    <MudSelectItem Value="@file">@file</MudSelectItem>
+                }
+            </MudSelect>
+        }
+
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Variant="Variant.Filled" Color="Color.Success"
+                   Disabled="@(!CanConfirm)"
+                   OnClick="ConfirmSelection">
+            Load File
+        </MudButton>
+
+        <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="Cancel">
+            Cancel
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; }
+
+    private bool isLoading = true;
+    private string? loadError;
+    private List<string> availableFiles = new();
+    private string? selectedFile;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var http = ClientFactory.CreateClient("WebUIInternal");
+            var result = await http.GetFromJsonAsync<List<string>>("offline/files");
+
+            if (result == null || result.Count == 0)
+            {
+                loadError = "No JSON files found on the server.";
+            }
+            else
+            {
+                availableFiles = result;
+            }
+        }
+        catch (Exception ex)
+        {
+            loadError = $"Failed to load server JSON files: {ex.Message}";
+        }
+
+        isLoading = false;
+    }
+
+    private bool CanConfirm =>
+        !string.IsNullOrWhiteSpace(selectedFile) &&
+        loadError == null &&
+        !isLoading;
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    private async Task ConfirmSelection()
+    {
+        if (string.IsNullOrWhiteSpace(selectedFile))
+            return;
+
+        try
+        {
+            var http = ClientFactory.CreateClient("WebUIInternal");
+            var response = await http.PostAsJsonAsync("offline/select", new
+            {
+                fileName = selectedFile
+            });
+
+            if (!response.IsSuccessStatusCode)
+            {
+                loadError = $"Server rejected selection: {response.StatusCode}";
+                return;
+            }
+
+            // Build full path for UI state
+            var json = await response.Content.ReadFromJsonAsync<Dictionary<string, object>>();
+            string fullPath = json["fullPath"].ToString();
+
+            // Load the JSON file content from disk
+            string jsonContent = await File.ReadAllTextAsync(fullPath);
+
+            var jsonService = ServiceProviderForDependencyInjection.GetRequiredService<JsonFileDataSourceService>();
+            await jsonService.LoadJsonFileDataFromStringAsync(jsonContent);
+
+            // Switch UI into server JSON mode
+            DataSourceStateService.SwitchToServerSideJsonFile(fullPath);
+
+            jsonService.SetJsonViewerMetadata(new JsonViewerMetadata
+            {
+                FileName = Path.GetFileName(fullPath),
+                FullPath = fullPath,
+                FileSizeBytes = new FileInfo(fullPath).Length,
+                LoadedAt = DateTime.Now,
+                IsServerSide = true
+            });
+
+            ViewSettingsService.IsOperatingInJsonFileDataSourceMode = true;
+
+            MudDialog.Close(DialogResult.Ok(true));
+
+            NavManager.NavigateTo("/jsonviewer", forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            loadError = $"Failed to activate JSON file: {ex.Message}";
+        }
+    }
+}

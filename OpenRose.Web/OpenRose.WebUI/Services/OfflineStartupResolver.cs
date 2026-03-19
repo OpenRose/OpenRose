@@ -3,9 +3,10 @@
 // See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 
 using Microsoft.Extensions.Options;
-using OpenRose.WebUI.Configuration;
-using OpenRose.WebUI.Components.EventServices;
 using OpenRose.WebUI.Client.Services.JsonFile;
+using OpenRose.WebUI.Client.SharedModels.ClientSideUIOnlyModel;
+using OpenRose.WebUI.Components.EventServices;
+using OpenRose.WebUI.Configuration;
 
 namespace OpenRose.WebUI.Services
 {
@@ -150,10 +151,20 @@ namespace OpenRose.WebUI.Services
 				// ============================================================
 				await _jsonDataSourceService.LoadJsonFileDataFromStringAsync(jsonContent);
 
+				// STEP 4: Set metadata for server-side JSON
+				_jsonDataSourceService.SetJsonViewerMetadata(new JsonViewerMetadata
+				{
+					FileName = Path.GetFileName(fullPath),
+					FullPath = fullPath,
+					FileSizeBytes = new FileInfo(fullPath).Length,
+					LoadedAt = DateTime.Now,
+					IsServerSide = true
+				});
+
 				// ============================================================
-				// STEP 4: Update global state
+				// STEP 5: Update global state
 				// ============================================================
-				_dataSourceStateService.SwitchToJsonFileDataSource(fullPath);
+				_dataSourceStateService.SwitchToServerSideJsonFile(fullPath);
 
 				_logger.LogInformation("Successfully started in Offline JSON mode using file: {File}", fullPath);
 

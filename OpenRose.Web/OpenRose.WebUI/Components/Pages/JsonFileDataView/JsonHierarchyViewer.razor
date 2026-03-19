@@ -1,49 +1,126 @@
 ﻿@page "/jsonviewer"
+
 @using OpenRose.WebUI.Client.Services.JsonFile
+@using OpenRose.WebUI.Client.SharedModels.ClientSideUIOnlyModel
 @using OpenRose.WebUI.Components.EventServices
 @using OpenRose.WebUI.Components.Pages.Baseline
 @using OpenRose.WebUI.Components.Pages.JsonFileDataView
 @using OpenRose.WebUI.Components.Pages.Project
 
-@inject DataSourceStateService DataSourceStateServiceForDataSourceTracking
-@inject JsonFileDataSourceService JsonFileDataSource
-@inject NavigationManager NavManager
+@inject DataSourceStateService DataSourceState
+@inject JsonFileDataSourceService JsonService
+@inject NavigationManager Nav
+@inject IDialogService Dialogs
+@implements IDisposable
 
 @{
-    var isLoaded = JsonFileDataSource.IsJsonLoaded;
-    var kind = isLoaded ? JsonFileDataSource.DetectExportKind() : JsonExportKind.Unknown;
-    var rootId = isLoaded ? JsonFileDataSource.GetRootRecordId() : Guid.Empty;
+    var isLoaded = JsonService.IsJsonLoaded;
+    var metadata = JsonService.CurrentMetadata;
+    var kind = isLoaded ? JsonService.DetectExportKind() : JsonExportKind.Unknown;
+    var rootId = isLoaded ? JsonService.GetRootRecordId() : Guid.Empty;
 }
 
-@if (DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState.CurrentDataSourceType == DataSourceStateService.DataSourceType.ApiServer)
+<!-- Redirect if not in JSON mode -->
+@if (!DataSourceState.CurrentDataSourceState.IsAnyJsonMode)
 {
-    NavManager.NavigateTo("/", forceLoad: true);  
+    Nav.NavigateTo("/", forceLoad: true);
+    <text></text>
+    return;
 }
 
-@if (!isLoaded)
-{
-    <MudText>Please load a JSON file first.</MudText>
-}
-else
-{
-    @switch (kind)
+    <!-- EXISTING VIEWER LOGIC (UNCHANGED) -->
+    @if (!isLoaded)
     {
-        case JsonExportKind.Project:
-        case JsonExportKind.ItemzType:
-        case JsonExportKind.Itemz:
-            <ProjectTreeViewForJson RootId="@rootId" />
-            break;
+        <MudText>Please load a JSON file first.</MudText>
+    }
+    else
+    {
+        @switch (kind)
+        {
+            case JsonExportKind.Project:
+            case JsonExportKind.ItemzType:
+            case JsonExportKind.Itemz:
+@*             <ProjectTreeViewForJson @key="JsonService.CurrentMetadata?.FileName" RootId="@rootId" /> *@
+                <ProjectTreeViewForJson RootId="@rootId" />
+                break;
 
-        case JsonExportKind.Baseline:
-        case JsonExportKind.BaselineItemzType:
-        case JsonExportKind.BaselineItemz:
-            <BaselineTreeViewForJson RootId="@rootId" />
-            break;
+            case JsonExportKind.Baseline:
+            case JsonExportKind.BaselineItemzType:
+            case JsonExportKind.BaselineItemz:
+@*                 <BaselineTreeViewForJson @key="JsonService.CurrentMetadata?.FileName" RootId="@rootId" /> *@
+                <BaselineTreeViewForJson RootId="@rootId" />
+                break;
 
-        default:
-            <MudAlert Severity="Severity.Error">
-                Unknown JSON export type.
-            </MudAlert>
-            break;
+            default:
+                <MudAlert Severity="Severity.Error">
+                    Unknown JSON export type.
+                </MudAlert>
+                break;
+        }
+    }
+
+@code {
+    // private async Task ReloadJson()
+    // {
+    //     if (!DataSourceState.CurrentDataSourceState.IsServerJsonMode)
+    //     {
+    //         await Dialogs.ShowMessageBox("Reload Not Available",
+    //             "Client‑side JSON cannot be reloaded because the browser does not store the file.");
+    //         return;
+    //     }
+
+    //     var fullPath = DataSourceState.CurrentDataSourceState.JsonFilePathForDataSource;
+
+    //     if (!File.Exists(fullPath))
+    //     {
+    //         await Dialogs.ShowMessageBox("File Missing",
+    //             $"The server JSON file no longer exists:\n{fullPath}");
+    //         return;
+    //     }
+
+    //     string jsonContent = await File.ReadAllTextAsync(fullPath);
+    //     await JsonService.LoadJsonFileDataFromStringAsync(jsonContent);
+
+    //     JsonService.SetJsonViewerMetadata(new JsonViewerMetadata
+    //     {
+    //         FileName = Path.GetFileName(fullPath),
+    //         FullPath = fullPath,
+    //         FileSizeBytes = new FileInfo(fullPath).Length,
+    //         LoadedAt = DateTime.Now,
+    //         IsServerSide = true
+    //     });
+
+    //     Nav.NavigateTo("/jsonviewer", forceLoad: true);
+    // }
+
+    protected override void OnInitialized()
+    {
+        JsonService.OnJsonChanged += HandleStateChangedAsync;
+        DataSourceState.OnDataSourceChanged += HandleStateChangedAsync;
+
+        StateHasChanged();
+    }
+
+    // private void HandleStateChanged()
+    // {
+    //     InvokeAsync(StateHasChanged);
+    // }
+
+    private async Task HandleStateChangedAsync()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        JsonService.OnJsonChanged -= HandleStateChangedAsync;
+        DataSourceState.OnDataSourceChanged -= HandleStateChangedAsync;
+
+    }
+
+    private void SwitchToApi()
+    {
+        DataSourceState.SwitchToApiDataSource();
+        Nav.NavigateTo("/", forceLoad: true);
     }
 }

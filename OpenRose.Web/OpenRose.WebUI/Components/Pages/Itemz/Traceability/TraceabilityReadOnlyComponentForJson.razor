@@ -111,7 +111,7 @@
     private ICollection<TraceComponentViewModel> AllParentTraceViewModels { get; set; } = new List<TraceComponentViewModel>();
     private ICollection<TraceComponentViewModel> AllChildTraceViewModels { get; set; } = new List<TraceComponentViewModel>();
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnParametersSetAsync()
     {
         var traces = await JsonService.GetTracesForRecordAsync(ItemzId);
 

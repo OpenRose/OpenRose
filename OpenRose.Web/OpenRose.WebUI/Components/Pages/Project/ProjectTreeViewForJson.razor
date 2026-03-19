@@ -12,8 +12,11 @@
 @using OpenRose.WebUI.Components.Pages.ItemzType
 @using OpenRose.WebUI.Helper.TreeViewNodes
 @inject JsonFileDataSourceService JsonFileDataSource
+@inject DataSourceStateService DataSourceState
 @inject TreeNodeItemzSelectionServiceForJson ItemzSelectionServiceForJson
 @inject IJSRuntime JS
+@implements IDisposable
+
 
 <MudExtensions.MudSplitter @bind-Dimension="@_percentage"
                             Height="@_height"
@@ -190,6 +193,33 @@
             await HandleScrollToTreeViewNode(recordId);
         };
 
+        // Subscribe to state changes
+        JsonFileDataSource.OnJsonChanged += HandleStateChangedAsync;
+        DataSourceState.OnDataSourceChanged += HandleStateChangedAsync;
+
+        await ReloadTreeAsync();
+
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await ReloadTreeAsync();
+    }   
+
+
+    private async Task HandleStateChangedAsync()
+    {
+        // Rebuild the tree when JSON or data source changes
+        await ReloadTreeAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+
+    private async Task ReloadTreeAsync()
+    {
+        _loading = true;
+        _loadError = null;
+
         try
         {
             var nested = await JsonFileDataSource.GetAllChildrenHierarchyByGuidAsync(RootId);
@@ -221,6 +251,13 @@
                 .OfType<TreeItemPresenter>()
                 .ToList();
 
+            // 🔴 NEW: if current selection no longer exists in this JSON, clear it
+            if (selectedItem != null && !_nodeLookup.ContainsKey(selectedItem.Value))
+            {
+                selectedItem = null;
+                _selectedValue = Guid.Empty;
+            }
+
             // 6. Fix selection if Parking Lot was selected but removed
             if (selectedItem != null &&
                 selectedItem.RecordType.Equals("itemztype", StringComparison.OrdinalIgnoreCase) &&
@@ -250,6 +287,7 @@
             _loading = false;
         }
     }
+
 
 
     private List<TreeItemData<Guid>> BuildTree(ICollection<NestedHierarchyIdRecordDetailsDTO> roots)
@@ -461,10 +499,10 @@
         }
     }
 
-
     public void Dispose()
     {
         ItemzSelectionServiceForJson.OnScrollToTreeViewNode -= HandleScrollToTreeViewNode;
+        JsonFileDataSource.OnJsonChanged -= HandleStateChangedAsync;
+        DataSourceState.OnDataSourceChanged -= HandleStateChangedAsync;
     }
-
 }

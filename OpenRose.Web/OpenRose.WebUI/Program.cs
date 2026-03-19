@@ -54,6 +54,10 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()
     .AddInteractiveWebAssemblyComponents();
 
+
+builder.Services.AddControllers();
+
+
 builder.Configuration.AddEnvironmentVariables(); // Add environment variables to configuration
 
 // Configure API settings
@@ -220,6 +224,19 @@ else
 	});
 
 
+	builder.Services.AddHttpContextAccessor();
+
+	builder.Services.AddHttpClient("WebUIInternal", (sp, client) =>
+	{
+		var context = sp.GetRequiredService<IHttpContextAccessor>().HttpContext;
+		if (context is not null)
+		{
+			var request = context.Request;
+			var baseUri = $"{request.Scheme}://{request.Host}";
+			client.BaseAddress = new Uri(baseUri);
+		}
+	});
+
 	// EXPLAINATION :: "FindProjectAndBaselineIdsByBaselineItemzIdService" depens on "IBaselineHierarchyService" and so 
 	// we need to register it here within the else block where we know that OpenRose API settings are available.
 	builder.Services.AddScoped<IFindProjectAndBaselineIdsByBaselineItemzIdService, FindProjectAndBaselineIdsByBaselineItemzIdService>();
@@ -236,9 +253,9 @@ builder.Services.AddScoped<BaselineBreadcrumsService>(); // Register the service
 builder.Services.AddScoped<BreadcrumsService>(); // Register the service
 builder.Services.AddScoped<FormStateService>(); // Register the service
 builder.Services.AddScoped<ViewSettingsService>(); // Register the ReadOnlyView toggle service
-builder.Services.AddScoped<DataSourceStateService>(); // This service tracks whether we're using API or JSON file as data source
+builder.Services.AddSingleton<DataSourceStateService>(); // This service tracks whether we're using API or JSON file as data source
 builder.Services.AddScoped<JsonFileSchemaValidationService>(); // This service validates JSON files against the OpenRose export schema
-builder.Services.AddScoped<JsonFileDataSourceService>(); // This service provides hierarchy/project data queries from loaded JSON files
+builder.Services.AddSingleton<JsonFileDataSourceService>(); // This service provides hierarchy/project data queries from loaded JSON files
 builder.Services.AddScoped<BaselineTreeNodeItemzSelectionServiceForJson>(); // Register the service
 builder.Services.AddScoped<TreeNodeItemzSelectionServiceForJson>(); // Register the service
 
@@ -272,25 +289,57 @@ app.MapRazorComponents<App>()
     .AddInteractiveWebAssemblyRenderMode()
     .AddAdditionalAssemblies(typeof(OpenRose.WebUI.Client._Imports).Assembly);
 
-// EXPLANATION:
-// Run the startup resolver to determine whether to start in API mode or Offline JSON mode.
-// This must run AFTER DI is built but BEFORE the app begins handling requests.
-using (var scope = app.Services.CreateScope())
+//// EXPLANATION:
+//// Run the startup resolver to determine whether to start in API mode or Offline JSON mode.
+//// This must run AFTER DI is built but BEFORE the app begins handling requests.
+//using (var scope = app.Services.CreateScope())
+//{
+//	var resolver = scope.ServiceProvider.GetRequiredService<OfflineStartupResolver>();
+//	var result = await resolver.ResolveStartupModeAsync();
+
+//	var dataSourceState = scope.ServiceProvider.GetRequiredService<DataSourceStateService>();
+//	var viewSettings = scope.ServiceProvider.GetRequiredService<ViewSettingsService>();
+
+//	if (result == OfflineStartupResolver.StartupResult.OfflineMode)
+//	{
+//		viewSettings.IsOperatingInJsonFileDataSourceMode = true;
+//	}
+//	else
+//	{
+//		viewSettings.IsOperatingInJsonFileDataSourceMode = false;
+//	}
+//}
+
+// ------------------------------------------------------------
+// FIX OPTION A IMPLEMENTATION
+// Run OfflineStartupResolver ONCE when the application starts.
+// This prevents it from running on every Blazor circuit creation,
+// navigation, or reconnection.
+// ------------------------------------------------------------
+app.Lifetime.ApplicationStarted.Register(() =>
 {
-	var resolver = scope.ServiceProvider.GetRequiredService<OfflineStartupResolver>();
-	var result = await resolver.ResolveStartupModeAsync();
-
-	var dataSourceState = scope.ServiceProvider.GetRequiredService<DataSourceStateService>();
-	var viewSettings = scope.ServiceProvider.GetRequiredService<ViewSettingsService>();
-
-	if (result == OfflineStartupResolver.StartupResult.OfflineMode)
+	_ = Task.Run(async () =>
 	{
-		viewSettings.IsOperatingInJsonFileDataSourceMode = true;
-	}
-	else
-	{
-		viewSettings.IsOperatingInJsonFileDataSourceMode = false;
-	}
-}
+		using var scope = app.Services.CreateScope();
+
+		var resolver = scope.ServiceProvider.GetRequiredService<OfflineStartupResolver>();
+		var result = await resolver.ResolveStartupModeAsync();
+
+		var dataSourceState = scope.ServiceProvider.GetRequiredService<DataSourceStateService>();
+		var viewSettings = scope.ServiceProvider.GetRequiredService<ViewSettingsService>();
+
+		if (result == OfflineStartupResolver.StartupResult.OfflineMode)
+		{
+			viewSettings.IsOperatingInJsonFileDataSourceMode = true;
+		}
+		else
+		{
+			viewSettings.IsOperatingInJsonFileDataSourceMode = false;
+		}
+	});
+});
+
+
+app.MapControllers();
 
 app.Run();

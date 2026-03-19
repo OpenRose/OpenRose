@@ -78,6 +78,21 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 
 		private Dictionary<Guid, bool> _baselineItemzIncluded = new();
 
+		public JsonViewerMetadata? CurrentMetadata { get; private set; }
+
+
+		public void SetJsonViewerMetadata(JsonViewerMetadata metadata)
+		{
+			CurrentMetadata = metadata;
+		}
+
+		// Notify subscribers (e.g. UI components) that the loaded JSON data has changed (after load or unload)
+		public event Func<Task>? OnJsonChanged;
+		private async Task NotifyJsonChanged()
+		{
+			if (OnJsonChanged != null)
+				await OnJsonChanged.Invoke();
+		}
 
 
 		#region Load / Unload
@@ -94,7 +109,7 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 			await LoadJsonFileDataFromStringAsync(content).ConfigureAwait(false);
 		}
 
-		public Task LoadJsonFileDataFromStringAsync(string jsonContent)
+		public async Task LoadJsonFileDataFromStringAsync(string jsonContent)
 		{
 			if (string.IsNullOrWhiteSpace(jsonContent))
 				throw new InvalidOperationException("JSON content is empty or null.");
@@ -111,7 +126,11 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 			BuildIndexes();
 			_isLoaded = true;
 
-			return Task.CompletedTask;
+
+			await NotifyJsonChanged();
+
+
+			// return Task.CompletedTask;
 		}
 
 		public void UnloadJsonFileData()
@@ -128,7 +147,10 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 			_itemzTraces.Clear();
 			_baselineItemzTraces.Clear();
 			_baselineItemzIncluded.Clear();
+			CurrentMetadata = null;
 
+
+			// NotifyStateChanged();
 		}
 
 		#endregion

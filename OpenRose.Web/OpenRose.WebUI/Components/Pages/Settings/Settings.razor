@@ -5,60 +5,185 @@
 *@
 
 @page "/settings/"
+@using OpenRose.WebUI.Client.Services.JsonFile
 @using OpenRose.WebUI.Components.EventServices
 @using OpenRose.WebUI.Components.Pages.Orphan.DeleteAllOrphan
 @using OpenRose.WebUI.Services
-@inject DataSourceStateService DataSourceStateServiceForDataSourceTracking
+@inject DataSourceStateService DataSourceState
 @inject AssemblyInfoService AssemblyInfo
+@inject NavigationManager Nav
+@inject IDialogService Dialogs
 
 <MudPaper Class="pa-3 mb-3 align-start d-flex" Outlined="false">
     <MudStack Row="true" Spacing="3">
         <MudIcon Icon="@Icons.Material.Filled.Settings" Size="Size.Large" />
-        <MudText Typo="Typo.h5" Align="Align.Left">Setting</MudText>
+        <MudText Typo="Typo.h5">Settings</MudText>
     </MudStack>
 </MudPaper>
 
-<MudPaper Class="pa-3 mb-3 align-start d-flex" Style="width: auto " Outlined="false">
+<!-- ============================================================
+     ABOUT SECTION (unchanged)
+     ============================================================ -->
+<MudPaper Class="pa-3 mb-3 align-start d-flex" Outlined="false">
     <MudStack Row="true" Spacing="3">
         <MudIcon Icon="@Icons.Material.Filled.LocalFlorist" Size="Size.Large" />
-        <MudText Typo="Typo.h6" Align="Align.Left">About OpenRose </MudText>
+        <MudText Typo="Typo.h6">About OpenRose</MudText>
+
         <MudChip T="string" Icon="@Icons.Material.Filled.Web" Size="Size.Small" Color="Color.Primary">
             WebUI Version - @version
         </MudChip>
-		@if (DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState.CurrentDataSourceType == DataSourceStateService.DataSourceType.ApiServer)
+
+        @if (DataSourceState.CurrentDataSourceState.IsApiMode)
         {
             <MudChip T="string" Icon="@Icons.Material.Filled.Api" Size="Size.Small" Color="Color.Primary">
                 API Version - @(ConfigService.ApiVersion ?? "Not Connected")
-        </MudChip>
+            </MudChip>
         }
     </MudStack>
 </MudPaper>
 
-@if (DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState.CurrentDataSourceType == DataSourceStateService.DataSourceType.ApiServer)
-{
+<!-- ============================================================
+     DATA SOURCE MODE SECTION
+     ============================================================ -->
+<MudPaper Class="pa-3 mb-3" Outlined="false">
+    
+    <MudStack Row="true" Spacing="3">
+        <MudIcon Icon="@Icons.Material.Filled.Cable" Size="Size.Large" />
+        <MudText Typo="Typo.h6" Class="mb-2">Data Source Mode</MudText>
 
+        <!-- CURRENT MODE BADGE -->
+        @if (DataSourceState.CurrentDataSourceState.IsApiMode)
+        {
+            <MudChip T="string" Color="Color.Primary" Size="Size.Small" Variant="Variant.Filled" Class="mb-2">
+                API Server Mode
+            </MudChip>
+        }
+        else if (DataSourceState.CurrentDataSourceState.IsServerJsonMode)
+        {
+            <MudChip T="string" Color="Color.Warning" Size="Size.Small" Variant="Variant.Filled" Class="mb-2">
+                Server JSON Mode
+            </MudChip>
+        }
+        else if (DataSourceState.CurrentDataSourceState.IsClientJsonMode)
+        {
+            <MudChip T="string" Color="Color.Info" Size="Size.Small" Variant="Variant.Filled" Class="mb-2">
+                Client JSON Mode
+            </MudChip>
+        }
+    </MudStack>
+
+
+    @* <!-- MODE SWITCHING BUTTONS -->
+    <MudStack Row="true" Spacing="2" Class="mt-2">
+
+        <!-- Switch to API Mode -->
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   Disabled="@DataSourceState.CurrentDataSourceState.IsApiMode"
+                   OnClick="@SwitchToApiMode">
+            Switch to API Mode
+        </MudButton>
+
+        <!-- Switch to Server JSON Mode -->
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Warning"
+                   Disabled="@DataSourceState.CurrentDataSourceState.IsServerJsonMode"
+                   OnClick="@SwitchToServerJsonMode">
+            Switch to Server JSON Mode
+        </MudButton>
+
+        <!-- Switch to Client JSON Mode -->
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Info"
+                   Disabled="@DataSourceState.CurrentDataSourceState.IsClientJsonMode"
+                   OnClick="@SwitchToClientJsonMode">
+            Switch to Client JSON Mode
+        </MudButton>
+
+    </MudStack> *@
+
+    <!-- JSON METADATA DISPLAY -->
+    @* @if (JsonService.CurrentMetadata is not null)
+    {
+        <MudDivider Class="my-3" />
+
+        <MudText Typo="Typo.subtitle2">Loaded JSON File</MudText>
+
+        <MudTable T="object" Dense="true">
+            <MudTr>
+                <MudTd>File Name</MudTd>
+                <MudTd>@JsonService.CurrentMetadata.FileName</MudTd>
+            </MudTr>
+
+            @if (JsonService.CurrentMetadata.IsServerSide)
+            {
+                <MudTr>
+                    <MudTd>Full Path</MudTd>
+                    <MudTd>@JsonService.CurrentMetadata.FullPath</MudTd>
+                </MudTr>
+            }
+
+            <MudTr>
+                <MudTd>File Size</MudTd>
+                <MudTd>@(JsonService.CurrentMetadata.FileSizeBytes / 1024) KB</MudTd>
+            </MudTr>
+
+            <MudTr>
+                <MudTd>Loaded At</MudTd>
+                <MudTd>@JsonService.CurrentMetadata.LoadedAt</MudTd>
+            </MudTr>
+        </MudTable>
+    } *@
+</MudPaper>
+
+<!-- ============================================================
+     API‑ONLY SECTION (unchanged)
+     ============================================================ -->
+@if (DataSourceState.CurrentDataSourceState.IsApiMode)
+{
     @if (!string.IsNullOrEmpty(ConfigService.ApiVersionMismatchMessage))
     {
         <MudText Typo="Typo.body1" Color="Color.Error">
             @ConfigService.ApiVersionMismatchMessage
         </MudText>
+        <br />
     }
 
-    <br />
-
-    @if (ConfigService.IsOpenRoseAPIConfigured || string.IsNullOrEmpty(ConfigService.ApiVersionMismatchMessage))
+    @if (ConfigService.IsOpenRoseAPIConfigured ||
+        string.IsNullOrEmpty(ConfigService.ApiVersionMismatchMessage))
     {
         <DeleteAllOrphanComponent />
     }
 }
-@code {
 
+@code {
     [Inject] private ConfigurationService ConfigService { get; set; } = default!;
+    [Inject] private JsonFileDataSourceService JsonService { get; set; } = default!;
 
     private string version;
 
     protected override async Task OnInitializedAsync()
     {
         version = AssemblyInfo.GetAssemblyVersion();
+    }
+
+    // ============================================================
+    // MODE SWITCHING LOGIC
+    // ============================================================
+
+    private void SwitchToApiMode()
+    {
+        DataSourceState.SwitchToApiDataSource();
+        Nav.NavigateTo("/", forceLoad: true);
+    }
+
+    private void SwitchToServerJsonMode()
+    {
+        Nav.NavigateTo("/jsonfile/select", forceLoad: true);
+    }
+
+    private void SwitchToClientJsonMode()
+    {
+        Nav.NavigateTo("/jsonfile/upload", forceLoad: true);
     }
 }
