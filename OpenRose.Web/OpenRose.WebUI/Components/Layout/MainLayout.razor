@@ -5,6 +5,8 @@
 *@
 
 @inherits LayoutComponentBase
+@using OpenRose.WebUI.Client.SharedModels.ClientSideUIOnlyModel
+@using OpenRose.WebUI.Components.Dialogs
 @using OpenRose.WebUI.Components.EventServices
 @using OpenRose.WebUI.Components.Pages.Common
 @using OpenRose.WebUI.Services
@@ -74,20 +76,28 @@
 		Dynamic title bar color based on data source
 		When in JSON file mode, class changes to apply gray/orange background
 	-->
+	@{
+		var tempCustomDataSourceState = DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState;
+	}
+
 	<MudAppBar Elevation="1"
 			   Bottom="false"
 			   Dense="true"
-			   Class="@(DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState.CurrentDataSourceType == DataSourceStateService.DataSourceType.JsonFile ? "app-bar-json-file-mode" : "app-bar-api-mode")">
+			   Class="@(DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState.IsAnyJsonMode
+			  ? "app-bar-json-file-mode"
+			  : "app-bar-api-mode")">
 
 		<MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@ToggleDrawer" />
 
-		<MudLink Href="/" Class="product-title-link">
-			@CurrentPageTitle
-			<!-- Show indicator that we're in JSON file mode -->
+		<MudTooltip Text="@(tempCustomDataSourceState.IsApiMode ? "Connected to API Server" :
+								  			  tempCustomDataSourceState.IsServerJsonMode ? "Using Server‑Side JSON File" :
+								  "Using Client‑Side JSON File")">
+			<MudLink Href="/" Class="product-title-link">
+				@CurrentPageTitle
+			</MudLink>
+		</MudTooltip>
 
-
-		</MudLink>
-		@if (DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState.CurrentDataSourceType == DataSourceStateService.DataSourceType.JsonFile)
+@* 		@if (DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState.IsAnyJsonMode)
 		{
 		<MudText Typo="Typo.caption" Style="margin-left: 8px;">
 			[OFFLINE MODE]
@@ -95,12 +105,34 @@
 			<span class="file-path-footer-button" @onclick="ShowJsonFilePathDetailsAsync">
 			📋 Data File Name
 		</span>
+		} *@
+
+
+		@if (tempCustomDataSourceState.IsServerJsonMode)
+		{
+			<MudChip T="string" Color="Color.Warning" Variant="Variant.Filled">SERVER JSON MODE</MudChip>
+
+			<MudTooltip Text="Click to view full file path" Placement="Placement.Top">
+				<span class="file-path-footer-button" @onclick="ShowJsonFilePathDetailsAsync">
+					📁 @tempCustomDataSourceState.JsonFileNameForDisplay
+				</span>
+			</MudTooltip>
+		}
+		else if (tempCustomDataSourceState.IsClientJsonMode)
+		{
+			<MudChip T="string" Color="Color.Info" Variant="Variant.Filled">CLIENT JSON MODE</MudChip>
+
+			<MudTooltip Text="This file is loaded from your browser memory" Placement="Placement.Top">
+				<span class="file-path-footer-button">
+					📄 @tempCustomDataSourceState.JsonFileNameForDisplay
+				</span>
+			</MudTooltip>
 		}
 
 		<MudSpacer />
 
 		<!-- Data Source Switch Button -->
-		@if (ViewSettingsServiceForUiState.ShowDataSourceSwitchControl)
+@* 		@if (ViewSettingsServiceForUiState.ShowDataSourceSwitchControl)
 		{
 			<MudIconButton Icon="@(DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState.CurrentDataSourceType == DataSourceStateService.DataSourceType.JsonFile ?
 										 Icons.Material.Filled.CloudUpload :
@@ -111,35 +143,100 @@
 							"Open JSON File")"
 					   OnClick="@HandleDataSourceSwitchButtonClickedAsync" />
 
+		} *@
+
+		@if (ViewSettingsServiceForUiState.ShowDataSourceSwitchControl)
+		{
+			var state = DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState;
+
+			@if (!(state.IsApiMode))
+			{
+				<MudIconButton Icon="@Icons.Material.Filled.CloudUpload"
+							   Title="Live Server"
+							   Color="Color.Inherit"
+							   OnClick="@SwitchToApiModeAsync" />
+			}
+				<MudIconButton Icon="@Icons.Material.Filled.FolderShared"
+							   Title="Server Data File"
+							   Color="Color.Inherit"
+							   OnClick="@SwitchToServerJsonModeAsync" />
+
+				<MudIconButton Icon="@Icons.Material.Filled.UploadFile"
+							   Title="Client Data File"
+							   Color="Color.Inherit"
+							   OnClick="@SwitchToClientJsonModeAsync" />
+@* 
+			<!-- API MODE -->
+			if (state.IsApiMode)
+			{
+				<MudIconButton Icon="@Icons.Material.Filled.FolderShared"
+							   Title="Server Data File"
+							   Color="Color.Inherit"
+							   OnClick="@SwitchToServerJsonModeAsync" />
+
+				<MudIconButton Icon="@Icons.Material.Filled.UploadFile"
+							   Title="Client Data File"
+							   Color="Color.Inherit"
+							   OnClick="@SwitchToClientJsonModeAsync" />
+			}
+
+			<!-- SERVER JSON MODE -->
+			else if (state.IsServerJsonMode)
+			{
+				<MudIconButton Icon="@Icons.Material.Filled.CloudUpload"
+							   Title="Live Server"
+							   Color="Color.Inherit"
+							   OnClick="@SwitchToApiModeAsync" />
+
+				<MudIconButton Icon="@Icons.Material.Filled.UploadFile"
+							   Title="Client Data File"
+							   Color="Color.Inherit"
+							   OnClick="@SwitchToClientJsonModeAsync" />
+			}
+
+			<!-- CLIENT JSON MODE -->
+			else if (state.IsClientJsonMode)
+			{
+				<MudIconButton Icon="@Icons.Material.Filled.CloudUpload"
+							   Title="Live Server"
+							   Color="Color.Inherit"
+							   OnClick="@SwitchToApiModeAsync" />
+
+				<MudIconButton Icon="@Icons.Material.Filled.FolderShared"
+							   Title="Server Data File"
+							   Color="Color.Inherit"
+							   OnClick="@SwitchToServerJsonModeAsync" />
+			} *@
 		}
+
 
 		<MudIconButton Icon="@Icons.Custom.Brands.GitHub" Color="Color.Inherit" Href="https://github.com/OpenRose/OpenRose" Target="_blank" />
 	</MudAppBar>
 
 	<MudDrawer @bind-Open="@drawerOpen" Elevation="1" Anchor="Anchor.Left" ClipMode="DrawerClipMode.Always" Variant="@DrawerVariant.Temporary">
 		<MudNavMenu Color="Color.Secondary" Bordered="true">
-			<!--
-				Conditional menu rendering based on data source
-				In JSON file mode, only show Settings option
-				In API mode, show all navigation options (existing code)
-			-->
-			@if (DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState.CurrentDataSourceType == DataSourceStateService.DataSourceType.ApiServer)
+
+			@if (DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState.IsApiMode)
 			{
-				<!-- EXISTING NAVIGATION MENU - Shown only in API mode -->
+				<!-- FULL MENU (API MODE) -->
 				<MudNavLink Href="/projects" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Apps">Projects</MudNavLink>
 				<MudNavLink Href="/goto" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.ArrowForwardIos">GoTo</MudNavLink>
+
 				<MudNavGroup Icon="@Icons.Material.Filled.Moving" Title="Move" Expanded="true">
-					<MudNavLink Href="/moveitemz" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.ConnectingAirports">Itemz - Under </MudNavLink>
-					<MudNavLink Href="/moveitemzbetween" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Compress">Itemz - Between </MudNavLink>
+					<MudNavLink Href="/moveitemz" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.ConnectingAirports">Itemz - Under</MudNavLink>
+					<MudNavLink Href="/moveitemzbetween" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Compress">Itemz - Between</MudNavLink>
 					<MudNavLink Href="/moveitemztype" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.AirlineStops">ItemzType - Under</MudNavLink>
 					<MudNavLink Href="/moveitemztypebetween" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.FormatIndentIncrease">ItemzType - Between</MudNavLink>
 				</MudNavGroup>
+
 				<MudNavLink Href="/copy" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.AutoAwesomeMotion">Copy</MudNavLink>
+
 				<MudNavGroup Icon="@Icons.Material.Filled.ImportExport" Title="Import / Export" Expanded="true">
-					<MudNavLink Href="/export" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.FileDownload" >Export</MudNavLink>
-					<MudNavLink Href="/import" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.FileUpload" >Import</MudNavLink>
+					<MudNavLink Href="/export" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.FileDownload">Export</MudNavLink>
+					<MudNavLink Href="/import" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.FileUpload">Import</MudNavLink>
 					<MudNavLink Href="/export-mermaid" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.GraphicEq">Export Mermaid</MudNavLink>
 				</MudNavGroup>
+
 				<MudNavLink Href="/traceability" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Hub">Traceability</MudNavLink>
 				<MudNavLink Href="/orphanitemz" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.HolidayVillage">Orphan Itemz</MudNavLink>
 				<MudNavLink Href="/settings" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Settings">Settings</MudNavLink>
@@ -147,19 +244,22 @@
 				<MudNavLink Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.RawOn">Raw Logs</MudNavLink>
 				<MudNavLink Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Security">Security</MudNavLink>
 			}
-			else
+			else if (DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState.IsAnyJsonMode)
 			{
-				<!-- Simplified menu for JSON file mode - Only Settings option -->
-@* 				<MudText Typo="Typo.body2" Class="pa-4" Color="Color.Secondary">
-					You are currently viewing data from a local JSON file in read-only mode.
-				</MudText> *@
+				<!-- RESTRICTED MENU (SERVER JSON OR CLIENT JSON) -->
 				<MudNavLink Href="/jsonviewer" Icon="@Icons.Material.Filled.FolderOpen">
 					JSON Data View
 				</MudNavLink>
+
 				<MudDivider />
-				<MudNavLink Href="/settings" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Settings">Settings</MudNavLink>
+
+				<MudNavLink Href="/settings" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Settings">
+					Settings
+				</MudNavLink>
 			}
+
 		</MudNavMenu>
+
 	</MudDrawer>
 
 	<MudMainContent> 
@@ -214,36 +314,36 @@
 		return InvokeAsync(StateHasChanged);
 	}
 
-	/// <summary>
-	/// Handles the data source switch button click.
-	/// Depending on current state, either opens file dialog (API mode) or
-	/// switches back to API (JSON file mode).
-	/// </summary>
-	private async Task HandleDataSourceSwitchButtonClickedAsync()
-	{
-		var currentDataSourceType = DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState.CurrentDataSourceType;
+	// /// <summary>
+	// /// Handles the data source switch button click.
+	// /// Depending on current state, either opens file dialog (API mode) or
+	// /// switches back to API (JSON file mode).
+	// /// </summary>
+	// private async Task HandleDataSourceSwitchButtonClickedAsync()
+	// {
+	// 	var currentDataSourceType = DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState.CurrentDataSourceType;
 
-		if (currentDataSourceType == DataSourceStateService.DataSourceType.ApiServer)
-		{
-			// Check for unsaved changes BEFORE opening dialog
-			bool canProceed = await FormStateService.ConfirmDiscardAllChangesAsync();
+	// 	if (currentDataSourceType == DataSourceStateService.DataSourceType.ApiServer)
+	// 	{
+	// 		// Check for unsaved changes BEFORE opening dialog
+	// 		bool canProceed = await FormStateService.ConfirmDiscardAllChangesAsync();
 
-			if (!canProceed)
-				return;
+	// 		if (!canProceed)
+	// 			return;
 
-			// Navigate away BEFORE showing JSON dialog
-			NavManager.NavigateTo("/", forceLoad: false);
+	// 		// Navigate away BEFORE showing JSON dialog
+	// 		NavManager.NavigateTo("/", forceLoad: false);
 
-			// Give Blazor a moment to re-render the clean page
-			await Task.Delay(50);
+	// 		// Give Blazor a moment to re-render the clean page
+	// 		await Task.Delay(50);
 
-			await ShowDataSourceSwitchDialogForSelectingJsonFileAsync();
-		}
-		else if (currentDataSourceType == DataSourceStateService.DataSourceType.JsonFile)
-		{
-			await HandleSwitchFromJsonFileBackToApiServerAsync();
-		}
-	}
+	// 		await ShowDataSourceSwitchDialogForSelectingJsonFileAsync();
+	// 	}
+	// 	else if (currentDataSourceType == DataSourceStateService.DataSourceType.JsonFile)
+	// 	{
+	// 		await HandleSwitchFromJsonFileBackToApiServerAsync();
+	// 	}
+	// }
 
 	/// <summary>
 	/// Shows dialog for user to enter JSON file path.
@@ -282,12 +382,31 @@
 
 	}
 
+	private async Task ShowDataSourceSwitchDialogForSelectingServerJsonFileAsync()
+	{
+		var dialogOptions = new DialogOptions
+		{
+			CloseOnEscapeKey = true,
+			BackdropClick = true,
+			MaxWidth = MaxWidth.Small,
+			FullWidth = true
+		};
+
+		var dialog = await DialogServiceForShowingDialogs.ShowAsync<DataSourceSwitchServerJsonDialog>(
+			"Select Server JSON File",
+			new DialogParameters(),
+			dialogOptions
+		);
+
+		await dialog.Result;
+	}
+
+
 	/// <summary>
 	/// Attempts to load JSON file, validate it, and switch to JSON file data source mode.
 	/// If validation fails, shows error dialog and stays in API mode.
 	/// </summary>
 	private async Task AttemptToLoadAndSwitchToJsonFileDataSourceAsync(IBrowserFile jsonBrowserFile)
-
 	{
 		try
 		{
@@ -307,14 +426,16 @@
 				return;
 			}
 
-
 			// Step 2: Validate JSON file against schema
-			var jsonValidationServiceFromDependencyInjection = ServiceProviderForDependencyInjection.GetRequiredService<JsonFileSchemaValidationService>();
+			var jsonValidationServiceFromDependencyInjection =
+				ServiceProviderForDependencyInjection.GetRequiredService<JsonFileSchemaValidationService>();
+
 			try
 			{
-				bool isJsonFileValidAgainstSchema = jsonValidationServiceFromDependencyInjection.ValidateJsonFileContentAgainstSchema(
-					jsonFileContentAsStringReadFromDisk
-				);
+				bool isJsonFileValidAgainstSchema =
+					jsonValidationServiceFromDependencyInjection.ValidateJsonFileContentAgainstSchema(
+						jsonFileContentAsStringReadFromDisk
+					);
 			}
 			catch (JsonFileValidationException jsonValidationException)
 			{
@@ -324,13 +445,33 @@
 				return;
 			}
 
-			// Step 3: Load JSON data into memory (parse and build lookup dictionary)
-			var jsonDataSourceServiceFromDependencyInjection = ServiceProviderForDependencyInjection.GetRequiredService<JsonFileDataSourceService>();
+			// Step 3: Switch data source state FIRST (before loading JSON)
+			DataSourceStateServiceForDataSourceTracking.SwitchToClientSideJsonFile(jsonBrowserFile.Name);
+
+			// Step 4: Update view settings to reflect JSON file mode
+			ViewSettingsServiceForUiState.IsOperatingInJsonFileDataSourceMode = true;
+
+			// Step 5: Navigate immediately BEFORE loading JSON
+			// This prevents the JSON viewer from rendering twice in the same circuit.
+			NavManager.NavigateTo("/jsonviewer", forceLoad: true);
+			
+			// Step 6: Load JSON data into memory (parse and build lookup dictionary)
+			var jsonDataSourceServiceFromDependencyInjection =
+				ServiceProviderForDependencyInjection.GetRequiredService<JsonFileDataSourceService>();
+
 			try
 			{
-				//await jsonDataSourceServiceFromDependencyInjection.LoadJsonFileDataFromFileSystemAsync(jsonFilePathToLoadAndValidate);
-				await jsonDataSourceServiceFromDependencyInjection.LoadJsonFileDataFromStringAsync(jsonFileContentAsStringReadFromDisk);
+				await jsonDataSourceServiceFromDependencyInjection
+					.LoadJsonFileDataFromStringAsync(jsonFileContentAsStringReadFromDisk);
 
+				// Set metadata using the new method
+				jsonDataSourceServiceFromDependencyInjection.SetJsonViewerMetadata(new JsonViewerMetadata
+				{
+					FileName = jsonBrowserFile.Name,
+					FileSizeBytes = jsonFileContentAsStringReadFromDisk.Length,
+					LoadedAt = DateTime.Now,
+					IsServerSide = false
+				});
 			}
 			catch (Exception jsonDataLoadException)
 			{
@@ -340,14 +481,6 @@
 				return;
 			}
 
-			// Step 4: Switch data source state to JSON file mode
-			DataSourceStateServiceForDataSourceTracking.SwitchToJsonFileDataSource(jsonBrowserFile.Name);
-
-			// Step 5: Update view settings to reflect JSON file mode
-			ViewSettingsServiceForUiState.IsOperatingInJsonFileDataSourceMode = true;
-
-			// Success - data source has been switched to JSON file mode
-			NavManager.NavigateTo("/jsonviewer");
 		}
 		catch (Exception unexpectedException)
 		{
@@ -382,29 +515,29 @@
 		// System remains in API mode (no state change occurred)
 	}
 
-	/// <summary>
-	/// Handles switching back from JSON file mode to API server mode.
-	/// No confirmation needed since JSON file is read-only (no unsaved changes).
-	/// </summary>
-	private async Task HandleSwitchFromJsonFileBackToApiServerAsync()
-	{
-		// Step 1: Unload JSON file data from memory
-		var jsonDataSourceServiceFromDependencyInjection = ServiceProviderForDependencyInjection.GetRequiredService<JsonFileDataSourceService>();
-		jsonDataSourceServiceFromDependencyInjection.UnloadJsonFileData();
+	// /// <summary>
+	// /// Handles switching back from JSON file mode to API server mode.
+	// /// No confirmation needed since JSON file is read-only (no unsaved changes).
+	// /// </summary>
+	// private async Task HandleSwitchFromJsonFileBackToApiServerAsync()
+	// {
+	// 	// Step 1: Unload JSON file data from memory
+	// 	var jsonDataSourceServiceFromDependencyInjection = ServiceProviderForDependencyInjection.GetRequiredService<JsonFileDataSourceService>();
+	// 	jsonDataSourceServiceFromDependencyInjection.UnloadJsonFileData();
 
-		// Step 2: Switch back to API mode
-		DataSourceStateServiceForDataSourceTracking.SwitchToApiDataSource();
+	// 	// Step 2: Switch back to API mode
+	// 	DataSourceStateServiceForDataSourceTracking.SwitchToApiDataSource();
 
-		// Step 3: Update view settings to reflect API mode
-		ViewSettingsServiceForUiState.IsOperatingInJsonFileDataSourceMode = false;
+	// 	// Step 3: Update view settings to reflect API mode
+	// 	ViewSettingsServiceForUiState.IsOperatingInJsonFileDataSourceMode = false;
 
-		// Step 4: Clear any recorded errors
-		DataSourceStateServiceForDataSourceTracking.ClearErrorInformation();
+	// 	// Step 4: Clear any recorded errors
+	// 	DataSourceStateServiceForDataSourceTracking.ClearErrorInformation();
 
-		// EXPLANATION: Optionally navigate to home page to reset page state
-		// This can be uncommented if desired:
-		NavManager.NavigateTo("/", forceLoad: true);
-	}
+	// 	// EXPLANATION: Optionally navigate to home page to reset page state
+	// 	// This can be uncommented if desired:
+	// 	NavManager.NavigateTo("/", forceLoad: true);
+	// }
 
 	/// <summary>
 	/// Shows a dialog displaying the full file path of the JSON file.
@@ -425,6 +558,41 @@
 			dialogOptions
 		);
 	}
+
+	private async Task SwitchToApiModeAsync()
+	{
+		bool canProceed = await FormStateService.ConfirmDiscardAllChangesAsync();
+		if (!canProceed)
+			return;
+
+		// Unload JSON data
+		var jsonService = ServiceProviderForDependencyInjection.GetRequiredService<JsonFileDataSourceService>();
+		jsonService.UnloadJsonFileData();
+
+		DataSourceStateServiceForDataSourceTracking.SwitchToApiDataSource();
+		ViewSettingsServiceForUiState.IsOperatingInJsonFileDataSourceMode = false;
+
+		NavManager.NavigateTo("/", forceLoad: true);
+	}
+
+	private async Task SwitchToServerJsonModeAsync()
+	{
+		bool canProceed = await FormStateService.ConfirmDiscardAllChangesAsync();
+		if (!canProceed)
+			return;
+
+		await ShowDataSourceSwitchDialogForSelectingServerJsonFileAsync();
+	}
+
+	private async Task SwitchToClientJsonModeAsync()
+	{
+		bool canProceed = await FormStateService.ConfirmDiscardAllChangesAsync();
+		if (!canProceed)
+			return;
+
+		await ShowDataSourceSwitchDialogForSelectingJsonFileAsync();
+	}
+
 
 	public void Dispose()
 	{

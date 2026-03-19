@@ -44,9 +44,14 @@ namespace OpenRose.WebUI.Components.EventServices
 			ApiServer,
 
 			/// <summary>
-			/// Connected to local JSON file - Read-Only operations only
+			/// Connected to Server side JSON file available on WebUI server - Read-Only operations only
 			/// </summary>
-			JsonFile
+			JsonFileServerSide,   // NEW
+
+			/// <summary>
+			/// Connected to Client uploaded JSON file - Read-Only operations only
+			/// </summary>
+			JsonFileClientSide    // NEW
 		}
 
 		/// <summary>
@@ -91,6 +96,21 @@ namespace OpenRose.WebUI.Components.EventServices
 			/// This should not be shown to end users, only in logs.
 			/// </summary>
 			public string? LastErrorDetails { get; set; }
+
+			public bool IsApiMode =>
+				CurrentDataSourceType == DataSourceType.ApiServer;
+
+			public bool IsServerJsonMode =>
+				CurrentDataSourceType == DataSourceType.JsonFileServerSide;
+
+			public bool IsClientJsonMode =>
+				CurrentDataSourceType == DataSourceType.JsonFileClientSide;
+
+			public bool IsAnyJsonMode =>
+				IsServerJsonMode || IsClientJsonMode;
+
+
+
 		}
 
 		// ========================================================================
@@ -158,19 +178,18 @@ namespace OpenRose.WebUI.Components.EventServices
 		/// Full path to the JSON file (UNC or local). 
 		/// Example: "C:\\Exports\\openrose_export_20260214.json" or "\\\\server\\share\\file.json"
 		/// </param>
-		public void SwitchToJsonFileDataSource(string jsonFilePathForDataSourceProvided)
+		public void SwitchToClientSideJsonFile(string jsonFilePathForDataSourceProvided)
 		{
 			if (string.IsNullOrWhiteSpace(jsonFilePathForDataSourceProvided))
 			{
 				throw new ArgumentException("JSON file path cannot be null or empty.", nameof(jsonFilePathForDataSourceProvided));
 			}
 
-			// Extract file name from full path for display purposes
 			string jsonFileNameForDisplayExtracted = System.IO.Path.GetFileName(jsonFilePathForDataSourceProvided);
 
 			_currentDataSourceState = new DataSourceState
 			{
-				CurrentDataSourceType = DataSourceType.JsonFile,
+				CurrentDataSourceType = DataSourceType.JsonFileClientSide,
 				IsReadOnlyMode = true,
 				JsonFilePathForDataSource = jsonFilePathForDataSourceProvided,
 				JsonFileNameForDisplay = jsonFileNameForDisplayExtracted,
@@ -180,6 +199,29 @@ namespace OpenRose.WebUI.Components.EventServices
 
 			NotifyStateChanged();
 		}
+
+
+		public void SwitchToServerSideJsonFile(string fullPath)
+		{
+			if (string.IsNullOrWhiteSpace(fullPath))
+				throw new ArgumentException("JSON file path cannot be null or empty.", nameof(fullPath));
+
+			string fileName = System.IO.Path.GetFileName(fullPath);
+
+			_currentDataSourceState = new DataSourceState
+			{
+				CurrentDataSourceType = DataSourceType.JsonFileServerSide,
+				IsReadOnlyMode = true,
+				JsonFilePathForDataSource = fullPath,
+				JsonFileNameForDisplay = fileName,
+				LastErrorMessage = null,
+				LastErrorDetails = null
+			};
+
+			NotifyStateChanged();
+		}
+
+
 
 		/// <summary>
 		/// Switches the data source back to API Server mode.

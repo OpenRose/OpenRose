@@ -119,6 +119,8 @@
 
     private List<string>? tagsList = new List<string>();
 
+    private bool _needsRender = false;
+
 
     protected override async Task OnParametersSetAsync()
     {
@@ -130,8 +132,9 @@
 
             if (!string.IsNullOrEmpty(_itemz.Description))
             {
-                var html = await JS.InvokeAsync<string>("markdownToHtml", _itemz.Description);
-                _convertedMarkdown = (MarkupString)html;
+                _needsRender = true;
+                // var html = await JS.InvokeAsync<string>("markdownToHtml", _itemz.Description);
+                // _convertedMarkdown = (MarkupString)html;
             }
             else
             {
@@ -151,6 +154,22 @@
         finally
         {
             initializingPage = false;
+        }
+    }
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_needsRender)
+        {
+            _needsRender = false;
+
+            if (_itemz?.Description != null)
+            {
+                var _html = await JS.InvokeAsync<string>("markdownToHtml", _itemz.Description);
+                _convertedMarkdown = (MarkupString)_html;
+                await InvokeAsync(StateHasChanged);
+            }
         }
     }
 

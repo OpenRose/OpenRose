@@ -23,29 +23,64 @@
 @code {
     private Task GuardNavigation(Microsoft.AspNetCore.Components.Routing.NavigationContext context)
     {
-        // EXPLANATION: Navigation guard logic determines if user can navigate to a given route.
-        // We need to handle two data source modes:
-        // 1. API Server Mode: User can navigate anywhere (if API is configured and healthy)
-        // 2. JSON File Mode: User can only view read-only data (limited navigation)
+        // ========================================================================
+        // ROUTING GUARD OVERVIEW
+        // ------------------------------------------------------------------------
+        // This method enforces navigation rules based on the current data source:
+        //
+        //   1. API SERVER MODE
+        //        - Full access to all pages
+        //        - Except when API is misconfigured or version‑mismatched
+        //
+        //   2. JSON MODES (Server JSON or Client JSON)
+        //        - Application becomes READ‑ONLY
+        //        - Only a small set of safe routes are allowed
+        //        - All other routes redirect to /jsonviewer
+        //
+        //   3. UNKNOWN MODE
+        //        - Fallback to home page
+        //
+        // This ensures the UI never enters an invalid or inconsistent state.
+        // ========================================================================
+
 
         // ========================================================================
         // ALWAYS ALLOW HOME PAGE
+        // ------------------------------------------------------------------------
+        // The home page is always safe and acts as a neutral landing zone.
         // ========================================================================
         if (string.IsNullOrEmpty(context.Path) || context.Path == "/")
             return Task.CompletedTask;
 
-        // ========================================================================
-        // CHECK CURRENT DATA SOURCE MODE
-        // ========================================================================
-        var currentDataSourceTypeBeingUsed = DataSourceStateServiceForRoutingGuard.CurrentDataSourceState.CurrentDataSourceType;
 
         // ========================================================================
-        // API SERVER MODE - Original routing logic
+        // DETERMINE CURRENT DATA SOURCE MODE
+        // ------------------------------------------------------------------------
+        // The DataSourceStateService tracks whether we are in:
+        //   - API mode
+        //   - Server JSON mode
+        //   - Client JSON mode
+        //   - (Legacy) JsonFile mode
+        //
+        // We use the new helper properties:
+        //   - IsApiMode
+        //   - IsServerJsonMode
+        //   - IsClientJsonMode
+        //   - IsAnyJsonMode
         // ========================================================================
-        if (currentDataSourceTypeBeingUsed == DataSourceStateService.DataSourceType.ApiServer)
+        var state = DataSourceStateServiceForRoutingGuard.CurrentDataSourceState;
+        string path = context.Path.ToLowerInvariant().Trim('/');
+
+
+        // ========================================================================
+        // API SERVER MODE — FULL ACCESS (WITH HEALTH CHECKS)
+        // ------------------------------------------------------------------------
+        // In API mode, the user can navigate anywhere *as long as* the API is
+        // configured correctly and the version matches.
+        // ========================================================================
+        if (state.IsApiMode)
         {
-            // EXPLANATION: In API mode, block navigation if API is unavailable or incompatible
-            // User cannot view data if API is not configured properly
+            // Block navigation if API is misconfigured or incompatible
             if (!ConfigService.IsOpenRoseAPIConfigured ||
                 !string.IsNullOrEmpty(ConfigService.ApiVersionMismatchMessage))
             {
@@ -53,47 +88,51 @@
                 return Task.CompletedTask;
             }
 
-            // If API is available, allow navigation to any route
+            // API is healthy → allow navigation
             return Task.CompletedTask;
         }
 
+
         // ========================================================================
-        // JSON FILE MODE - Restricted navigation for read-only viewing
+        // JSON MODES — RESTRICTED READ‑ONLY NAVIGATION
+        // ------------------------------------------------------------------------
+        // Applies to BOTH:
+        //   - Server JSON Mode (file loaded from server filesystem)
+        //   - Client JSON Mode (file uploaded via browser)
+        //
+        // In JSON modes, the app is read‑only. Only a small set of routes are safe.
         // ========================================================================
-        if (currentDataSourceTypeBeingUsed == DataSourceStateService.DataSourceType.JsonFile)
+        if (state.IsAnyJsonMode)
         {
-            // EXPLANATION: In JSON file mode, only allow navigation to certain routes
-            // that support read-only viewing of the JSON data.
-            // Most admin/maintenance routes should be blocked.
+            // Allowed routes in JSON mode:
+            //   - ""           → home page
+            //   - "jsonviewer" → main JSON viewer UI
+            //   - "settings"   → user can switch modes
+            bool isAllowed =
+                path == "" ||
+                path == "jsonviewer" ||
+                path == "settings";
 
-            string normalizedPathForComparison = context.Path.ToLowerInvariant().Trim('/');
-
-            // Routes that ARE ALLOWED in JSON file mode (read-only viewing)
-            bool isAllowedRouteInJsonMode =
-                normalizedPathForComparison == "" ||                           // Home page
-                normalizedPathForComparison == "jsonviewer" ||                  // JSON viewer root page
-                // normalizedPathForComparison == "projecttreeview" ||           // Project tree view
-                // normalizedPathForComparison.StartsWith("projecttreeview/") || // Project tree view with ID
-                // normalizedPathForComparison == "baselinerreadonly" ||         // Baseline read-only view
-                // normalizedPathForComparison.StartsWith("baseline/") ||        // Baseline with ID
-                normalizedPathForComparison == "settings";                    // Settings page
-
-            if (!isAllowedRouteInJsonMode)
+            if (!isAllowed)
             {
-                // EXPLANATION: Block navigation to routes that require write access or API calls
-                // Redirect user back to home page
-                Nav.NavigateTo("/");
+                // Block navigation to any route that requires API access or write access.
+                // Redirect to the JSON viewer, which is the only safe place.
+                Nav.NavigateTo("/jsonviewer", forceLoad: true);
                 return Task.CompletedTask;
             }
 
-            // Allow navigation to approved read-only routes
+            // Allowed route → proceed
             return Task.CompletedTask;
         }
 
+
         // ========================================================================
-        // DEFAULT: Unknown data source state - go to home
+        // UNKNOWN MODE — FAIL SAFE
+        // ------------------------------------------------------------------------
+        // If the data source state is somehow invalid, redirect to home.
         // ========================================================================
         Nav.NavigateTo("/");
         return Task.CompletedTask;
     }
+
 }

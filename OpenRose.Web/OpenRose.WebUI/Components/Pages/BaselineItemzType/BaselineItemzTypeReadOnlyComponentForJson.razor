@@ -88,6 +88,7 @@
     private bool initializingPage = true;
     private GetBaselineItemzTypeDTO _baselineItemzType = new();
     private MarkupString _convertedMarkdown;
+    private bool _needsRender = false;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -97,8 +98,9 @@
 
         if (!string.IsNullOrEmpty(_baselineItemzType.Description))
         {
-            var html = await JS.InvokeAsync<string>("markdownToHtml", _baselineItemzType.Description);
-            _convertedMarkdown = (MarkupString)html;
+            _needsRender = true;
+            // var html = await JS.InvokeAsync<string>("markdownToHtml", _baselineItemzType.Description);
+            // _convertedMarkdown = (MarkupString)html;
         }
         else
         {
@@ -106,6 +108,21 @@
         }
 
         initializingPage = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_needsRender)
+        {
+            _needsRender = false;
+
+            if (_baselineItemzType?.Description != null)
+            {
+                var _html = await JS.InvokeAsync<string>("markdownToHtml", _baselineItemzType.Description);
+                _convertedMarkdown = (MarkupString)_html;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
     }
 
     private async Task findAndShowInTreeViewAsync()

@@ -4,7 +4,6 @@
  * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 *@
 
-
 @using OpenRose.WebUI.Client.Services.JsonFile
 @using OpenRose.WebUI.Client.SharedModels
 @using OpenRose.WebUI.Components.EventServices
@@ -12,9 +11,11 @@
 @using OpenRose.WebUI.Components.Pages.BaselineItemzType
 @using OpenRose.WebUI.Components.Pages.Common
 @using OpenRose.WebUI.Helper.TreeViewNodes
+@inject DataSourceStateService DataSourceState
 @inject JsonFileDataSourceService JsonFileDataSource
 @inject BaselineTreeNodeItemzSelectionServiceForJson BaselineItemzSelectionServiceForJson
 @inject IJSRuntime JS
+@implements IDisposable
 
 <MudExtensions.MudSplitter @bind-Dimension="@_percentage"
                             Height="@_height"
@@ -233,12 +234,93 @@
         }
     }
 
+    // protected override async Task OnInitializedAsync()
+    // {
+    //     BaselineItemzSelectionServiceForJson.OnScrollToTreeViewNode += async (recordId) =>
+    //     {
+    //         await HandleScrollToTreeViewNode(recordId);
+    //     };
+
+    //     try
+    //     {
+    //         // Use existing JSON hierarchy API that returns NestedHierarchyIdRecordDetailsDTO
+    //         var nested = await JsonFileDataSource.GetAllChildrenHierarchyByGuidAsync(RootId);
+
+    //         if (nested == null || nested.Count == 0)
+    //         {
+    //             _loadError = $"No hierarchy data found in JSON for root id {RootId}.";
+    //             _loading = false;
+    //             return;
+    //         }
+
+    //         // 1. Build tree from JSON
+    //         InitialTreeItems = BuildTree(nested);
+
+    //         // 2. Hide Parking Lot if empty (JSON view is always read-only)
+    //         RemoveParkingLotIfEmpty(InitialTreeItems);
+
+    //         // 3. Assign parents AFTER filtering
+    //         foreach (var root in InitialTreeItems.OfType<TreeItemPresenter>())
+    //         {
+    //             AssignParents(root);
+    //         }
+
+    //         // 4. Build lookup AFTER filtering
+    //         BuildNodeLookup();
+
+    //         // 5. Build flat list AFTER filtering
+    //         _flatList = InitialTreeItems
+    //             .Flatten()
+    //             .OfType<TreeItemPresenter>()
+    //             .ToList();
+
+    //         // 6. Default selection to root
+    //         if (InitialTreeItems.Count > 0)
+    //         {
+    //             _selectedValue = InitialTreeItems[0].Value;
+    //             await UpdateSelectedItemAsync(_selectedValue);
+    //         }
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         _loadError = $"Error loading baseline hierarchy from JSON: {ex.Message}";
+    //     }
+    //     finally
+    //     {
+    //         _loading = false;
+    //     }
+    // }
+
     protected override async Task OnInitializedAsync()
     {
+        // Existing subscription
         BaselineItemzSelectionServiceForJson.OnScrollToTreeViewNode += async (recordId) =>
         {
             await HandleScrollToTreeViewNode(recordId);
         };
+
+        // Subscribe to JSON + DataSource changes
+        JsonFileDataSource.OnJsonChanged += HandleStateChangedAsync;
+        DataSourceState.OnDataSourceChanged += HandleStateChangedAsync;
+
+        await ReloadTreeAsync();
+    }
+
+    private async Task HandleStateChangedAsync()
+    {
+
+        // Reset selection BEFORE rebuilding the tree
+        selectedItem = null;
+        _selectedValue = Guid.Empty;
+
+        await ReloadTreeAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ReloadTreeAsync()
+    {
+        _loading = true;
+        _loadError = null;
 
         try
         {
@@ -273,11 +355,44 @@
                 .OfType<TreeItemPresenter>()
                 .ToList();
 
-            // 6. Default selection to root
-            if (InitialTreeItems.Count > 0)
+            // 6. if current selection no longer exists in this JSON, clear it
+            if (selectedItem != null && !_nodeLookup.ContainsKey(selectedItem.Value))
+            {
+                selectedItem = null;
+                _selectedValue = Guid.Empty;
+            }
+
+            // // 7. Fix selection if Parking Lot was selected but removed
+            // if (selectedItem != null &&
+            //     selectedItem.RecordType.Equals("baselineitemztype", StringComparison.OrdinalIgnoreCase) &&
+            //     selectedItem.Text.Equals("Parking Lot", StringComparison.OrdinalIgnoreCase))
+            // {
+            //     if (!_nodeLookup.ContainsKey(selectedItem.Value))
+            //     {
+            //         var root = InitialTreeItems.FirstOrDefault();
+            //         if (root != null)
+            //         {
+            //             _selectedValue = root.Value;
+            //             await UpdateSelectedItemAsync(root.Value);
+            //         }
+            //     }
+            // }
+
+            // 7. Default selection to root
+            if (InitialTreeItems.Count > 0 && _selectedValue == Guid.Empty)
             {
                 _selectedValue = InitialTreeItems[0].Value;
                 await UpdateSelectedItemAsync(_selectedValue);
+            }
+
+            // 8. Expand the root node manually after loading JSON
+            if (InitialTreeItems.Count > 0)
+            {
+                var root = InitialTreeItems[0] as TreeItemPresenter;
+                if (root != null)
+                {
+                    root.Expanded = true;
+                }
             }
         }
         catch (Exception ex)
@@ -509,10 +624,11 @@
         }
     }
 
-
     public void Dispose()
     {
         BaselineItemzSelectionServiceForJson.OnScrollToTreeViewNode -= HandleScrollToTreeViewNode;
+        JsonFileDataSource.OnJsonChanged -= HandleStateChangedAsync;
+        DataSourceState.OnDataSourceChanged -= HandleStateChangedAsync;
     }
 
 }

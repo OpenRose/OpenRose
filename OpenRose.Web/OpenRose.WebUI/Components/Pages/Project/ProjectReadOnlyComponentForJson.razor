@@ -83,24 +83,70 @@
     private bool initializingPage = true;
     private GetProjectDTO _project = new();
     private MarkupString _convertedMarkdown;
+    private bool _needsRender = false;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        initializingPage = true;
+
+        try
+        {
+
+            _project = await JsonService.GetProjectDetailsAsync(ProjectId);
+
+            if (!string.IsNullOrEmpty(_project.Description))
+            {
+                _needsRender = true;
+                // var html = await JS.InvokeAsync<string>("markdownToHtml", _project.Description);
+                // _convertedMarkdown = (MarkupString)html;
+            }
+            else
+            {
+                _convertedMarkdown = default;
+            }
+        }
+        finally
+        {
+            initializingPage = false;
+        }
+    }
+
+    // protected override async Task OnAfterRenderAsync(bool firstRender)
+    // {
+    //     if (!firstRender) return;
+
+    //     initializingPage = true;
+    //     StateHasChanged();
+
+    //     _project = await JsonService.GetProjectDetailsAsync(ProjectId);
+
+    //     if (!string.IsNullOrEmpty(_project.Description))
+    //     {
+    //         var html = await JS.InvokeAsync<string>("markdownToHtml", _project.Description);
+    //         _convertedMarkdown = (MarkupString)html;
+    //     }
+    //     else
+    //     {
+    //         _convertedMarkdown = default;
+    //     }
+
+    //     initializingPage = false;
+    //     StateHasChanged();
+    // }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender) return;
-
-        initializingPage = true;
-        StateHasChanged();
-
-        _project = await JsonService.GetProjectDetailsAsync(ProjectId);
-
-        if (!string.IsNullOrEmpty(_project.Description))
+        if (_needsRender)
         {
-            var html = await JS.InvokeAsync<string>("markdownToHtml", _project.Description);
-            _convertedMarkdown = (MarkupString)html;
-        }
+            _needsRender = false;
 
-        initializingPage = false;
-        StateHasChanged();
+            if (_project?.Description != null)
+            {
+                var _html = await JS.InvokeAsync<string>("markdownToHtml", _project.Description);
+                _convertedMarkdown = (MarkupString)_html;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
     }
 
     private async Task findAndShowInTreeViewAsync()
