@@ -18,6 +18,7 @@
 @inject IDialogService DialogServiceForShowingDialogs
 @inject IServiceProvider ServiceProviderForDependencyInjection
 @inject NavigationManager NavManager
+@inject StartupCapabilitiesService StartupCapabilities
 
 <MudThemeProvider />
 <MudPopoverProvider />
@@ -47,6 +48,11 @@
 	.app-bar-api-mode {
 		/* Default Blue color for API mode - MudBlazor's default AppBar color */
 	}
+
+	.app-bar-none-mode {
+		background-color: #ADD8E6 !important; /* Light blue */
+	}
+
 
 	/* STYLE FOR FOOTER SHOWING FILE PATH */
 	.file-path-footer {
@@ -83,15 +89,25 @@
 	<MudAppBar Elevation="1"
 			   Bottom="false"
 			   Dense="true"
-			   Class="@(DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState.IsAnyJsonMode
-			  ? "app-bar-json-file-mode"
-			  : "app-bar-api-mode")">
+			   Class="@(DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState.CurrentDataSourceType switch
+						{
+							DataSourceStateService.DataSourceType.JsonFileServerSide => "app-bar-json-file-mode",
+							DataSourceStateService.DataSourceType.JsonFileClientSide => "app-bar-json-file-mode",
+							DataSourceStateService.DataSourceType.None => "app-bar-none-mode",
+							_ => "app-bar-api-mode"
+						})" >
+
 
 		<MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@ToggleDrawer" />
 
-		<MudTooltip Text="@(tempCustomDataSourceState.IsApiMode ? "Connected to API Server" :
-								  			  tempCustomDataSourceState.IsServerJsonMode ? "Using Server‑Side JSON File" :
-								  "Using Client‑Side JSON File")">
+		<MudTooltip Text="@(tempCustomDataSourceState.CurrentDataSourceType switch
+			  {
+				  DataSourceStateService.DataSourceType.ApiServer => "Connected to API Server",
+				  DataSourceStateService.DataSourceType.JsonFileServerSide => "Using Server‑Side JSON File",
+				  DataSourceStateService.DataSourceType.JsonFileClientSide => "Using Client‑Side JSON File",
+				  DataSourceStateService.DataSourceType.None => "No data source selected",
+				  _ => "OpenRose"
+			  })">
 			<MudLink Href="/" Class="product-title-link">
 				@CurrentPageTitle
 			</MudLink>
@@ -149,66 +165,43 @@
 		{
 			var state = DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState;
 
-			@if (!(state.IsApiMode))
+			<!--
+				EXPLANATION:
+				- Live Server button is shown if API is available in configuration.
+				- It is hidden when APISettings is missing or BaseUrl is empty.
+                - It is also hidden when already in API mode since there's no need to switch.
+			-->
+			@if (StartupCapabilities.ApiAvailable && !state.IsApiMode )
 			{
 				<MudIconButton Icon="@Icons.Material.Filled.CloudUpload"
 							   Title="Live Server"
 							   Color="Color.Inherit"
 							   OnClick="@SwitchToApiModeAsync" />
 			}
-				<MudIconButton Icon="@Icons.Material.Filled.FolderShared"
-							   Title="Server Data File"
-							   Color="Color.Inherit"
-							   OnClick="@SwitchToServerJsonModeAsync" />
 
-				<MudIconButton Icon="@Icons.Material.Filled.UploadFile"
-							   Title="Client Data File"
-							   Color="Color.Inherit"
-							   OnClick="@SwitchToClientJsonModeAsync" />
-@* 
-			<!-- API MODE -->
-			if (state.IsApiMode)
+			<!--
+				EXPLANATION:
+				- Server Data File button is shown if OfflineContent section exists in configuration.
+				- It is shown even if folder/file are currently missing; dialog will surface errors.
+			-->
+			@if (StartupCapabilities.OfflineAvailable)
 			{
 				<MudIconButton Icon="@Icons.Material.Filled.FolderShared"
 							   Title="Server Data File"
 							   Color="Color.Inherit"
 							   OnClick="@SwitchToServerJsonModeAsync" />
-
-				<MudIconButton Icon="@Icons.Material.Filled.UploadFile"
-							   Title="Client Data File"
-							   Color="Color.Inherit"
-							   OnClick="@SwitchToClientJsonModeAsync" />
 			}
 
-			<!-- SERVER JSON MODE -->
-			else if (state.IsServerJsonMode)
-			{
-				<MudIconButton Icon="@Icons.Material.Filled.CloudUpload"
-							   Title="Live Server"
-							   Color="Color.Inherit"
-							   OnClick="@SwitchToApiModeAsync" />
+			<!--
+				EXPLANATION:
+				- Client Data File button is always available as a universal fallback.
+			-->
+			<MudIconButton Icon="@Icons.Material.Filled.UploadFile"
+						   Title="Client Data File"
+						   Color="Color.Inherit"
+						   OnClick="@SwitchToClientJsonModeAsync" />
 
-				<MudIconButton Icon="@Icons.Material.Filled.UploadFile"
-							   Title="Client Data File"
-							   Color="Color.Inherit"
-							   OnClick="@SwitchToClientJsonModeAsync" />
-			}
-
-			<!-- CLIENT JSON MODE -->
-			else if (state.IsClientJsonMode)
-			{
-				<MudIconButton Icon="@Icons.Material.Filled.CloudUpload"
-							   Title="Live Server"
-							   Color="Color.Inherit"
-							   OnClick="@SwitchToApiModeAsync" />
-
-				<MudIconButton Icon="@Icons.Material.Filled.FolderShared"
-							   Title="Server Data File"
-							   Color="Color.Inherit"
-							   OnClick="@SwitchToServerJsonModeAsync" />
-			} *@
 		}
-
 
 		<MudIconButton Icon="@Icons.Custom.Brands.GitHub" Color="Color.Inherit" Href="https://github.com/OpenRose/OpenRose" Target="_blank" />
 	</MudAppBar>

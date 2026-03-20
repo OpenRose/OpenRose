@@ -35,6 +35,7 @@ namespace OpenRose.WebUI.Services
 		private readonly JsonFileSchemaValidationService _jsonSchemaValidator;
 		private readonly JsonFileDataSourceService _jsonDataSourceService;
 		private readonly DataSourceStateService _dataSourceStateService;
+		private readonly StartupCapabilitiesService _capabilities;
 		private readonly ILogger<OfflineStartupResolver> _logger;
 
 		public enum StartupResult
@@ -51,6 +52,7 @@ namespace OpenRose.WebUI.Services
 			JsonFileSchemaValidationService jsonSchemaValidator,
 			JsonFileDataSourceService jsonDataSourceService,
 			DataSourceStateService dataSourceStateService,
+			StartupCapabilitiesService capabilities,
 			ILogger<OfflineStartupResolver> logger)
 		{
 			_apiSettings = apiSettingsOptions.Value;
@@ -59,6 +61,7 @@ namespace OpenRose.WebUI.Services
 			_jsonSchemaValidator = jsonSchemaValidator;
 			_jsonDataSourceService = jsonDataSourceService;
 			_dataSourceStateService = dataSourceStateService;
+			_capabilities = capabilities;
 			_logger = logger;
 		}
 
@@ -72,36 +75,66 @@ namespace OpenRose.WebUI.Services
 			try
 			{
 				// ============================================================
-				// STEP 1: Check StartupMode setting
+				// STEP 0: Determine availability from configuration
+				// ============================================================
+				bool apiAvailable = _capabilities.ApiAvailable;
+				bool offlineAvailable = _capabilities.OfflineAvailable;
+
+				// ============================================================
+				// STEP 1: Read StartupMode setting
 				// ============================================================
 				string mode = _offlineSettings.StartupMode?.Trim().ToUpperInvariant() ?? "AUTO";
 
+				// ============================================================
+				// STEP 2: LIVE mode → API only
+				// ============================================================
 				if (mode == "LIVE")
 				{
-					_logger.LogInformation("StartupMode = LIVE → Forcing API mode.");
-					return StartupResult.ApiMode;
+					_logger.LogInformation("StartupMode = LIVE → API required.");
+
+					if (apiAvailable)
+						return StartupResult.ApiMode;
+
+					_logger.LogWarning("LIVE mode requested but API is not available.");
+					return StartupResult.Error;
 				}
 
+				// ============================================================
+				// STEP 3: OFFLINE mode → Offline only
+				// ============================================================
 				if (mode == "OFFLINE")
 				{
-					_logger.LogInformation("StartupMode = OFFLINE → Forcing Offline JSON mode.");
-					return await TryStartOfflineModeAsync();
+					_logger.LogInformation("StartupMode = OFFLINE → Offline JSON required.");
+
+					if (offlineAvailable)
+						return await TryStartOfflineModeAsync();
+
+					_logger.LogWarning("OFFLINE mode requested but OfflineContent is not available.");
+					return StartupResult.Error;
 				}
 
 				// ============================================================
-				// STEP 2: AUTO mode → Try API first
+				// STEP 4: AUTO mode → API first, then Offline
 				// ============================================================
-				if (!string.IsNullOrWhiteSpace(_apiSettings.BaseUrl))
+				if (mode == "AUTO")
 				{
-					_logger.LogInformation("StartupMode = AUTO → API BaseUrl is configured. Starting in API mode.");
-					return StartupResult.ApiMode;
+					_logger.LogInformation("StartupMode = AUTO → Checking API first.");
+
+					if (apiAvailable)
+						return StartupResult.ApiMode;
+
+					if (offlineAvailable)
+						return await TryStartOfflineModeAsync();
+
+					_logger.LogWarning("AUTO mode: Neither API nor OfflineContent is available.");
+					return StartupResult.Error;
 				}
 
 				// ============================================================
-				// STEP 3: API not configured → Try offline mode
+				// STEP 5: Unknown mode → treat as error
 				// ============================================================
-				_logger.LogWarning("API BaseUrl is NOT configured. Attempting to start in Offline JSON mode.");
-				return await TryStartOfflineModeAsync();
+				_logger.LogWarning("Unknown StartupMode value: {Mode}", mode);
+				return StartupResult.Error;
 			}
 			catch (Exception ex)
 			{
@@ -109,6 +142,7 @@ namespace OpenRose.WebUI.Services
 				return StartupResult.Error;
 			}
 		}
+
 
 		/// <summary>
 		/// EXPLANATION:

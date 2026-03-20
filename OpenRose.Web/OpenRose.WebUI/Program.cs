@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. 
 // See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using MudBlazor.Services;
 using MudExtensions.Services;
@@ -60,6 +61,11 @@ builder.Services.AddControllers();
 
 builder.Configuration.AddEnvironmentVariables(); // Add environment variables to configuration
 
+
+var startupCapabilities = new StartupCapabilitiesService(builder.Configuration);
+builder.Services.AddSingleton(startupCapabilities);
+
+
 // Configure API settings
 builder.Services.Configure<APISettings>(builder.Configuration.GetSection("ApiSettings"));
 
@@ -71,24 +77,31 @@ builder.Services.Configure<OfflineContentSettings>(builder.Configuration.GetSect
 // Retrieve API settings
 var apiSettings = builder.Configuration.GetSection("APISettings").Get<APISettings>();
 
+////// EXPLANATION : Initialize the shared ConfigurationService singleton.
+////// This service acts as a central "state container" for API connection status and version info.
+////// We use SetConnectionState() instead of setting properties directly because:
+//////   1. Properties have private setters to enforce consistency.
+//////   2. Every update triggers NotifyStateChanged(), which raises the OnChange event.
+//////      That event tells all Blazor components to re-render automatically when the API state changes.
+////// Here we set the initial state based on whether the API BaseUrl is configured in appsettings.
+////var configurationService = new ConfigurationService();
+////configurationService.SetConnectionState(
+////	isConfigured: !string.IsNullOrEmpty(apiSettings?.BaseUrl),
+////	apiVersion: null,
+////	message: null);
+////builder.Services.AddSingleton(configurationService);
 
-// EXPLANATION : Initialize the shared ConfigurationService singleton.
-// This service acts as a central "state container" for API connection status and version info.
-// We use SetConnectionState() instead of setting properties directly because:
-//   1. Properties have private setters to enforce consistency.
-//   2. Every update triggers NotifyStateChanged(), which raises the OnChange event.
-//      That event tells all Blazor components to re-render automatically when the API state changes.
-// Here we set the initial state based on whether the API BaseUrl is configured in appsettings.
 var configurationService = new ConfigurationService();
 configurationService.SetConnectionState(
-	isConfigured: !string.IsNullOrEmpty(apiSettings?.BaseUrl),
+	isConfigured: startupCapabilities.ApiAvailable,
 	apiVersion: null,
-	message: null);
+	message: null
+);
 builder.Services.AddSingleton(configurationService);
 
 
 // --- NEW: register HttpClient for version check + background monitor ---
-if (configurationService.IsOpenRoseAPIConfigured)
+if (startupCapabilities.ApiAvailable)
 {
 	// Get the WebUI informational version (same approach as AssemblyInfoService)
 	var webUiVersion = Assembly.GetExecutingAssembly()
@@ -113,7 +126,7 @@ if (configurationService.IsOpenRoseAPIConfigured)
 // --- END new version check ---
 
 
-if (!configurationService.IsOpenRoseAPIConfigured)
+if (startupCapabilities.ApiAvailable)
 {
     var configFile = string.IsNullOrEmpty(builder.Environment.EnvironmentName) ? "appsettings.json" : $"appsettings.{builder.Environment.EnvironmentName}.json";
     builder.Logging.AddConsole();
@@ -269,6 +282,8 @@ builder.Services.AddSingleton<OfflineCatalogRepository>();
 // EXPLANATION: Register the startup resolver that determines whether to start in API or Offline JSON mode.
 builder.Services.AddScoped<OfflineStartupResolver>();
 
+// builder.Services.AddSingleton<StartupCapabilitiesService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -327,17 +342,36 @@ app.Lifetime.ApplicationStarted.Register(() =>
 
 		var dataSourceState = scope.ServiceProvider.GetRequiredService<DataSourceStateService>();
 		var viewSettings = scope.ServiceProvider.GetRequiredService<ViewSettingsService>();
+		var nav = scope.ServiceProvider.GetRequiredService<NavigationManager>();
 
-		if (result == OfflineStartupResolver.StartupResult.OfflineMode)
+		switch (result)
 		{
-			viewSettings.IsOperatingInJsonFileDataSourceMode = true;
-		}
-		else
-		{
-			viewSettings.IsOperatingInJsonFileDataSourceMode = false;
+			case OfflineStartupResolver.StartupResult.ApiMode:
+				dataSourceState.SwitchToApiDataSource();
+				viewSettings.IsOperatingInJsonFileDataSourceMode = false;
+
+				// Stay on Home ("/") — no navigation needed
+				break;
+
+			case OfflineStartupResolver.StartupResult.OfflineMode:
+				viewSettings.IsOperatingInJsonFileDataSourceMode = true;
+
+				// JSON file was successfully loaded -> go to JSON viewer
+				nav.NavigateTo("/jsonviewer", forceLoad: false);
+				break;
+
+			case OfflineStartupResolver.StartupResult.Error:
+			default:
+				dataSourceState.InitializeToNone();
+				viewSettings.IsOperatingInJsonFileDataSourceMode = false;
+
+				// Stay on Home ("/") — no navigation needed
+				break;
 		}
 	});
 });
+
+
 
 
 app.MapControllers();

@@ -72,6 +72,18 @@
         string path = context.Path.ToLowerInvariant().Trim('/');
 
 
+
+        // ============================================================
+        // NONE MODE — Only allow Home ("/")
+        // ============================================================
+        if (state.CurrentDataSourceType == DataSourceStateService.DataSourceType.None)
+        {
+            if (path != "")
+                Nav.NavigateTo("/", replace: true);
+
+            return Task.CompletedTask;
+        }
+
         // ========================================================================
         // API SERVER MODE — FULL ACCESS (WITH HEALTH CHECKS)
         // ------------------------------------------------------------------------

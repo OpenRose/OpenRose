@@ -54,22 +54,32 @@ else if (!string.IsNullOrEmpty(_errorMessage))
     [Inject] private IConfiguration Configuration { get; set; } = default!;
     [Inject] private IWebHostEnvironment Env { get; set; } = default!;
     [Inject] private AssemblyInfoService AssemblyInfo { get; set; } = default!;
-    [Inject] private ApiVersionChecker VersionChecker { get; set; } = default!;
+    // [Inject] private ApiVersionChecker? VersionChecker { get; set; } = default!;
+    [Inject] private StartupCapabilitiesService StartupCapabilities { get; set; } = default!;
+    [Inject] private IServiceProvider Services { get; set; } = default!;
+
 
     private string _errorMessage = string.Empty;
     private string version = string.Empty;
     private bool _isReconnectDisabled = false;
+    private ApiVersionChecker? VersionChecker;
 
     protected override void OnInitialized()
     {
-        var apiSettings = Configuration.GetSection("APISettings").Get<APISettings>();
-        if (string.IsNullOrEmpty(apiSettings?.BaseUrl))
+        VersionChecker = Services.GetService<ApiVersionChecker>();
+
+        // Only show API configuration error if API is expected to exist
+        if (StartupCapabilities.ApiAvailable)
         {
-            _errorMessage = $"OpenRose API connection via base URL is not configured. Please contact your System Administrator.";
+            if (!ConfigService.IsOpenRoseAPIConfigured)
+            {
+                _errorMessage = "OpenRose API connection via base URL is not configured. Please contact your System Administrator.";
+            }
         }
+
         version = AssemblyInfo.GetAssemblyVersion();
 
-       // Console.WriteLine("Home subscribing directly to ConfigService.OnChange");
+        // Console.WriteLine("Home subscribing directly to ConfigService.OnChange");
         ConfigService.OnChange -= HandleConfigChanged; // ensure no duplicate
         ConfigService.OnChange += HandleConfigChanged;
     }
@@ -83,8 +93,12 @@ else if (!string.IsNullOrEmpty(_errorMessage))
     private async Task Reconnect()
     {
         _isReconnectDisabled = true;
-        await VersionChecker.CheckApiVersionAsync();
-        StateHasChanged();
+        @if (StartupCapabilities.ApiAvailable && VersionChecker is not null)
+        {
+            await VersionChecker.CheckApiVersionAsync();
+            StateHasChanged();
+        }
+
 
         // Wait 5 seconds before re-enabling
         await Task.Delay(TimeSpan.FromSeconds(5));

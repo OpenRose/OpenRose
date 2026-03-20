@@ -39,6 +39,12 @@ namespace OpenRose.WebUI.Components.EventServices
 		public enum DataSourceType
 		{
 			/// <summary>
+			/// No data source is currently active.
+			/// This occurs at startup when neither API nor Offline JSON is available.
+			/// </summary>
+			None,
+
+			/// <summary>
 			/// Connected to OpenRose API Server - Full CRUD operations supported
 			/// </summary>
 			ApiServer,
@@ -46,13 +52,14 @@ namespace OpenRose.WebUI.Components.EventServices
 			/// <summary>
 			/// Connected to Server side JSON file available on WebUI server - Read-Only operations only
 			/// </summary>
-			JsonFileServerSide,   // NEW
+			JsonFileServerSide,
 
 			/// <summary>
 			/// Connected to Client uploaded JSON file - Read-Only operations only
 			/// </summary>
-			JsonFileClientSide    // NEW
+			JsonFileClientSide
 		}
+
 
 		/// <summary>
 		/// Data class that encapsulates all state information about the current data source.
@@ -121,7 +128,12 @@ namespace OpenRose.WebUI.Components.EventServices
 		/// Holds the current state of the data source configuration.
 		/// This is a private field with a public read-only property to enforce consistency.
 		/// </summary>
-		private DataSourceState _currentDataSourceState = new DataSourceState();
+		private DataSourceState _currentDataSourceState = new DataSourceState
+		{
+			CurrentDataSourceType = DataSourceType.None,
+			IsReadOnlyMode = false
+		};
+
 
 		// ========================================================================
 		// PUBLIC PROPERTIES
@@ -146,16 +158,16 @@ namespace OpenRose.WebUI.Components.EventServices
 		// ========================================================================
 		// PUBLIC METHODS
 		// ========================================================================
-
 		/// <summary>
-		/// Initializes the data source to API mode (default state on application startup).
+		/// Initializes the data source to None mode (default state on application startup).
 		/// This should be called from Program.cs during startup to set initial state.
 		/// </summary>
-		public void InitializeToApiDataSource()
+
+		public void InitializeToNone()
 		{
 			_currentDataSourceState = new DataSourceState
 			{
-				CurrentDataSourceType = DataSourceType.ApiServer,
+				CurrentDataSourceType = DataSourceType.None,
 				IsReadOnlyMode = false,
 				JsonFilePathForDataSource = null,
 				JsonFileNameForDisplay = null,
