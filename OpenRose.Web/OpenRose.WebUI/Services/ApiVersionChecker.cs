@@ -13,11 +13,11 @@ namespace OpenRose.WebUI.Services
 	public class ApiVersionChecker
 	{
 		private readonly IHttpClientFactory _httpClientFactory;
-		private readonly ConfigurationService _config;
+		private readonly APIConfigurationService _config;
 		private readonly ILogger<ApiVersionChecker> _logger;
 
 		public ApiVersionChecker(IHttpClientFactory httpClientFactory,
-								 ConfigurationService config,
+								 APIConfigurationService config,
 								 ILogger<ApiVersionChecker> logger)
 		{
 			_httpClientFactory = httpClientFactory;
@@ -36,7 +36,7 @@ namespace OpenRose.WebUI.Services
 				{
 
 					_config.SetConnectionState(
-						isConfigured:false, 
+						isOpenRoseAPIConfigured:false, 
 						apiVersion:null, 
 						message: $"Unable to contact OpenRose API. Status: {resp.StatusCode}"
 						);
@@ -54,7 +54,7 @@ namespace OpenRose.WebUI.Services
 				{
 
 					_config.SetConnectionState(
-						isConfigured: false,
+						isOpenRoseAPIConfigured: false,
 						apiVersion: apiVersion,
 						message: $"OpenRose API version ({apiVersion}) does not match WebUI version ({_config.WebUiVersion})."
 						);
@@ -66,7 +66,7 @@ namespace OpenRose.WebUI.Services
 				{
 
 					_config.SetConnectionState(
-						isConfigured: true,
+						isOpenRoseAPIConfigured: true,
 						apiVersion: apiVersion,
 						message: string.Empty // ✅ clear error
 						);
@@ -80,7 +80,7 @@ namespace OpenRose.WebUI.Services
 			{
 
 				_config.SetConnectionState(
-					isConfigured: false,
+					isOpenRoseAPIConfigured: false,
 					apiVersion: null,
 					message: $"Exception during API version check : No connection could be made because the target machine actively refused it."
 					);

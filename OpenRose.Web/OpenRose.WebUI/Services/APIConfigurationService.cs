@@ -6,7 +6,7 @@ using System;
 
 namespace OpenRose.WebUI.Services
 {
-	public class ConfigurationService
+	public class APIConfigurationService
 	{
 		public bool IsOpenRoseAPIConfigured { get; private set; }
 
@@ -23,9 +23,9 @@ namespace OpenRose.WebUI.Services
 		/// <summary>
 		/// Update connection state and notify listeners.
 		/// </summary>
-		public void SetConnectionState(bool isConfigured, string? apiVersion, string? message)
+		public void SetConnectionState(bool isOpenRoseAPIConfigured, string? apiVersion, string? message)
 		{
-			IsOpenRoseAPIConfigured = isConfigured;
+			IsOpenRoseAPIConfigured = isOpenRoseAPIConfigured;
 			ApiVersion = apiVersion;
 			ApiVersionMismatchMessage = message;
 			NotifyStateChanged();
@@ -36,7 +36,7 @@ namespace OpenRose.WebUI.Services
 		/// </summary>
 		public void NotifyStateChanged()
 		{
-			//Console.WriteLine("ConfigurationService state changed");
+			//Console.WriteLine("APIConfigurationService state changed");
 			OnChange?.Invoke();
 		}
 	}

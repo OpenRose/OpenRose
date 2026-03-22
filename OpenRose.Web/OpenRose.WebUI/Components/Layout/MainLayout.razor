@@ -13,10 +13,12 @@
 @using OpenRose.WebUI.Client.Services.JsonFile
 
 @inject DataSourceStateService DataSourceStateServiceForDataSourceTracking
+@inject JsonFileDataSourceService JsonDataSource
+@inject JsonFileSchemaValidationService JsonValidator
 @inject ViewSettingsService ViewSettingsServiceForUiState
 @inject FormStateService FormStateService
 @inject IDialogService DialogServiceForShowingDialogs
-@inject IServiceProvider ServiceProviderForDependencyInjection
+@* @inject IServiceProvider ServiceProviderForDependencyInjection *@
 @inject NavigationManager NavManager
 @inject StartupCapabilitiesService StartupCapabilities
 
@@ -24,6 +26,15 @@
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
+@* 
+<MudThemeProvider>
+	<MudDialogProvider />
+	<MudSnackbarProvider />
+	<MudPopoverProvider />
+	@Body
+</MudThemeProvider>
+ *@
+
 
 <style>
 	.product-title-link {
@@ -420,13 +431,13 @@
 			}
 
 			// Step 2: Validate JSON file against schema
-			var jsonValidationServiceFromDependencyInjection =
-				ServiceProviderForDependencyInjection.GetRequiredService<JsonFileSchemaValidationService>();
+			// var jsonValidationServiceFromDependencyInjection =
+			// 	ServiceProviderForDependencyInjection.GetRequiredService<JsonFileSchemaValidationService>();
 
 			try
 			{
 				bool isJsonFileValidAgainstSchema =
-					jsonValidationServiceFromDependencyInjection.ValidateJsonFileContentAgainstSchema(
+					JsonValidator.ValidateJsonFileContentAgainstSchema(
 						jsonFileContentAsStringReadFromDisk
 					);
 			}
@@ -449,16 +460,17 @@
 			NavManager.NavigateTo("/jsonviewer", forceLoad: true);
 			
 			// Step 6: Load JSON data into memory (parse and build lookup dictionary)
-			var jsonDataSourceServiceFromDependencyInjection =
-				ServiceProviderForDependencyInjection.GetRequiredService<JsonFileDataSourceService>();
+			// var jsonDataSourceServiceFromDependencyInjection =
+			// 	ServiceProviderForDependencyInjection.GetRequiredService<JsonFileDataSourceService>();
+
 
 			try
 			{
-				await jsonDataSourceServiceFromDependencyInjection
+				await JsonDataSource
 					.LoadJsonFileDataFromStringAsync(jsonFileContentAsStringReadFromDisk);
 
 				// Set metadata using the new method
-				jsonDataSourceServiceFromDependencyInjection.SetJsonViewerMetadata(new JsonViewerMetadata
+				JsonDataSource.SetJsonViewerMetadata(new JsonViewerMetadata
 				{
 					FileName = jsonBrowserFile.Name,
 					FileSizeBytes = jsonFileContentAsStringReadFromDisk.Length,
@@ -559,8 +571,8 @@
 			return;
 
 		// Unload JSON data
-		var jsonService = ServiceProviderForDependencyInjection.GetRequiredService<JsonFileDataSourceService>();
-		jsonService.UnloadJsonFileData();
+		// var jsonService = ServiceProviderForDependencyInjection.GetRequiredService<JsonFileDataSourceService>();
+		JsonDataSource.UnloadJsonFileData();
 
 		DataSourceStateServiceForDataSourceTracking.SwitchToApiDataSource();
 		ViewSettingsServiceForUiState.IsOperatingInJsonFileDataSourceMode = false;

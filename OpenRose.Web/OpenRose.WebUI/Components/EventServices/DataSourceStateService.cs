@@ -30,7 +30,7 @@ namespace OpenRose.WebUI.Components.EventServices
 	{
 		// ========================================================================
 		// EXISTING CODE PATTERN REFERENCE:
-		// This service follows the same observer pattern as ConfigurationService and FormStateService
+		// This service follows the same observer pattern as APIConfigurationService and FormStateService
 		// ========================================================================
 
 		/// <summary>
@@ -130,7 +130,7 @@ namespace OpenRose.WebUI.Components.EventServices
 		/// </summary>
 		private DataSourceState _currentDataSourceState = new DataSourceState
 		{
-			CurrentDataSourceType = DataSourceType.None,
+			CurrentDataSourceType = DataSourceType.JsonFileServerSide,
 			IsReadOnlyMode = false
 		};
 
@@ -300,7 +300,7 @@ namespace OpenRose.WebUI.Components.EventServices
 		/// Internal method that triggers the OnDataSourceChanged event to notify
 		/// all subscribed components that the data source state has changed.
 		/// 
-		/// EXPLANATION: Similar to ConfigurationService pattern, we call this
+		/// EXPLANATION: Similar to APIConfigurationService pattern, we call this
 		/// whenever state changes to trigger component re-renders in Blazor.
 		/// </summary>
 		private void NotifyStateChanged()

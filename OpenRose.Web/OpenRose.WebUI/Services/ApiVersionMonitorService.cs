@@ -11,11 +11,11 @@
 //	public class ApiVersionMonitorService : BackgroundService
 //	{
 //		private readonly ApiVersionChecker _checker;
-//		private readonly ConfigurationService _config;
+//		private readonly APIConfigurationService _config;
 //		private readonly ILogger<ApiVersionMonitorService> _logger;
 
 //		public ApiVersionMonitorService(ApiVersionChecker checker,
-//										ConfigurationService config,
+//										APIConfigurationService config,
 //										ILogger<ApiVersionMonitorService> logger)
 //		{
 //			_checker = checker;

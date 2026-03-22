@@ -7,13 +7,13 @@
 @using OpenRose.WebUI.Services
 @using OpenRose.WebUI.Components.EventServices
 
-@inject ConfigurationService ConfigService
+@inject APIConfigurationService apiConfigService
 @inject DataSourceStateService DataSourceStateServiceForRoutingGuard
 @inject NavigationManager Nav
 
 <Router AppAssembly="typeof(Program).Assembly"
         AdditionalAssemblies="new[] { typeof(Client._Imports).Assembly }"
-        OnNavigateAsync="GuardNavigation">
+        OnNavigateAsync="GuardNavigation"> 
     <Found Context="routeData">
         <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
         <FocusOnNavigate RouteData="routeData" Selector="h1" />
@@ -23,6 +23,8 @@
 @code {
     private Task GuardNavigation(Microsoft.AspNetCore.Components.Routing.NavigationContext context)
     {
+
+        Console.WriteLine($"[DEBUG] NOW IN GuardNavigation METHOD WITHIN Routes.razor ");
         // ========================================================================
         // ROUTING GUARD OVERVIEW
         // ------------------------------------------------------------------------
@@ -71,18 +73,22 @@
         var state = DataSourceStateServiceForRoutingGuard.CurrentDataSourceState;
         string path = context.Path.ToLowerInvariant().Trim('/');
 
-
+        if (state.IsApiMode)
+        {
+            Console.WriteLine($"[Guard] ApiMode: IsConfigured={apiConfigService.IsOpenRoseAPIConfigured}, Mismatch='{apiConfigService.ApiVersionMismatchMessage}'");
+            Console.WriteLine($"[Guard] JsonMode: path='{path}'");
+        }
 
         // ============================================================
         // NONE MODE — Only allow Home ("/")
         // ============================================================
-        if (state.CurrentDataSourceType == DataSourceStateService.DataSourceType.None)
-        {
-            if (path != "")
-                Nav.NavigateTo("/", replace: true);
+        // if (state.CurrentDataSourceType == DataSourceStateService.DataSourceType.None)
+        // {
+        //     if (path != "")
+        //         Nav.NavigateTo("/", replace: true);
 
-            return Task.CompletedTask;
-        }
+        //     return Task.CompletedTask;
+        // }
 
         // ========================================================================
         // API SERVER MODE — FULL ACCESS (WITH HEALTH CHECKS)
@@ -90,19 +96,20 @@
         // In API mode, the user can navigate anywhere *as long as* the API is
         // configured correctly and the version matches.
         // ========================================================================
-        if (state.IsApiMode)
-        {
-            // Block navigation if API is misconfigured or incompatible
-            if (!ConfigService.IsOpenRoseAPIConfigured ||
-                !string.IsNullOrEmpty(ConfigService.ApiVersionMismatchMessage))
-            {
-                Nav.NavigateTo("/");
-                return Task.CompletedTask;
-            }
+        // if (state.IsApiMode)
+        // {
+        //     // Block navigation if API is misconfigured or incompatible
+        //     if (!ConfigService.IsOpenRoseAPIConfigured ||
+        //         !string.IsNullOrEmpty(ConfigService.ApiVersionMismatchMessage))
+        //     {
+        //         Nav.NavigateTo("/");
+        //         return Task.CompletedTask;
+        //     }
 
-            // API is healthy → allow navigation
-            return Task.CompletedTask;
-        }
+        //     // API is healthy → allow navigation
+        //     return Task.CompletedTask;
+        // }
+
 
 
         // ========================================================================
@@ -125,10 +132,14 @@
                 path == "jsonviewer" ||
                 path == "settings";
 
+            Console.WriteLine($"[Guard] IsAnyJsonMode: true");
+            Console.WriteLine($"[Guard] JsonMode: path='{path}'");
+
             if (!isAllowed)
             {
                 // Block navigation to any route that requires API access or write access.
                 // Redirect to the JSON viewer, which is the only safe place.
+                Console.WriteLine($"[Guard] IsAnyJsonMode: Force navigating to -jsonviewer URL");
                 Nav.NavigateTo("/jsonviewer", forceLoad: true);
                 return Task.CompletedTask;
             }
@@ -143,7 +154,7 @@
         // ------------------------------------------------------------------------
         // If the data source state is somehow invalid, redirect to home.
         // ========================================================================
-        Nav.NavigateTo("/");
+        // // Nav.NavigateTo("/");
         return Task.CompletedTask;
     }
 

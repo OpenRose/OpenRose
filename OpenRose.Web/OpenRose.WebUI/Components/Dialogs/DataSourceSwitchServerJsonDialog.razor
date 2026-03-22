@@ -5,7 +5,8 @@
 @* @inject HttpClient Http *@
 @inject IHttpClientFactory ClientFactory
 @inject DataSourceStateService DataSourceStateService
-@inject IServiceProvider ServiceProviderForDependencyInjection
+@* @inject IServiceProvider ServiceProviderForDependencyInjection *@
+@inject JsonFileDataSourceService JsonDataSource
 @inject ViewSettingsService ViewSettingsService
 @inject NavigationManager NavManager
 
@@ -124,13 +125,13 @@
             // Load the JSON file content from disk
             string jsonContent = await File.ReadAllTextAsync(fullPath);
 
-            var jsonService = ServiceProviderForDependencyInjection.GetRequiredService<JsonFileDataSourceService>();
-            await jsonService.LoadJsonFileDataFromStringAsync(jsonContent);
+            // var jsonService = ServiceProviderForDependencyInjection.GetRequiredService<JsonFileDataSourceService>();
+            await JsonDataSource.LoadJsonFileDataFromStringAsync(jsonContent);
 
             // Switch UI into server JSON mode
             DataSourceStateService.SwitchToServerSideJsonFile(fullPath);
 
-            jsonService.SetJsonViewerMetadata(new JsonViewerMetadata
+            JsonDataSource.SetJsonViewerMetadata(new JsonViewerMetadata
             {
                 FileName = Path.GetFileName(fullPath),
                 FullPath = fullPath,

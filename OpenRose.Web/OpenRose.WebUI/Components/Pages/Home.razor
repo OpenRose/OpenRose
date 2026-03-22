@@ -50,7 +50,7 @@ else if (!string.IsNullOrEmpty(_errorMessage))
 }
 
 @code {
-    [Inject] private ConfigurationService ConfigService { get; set; } = default!;
+    [Inject] private APIConfigurationService ConfigService { get; set; } = default!;
     [Inject] private IConfiguration Configuration { get; set; } = default!;
     [Inject] private IWebHostEnvironment Env { get; set; } = default!;
     [Inject] private AssemblyInfoService AssemblyInfo { get; set; } = default!;

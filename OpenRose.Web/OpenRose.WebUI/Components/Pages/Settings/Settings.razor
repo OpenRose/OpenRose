@@ -157,7 +157,7 @@
 }
 
 @code {
-    [Inject] private ConfigurationService ConfigService { get; set; } = default!;
+    [Inject] private APIConfigurationService ConfigService { get; set; } = default!;
     [Inject] private JsonFileDataSourceService JsonService { get; set; } = default!;
 
     private string version;
