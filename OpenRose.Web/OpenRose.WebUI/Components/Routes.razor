@@ -80,13 +80,27 @@
         // ============================================================
         // NONE MODE — Only allow Home ("/")
         // ============================================================
-        // if (state.CurrentDataSourceType == DataSourceStateService.DataSourceType.None)
-        // {
-        //     if (path != "")
-        //         Nav.NavigateTo("/", replace: true);
+        if (state.CurrentDataSourceType == DataSourceStateService.DataSourceType.None)
+        {
 
-        //     return Task.CompletedTask;
-        // }
+            // Allowed routes in NONE mode:
+            //   - ""           → home page
+            //   - "settings"   → user can switch modes
+            bool isAllowed =
+                path == "" ||
+                path == "settings";
+
+            if (!isAllowed)
+            {
+                // Redirect to the HOME page, which is the only safe place.
+                Nav.NavigateTo("/");
+            }
+
+            // if (path != "")
+            //     Nav.NavigateTo("/", replace: true);
+
+            return Task.CompletedTask;
+        }
 
         // ========================================================================
         // API SERVER MODE — FULL ACCESS (WITH HEALTH CHECKS)
@@ -94,19 +108,19 @@
         // In API mode, the user can navigate anywhere *as long as* the API is
         // configured correctly and the version matches.
         // ========================================================================
-        // if (state.IsApiMode)
-        // {
-        //     // Block navigation if API is misconfigured or incompatible
-        //     if (!ConfigService.IsOpenRoseAPIConfigured ||
-        //         !string.IsNullOrEmpty(ConfigService.ApiVersionMismatchMessage))
-        //     {
-        //         Nav.NavigateTo("/");
-        //         return Task.CompletedTask;
-        //     }
+        if (state.IsApiMode)
+        {
+            // Block navigation if API is misconfigured or incompatible
+            if (!apiConfigService.IsOpenRoseAPIConfigured ||
+                !string.IsNullOrEmpty(apiConfigService.ApiVersionMismatchMessage))
+            {
+                Nav.NavigateTo("/");
+                return Task.CompletedTask;
+            }
 
-        //     // API is healthy → allow navigation
-        //     return Task.CompletedTask;
-        // }
+            // API is healthy → allow navigation
+            return Task.CompletedTask;
+        }
 
 
 
