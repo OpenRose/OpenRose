@@ -23,7 +23,8 @@
 <!-- Redirect if not in JSON mode -->
 @if (!DataSourceState.CurrentDataSourceState.IsAnyJsonMode)
 {
-    Nav.NavigateTo("/", forceLoad: true);
+    //Nav.NavigateTo("/", forceLoad: true);
+    Nav.NavigateTo("/");
     <text></text>
     return;
 }
@@ -121,6 +122,7 @@
     private void SwitchToApi()
     {
         DataSourceState.SwitchToApiDataSource();
-        Nav.NavigateTo("/", forceLoad: true);
+        //Nav.NavigateTo("/", forceLoad: true);
+        Nav.NavigateTo("/");
     }
 }

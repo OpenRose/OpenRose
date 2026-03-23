@@ -144,7 +144,9 @@
 
             MudDialog.Close(DialogResult.Ok(true));
 
-            NavManager.NavigateTo("/jsonviewer", forceLoad: true);
+            // NavManager.NavigateTo("/jsonviewer", forceLoad: true);
+            // NavManager.NavigateTo("/jsonviewer", replace: true);
+            NavManager.NavigateTo("/jsonviewer");
         }
         catch (Exception ex)
         {

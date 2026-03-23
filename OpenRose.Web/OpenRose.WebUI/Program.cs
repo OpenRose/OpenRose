@@ -59,6 +59,7 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddControllers();
 
+builder.Services.AddHttpContextAccessor();
 
 builder.Configuration.AddEnvironmentVariables(); // Add environment variables to configuration
 
@@ -72,12 +73,22 @@ builder.Services.AddSingleton(startupCapabilities);
 //	builder.Services.Configure<APISettings>(builder.Configuration.GetSection("ApiSettings"));
 //}
 
-if (startupCapabilities.OfflineAvailable)
+if (startupCapabilities.ServerOfflineAvailable)
 {
 	// EXPLANATION: Bind OfflineContent settings from appsettings.json.
 	// This config controls where server-side JSON files are stored and how offline mode behaves.
 	builder.Services.Configure<OfflineContentSettings>(builder.Configuration.GetSection("OfflineContent"));
 
+	builder.Services.AddHttpClient("WebUIInternal", (sp, client) =>
+	{
+		var context = sp.GetRequiredService<IHttpContextAccessor>().HttpContext;
+		if (context is not null)
+		{
+			var request = context.Request;
+			var baseUri = $"{request.Scheme}://{request.Host}";
+			client.BaseAddress = new Uri(baseUri);
+		}
+	});
 }
 
 
@@ -139,10 +150,10 @@ builder.Services.AddSingleton(apiConfigurationService);
 
 if (!startupCapabilities.ApiAvailable)
 {
-    var configFile = string.IsNullOrEmpty(builder.Environment.EnvironmentName) ? "appsettings.json" : $"appsettings.{builder.Environment.EnvironmentName}.json";
-    builder.Logging.AddConsole();
-    var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
-    logger.LogError($"OpenRose API connection via base URL is not configured. Please contact your System Administrator.");
+    // var configFile = string.IsNullOrEmpty(builder.Environment.EnvironmentName) ? "appsettings.json" : $"appsettings.{builder.Environment.EnvironmentName}.json";
+    // builder.Logging.AddConsole();
+    // var logger = builder.Services.BuildServiceProvider().GetRequiredService<ILogger<Program>>();
+    // logger.LogError($"OpenRose API connection via base URL is not configured. Please contact your System Administrator.");
 
     // Register dummy implementations that return errors or mock data
     builder.Services.AddSingleton<IProjectService, DummyProjectService>();
@@ -282,18 +293,9 @@ else
 	});
 
 
-	builder.Services.AddHttpContextAccessor();
+	//builder.Services.AddHttpContextAccessor();
 
-	builder.Services.AddHttpClient("WebUIInternal", (sp, client) =>
-	{
-		var context = sp.GetRequiredService<IHttpContextAccessor>().HttpContext;
-		if (context is not null)
-		{
-			var request = context.Request;
-			var baseUri = $"{request.Scheme}://{request.Host}";
-			client.BaseAddress = new Uri(baseUri);
-		}
-	});
+
 
 	// EXPLAINATION :: "FindProjectAndBaselineIdsByBaselineItemzIdService" depens on "IBaselineHierarchyService" and so 
 	// we need to register it here within the else block where we know that OpenRose API settings are available.
@@ -301,6 +303,8 @@ else
 	builder.Services.AddScoped<IFindProjectOfItemzId, FindProjectOfItemzId>();
 
 }
+
+
 
 builder.Services.AddMudServices();
 builder.Services.AddMudExtensions();

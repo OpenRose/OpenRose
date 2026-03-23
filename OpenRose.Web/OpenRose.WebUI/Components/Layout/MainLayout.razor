@@ -182,7 +182,8 @@
 				- It is hidden when APISettings is missing or BaseUrl is empty.
                 - It is also hidden when already in API mode since there's no need to switch.
 			-->
-			@if (StartupCapabilities.ApiAvailable && !state.IsApiMode )
+			//@if (StartupCapabilities.ApiAvailable)
+			@if (StartupCapabilities.ApiAvailable && !state.IsApiMode)
 			{
 				<MudIconButton Icon="@Icons.Material.Filled.CloudUpload"
 							   Title="Live Server"
@@ -195,7 +196,7 @@
 				- Server Data File button is shown if OfflineContent section exists in configuration.
 				- It is shown even if folder/file are currently missing; dialog will surface errors.
 			-->
-			@if (StartupCapabilities.OfflineAvailable)
+			@if (StartupCapabilities.ServerOfflineAvailable)
 			{
 				<MudIconButton Icon="@Icons.Material.Filled.FolderShared"
 							   Title="Server Data File"
@@ -254,14 +255,11 @@
 				<MudNavLink Href="/jsonviewer" Icon="@Icons.Material.Filled.FolderOpen">
 					JSON Data View
 				</MudNavLink>
-
 				<MudDivider />
-
-				<MudNavLink Href="/settings" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Settings">
-					Settings
-				</MudNavLink>
 			}
-
+			<MudNavLink Href="/settings" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Settings">
+				Settings
+			</MudNavLink>
 		</MudNavMenu>
 
 	</MudDrawer>
@@ -306,17 +304,17 @@
 		// EXPLANATION: Subscribe to data source state changes so we can update UI
 		// whenever user switches between API and JSON file data sources.
 		// When state changes, this component will automatically re-render with updated colors and menus.
-		DataSourceStateServiceForDataSourceTracking.OnDataSourceChanged += OnDataSourceStateChangedCallback;
+		// DataSourceStateServiceForDataSourceTracking.OnDataSourceChanged += OnDataSourceStateChangedCallback;
 	}
 
 	/// <summary>
 	/// Callback method that fires whenever the data source state changes.
 	/// Used to trigger component re-render so UI reflects new state (colors, menus, etc.)
 	/// </summary>
-	private Task OnDataSourceStateChangedCallback()
-	{
-		return InvokeAsync(StateHasChanged);
-	}
+	// private Task OnDataSourceStateChangedCallback()
+	// {
+	// 	return InvokeAsync(StateHasChanged);
+	// }
 
 	// /// <summary>
 	// /// Handles the data source switch button click.
@@ -457,8 +455,8 @@
 
 			// Step 5: Navigate immediately BEFORE loading JSON
 			// This prevents the JSON viewer from rendering twice in the same circuit.
-			NavManager.NavigateTo("/jsonviewer", forceLoad: true);
-			
+			// NavManager.NavigateTo("/jsonviewer", forceLoad: true);
+			NavManager.NavigateTo("/jsonviewer");
 			// Step 6: Load JSON data into memory (parse and build lookup dictionary)
 			// var jsonDataSourceServiceFromDependencyInjection =
 			// 	ServiceProviderForDependencyInjection.GetRequiredService<JsonFileDataSourceService>();
@@ -577,7 +575,8 @@
 		DataSourceStateServiceForDataSourceTracking.SwitchToApiDataSource();
 		ViewSettingsServiceForUiState.IsOperatingInJsonFileDataSourceMode = false;
 
-		NavManager.NavigateTo("/", forceLoad: true);
+		//NavManager.NavigateTo("/", forceLoad: true);
+		NavManager.NavigateTo("/");
 	}
 
 	private async Task SwitchToServerJsonModeAsync()
@@ -599,12 +598,12 @@
 	}
 
 
-	public void Dispose()
-	{
-		// EXPLANATION: Unsubscribe from events to prevent memory leaks
-		if (DataSourceStateServiceForDataSourceTracking != null)
-		{
-			DataSourceStateServiceForDataSourceTracking.OnDataSourceChanged -= OnDataSourceStateChangedCallback;
-		}
-	}
+	// public void Dispose()
+	// {
+	// 	// EXPLANATION: Unsubscribe from events to prevent memory leaks
+	// 	if (DataSourceStateServiceForDataSourceTracking != null)
+	// 	{
+	// 		DataSourceStateServiceForDataSourceTracking.OnDataSourceChanged -= OnDataSourceStateChangedCallback;
+	// 	}
+	// }
 }

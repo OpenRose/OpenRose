@@ -23,8 +23,6 @@
 @code {
     private Task GuardNavigation(Microsoft.AspNetCore.Components.Routing.NavigationContext context)
     {
-
-        Console.WriteLine($"[DEBUG] NOW IN GuardNavigation METHOD WITHIN Routes.razor ");
         // ========================================================================
         // ROUTING GUARD OVERVIEW
         // ------------------------------------------------------------------------
@@ -73,11 +71,11 @@
         var state = DataSourceStateServiceForRoutingGuard.CurrentDataSourceState;
         string path = context.Path.ToLowerInvariant().Trim('/');
 
-        if (state.IsApiMode)
-        {
-            Console.WriteLine($"[Guard] ApiMode: IsConfigured={apiConfigService.IsOpenRoseAPIConfigured}, Mismatch='{apiConfigService.ApiVersionMismatchMessage}'");
-            Console.WriteLine($"[Guard] JsonMode: path='{path}'");
-        }
+        // if (state.IsApiMode)
+        // {
+        //     Console.WriteLine($"[Guard] ApiMode: IsConfigured={apiConfigService.IsOpenRoseAPIConfigured}, Mismatch='{apiConfigService.ApiVersionMismatchMessage}'");
+        //     Console.WriteLine($"[Guard] JsonMode: path='{path}'");
+        // }
 
         // ============================================================
         // NONE MODE — Only allow Home ("/")
@@ -132,15 +130,15 @@
                 path == "jsonviewer" ||
                 path == "settings";
 
-            Console.WriteLine($"[Guard] IsAnyJsonMode: true");
-            Console.WriteLine($"[Guard] JsonMode: path='{path}'");
+            // Console.WriteLine($"[Guard] IsAnyJsonMode: true");
+            // Console.WriteLine($"[Guard] JsonMode: path='{path}'");
 
             if (!isAllowed)
             {
                 // Block navigation to any route that requires API access or write access.
                 // Redirect to the JSON viewer, which is the only safe place.
-                Console.WriteLine($"[Guard] IsAnyJsonMode: Force navigating to -jsonviewer URL");
-                Nav.NavigateTo("/jsonviewer", forceLoad: true);
+                // Nav.NavigateTo("/jsonviewer", forceLoad: true);
+                Nav.NavigateTo("/jsonviewer");
                 return Task.CompletedTask;
             }
 

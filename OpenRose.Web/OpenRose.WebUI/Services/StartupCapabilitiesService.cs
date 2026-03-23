@@ -26,7 +26,7 @@ namespace OpenRose.WebUI.Services
 	public class StartupCapabilitiesService
 	{
 		public bool ApiAvailable { get; }
-		public bool OfflineAvailable { get; }
+		public bool ServerOfflineAvailable { get; }
 
 		public StartupCapabilitiesService(IConfiguration configuration)
 		{
@@ -37,9 +37,9 @@ namespace OpenRose.WebUI.Services
 
 			// Offline is considered available if the section exists,
 			// regardless of folder/file validity.
-			var offlineSection = configuration.GetSection("OfflineContent");
-			OfflineAvailable = offlineSection.Exists() &&
-				   !string.IsNullOrEmpty(offlineSection["StorageFolder"]);
+			var serverOfflineSection = configuration.GetSection("OfflineContent");
+			ServerOfflineAvailable = serverOfflineSection.Exists() &&
+				   !string.IsNullOrEmpty(serverOfflineSection["StorageFolder"]);
 		}
 	}
 }

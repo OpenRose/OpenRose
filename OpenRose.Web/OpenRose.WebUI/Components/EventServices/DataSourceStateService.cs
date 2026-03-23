@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. 
 // See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 
+using OpenRose.WebUI.Services;
 using System;
 
 namespace OpenRose.WebUI.Components.EventServices
@@ -70,7 +71,7 @@ namespace OpenRose.WebUI.Components.EventServices
 			/// <summary>
 			/// Type of data source currently active: API or JSON File
 			/// </summary>
-			public DataSourceType CurrentDataSourceType { get; set; } = DataSourceType.ApiServer;
+			public DataSourceType CurrentDataSourceType { get; set; } = DataSourceType.None;
 
 			/// <summary>
 			/// Indicates whether the current data source is read-only.
@@ -120,20 +121,74 @@ namespace OpenRose.WebUI.Components.EventServices
 
 		}
 
+		/// <summary>
+		/// Public constructor for DataSourceStateService. Initializes the service with default state.
+		/// </summary>
+ 		public DataSourceStateService(StartupCapabilitiesService startupCapabilitiesService)
+		{
+
+			_startupCapabilitiesService = startupCapabilitiesService;
+			// Initialize with default state (API mode) on service creation.
+
+			switch (_startupCapabilitiesService.ApiAvailable, _startupCapabilitiesService.ServerOfflineAvailable)
+			{
+				case (true, _):
+					//_currentDataSourceState.CurrentDataSourceType = DataSourceType.ApiServer;
+					_currentDataSourceState = new DataSourceState
+					{
+						CurrentDataSourceType = DataSourceType.ApiServer,
+						IsReadOnlyMode = false,
+						JsonFilePathForDataSource = null,
+						JsonFileNameForDisplay = null,
+						LastErrorMessage = null,
+						LastErrorDetails = null
+					};
+					break;
+				case (false, true):
+					//_currentDataSourceState.CurrentDataSourceType = DataSourceType.JsonFileServerSide;
+					_currentDataSourceState = new DataSourceState
+					{
+						CurrentDataSourceType = DataSourceType.JsonFileServerSide,
+						IsReadOnlyMode = true,
+						JsonFilePathForDataSource = null,
+						JsonFileNameForDisplay = null,
+						LastErrorMessage = null,
+						LastErrorDetails = null
+					};
+					break;
+				case (false, false):
+					//_currentDataSourceState.CurrentDataSourceType = DataSourceType.None;
+					_currentDataSourceState = new DataSourceState
+					{
+						CurrentDataSourceType = DataSourceType.None,
+						IsReadOnlyMode = false,
+						JsonFilePathForDataSource = null,
+						JsonFileNameForDisplay = null,
+						LastErrorMessage = null,
+						LastErrorDetails = null
+					};
+					break;
+			}
+		}
+
+
 		// ========================================================================
 		// PRIVATE FIELDS
 		// ========================================================================
+
+		private readonly StartupCapabilitiesService _startupCapabilitiesService;
 
 		/// <summary>
 		/// Holds the current state of the data source configuration.
 		/// This is a private field with a public read-only property to enforce consistency.
 		/// </summary>
-		private DataSourceState _currentDataSourceState = new DataSourceState
-		{
-			CurrentDataSourceType = DataSourceType.JsonFileServerSide,
-			IsReadOnlyMode = false
-		};
+		//private DataSourceState _currentDataSourceState = new DataSourceState
+		//{
+		//	CurrentDataSourceType = DataSourceType.JsonFileServerSide,
+		//	IsReadOnlyMode = false
+		//};
 
+		private DataSourceState _currentDataSourceState = new DataSourceState();
 
 		// ========================================================================
 		// PUBLIC PROPERTIES
@@ -163,19 +218,19 @@ namespace OpenRose.WebUI.Components.EventServices
 		/// This should be called from Program.cs during startup to set initial state.
 		/// </summary>
 
-		public void InitializeToNone()
-		{
-			_currentDataSourceState = new DataSourceState
-			{
-				CurrentDataSourceType = DataSourceType.None,
-				IsReadOnlyMode = false,
-				JsonFilePathForDataSource = null,
-				JsonFileNameForDisplay = null,
-				LastErrorMessage = null,
-				LastErrorDetails = null
-			};
-			NotifyStateChanged();
-		}
+		//public void InitializeToNone()
+		//{
+		//	_currentDataSourceState = new DataSourceState
+		//	{
+		//		CurrentDataSourceType = DataSourceType.None,
+		//		IsReadOnlyMode = false,
+		//		JsonFilePathForDataSource = null,
+		//		JsonFileNameForDisplay = null,
+		//		LastErrorMessage = null,
+		//		LastErrorDetails = null
+		//	};
+		//	NotifyStateChanged();
+		//}
 
 		/// <summary>
 		/// Switches the data source to JSON File mode with the provided file path.
