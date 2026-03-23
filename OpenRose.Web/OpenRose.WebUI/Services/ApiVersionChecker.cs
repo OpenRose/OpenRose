@@ -13,7 +13,7 @@ namespace OpenRose.WebUI.Services
 	public class ApiVersionChecker
 	{
 		private readonly IHttpClientFactory _httpClientFactory;
-		private readonly APIConfigurationService _config;
+		private readonly APIConfigurationService _apiConfigService;
 		private readonly ILogger<ApiVersionChecker> _logger;
 
 		public ApiVersionChecker(IHttpClientFactory httpClientFactory,
@@ -21,7 +21,7 @@ namespace OpenRose.WebUI.Services
 								 ILogger<ApiVersionChecker> logger)
 		{
 			_httpClientFactory = httpClientFactory;
-			_config = config;
+			_apiConfigService = config;
 			_logger = logger;
 		}
 
@@ -35,7 +35,7 @@ namespace OpenRose.WebUI.Services
 				if (!resp.IsSuccessStatusCode)
 				{
 
-					_config.SetConnectionState(
+					_apiConfigService.SetConnectionState(
 						isOpenRoseAPIConfigured:false, 
 						apiVersion:null, 
 						message: $"Unable to contact OpenRose API. Status: {resp.StatusCode}"
@@ -50,22 +50,22 @@ namespace OpenRose.WebUI.Services
 				var apiVersion = doc.RootElement.GetProperty("informationalVersion").GetString() ?? "";
 
 
-				if (!string.Equals(apiVersion, _config.WebUiVersion, StringComparison.OrdinalIgnoreCase))
+				if (!string.Equals(apiVersion, _apiConfigService.WebUiVersion, StringComparison.OrdinalIgnoreCase))
 				{
 
-					_config.SetConnectionState(
+					_apiConfigService.SetConnectionState(
 						isOpenRoseAPIConfigured: false,
 						apiVersion: apiVersion,
-						message: $"OpenRose API version ({apiVersion}) does not match WebUI version ({_config.WebUiVersion})."
+						message: $"OpenRose API version ({apiVersion}) does not match WebUI version ({_apiConfigService.WebUiVersion})."
 						);
 
-					_logger.LogError("Version mismatch. API: {ApiVersion}, WebUI: {WebUiVersion}", apiVersion, _config.WebUiVersion);
+					_logger.LogError("Version mismatch. API: {ApiVersion}, WebUI: {WebUiVersion}", apiVersion, _apiConfigService.WebUiVersion);
 					return false;
 				}
 				else
 				{
 
-					_config.SetConnectionState(
+					_apiConfigService.SetConnectionState(
 						isOpenRoseAPIConfigured: true,
 						apiVersion: apiVersion,
 						message: string.Empty // ✅ clear error
@@ -79,7 +79,7 @@ namespace OpenRose.WebUI.Services
 			catch (Exception ex)
 			{
 
-				_config.SetConnectionState(
+				_apiConfigService.SetConnectionState(
 					isOpenRoseAPIConfigured: false,
 					apiVersion: null,
 					message: $"Exception during API version check : No connection could be made because the target machine actively refused it."

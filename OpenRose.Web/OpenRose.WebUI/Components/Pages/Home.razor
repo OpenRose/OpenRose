@@ -19,11 +19,11 @@
     </MudText>
 </MudStack>
 
-@if (!string.IsNullOrEmpty(ConfigService.ApiVersionMismatchMessage))
+@if (!string.IsNullOrEmpty(apiConfigService.ApiVersionMismatchMessage))
 {
     <br />
     <MudText Typo="Typo.h5" Align="Align.Left" Color="Color.Error">
-        @ConfigService.ApiVersionMismatchMessage
+        @apiConfigService.ApiVersionMismatchMessage
     </MudText>
 
     <!-- Optional: manual reconnect button -->
@@ -50,28 +50,28 @@ else if (!string.IsNullOrEmpty(_errorMessage))
 }
 
 @code {
-    [Inject] private APIConfigurationService ConfigService { get; set; } = default!;
+    [Inject] private APIConfigurationService apiConfigService { get; set; } = default!;
     [Inject] private IConfiguration Configuration { get; set; } = default!;
     [Inject] private IWebHostEnvironment Env { get; set; } = default!;
     [Inject] private AssemblyInfoService AssemblyInfo { get; set; } = default!;
-    // [Inject] private ApiVersionChecker? VersionChecker { get; set; } = default!;
+    [Inject] private ApiVersionChecker VersionChecker { get; set; } = default!;
     [Inject] private StartupCapabilitiesService StartupCapabilities { get; set; } = default!;
-    [Inject] private IServiceProvider Services { get; set; } = default!;
+    // [Inject] private IServiceProvider Services { get; set; } = default!;
 
 
     private string _errorMessage = string.Empty;
     private string version = string.Empty;
     private bool _isReconnectDisabled = false;
-    private ApiVersionChecker? VersionChecker;
+    //private ApiVersionChecker? VersionChecker;
 
     protected override void OnInitialized()
     {
-        VersionChecker = Services.GetService<ApiVersionChecker>();
+        // VersionChecker = Services.GetService<ApiVersionChecker>();
 
         // Only show API configuration error if API is expected to exist
         if (StartupCapabilities.ApiAvailable)
         {
-            if (!ConfigService.IsOpenRoseAPIConfigured)
+            if (!apiConfigService.IsOpenRoseAPIConfigured)
             {
                 _errorMessage = "OpenRose API connection via base URL is not configured. Please contact your System Administrator.";
             }
@@ -80,8 +80,8 @@ else if (!string.IsNullOrEmpty(_errorMessage))
         version = AssemblyInfo.GetAssemblyVersion();
 
         // Console.WriteLine("Home subscribing directly to ConfigService.OnChange");
-        ConfigService.OnChange -= HandleConfigChanged; // ensure no duplicate
-        ConfigService.OnChange += HandleConfigChanged;
+        apiConfigService.OnChange -= HandleConfigChanged; // ensure no duplicate
+        apiConfigService.OnChange += HandleConfigChanged;
     }
 
     private void HandleConfigChanged()
@@ -93,7 +93,7 @@ else if (!string.IsNullOrEmpty(_errorMessage))
     private async Task Reconnect()
     {
         _isReconnectDisabled = true;
-        @if (StartupCapabilities.ApiAvailable && VersionChecker is not null)
+        @if (StartupCapabilities.ApiAvailable)
         {
             await VersionChecker.CheckApiVersionAsync();
             StateHasChanged();
@@ -109,7 +109,7 @@ else if (!string.IsNullOrEmpty(_errorMessage))
     public void Dispose()
     {
         // Console.WriteLine("Home unsubscribing from ConfigService.OnChange");
-        ConfigService.OnChange -= HandleConfigChanged;
+        apiConfigService.OnChange -= HandleConfigChanged;
     }
 
 }

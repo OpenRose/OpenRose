@@ -11,7 +11,7 @@
 //	public class ApiVersionMonitorService : BackgroundService
 //	{
 //		private readonly ApiVersionChecker _checker;
-//		private readonly APIConfigurationService _config;
+//		private readonly APIConfigurationService _apiConfigService;
 //		private readonly ILogger<ApiVersionMonitorService> _logger;
 
 //		public ApiVersionMonitorService(ApiVersionChecker checker,
@@ -19,7 +19,7 @@
 //										ILogger<ApiVersionMonitorService> logger)
 //		{
 //			_checker = checker;
-//			_config = config;
+//			_apiConfigService = config;
 //			_logger = logger;
 //		}
 
@@ -32,9 +32,9 @@
 //				if (healthy)
 //				{
 //					// Clear error message once healthy
-//					_config.SetConnectionState(
+//					_apiConfigService.SetConnectionState(
 //						isConfigured: true,
-//						apiVersion: _config.ApiVersion, // keep current version if already known
+//						apiVersion: _apiConfigService.ApiVersion, // keep current version if already known
 //						message: string.Empty           // clear error
 //					);
 
