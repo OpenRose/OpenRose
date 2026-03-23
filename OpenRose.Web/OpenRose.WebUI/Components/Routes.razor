@@ -7,13 +7,13 @@
 @using OpenRose.WebUI.Services
 @using OpenRose.WebUI.Components.EventServices
 
-@inject ConfigurationService ConfigService
+@inject APIConfigurationService apiConfigService
 @inject DataSourceStateService DataSourceStateServiceForRoutingGuard
 @inject NavigationManager Nav
 
 <Router AppAssembly="typeof(Program).Assembly"
         AdditionalAssemblies="new[] { typeof(Client._Imports).Assembly }"
-        OnNavigateAsync="GuardNavigation">
+        OnNavigateAsync="GuardNavigation"> 
     <Found Context="routeData">
         <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
         <FocusOnNavigate RouteData="routeData" Selector="h1" />
@@ -71,6 +71,36 @@
         var state = DataSourceStateServiceForRoutingGuard.CurrentDataSourceState;
         string path = context.Path.ToLowerInvariant().Trim('/');
 
+        // if (state.IsApiMode)
+        // {
+        //     Console.WriteLine($"[Guard] ApiMode: IsConfigured={apiConfigService.IsOpenRoseAPIConfigured}, Mismatch='{apiConfigService.ApiVersionMismatchMessage}'");
+        //     Console.WriteLine($"[Guard] JsonMode: path='{path}'");
+        // }
+
+        // ============================================================
+        // NONE MODE — Only allow Home ("/")
+        // ============================================================
+        if (state.CurrentDataSourceType == DataSourceStateService.DataSourceType.None)
+        {
+
+            // Allowed routes in NONE mode:
+            //   - ""           → home page
+            //   - "settings"   → user can switch modes
+            bool isAllowed =
+                path == "" ||
+                path == "settings";
+
+            if (!isAllowed)
+            {
+                // Redirect to the HOME page, which is the only safe place.
+                Nav.NavigateTo("/");
+            }
+
+            // if (path != "")
+            //     Nav.NavigateTo("/", replace: true);
+
+            return Task.CompletedTask;
+        }
 
         // ========================================================================
         // API SERVER MODE — FULL ACCESS (WITH HEALTH CHECKS)
@@ -81,8 +111,8 @@
         if (state.IsApiMode)
         {
             // Block navigation if API is misconfigured or incompatible
-            if (!ConfigService.IsOpenRoseAPIConfigured ||
-                !string.IsNullOrEmpty(ConfigService.ApiVersionMismatchMessage))
+            if (!apiConfigService.IsOpenRoseAPIConfigured ||
+                !string.IsNullOrEmpty(apiConfigService.ApiVersionMismatchMessage))
             {
                 Nav.NavigateTo("/");
                 return Task.CompletedTask;
@@ -91,6 +121,7 @@
             // API is healthy → allow navigation
             return Task.CompletedTask;
         }
+
 
 
         // ========================================================================
@@ -113,11 +144,15 @@
                 path == "jsonviewer" ||
                 path == "settings";
 
+            // Console.WriteLine($"[Guard] IsAnyJsonMode: true");
+            // Console.WriteLine($"[Guard] JsonMode: path='{path}'");
+
             if (!isAllowed)
             {
                 // Block navigation to any route that requires API access or write access.
                 // Redirect to the JSON viewer, which is the only safe place.
-                Nav.NavigateTo("/jsonviewer", forceLoad: true);
+                // Nav.NavigateTo("/jsonviewer", forceLoad: true);
+                Nav.NavigateTo("/jsonviewer");
                 return Task.CompletedTask;
             }
 
@@ -131,7 +166,7 @@
         // ------------------------------------------------------------------------
         // If the data source state is somehow invalid, redirect to home.
         // ========================================================================
-        Nav.NavigateTo("/");
+        // // Nav.NavigateTo("/");
         return Task.CompletedTask;
     }
 

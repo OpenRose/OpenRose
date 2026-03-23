@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. 
 // See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 
+using OpenRose.WebUI.Services;
 using System;
 
 namespace OpenRose.WebUI.Components.EventServices
@@ -30,7 +31,7 @@ namespace OpenRose.WebUI.Components.EventServices
 	{
 		// ========================================================================
 		// EXISTING CODE PATTERN REFERENCE:
-		// This service follows the same observer pattern as ConfigurationService and FormStateService
+		// This service follows the same observer pattern as APIConfigurationService and FormStateService
 		// ========================================================================
 
 		/// <summary>
@@ -39,6 +40,12 @@ namespace OpenRose.WebUI.Components.EventServices
 		public enum DataSourceType
 		{
 			/// <summary>
+			/// No data source is currently active.
+			/// This occurs at startup when neither API nor Offline JSON is available.
+			/// </summary>
+			None,
+
+			/// <summary>
 			/// Connected to OpenRose API Server - Full CRUD operations supported
 			/// </summary>
 			ApiServer,
@@ -46,13 +53,14 @@ namespace OpenRose.WebUI.Components.EventServices
 			/// <summary>
 			/// Connected to Server side JSON file available on WebUI server - Read-Only operations only
 			/// </summary>
-			JsonFileServerSide,   // NEW
+			JsonFileServerSide,
 
 			/// <summary>
 			/// Connected to Client uploaded JSON file - Read-Only operations only
 			/// </summary>
-			JsonFileClientSide    // NEW
+			JsonFileClientSide
 		}
+
 
 		/// <summary>
 		/// Data class that encapsulates all state information about the current data source.
@@ -63,7 +71,7 @@ namespace OpenRose.WebUI.Components.EventServices
 			/// <summary>
 			/// Type of data source currently active: API or JSON File
 			/// </summary>
-			public DataSourceType CurrentDataSourceType { get; set; } = DataSourceType.ApiServer;
+			public DataSourceType CurrentDataSourceType { get; set; } = DataSourceType.None;
 
 			/// <summary>
 			/// Indicates whether the current data source is read-only.
@@ -113,14 +121,73 @@ namespace OpenRose.WebUI.Components.EventServices
 
 		}
 
+		/// <summary>
+		/// Public constructor for DataSourceStateService. Initializes the service with default state.
+		/// </summary>
+ 		public DataSourceStateService(StartupCapabilitiesService startupCapabilitiesService)
+		{
+
+			_startupCapabilitiesService = startupCapabilitiesService;
+			// Initialize with default state (API mode) on service creation.
+
+			switch (_startupCapabilitiesService.ApiAvailable, _startupCapabilitiesService.ServerOfflineAvailable)
+			{
+				case (true, _):
+					//_currentDataSourceState.CurrentDataSourceType = DataSourceType.ApiServer;
+					_currentDataSourceState = new DataSourceState
+					{
+						CurrentDataSourceType = DataSourceType.ApiServer,
+						IsReadOnlyMode = false,
+						JsonFilePathForDataSource = null,
+						JsonFileNameForDisplay = null,
+						LastErrorMessage = null,
+						LastErrorDetails = null
+					};
+					break;
+				case (false, true):
+					//_currentDataSourceState.CurrentDataSourceType = DataSourceType.JsonFileServerSide;
+					_currentDataSourceState = new DataSourceState
+					{
+						CurrentDataSourceType = DataSourceType.JsonFileServerSide,
+						IsReadOnlyMode = true,
+						JsonFilePathForDataSource = null,
+						JsonFileNameForDisplay = null,
+						LastErrorMessage = null,
+						LastErrorDetails = null
+					};
+					break;
+				case (false, false):
+					//_currentDataSourceState.CurrentDataSourceType = DataSourceType.None;
+					_currentDataSourceState = new DataSourceState
+					{
+						CurrentDataSourceType = DataSourceType.None,
+						IsReadOnlyMode = false,
+						JsonFilePathForDataSource = null,
+						JsonFileNameForDisplay = null,
+						LastErrorMessage = null,
+						LastErrorDetails = null
+					};
+					break;
+			}
+		}
+
+
 		// ========================================================================
 		// PRIVATE FIELDS
 		// ========================================================================
+
+		private readonly StartupCapabilitiesService _startupCapabilitiesService;
 
 		/// <summary>
 		/// Holds the current state of the data source configuration.
 		/// This is a private field with a public read-only property to enforce consistency.
 		/// </summary>
+		//private DataSourceState _currentDataSourceState = new DataSourceState
+		//{
+		//	CurrentDataSourceType = DataSourceType.JsonFileServerSide,
+		//	IsReadOnlyMode = false
+		//};
+
 		private DataSourceState _currentDataSourceState = new DataSourceState();
 
 		// ========================================================================
@@ -146,24 +213,24 @@ namespace OpenRose.WebUI.Components.EventServices
 		// ========================================================================
 		// PUBLIC METHODS
 		// ========================================================================
-
 		/// <summary>
-		/// Initializes the data source to API mode (default state on application startup).
+		/// Initializes the data source to None mode (default state on application startup).
 		/// This should be called from Program.cs during startup to set initial state.
 		/// </summary>
-		public void InitializeToApiDataSource()
-		{
-			_currentDataSourceState = new DataSourceState
-			{
-				CurrentDataSourceType = DataSourceType.ApiServer,
-				IsReadOnlyMode = false,
-				JsonFilePathForDataSource = null,
-				JsonFileNameForDisplay = null,
-				LastErrorMessage = null,
-				LastErrorDetails = null
-			};
-			NotifyStateChanged();
-		}
+
+		//public void InitializeToNone()
+		//{
+		//	_currentDataSourceState = new DataSourceState
+		//	{
+		//		CurrentDataSourceType = DataSourceType.None,
+		//		IsReadOnlyMode = false,
+		//		JsonFilePathForDataSource = null,
+		//		JsonFileNameForDisplay = null,
+		//		LastErrorMessage = null,
+		//		LastErrorDetails = null
+		//	};
+		//	NotifyStateChanged();
+		//}
 
 		/// <summary>
 		/// Switches the data source to JSON File mode with the provided file path.
@@ -288,7 +355,7 @@ namespace OpenRose.WebUI.Components.EventServices
 		/// Internal method that triggers the OnDataSourceChanged event to notify
 		/// all subscribed components that the data source state has changed.
 		/// 
-		/// EXPLANATION: Similar to ConfigurationService pattern, we call this
+		/// EXPLANATION: Similar to APIConfigurationService pattern, we call this
 		/// whenever state changes to trigger component re-renders in Blazor.
 		/// </summary>
 		private void NotifyStateChanged()

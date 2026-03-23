@@ -70,6 +70,12 @@
                 Client JSON Mode
             </MudChip>
         }
+        else 
+        {
+            <MudChip T="string" Color="Color.Error" Size="Size.Small" Variant="Variant.Filled" Class="mb-2">
+                NONE
+            </MudChip>
+        }
     </MudStack>
 
 
@@ -157,7 +163,7 @@
 }
 
 @code {
-    [Inject] private ConfigurationService ConfigService { get; set; } = default!;
+    [Inject] private APIConfigurationService ConfigService { get; set; } = default!;
     [Inject] private JsonFileDataSourceService JsonService { get; set; } = default!;
 
     private string version;
@@ -171,19 +177,19 @@
     // MODE SWITCHING LOGIC
     // ============================================================
 
-    private void SwitchToApiMode()
-    {
-        DataSourceState.SwitchToApiDataSource();
-        Nav.NavigateTo("/", forceLoad: true);
-    }
+    // private void SwitchToApiMode()
+    // {
+    //     DataSourceState.SwitchToApiDataSource();
+    //     Nav.NavigateTo("/", forceLoad: true);
+    // }
 
-    private void SwitchToServerJsonMode()
-    {
-        Nav.NavigateTo("/jsonfile/select", forceLoad: true);
-    }
+    // private void SwitchToServerJsonMode()
+    // {
+    //     Nav.NavigateTo("/jsonfile/select", forceLoad: true);
+    // }
 
-    private void SwitchToClientJsonMode()
-    {
-        Nav.NavigateTo("/jsonfile/upload", forceLoad: true);
-    }
+    // private void SwitchToClientJsonMode()
+    // {
+    //     Nav.NavigateTo("/jsonfile/upload", forceLoad: true);
+    // }
 }

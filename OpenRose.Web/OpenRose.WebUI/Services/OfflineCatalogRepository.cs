@@ -53,11 +53,16 @@ namespace OpenRose.WebUI.Services
 		/// </summary>
 		private void EnsureStorageFolderExists()
 		{
+			// If no folder is configured, do nothing.
+			if (string.IsNullOrWhiteSpace(_storageFolderFullPath))
+				return;
+
 			if (!Directory.Exists(_storageFolderFullPath))
 			{
 				Directory.CreateDirectory(_storageFolderFullPath);
 			}
 		}
+
 
 		/// <summary>
 		/// EXPLANATION:

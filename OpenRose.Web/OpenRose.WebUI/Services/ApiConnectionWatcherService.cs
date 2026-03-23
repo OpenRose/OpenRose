@@ -11,11 +11,11 @@ namespace OpenRose.WebUI.Services
 	public class ApiConnectionWatcherService : BackgroundService
 	{
 		private readonly ApiVersionChecker _checker;
-		private readonly ConfigurationService _config;
+		private readonly APIConfigurationService _config;
 		private readonly ILogger<ApiConnectionWatcherService> _logger;
 
 		public ApiConnectionWatcherService(ApiVersionChecker checker,
-										   ConfigurationService config,
+										   APIConfigurationService config,
 										   ILogger<ApiConnectionWatcherService> logger)
 		{
 			_checker = checker;
