@@ -287,6 +287,10 @@
         "CreatedDate": {
           "type": "string",
           "format": "date-time"
+        },
+        "ProjectId": {
+          "type": "string",
+          "format": "uuid"
         }
       },
       "required": [ "Id", "Name", "Description", "CreatedBy", "CreatedDate" ],
