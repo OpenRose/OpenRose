@@ -19,44 +19,46 @@
     </MudText>
 </MudStack>
 
-@if (!string.IsNullOrEmpty(apiConfigService.ApiVersionMismatchMessage))
+@if (StartupCapabilities.ApiAvailable)
 {
-    <br />
-    <MudText Typo="Typo.h5" Align="Align.Left" Color="Color.Error">
-        @apiConfigService.ApiVersionMismatchMessage
-    </MudText>
+    @if (!string.IsNullOrEmpty(apiConfigService.ApiVersionMismatchMessage))
+    {
+        <br />
+        <MudText Typo="Typo.h5" Align="Align.Left" Color="Color.Error">
+            @apiConfigService.ApiVersionMismatchMessage
+        </MudText>
 
-    <!-- Optional: manual reconnect button -->
-    <MudButton Color="Color.Primary"
-               Variant="Variant.Filled"
-               Disabled="@_isReconnectDisabled"
-               OnClick="Reconnect">
-        @(_isReconnectDisabled ? "Please wait..." : "Reconnect to API")
-    </MudButton>
-}
-else if (!string.IsNullOrEmpty(_errorMessage))
-{
-    <br />
-    <MudText Typo="Typo.h5" Align="Align.Left" Color="Color.Error">
-        @_errorMessage
-    </MudText>
-    <MudText Typo="Typo.inherit" Align="Align.Left" Color="Color.Error">
-        Environment Name: @Env.EnvironmentName
-    </MudText>
-    <br />
-    <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">
-        Version - @version
-    </MudChip>
+        <!-- Optional: manual reconnect button -->
+        <MudButton Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   Disabled="@_isReconnectDisabled"
+                   OnClick="Reconnect">
+            @(_isReconnectDisabled ? "Please wait..." : "Reconnect to API")
+        </MudButton>
+    }
+    else if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <br />
+        <MudText Typo="Typo.h5" Align="Align.Left" Color="Color.Error">
+            @_errorMessage
+        </MudText>
+        <MudText Typo="Typo.inherit" Align="Align.Left" Color="Color.Error">
+            Environment Name: @Env.EnvironmentName
+        </MudText>
+        <br />
+        <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">
+            Version - @version
+        </MudChip>
+    }
 }
 
 @code {
     [Inject] private APIConfigurationService apiConfigService { get; set; } = default!;
-    [Inject] private IConfiguration Configuration { get; set; } = default!;
     [Inject] private IWebHostEnvironment Env { get; set; } = default!;
     [Inject] private AssemblyInfoService AssemblyInfo { get; set; } = default!;
     [Inject] private ApiVersionChecker VersionChecker { get; set; } = default!;
     [Inject] private StartupCapabilitiesService StartupCapabilities { get; set; } = default!;
-    // [Inject] private IServiceProvider Services { get; set; } = default!;
+    //[Inject] private IServiceProvider Services { get; set; } = default!;
 
 
     private string _errorMessage = string.Empty;
@@ -66,7 +68,10 @@ else if (!string.IsNullOrEmpty(_errorMessage))
 
     protected override void OnInitialized()
     {
-        // VersionChecker = Services.GetService<ApiVersionChecker>();
+        // @if (StartupCapabilities.ApiAvailable)
+        // {
+        //     VersionChecker = Services.GetService<ApiVersionChecker>();
+        // }
 
         // Only show API configuration error if API is expected to exist
         if (StartupCapabilities.ApiAvailable)
@@ -96,14 +101,14 @@ else if (!string.IsNullOrEmpty(_errorMessage))
         @if (StartupCapabilities.ApiAvailable)
         {
             await VersionChecker.CheckApiVersionAsync();
-            StateHasChanged();
+            // StateHasChanged(); // Blazor does this automatically after event handlers
         }
 
 
-        // Wait 5 seconds before re-enabling
-        await Task.Delay(TimeSpan.FromSeconds(5));
+        // Wait few seconds before re-enabling
+        await Task.Delay(TimeSpan.FromSeconds(3));
         _isReconnectDisabled = false;
-        StateHasChanged();
+        // StateHasChanged();
     }
 
     public void Dispose()
