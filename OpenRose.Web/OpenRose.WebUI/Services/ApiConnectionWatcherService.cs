@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. 
 // See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 
+using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using OpenRose.WebUI.Configuration;
@@ -12,14 +13,17 @@ namespace OpenRose.WebUI.Services
 	{
 		private readonly ApiVersionChecker _checker;
 		private readonly APIConfigurationService _config;
+		private readonly StartupCapabilitiesService _startupCapabilities;
 		private readonly ILogger<ApiConnectionWatcherService> _logger;
 
 		public ApiConnectionWatcherService(ApiVersionChecker checker,
 										   APIConfigurationService config,
+										   StartupCapabilitiesService startupCapabilities,
 										   ILogger<ApiConnectionWatcherService> logger)
 		{
 			_checker = checker;
 			_config = config;
+			_startupCapabilities = startupCapabilities;
 			_logger = logger;
 		}
 
@@ -27,13 +31,15 @@ namespace OpenRose.WebUI.Services
 		{
 			while (!stoppingToken.IsCancellationRequested)
 			{
-				var healthy = await _checker.CheckApiVersionAsync(stoppingToken);
-
-				if (!healthy)
+				if (_startupCapabilities.ApiAvailable)
 				{
-					_logger.LogWarning("API connection lost. Will retry...");
-				}
+					var healthy = await _checker.CheckApiVersionAsync(stoppingToken);
 
+					if (!healthy)
+					{
+						_logger.LogWarning("API connection lost. Will retry...");
+					}
+				}
 				await Task.Delay(TimeSpan.FromMinutes(2), stoppingToken);
 			}
 		}
