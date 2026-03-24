@@ -15,18 +15,33 @@ namespace OpenRose.WebUI.Services
 		private readonly IHttpClientFactory _httpClientFactory;
 		private readonly APIConfigurationService _apiConfigService;
 		private readonly ILogger<ApiVersionChecker> _logger;
+		private readonly StartupCapabilitiesService _capabilities;
+
 
 		public ApiVersionChecker(IHttpClientFactory httpClientFactory,
 								 APIConfigurationService config,
-								 ILogger<ApiVersionChecker> logger)
+								 ILogger<ApiVersionChecker> logger,
+								StartupCapabilitiesService capabilities)
 		{
 			_httpClientFactory = httpClientFactory;
 			_apiConfigService = config;
 			_logger = logger;
+			_capabilities = capabilities;
 		}
 
 		public async Task<bool> CheckApiVersionAsync(CancellationToken token = default)
 		{
+			if (!_capabilities.ApiAvailable)
+			{
+				_logger.LogInformation("API not available — skipping version check.");
+				_apiConfigService.SetConnectionState(
+					isOpenRoseAPIConfigured: false,
+					apiVersion: null,
+					message: "API mode is disabled in application configuration."
+				);
+				return false;
+			}
+
 			try
 			{
 				var client = _httpClientFactory.CreateClient("VersionCheck");

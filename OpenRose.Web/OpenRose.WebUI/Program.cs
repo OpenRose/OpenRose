@@ -67,6 +67,22 @@ builder.Configuration.AddEnvironmentVariables(); // Add environment variables to
 var startupCapabilities = new StartupCapabilitiesService(builder.Configuration);
 builder.Services.AddSingleton(startupCapabilities);
 
+// Always register HttpClientFactory
+builder.Services.AddHttpClient();
+
+// Always register VersionCheck client safely
+builder.Services.AddHttpClient("VersionCheck", (sp, client) =>
+{
+	var config = sp.GetRequiredService<IConfiguration>();
+	var baseUrl = config["APISettings:BaseUrl"];
+
+	if (!string.IsNullOrWhiteSpace(baseUrl))
+		client.BaseAddress = new Uri(baseUrl);
+
+	client.Timeout = TimeSpan.FromSeconds(5);
+});
+
+
 //if (startupCapabilities.ApiAvailable)
 //{
 //	// Configure API settings
@@ -115,6 +131,9 @@ apiConfigurationService.SetConnectionState(
 );
 builder.Services.AddSingleton(apiConfigurationService);
 
+
+// Register the shared checker
+builder.Services.AddSingleton<ApiVersionChecker>();
 
 //// --- NEW: register HttpClient for version check + background monitor ---
 //if (startupCapabilities.ApiAvailable)
@@ -194,14 +213,6 @@ else
 
 	apiConfigurationService.WebUiVersion = webUiVersion;
 
-	builder.Services.AddHttpClient("VersionCheck", client =>
-	{
-		client.BaseAddress = new Uri(apiSettings!.BaseUrl);
-		client.Timeout = TimeSpan.FromSeconds(5);
-	});
-
-	// Register the shared checker
-	builder.Services.AddSingleton<ApiVersionChecker>();
 
 	// Register both hosted services
 	//builder.Services.AddHostedService<ApiVersionMonitorService>();

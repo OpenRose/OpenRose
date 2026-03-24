@@ -54,25 +54,24 @@
 
 @code {
     [Inject] private APIConfigurationService apiConfigService { get; set; } = default!;
-    [Inject] private IConfiguration Configuration { get; set; } = default!;
     [Inject] private IWebHostEnvironment Env { get; set; } = default!;
     [Inject] private AssemblyInfoService AssemblyInfo { get; set; } = default!;
-    //[Inject] private ApiVersionChecker? VersionChecker { get; set; } = default!;
+    [Inject] private ApiVersionChecker VersionChecker { get; set; } = default!;
     [Inject] private StartupCapabilitiesService StartupCapabilities { get; set; } = default!;
-    [Inject] private IServiceProvider Services { get; set; } = default!;
+    //[Inject] private IServiceProvider Services { get; set; } = default!;
 
 
     private string _errorMessage = string.Empty;
     private string version = string.Empty;
     private bool _isReconnectDisabled = false;
-    private ApiVersionChecker? VersionChecker;
+    //private ApiVersionChecker? VersionChecker;
 
     protected override void OnInitialized()
     {
-         @if (StartupCapabilities.ApiAvailable)
-        {
-            VersionChecker = Services.GetService<ApiVersionChecker>();
-        }
+        // @if (StartupCapabilities.ApiAvailable)
+        // {
+        //     VersionChecker = Services.GetService<ApiVersionChecker>();
+        // }
 
         // Only show API configuration error if API is expected to exist
         if (StartupCapabilities.ApiAvailable)
@@ -99,17 +98,17 @@
     private async Task Reconnect()
     {
         _isReconnectDisabled = true;
-        @if (StartupCapabilities.ApiAvailable && VersionChecker is not null)
+        @if (StartupCapabilities.ApiAvailable)
         {
             await VersionChecker.CheckApiVersionAsync();
-            StateHasChanged();
+            // StateHasChanged(); // Blazor does this automatically after event handlers
         }
 
 
-        // Wait 5 seconds before re-enabling
-        await Task.Delay(TimeSpan.FromSeconds(5));
+        // Wait few seconds before re-enabling
+        await Task.Delay(TimeSpan.FromSeconds(3));
         _isReconnectDisabled = false;
-        StateHasChanged();
+        // StateHasChanged();
     }
 
     public void Dispose()
