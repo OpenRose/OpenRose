@@ -15,14 +15,14 @@ namespace OpenRose.WebUI.Configuration
 
 		public string DefaultJsonFile { get; set; } = string.Empty;
 
-		/// <summary>
-		/// EXPLANATION:
-		/// StartupMode controls how the WebUI decides between API mode and Offline JSON mode.
-		/// Allowed values:
-		///   "AUTO"    → Try API first, fallback to offline if API unavailable.
-		///   "LIVE"    → Always use API mode.
-		///   "OFFLINE" → Always use offline JSON mode.
-		/// </summary>
-		public string StartupMode { get; set; } = "AUTO";
+		///// <summary>
+		///// EXPLANATION:
+		///// StartupMode controls how the WebUI decides between API mode and Offline JSON mode.
+		///// Allowed values:
+		/////   "AUTO"    → Try API first, fallback to offline if API unavailable.
+		/////   "LIVE"    → Always use API mode.
+		/////   "OFFLINE" → Always use offline JSON mode.
+		///// </summary>
+		//public string StartupMode { get; set; } = "AUTO";
 	}
 }

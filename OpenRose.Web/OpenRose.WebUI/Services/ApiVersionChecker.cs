@@ -15,23 +15,23 @@ namespace OpenRose.WebUI.Services
 		private readonly IHttpClientFactory _httpClientFactory;
 		private readonly APIConfigurationService _apiConfigService;
 		private readonly ILogger<ApiVersionChecker> _logger;
-		private readonly StartupCapabilitiesService _capabilities;
+		private readonly StartupCapabilitiesService _startupCapabilities;
 
 
 		public ApiVersionChecker(IHttpClientFactory httpClientFactory,
 								 APIConfigurationService config,
 								 ILogger<ApiVersionChecker> logger,
-								StartupCapabilitiesService capabilities)
+								StartupCapabilitiesService startupCapabilities)
 		{
 			_httpClientFactory = httpClientFactory;
 			_apiConfigService = config;
 			_logger = logger;
-			_capabilities = capabilities;
+			_startupCapabilities = startupCapabilities;
 		}
 
 		public async Task<bool> CheckApiVersionAsync(CancellationToken token = default)
 		{
-			if (!_capabilities.ApiAvailable)
+			if (!_startupCapabilities.ApiAvailable)
 			{
 				_logger.LogInformation("API not available — skipping version check.");
 				_apiConfigService.SetConnectionState(
