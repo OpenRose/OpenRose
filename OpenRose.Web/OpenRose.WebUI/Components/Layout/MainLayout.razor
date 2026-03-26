@@ -129,32 +129,46 @@
 		<MudText Typo="Typo.caption" Style="margin-left: 8px;">
 			[OFFLINE MODE]
 		</MudText>
-			<span class="file-path-footer-button" @onclick="ShowJsonFilePathDetailsAsync">
+			<span class="file-path-footer-button" @onclick="ShowJsonFileDetailsAsync">
 			📋 Data File Name
 		</span>
 		} *@
 
-
 		@if (tempCustomDataSourceState.IsServerJsonMode)
 		{
-			<MudChip T="string" Color="Color.Warning" Variant="Variant.Filled">SERVER JSON MODE</MudChip>
+			@* <MudChip T="string" Color="Color.Warning" Variant="Variant.Filled">SERVER JSON MODE</MudChip> *@
 
-			<MudTooltip Text="Click to view full file path" Placement="Placement.Top">
-				<span class="file-path-footer-button" @onclick="ShowJsonFilePathDetailsAsync">
+				<MudButton Variant="Variant.Text" Color="Color.Primary"
+						   OnClick="ShowJsonFileDetailsAsync">
+					<MudChip T="string" Color="Color.Warning" Variant="Variant.Filled">SERVER JSON MODE</MudChip>
+				</MudButton>
+
+
+@* 			<MudTooltip Text="Click to view full file path" Placement="Placement.Top">
+				<span class="file-path-footer-button" @onclick="ShowJsonFileDetailsAsync">
 					📁 @tempCustomDataSourceState.JsonFileNameForDisplay
 				</span>
 			</MudTooltip>
-		}
+ *@		}
 		else if (tempCustomDataSourceState.IsClientJsonMode)
 		{
-			<MudChip T="string" Color="Color.Info" Variant="Variant.Filled">CLIENT JSON MODE</MudChip>
+			@* <MudChip T="string" Color="Color.Info" Variant="Variant.Filled">CLIENT JSON MODE</MudChip> *@
 
-			<MudTooltip Text="This file is loaded from your browser memory" Placement="Placement.Top">
-				<span class="file-path-footer-button">
-					📄 @tempCustomDataSourceState.JsonFileNameForDisplay
-				</span>
-			</MudTooltip>
+				<MudButton Variant="Variant.Text" Color="Color.Primary"
+						   OnClick="ShowJsonFileDetailsAsync">
+					<MudChip T="string" Color="Color.Info" Variant="Variant.Filled">CLIENT JSON MODE</MudChip>
+				</MudButton>
+
+@* 			<MudTooltip Text="This file is loaded from your browser memory" Placement="Placement.Top"> 				
+			</MudTooltip>*@
 		}
+
+@* 		@if (DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState.IsAnyJsonMode)
+		{
+			<span class="file-path-footer-button" @onclick="ShowJsonFileDetailsAsync">
+				📄 @tempCustomDataSourceState.JsonFileNameForDisplay
+			</span>
+		} *@
 
 		<MudSpacer />
 
@@ -546,17 +560,21 @@
 	/// Shows a dialog displaying the full file path of the JSON file.
 	/// User can copy the path from the dialog.
 	/// </summary>
-	private async Task ShowJsonFilePathDetailsAsync()
+	private async Task ShowJsonFileDetailsAsync()
 	{
-		string fullJsonFilePathToDisplay = DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState.JsonFilePathForDataSource ?? "Unknown";
+		//string fullJsonFilePathToDisplay = DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState.JsonFilePathForDataSource ?? "Unknown";
+
+		string fileName = DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState.JsonFileNameForDisplay ?? "Unknown";
+
 
 		var dialogParameters = new DialogParameters();
-		dialogParameters.Add("JsonFilePathToShow", fullJsonFilePathToDisplay);
+//		dialogParameters.Add("JsonFilePathToShow", fullJsonFilePathToDisplay);
+		dialogParameters.Add("JsonFileNameToShow", fileName);
 
 		var dialogOptions = new DialogOptions { CloseOnEscapeKey = true, BackdropClick = true };
 
-		await DialogServiceForShowingDialogs.ShowAsync<JsonFilePathDialog>(
-			"JSON File Path",
+		await DialogServiceForShowingDialogs.ShowAsync<JsonFileDialog>(
+			"JSON File Details",
 			dialogParameters,
 			dialogOptions
 		);

@@ -79,13 +79,13 @@ namespace OpenRose.WebUI.Components.EventServices
 			/// </summary>
 			public bool IsReadOnlyMode { get; set; } = false;
 
-			/// <summary>
-			/// Full file path (UNC or local) to the currently loaded JSON file.
-			/// This is null/empty when data source is API.
-			/// Example: "\\\\server\\share\\openrose_export_20260214_120000.json"
-			/// or "C:\\Exports\\openrose_export_20260214_120000.json"
-			/// </summary>
-			public string? JsonFilePathForDataSource { get; set; }
+			///// <summary>
+			///// Full file path (UNC or local) to the currently loaded JSON file.
+			///// This is null/empty when data source is API.
+			///// Example: "\\\\server\\share\\openrose_export_20260214_120000.json"
+			///// or "C:\\Exports\\openrose_export_20260214_120000.json"
+			///// </summary>
+			//public string? JsonFilePathForDataSource { get; set; }
 
 			/// <summary>
 			/// File name (without path) of the currently loaded JSON file for display purposes.
@@ -138,7 +138,7 @@ namespace OpenRose.WebUI.Components.EventServices
 					{
 						CurrentDataSourceType = DataSourceType.ApiServer,
 						IsReadOnlyMode = false,
-						JsonFilePathForDataSource = null,
+						//JsonFilePathForDataSource = null,
 						JsonFileNameForDisplay = null,
 						LastErrorMessage = null,
 						LastErrorDetails = null
@@ -150,7 +150,7 @@ namespace OpenRose.WebUI.Components.EventServices
 					{
 						CurrentDataSourceType = DataSourceType.JsonFileServerSide,
 						IsReadOnlyMode = true,
-						JsonFilePathForDataSource = null,
+						//JsonFilePathForDataSource = null,
 						JsonFileNameForDisplay = null,
 						LastErrorMessage = null,
 						LastErrorDetails = null
@@ -162,7 +162,7 @@ namespace OpenRose.WebUI.Components.EventServices
 					{
 						CurrentDataSourceType = DataSourceType.None,
 						IsReadOnlyMode = false,
-						JsonFilePathForDataSource = null,
+						//JsonFilePathForDataSource = null,
 						JsonFileNameForDisplay = null,
 						LastErrorMessage = null,
 						LastErrorDetails = null
@@ -258,7 +258,7 @@ namespace OpenRose.WebUI.Components.EventServices
 			{
 				CurrentDataSourceType = DataSourceType.JsonFileClientSide,
 				IsReadOnlyMode = true,
-				JsonFilePathForDataSource = jsonFilePathForDataSourceProvided,
+				//JsonFilePathForDataSource = jsonFilePathForDataSourceProvided,
 				JsonFileNameForDisplay = jsonFileNameForDisplayExtracted,
 				LastErrorMessage = null,
 				LastErrorDetails = null
@@ -268,26 +268,48 @@ namespace OpenRose.WebUI.Components.EventServices
 		}
 
 
-		public void SwitchToServerSideJsonFile(string fullPath)
-		{
-			if (string.IsNullOrWhiteSpace(fullPath))
-				throw new ArgumentException("JSON file path cannot be null or empty.", nameof(fullPath));
+		//public void SwitchToServerSideJsonFile(string fullPath)
+		//{
+		//	if (string.IsNullOrWhiteSpace(fullPath))
+		//		throw new ArgumentException("JSON file path cannot be null or empty.", nameof(fullPath));
 
-			string fileName = System.IO.Path.GetFileName(fullPath);
+		//	string fileName = System.IO.Path.GetFileName(fullPath);
+
+		//	_currentDataSourceState = new DataSourceState
+		//	{
+		//		CurrentDataSourceType = DataSourceType.JsonFileServerSide,
+		//		IsReadOnlyMode = true,
+		//		JsonFilePathForDataSource = fullPath,
+		//		JsonFileNameForDisplay = fileName,
+		//		LastErrorMessage = null,
+		//		LastErrorDetails = null
+		//	};
+
+		//	NotifyStateChanged();
+		//}
+
+		public void SwitchToServerSideJsonFile(string fileName)
+		{
+			if (string.IsNullOrWhiteSpace(fileName))
+				throw new ArgumentException("JSON file name cannot be null or empty.", nameof(fileName));
 
 			_currentDataSourceState = new DataSourceState
 			{
 				CurrentDataSourceType = DataSourceType.JsonFileServerSide,
 				IsReadOnlyMode = true,
-				JsonFilePathForDataSource = fullPath,
+
+				// EXPLANATION:
+				// We no longer store a full server path because the UI does not receive it anymore.
+				// Instead, we store only the file name.
+				//JsonFilePathForDataSource = fileName,
 				JsonFileNameForDisplay = fileName,
+
 				LastErrorMessage = null,
 				LastErrorDetails = null
 			};
 
 			NotifyStateChanged();
 		}
-
 
 
 		/// <summary>
@@ -304,7 +326,7 @@ namespace OpenRose.WebUI.Components.EventServices
 			{
 				CurrentDataSourceType = DataSourceType.ApiServer,
 				IsReadOnlyMode = false,
-				JsonFilePathForDataSource = null,
+				//JsonFilePathForDataSource = null,
 				JsonFileNameForDisplay = null,
 				LastErrorMessage = null,
 				LastErrorDetails = null

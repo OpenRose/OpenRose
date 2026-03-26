@@ -11,83 +11,78 @@ namespace OpenRose.WebUI.Services
 	/// <summary>
 	/// EXPLANATION:
 	/// This service manages server-side offline JSON files stored in the folder
-	/// defined by OfflineContent.StorageFolder (e.g., C:\OpenRoseData\OfflineFiles).
-	/// It provides methods for:
-	///   - Ensuring the folder exists
-	///   - Listing available JSON files
-	///   - Saving uploaded JSON files to the server
-	///   - Tracking the "active" offline JSON file
-	///   - Returning full file paths for loading JSON data
-	/// This service is used by:
-	///   - Startup resolver (Phase 3)
-	///   - Server JSON selection dialog (Phase 4)
-	///   - Offline JSON loader (Phase 5)
+	/// resolved by OfflineContentPathResolver.
+	///
+	/// IMPORTANT:
+	/// - The folder may not exist or may not be writable (e.g., Azure Web App, Linux permissions).
+	/// - This repository NEVER throws for missing folders.
+	/// - Instead, it gracefully returns empty results and allows the UI to show warnings.
+	///
+	/// This keeps the application cross-platform and resilient.
 	/// </summary>
 	public class OfflineCatalogRepository
 	{
 		private readonly OfflineContentSettings _offlineSettings;
-		private readonly string _storageFolderFullPath;
-		private readonly string _activeFileMetadataPath;
+		private readonly OfflineContentPathResolver _pathResolver;
 
-		public OfflineCatalogRepository(IOptions<OfflineContentSettings> offlineSettingsOptions)
+		private readonly string? _storageFolderFullPath;
+		private readonly string? _activeFileMetadataPath;
+
+		public bool IsStorageAvailable => _pathResolver.IsStorageFolderAvailable;
+
+		public OfflineCatalogRepository(
+			IOptions<OfflineContentSettings> offlineSettingsOptions,
+			OfflineContentPathResolver pathResolver)
 		{
 			_offlineSettings = offlineSettingsOptions.Value;
+			_pathResolver = pathResolver;
 
 			// EXPLANATION:
-			// Resolve the absolute folder path where offline JSON files are stored.
-			// Example: C:\OpenRoseData\OfflineFiles
-			_storageFolderFullPath = _offlineSettings.StorageFolder;
+			// The resolver gives us the final absolute path, or null if unavailable.
+			_storageFolderFullPath = _pathResolver.ResolvedStorageFolderPath;
 
-			// EXPLANATION:
-			// Metadata file that stores the currently active offline JSON file name.
-			// Example: C:\OpenRoseData\OfflineFiles\ActiveOfflineFile.json
-			_activeFileMetadataPath = Path.Combine(_storageFolderFullPath, "ActiveOfflineFile.json");
-
-			EnsureStorageFolderExists();
-		}
-
-		/// <summary>
-		/// EXPLANATION:
-		/// Ensures that the offline storage folder exists.
-		/// If it does not exist, it is created automatically.
-		/// </summary>
-		private void EnsureStorageFolderExists()
-		{
-			// If no folder is configured, do nothing.
-			if (string.IsNullOrWhiteSpace(_storageFolderFullPath))
-				return;
-
-			if (!Directory.Exists(_storageFolderFullPath))
+			if (_storageFolderFullPath is not null)
 			{
-				Directory.CreateDirectory(_storageFolderFullPath);
+				_activeFileMetadataPath = Path.Combine(_storageFolderFullPath, "ActiveOfflineFile.json");
 			}
 		}
-
 
 		/// <summary>
 		/// EXPLANATION:
 		/// Returns a list of all JSON files stored in the offline folder.
-		/// Only files with .json extension are returned.
+		/// If the folder is unavailable, returns an empty list instead of throwing.
 		/// </summary>
 		public IEnumerable<string> GetAvailableJsonFiles()
 		{
-			EnsureStorageFolderExists();
+			if (!IsStorageAvailable || _storageFolderFullPath is null)
+				return Enumerable.Empty<string>();
 
-			return Directory
-				.EnumerateFiles(_storageFolderFullPath, "*.json", SearchOption.TopDirectoryOnly)
-				.Select(Path.GetFileName)
-				.OrderBy(name => name)
-				.ToList();
+			try
+			{
+				return Directory
+					.EnumerateFiles(_storageFolderFullPath, "*.json", SearchOption.TopDirectoryOnly)
+					.Select(Path.GetFileName)
+					.OrderBy(name => name)
+					.ToList();
+			}
+			catch
+			{
+				// EXPLANATION:
+				// If the folder becomes unavailable at runtime (permissions, deletion),
+				// we degrade gracefully.
+				return Enumerable.Empty<string>();
+			}
 		}
 
 		/// <summary>
 		/// EXPLANATION:
-		/// Saves a JSON file (provided as a string) into the offline storage folder.
-		/// The file is saved using the provided file name.
+		/// Saves a JSON file into the offline storage folder.
+		/// If the folder is unavailable, this becomes a no-op.
 		/// </summary>
 		public async Task SaveJsonFileAsync(string fileName, string jsonContent)
 		{
-			EnsureStorageFolderExists();
+			if (!IsStorageAvailable || _storageFolderFullPath is null)
+				return;
 
 			string fullPath = Path.Combine(_storageFolderFullPath, fileName);
 
@@ -97,9 +92,13 @@ namespace OpenRose.WebUI.Services
 		/// <summary>
 		/// EXPLANATION:
 		/// Deletes a JSON file from the offline storage folder.
+		/// If the folder is unavailable, nothing happens.
 		/// </summary>
 		public void DeleteJsonFile(string fileName)
 		{
+			if (!IsStorageAvailable || _storageFolderFullPath is null)
+				return;
+
 			string fullPath = Path.Combine(_storageFolderFullPath, fileName);
 
 			if (File.Exists(fullPath))
@@ -111,19 +110,26 @@ namespace OpenRose.WebUI.Services
 		/// <summary>
 		/// EXPLANATION:
 		/// Returns the full absolute path to a JSON file stored on the server.
+		/// If the folder is unavailable, returns null.
 		/// </summary>
-		public string GetFullPathForJsonFile(string fileName)
+		public string? GetFullPathForJsonFile(string fileName)
 		{
+			if (!IsStorageAvailable || _storageFolderFullPath is null)
+				return null;
+
 			return Path.Combine(_storageFolderFullPath, fileName);
 		}
 
 		/// <summary>
 		/// EXPLANATION:
 		/// Saves the name of the currently active offline JSON file.
-		/// This allows the system to remember which file to load at startup.
+		/// If the folder is unavailable, this becomes a no-op.
 		/// </summary>
 		public async Task SetActiveOfflineFileAsync(string fileName)
 		{
+			if (!IsStorageAvailable || _activeFileMetadataPath is null)
+				return;
+
 			var metadata = new ActiveOfflineFileMetadata
 			{
 				ActiveFile = fileName
@@ -136,7 +142,6 @@ namespace OpenRose.WebUI.Services
 
 			await File.WriteAllTextAsync(_activeFileMetadataPath, json);
 		}
-
 		/// <summary>
 		/// EXPLANATION:
 		/// Loads the name of the currently active offline JSON file.
@@ -144,6 +149,9 @@ namespace OpenRose.WebUI.Services
 		/// </summary>
 		public string? GetActiveOfflineFile()
 		{
+			if (!IsStorageAvailable || _activeFileMetadataPath is null)
+				return _offlineSettings.DefaultJsonFile;
+
 			if (File.Exists(_activeFileMetadataPath))
 			{
 				try
@@ -151,6 +159,9 @@ namespace OpenRose.WebUI.Services
 					string json = File.ReadAllText(_activeFileMetadataPath);
 					var metadata = JsonSerializer.Deserialize<ActiveOfflineFileMetadata>(json);
 
+					// EXPLANATION:
+					// - If metadata exists and contains a value, return it.
+					// - If metadata exists but contains null, return null.
 					return metadata?.ActiveFile;
 				}
 				catch
@@ -163,6 +174,7 @@ namespace OpenRose.WebUI.Services
 
 			return _offlineSettings.DefaultJsonFile;
 		}
+
 
 		private class ActiveOfflineFileMetadata
 		{
