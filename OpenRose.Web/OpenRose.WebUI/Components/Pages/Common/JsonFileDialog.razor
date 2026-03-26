@@ -21,7 +21,7 @@
 			<MudCard>
 				<MudCardContent Class="pa-3">
 					<MudText Typo="Typo.body2" Style="word-break: break-all; font-family: monospace;">
-						@JsonFilePathToShow
+						@JsonFileNameToShow
 					</MudText>
 				</MudCardContent>
 			</MudCard>
@@ -43,7 +43,9 @@
     private IMudDialogInstance MudDialog { get; set; }
 
     [Parameter]
-    public string JsonFilePathToShow { get; set; } = string.Empty;
+//    public string JsonFilePathToShow { get; set; } = string.Empty;
+	public string JsonFileNameToShow { get; set; } = string.Empty;
+
 
     /// <summary>
     /// Copies the JSON file path to the user's clipboard.
@@ -52,7 +54,8 @@
     {
         try
         {
-            await JsRuntimeForClipboardAccess.InvokeVoidAsync("navigator.clipboard.writeText", JsonFilePathToShow);
+            // await JsRuntimeForClipboardAccess.InvokeVoidAsync("navigator.clipboard.writeText", JsonFilePathToShow);
+			await JsRuntimeForClipboardAccess.InvokeVoidAsync("navigator.clipboard.writeText", JsonFileNameToShow);
         }
         catch (Exception exceptionDuringClipboardCopy)
         {

@@ -2,10 +2,8 @@
 @using OpenRose.WebUI.Client.SharedModels.ClientSideUIOnlyModel
 @using OpenRose.WebUI.Components.EventServices
 @using OpenRose.WebUI.Services
-@* @inject HttpClient Http *@
 @inject IHttpClientFactory ClientFactory
 @inject DataSourceStateService DataSourceStateService
-@* @inject IServiceProvider ServiceProviderForDependencyInjection *@
 @inject JsonFileDataSourceService JsonDataSource
 @inject ViewSettingsService ViewSettingsService
 @inject NavigationManager NavManager
@@ -20,6 +18,13 @@
         @if (isLoading)
         {
             <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+        }
+        else if (folderUnavailable)
+        {
+            <MudAlert Severity="Severity.Warning">
+                The server's offline storage folder is unavailable.<br />
+                No server JSON files can be loaded.
+            </MudAlert>
         }
         else if (loadError != null)
         {
@@ -61,6 +66,7 @@
     private IMudDialogInstance MudDialog { get; set; }
 
     private bool isLoading = true;
+    private bool folderUnavailable = false;
     private string? loadError;
     private List<string> availableFiles = new();
     private string? selectedFile;
@@ -70,15 +76,27 @@
         try
         {
             var http = ClientFactory.CreateClient("WebUIInternal");
-            var result = await http.GetFromJsonAsync<List<string>>("offline/files");
 
-            if (result == null || result.Count == 0)
+            // NEW: Expect structured response
+            // var result = await http.GetFromJsonAsync<ServerFilesResponse>("offline/files");
+            var result = await http.GetFromJsonAsync<ServerFilesResponse>("offline/files");
+
+
+            if (result is null)
+            {
+                loadError = "Unexpected server response.";
+            }
+            else if (!result.folderAvailable)
+            {
+                folderUnavailable = true;
+            }
+            else if (result.files is null || result.files.Count == 0)
             {
                 loadError = "No JSON files found on the server.";
             }
             else
             {
-                availableFiles = result;
+                availableFiles = result.files;
             }
         }
         catch (Exception ex)
@@ -92,7 +110,8 @@
     private bool CanConfirm =>
         !string.IsNullOrWhiteSpace(selectedFile) &&
         loadError == null &&
-        !isLoading;
+        !isLoading &&
+        !folderUnavailable;
 
     private void Cancel()
     {
@@ -107,6 +126,8 @@
         try
         {
             var http = ClientFactory.CreateClient("WebUIInternal");
+
+            // NEW: Expect file CONTENT instead of file PATH
             var response = await http.PostAsJsonAsync("offline/select", new
             {
                 fileName = selectedFile
@@ -118,24 +139,25 @@
                 return;
             }
 
-            // Build full path for UI state
-            var json = await response.Content.ReadFromJsonAsync<Dictionary<string, object>>();
-            string fullPath = json["fullPath"].ToString();
+            var result = await response.Content.ReadFromJsonAsync<ServerSelectResponse>();
 
-            // Load the JSON file content from disk
-            string jsonContent = await File.ReadAllTextAsync(fullPath);
+            if (result is null || !result.success)
+            {
+                loadError = "Failed to activate JSON file.";
+                return;
+            }
 
-            // var jsonService = ServiceProviderForDependencyInjection.GetRequiredService<JsonFileDataSourceService>();
-            await JsonDataSource.LoadJsonFileDataFromStringAsync(jsonContent);
+            // Load JSON content directly from server response
+            await JsonDataSource.LoadJsonFileDataFromStringAsync(result.jsonContent);
 
-            // Switch UI into server JSON mode
-            DataSourceStateService.SwitchToServerSideJsonFile(fullPath);
+            // Update UI state
+            DataSourceStateService.SwitchToServerSideJsonFile(result.fileName);
 
             JsonDataSource.SetJsonViewerMetadata(new JsonViewerMetadata
             {
-                FileName = Path.GetFileName(fullPath),
-                FullPath = fullPath,
-                FileSizeBytes = new FileInfo(fullPath).Length,
+                FileName = result.fileName,
+                FullPath = null, // no longer exposing server paths
+                FileSizeBytes = result.jsonContent.Length,
                 LoadedAt = DateTime.Now,
                 IsServerSide = true
             });
@@ -144,13 +166,26 @@
 
             MudDialog.Close(DialogResult.Ok(true));
 
-            // NavManager.NavigateTo("/jsonviewer", forceLoad: true);
-            // NavManager.NavigateTo("/jsonviewer", replace: true);
             NavManager.NavigateTo("/jsonviewer");
         }
         catch (Exception ex)
         {
             loadError = $"Failed to activate JSON file: {ex.Message}";
         }
+    }
+
+    // Helper DTOs for structured responses
+    private class ServerFilesResponse
+    {
+        public bool folderAvailable { get; set; }
+        public string? resolvedFolder { get; set; }
+        public List<string>? files { get; set; }
+    }
+
+    private class ServerSelectResponse
+    {
+        public bool success { get; set; }
+        public string fileName { get; set; }
+        public string jsonContent { get; set; }
     }
 }

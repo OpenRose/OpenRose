@@ -335,6 +335,9 @@ builder.Services.AddScoped<TreeNodeItemzSelectionServiceForJson>(); // Register 
 
 builder.Services.AddScoped<AssemblyInfoService>(); // Register the service
 
+// EXPLANATION: Central resolver for cross-platform offline storage folder.
+builder.Services.AddSingleton<OfflineContentPathResolver>();
+
 // EXPLANATION: Register server-side offline catalog repository.
 // This service manages JSON files stored in the OfflineContent.StorageFolder.
 builder.Services.AddScoped<OfflineCatalogRepository>();
