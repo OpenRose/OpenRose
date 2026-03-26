@@ -21,6 +21,7 @@
 @inject IServiceProvider serviceProvider
 @inject NavigationManager NavManager
 @inject FormStateService FormStateService
+@inject FullScreenService FullScreenService
 @inject IDialogService DialogService
 @inject IJSRuntime JS
 @inject TreeNodeItemzSelectionService ItemzSelectionService
@@ -197,6 +198,13 @@
     private List<Guid> _linearIds = new();
     private int _currentIndex = -1;
 
+    // Kiosk mode variables
+    private int _rootClickCount = 0;
+    private System.Timers.Timer? _rootClickTimer;
+    private const int RequiredClicks = 5;
+    private const int ClickTimeoutMs = 700;
+
+
 
     private Task OnDoubleClicked()
     {
@@ -274,6 +282,7 @@
 
     private async Task OnItemClick(MudBlazor.TreeItemData<Guid> node)
     {
+
         var presenter = node as TreeItemPresenter;
         if (presenter is null)
             return;
@@ -283,6 +292,13 @@
 
     private async Task OnItemClick(TreeItemPresenter presenter)
     {
+        
+        // Detect root node click (Level == 0)
+        if (presenter.Level == 1 && ViewSettings.ReadOnlyView)
+        {
+            HandleRootNodeGesture();
+        }
+
         if (_selectedValue == presenter.Value)
             return;
 
@@ -791,6 +807,49 @@
         }
     }
 
+
+    private void HandleRootNodeGesture()
+    {
+        _rootClickCount++;
+
+        // Start or reset timer
+        if (_rootClickTimer == null)
+        {
+            _rootClickTimer = new System.Timers.Timer(ClickTimeoutMs);
+            _rootClickTimer.Elapsed += (_, _) =>
+            {
+                _rootClickCount = 0;
+                _rootClickTimer?.Stop();
+            };
+        }
+
+        _rootClickTimer.Stop();
+        _rootClickTimer.Start();
+
+        if (_rootClickCount >= RequiredClicks)
+        {
+            _rootClickTimer.Stop();
+            _rootClickCount = 0;
+
+            ToggleKioskMode();
+        }
+    }
+
+    private async void ToggleKioskMode()
+    {
+        if (!ViewSettings.IsKioskMode)
+        {
+            await FullScreenService.EnterFullscreen();
+            ViewSettings.SetKioskMode(true);
+        }
+        else
+        {
+            await FullScreenService.ExitFullscreen();
+            ViewSettings.SetKioskMode(false);
+        }
+
+        StateHasChanged();
+    }
 
 
     public void Dispose()

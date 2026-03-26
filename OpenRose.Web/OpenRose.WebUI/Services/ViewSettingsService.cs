@@ -77,5 +77,19 @@ namespace OpenRose.WebUI.Services
 		/// For now, this defaults to true (always show the switch button).
 		/// </summary>
 		public bool ShowDataSourceSwitchControl { get; set; } = true;
+
+		public bool IsKioskMode { get; private set; } = false;
+
+		public event Action? OnKioskModeChanged;
+
+		public void SetKioskMode(bool value)
+		{
+			if (IsKioskMode == value)
+				return;
+
+			IsKioskMode = value;
+			OnKioskModeChanged?.Invoke();
+		}
+
 	}
 }

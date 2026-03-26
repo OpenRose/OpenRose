@@ -97,6 +97,10 @@
 		var tempCustomDataSourceState = DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState;
 	}
 
+
+	@if (!ViewSettingsServiceForUiState.IsKioskMode)
+	{
+
 	<MudAppBar Elevation="1"
 			   Bottom="false"
 			   Dense="true"
@@ -225,12 +229,47 @@
 			<MudIconButton Icon="@Icons.Material.Filled.UploadFile"
 						   Title="Client Data File"
 						   Color="Color.Inherit"
-						   OnClick="@SwitchToClientJsonModeAsync" />
+				OnClick="@SwitchToClientJsonModeAsync" />
 
-		}
+			}
 
 		<MudIconButton Icon="@Icons.Custom.Brands.GitHub" Color="Color.Inherit" Href="https://github.com/OpenRose/OpenRose" Target="_blank" />
 	</MudAppBar>
+	}
+	else
+	{
+		<MudAppBar Elevation="1"
+					Bottom="false"
+					Dense="true"
+					Class="@(DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState.CurrentDataSourceType switch
+			{
+				DataSourceStateService.DataSourceType.JsonFileServerSide => "app-bar-json-file-mode",
+				DataSourceStateService.DataSourceType.JsonFileClientSide => "app-bar-json-file-mode",
+				DataSourceStateService.DataSourceType.None => "app-bar-none-mode",
+				_ => "app-bar-api-mode"
+			})">
+
+		<MudTooltip Text="@(tempCustomDataSourceState.CurrentDataSourceType switch
+			  {
+				  DataSourceStateService.DataSourceType.ApiServer => "Connected to API Server",
+				  DataSourceStateService.DataSourceType.JsonFileServerSide => "Using Server‑Side JSON File",
+				  DataSourceStateService.DataSourceType.JsonFileClientSide => "Using Client‑Side JSON File",
+				  DataSourceStateService.DataSourceType.None => "No data source selected",
+				  _ => "OpenRose"
+			  })">
+			<MudLink Href="/" Class="product-title-link">
+				@CurrentPageTitle
+			</MudLink>
+		</MudTooltip>
+
+
+		<MudSpacer />
+
+		<MudIconButton Icon="@Icons.Custom.Brands.GitHub" Color="Color.Inherit" Href="https://github.com/OpenRose/OpenRose" Target="_blank" />
+	</MudAppBar>
+
+	}
+
 
 	<MudDrawer @bind-Open="@drawerOpen" Elevation="1" Anchor="Anchor.Left" ClipMode="DrawerClipMode.Always" Variant="@DrawerVariant.Temporary">
 		<MudNavMenu Color="Color.Secondary" Bordered="true">
@@ -318,6 +357,13 @@
 		// whenever user switches between API and JSON file data sources.
 		// When state changes, this component will automatically re-render with updated colors and menus.
 		// DataSourceStateServiceForDataSourceTracking.OnDataSourceChanged += OnDataSourceStateChangedCallback;
+
+		ViewSettingsServiceForUiState.OnKioskModeChanged += HandleKioskModeChanged;
+	}
+
+	private void HandleKioskModeChanged()
+	{
+		InvokeAsync(StateHasChanged);
 	}
 
 	/// <summary>
@@ -615,12 +661,14 @@
 	}
 
 
-	// public void Dispose()
-	// {
-	// 	// EXPLANATION: Unsubscribe from events to prevent memory leaks
-	// 	if (DataSourceStateServiceForDataSourceTracking != null)
-	// 	{
-	// 		DataSourceStateServiceForDataSourceTracking.OnDataSourceChanged -= OnDataSourceStateChangedCallback;
-	// 	}
-	// }
+	public void Dispose()
+	{
+		// // EXPLANATION: Unsubscribe from events to prevent memory leaks
+		// if (DataSourceStateServiceForDataSourceTracking != null)
+		// {
+		// 	DataSourceStateServiceForDataSourceTracking.OnDataSourceChanged -= OnDataSourceStateChangedCallback;
+		// }
+
+		ViewSettingsServiceForUiState.OnKioskModeChanged -= HandleKioskModeChanged;
+	}
 }
