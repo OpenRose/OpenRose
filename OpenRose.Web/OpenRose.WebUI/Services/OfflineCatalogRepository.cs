@@ -26,7 +26,6 @@ namespace OpenRose.WebUI.Services
 		private readonly OfflineContentPathResolver _pathResolver;
 
 		private readonly string? _storageFolderFullPath;
-		private readonly string? _activeFileMetadataPath;
 
 		public bool IsStorageAvailable => _pathResolver.IsStorageFolderAvailable;
 
@@ -41,10 +40,6 @@ namespace OpenRose.WebUI.Services
 			// The resolver gives us the final absolute path, or null if unavailable.
 			_storageFolderFullPath = _pathResolver.ResolvedStorageFolderPath;
 
-			if (_storageFolderFullPath is not null)
-			{
-				_activeFileMetadataPath = Path.Combine(_storageFolderFullPath, "ActiveOfflineFile.json");
-			}
 		}
 
 		/// <summary>
@@ -120,65 +115,5 @@ namespace OpenRose.WebUI.Services
 			return Path.Combine(_storageFolderFullPath, fileName);
 		}
 
-		/// <summary>
-		/// EXPLANATION:
-		/// Saves the name of the currently active offline JSON file.
-		/// If the folder is unavailable, this becomes a no-op.
-		/// </summary>
-		public async Task SetActiveOfflineFileAsync(string fileName)
-		{
-			if (!IsStorageAvailable || _activeFileMetadataPath is null)
-				return;
-
-			var metadata = new ActiveOfflineFileMetadata
-			{
-				ActiveFile = fileName
-			};
-
-			string json = JsonSerializer.Serialize(metadata, new JsonSerializerOptions
-			{
-				WriteIndented = true
-			});
-
-			await File.WriteAllTextAsync(_activeFileMetadataPath, json);
-		}
-		/// <summary>
-		/// EXPLANATION:
-		/// Loads the name of the currently active offline JSON file.
-		/// If no metadata file exists, returns the default JSON file from configuration.
-		/// </summary>
-		public string? GetActiveOfflineFile()
-		{
-			if (!IsStorageAvailable || _activeFileMetadataPath is null)
-				return _offlineSettings.DefaultJsonFile;
-
-			if (File.Exists(_activeFileMetadataPath))
-			{
-				try
-				{
-					string json = File.ReadAllText(_activeFileMetadataPath);
-					var metadata = JsonSerializer.Deserialize<ActiveOfflineFileMetadata>(json);
-
-					// EXPLANATION:
-					// - If metadata exists and contains a value, return it.
-					// - If metadata exists but contains null, return null.
-					return metadata?.ActiveFile;
-				}
-				catch
-				{
-					// EXPLANATION:
-					// If metadata is corrupted, fall back to default file.
-					return _offlineSettings.DefaultJsonFile;
-				}
-			}
-
-			return _offlineSettings.DefaultJsonFile;
-		}
-
-
-		private class ActiveOfflineFileMetadata
-		{
-			public string? ActiveFile { get; set; }
-		}
 	}
 }
