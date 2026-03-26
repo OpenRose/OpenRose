@@ -46,41 +46,7 @@ namespace OpenRose.WebUI.Server.Controllers
 			}
 		}
 
-		// ------------------------------------------------------------
-		// GET /offline/active
-		// Returns the currently active offline JSON file AND health info.
-		// ------------------------------------------------------------
-		[HttpGet("active")]
-		public IActionResult GetActiveFile()
-		{
-			try
-			{
-				var activeFile = _repository.GetActiveOfflineFile();
-
-				bool activeFileExists = false;
-
-				if (_resolver.IsStorageFolderAvailable &&
-					activeFile is not null &&
-					_repository.GetFullPathForJsonFile(activeFile) is string fullPath &&
-					System.IO.File.Exists(fullPath))
-				{
-					activeFileExists = true;
-				}
-
-				return Ok(new
-				{
-					folderAvailable = _resolver.IsStorageFolderAvailable,
-					activeFile = activeFile,
-					activeFileExists = activeFileExists
-				});
-			}
-			catch (Exception ex)
-			{
-				_logger.LogError(ex, "Failed to get active offline JSON file.");
-				return StatusCode(500, "Failed to get active offline JSON file.");
-			}
-		}
-
+		
 		// ------------------------------------------------------------
 		// POST /offline/select
 		// Sets the active offline JSON file.
@@ -111,10 +77,6 @@ namespace OpenRose.WebUI.Server.Controllers
 					return NotFound($"File '{request.FileName}' does not exist on the server.");
 				}
 
-				// Save as active file
-				await _repository.SetActiveOfflineFileAsync(request.FileName);
-
-				_logger.LogInformation("Active offline JSON file set to: {File}", request.FileName);
 
 				// NEW: Return file CONTENT instead of file PATH
 				string jsonContent = await System.IO.File.ReadAllTextAsync(fullPath);
