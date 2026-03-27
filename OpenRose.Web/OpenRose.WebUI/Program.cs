@@ -139,6 +139,10 @@ builder.Services.AddSingleton<ApiVersionChecker>();
 builder.Services.AddScoped<FullScreenService>();
 
 
+// Register the NavigationBlockerService which allows components to block navigation
+builder.Services.AddScoped<NavigationBlockerService>();
+
+
 //// --- NEW: register HttpClient for version check + background monitor ---
 //if (startupCapabilities.ApiAvailable)
 //{

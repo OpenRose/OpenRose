@@ -10,6 +10,7 @@
 @using OpenRose.WebUI.Components.Pages.Common
 @using OpenRose.WebUI.Services
 @using Microsoft.AspNetCore.Components.Forms
+@inject NavigationBlockerService NavigationBlocker
 @inject ViewSettingsService ViewSettings
 @inject IDialogService DialogService
 @inject IJSRuntime JS
@@ -139,6 +140,12 @@
 
 			initializingPage = false;
 			StateHasChanged();
+
+			// ALWAYS run navigation blocker after render if kiosk mode is active
+			if (ViewSettings.IsKioskMode)
+			{
+				await NavigationBlocker.Enable();
+			}
 		}
 	}
 

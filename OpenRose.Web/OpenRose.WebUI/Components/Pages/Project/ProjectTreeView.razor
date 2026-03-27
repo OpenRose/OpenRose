@@ -20,6 +20,7 @@
 @using System.Collections.ObjectModel
 @inject IServiceProvider serviceProvider
 @inject NavigationManager NavManager
+@inject NavigationBlockerService NavigationBlocker
 @inject FormStateService FormStateService
 @inject FullScreenService FullScreenService
 @inject IDialogService DialogService
@@ -845,11 +846,15 @@
             await FullScreenService.EnterFullscreen();
             ViewSettings.ReadOnlyView = true; // Force read-only in kiosk mode
             ViewSettings.SetKioskMode(true);
+
+            await NavigationBlocker.Enable();
         }
         else
         {
             await FullScreenService.ExitFullscreen();
             ViewSettings.SetKioskMode(false);
+
+            await NavigationBlocker.Disable();
         }
 
         StateHasChanged();
