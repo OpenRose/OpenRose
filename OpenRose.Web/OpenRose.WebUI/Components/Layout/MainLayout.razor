@@ -257,7 +257,13 @@
 				  DataSourceStateService.DataSourceType.None => "No data source selected",
 				  _ => "OpenRose"
 			  })">
-			<MudText Typo="Typo.h6">@CurrentPageTitle </MudText>
+			<MudButton Variant="Variant.Text"
+					   Color="Color.Inherit"
+					   Style="cursor:pointer; text-decoration:underline"
+					   OnClick="ShowOpenRoseWelcomeDialogAsync">
+				<MudText Typo="Typo.subtitle1"><b>@CurrentPageTitle</b></MudText>
+			</MudButton>
+
 		</MudTooltip>
 	</MudAppBar>
 
@@ -653,6 +659,21 @@
 		await ShowDataSourceSwitchDialogForSelectingJsonFileAsync();
 	}
 
+	private async Task ShowOpenRoseWelcomeDialogAsync()
+	{
+		var dialogOptions = new DialogOptions
+		{
+			CloseOnEscapeKey = true,
+			BackdropClick = true,
+			MaxWidth = MaxWidth.Medium,
+			FullWidth = true
+		};
+		await DialogServiceForShowingDialogs.ShowAsync<WelcomeDialog>(
+			"",
+			new DialogParameters(),
+			dialogOptions
+		);
+    }
 
 	public void Dispose()
 	{

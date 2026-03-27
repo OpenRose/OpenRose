@@ -1,0 +1,49 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+<MudDialog>
+
+    <DialogContent>
+        <MudGrid Justify="Justify.Center" AlignItems="AlignItems.Center" Spacing="2">
+
+            <!-- Image --> 
+            <MudItem xs="12" sm="3" class="d-flex justify-center">
+                <MudImage Src="icons/OpenRose_01.png" Width="72" Height="72" />
+            </MudItem>
+
+            <!-- Title -->
+            <MudItem xs="12" sm="9" class="d-flex justify-center">
+                <MudText Typo="Typo.h2" Align="Align.Center">
+                    Welcome to <b>OpenRose</b>
+                </MudText>
+            </MudItem>
+
+            <!-- Download link -->
+            <MudItem xs="12" class="d-flex justify-center">
+                <MudText Align="Align.Center" Color="Color.Primary">
+                    Download from https://github.com/openrose
+                </MudText>
+            </MudItem>
+
+        </MudGrid>
+
+    </DialogContent>
+@*     <DialogActions>
+        <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="Submit">Thanks!</MudButton>
+    </DialogActions> *@
+    
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; }
+   
+    private void Submit() => MudDialog.Close(DialogResult.Ok(true));
+    private void HandleKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter") Submit();
+    }
+ }
