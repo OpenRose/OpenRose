@@ -257,15 +257,8 @@
 				  DataSourceStateService.DataSourceType.None => "No data source selected",
 				  _ => "OpenRose"
 			  })">
-			<MudLink Href="/" Class="product-title-link">
-				@CurrentPageTitle
-			</MudLink>
+			<MudText Typo="Typo.h6">@CurrentPageTitle </MudText>
 		</MudTooltip>
-
-
-		<MudSpacer />
-
-		<MudIconButton Icon="@Icons.Custom.Brands.GitHub" Color="Color.Inherit" Href="https://github.com/OpenRose/OpenRose" Target="_blank" />
 	</MudAppBar>
 
 	}

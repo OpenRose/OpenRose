@@ -591,7 +591,8 @@
             var foundProjectAndBaselineIds = await FindProjectAndBaselineIdsByBaselineItemzIdService.GetProjectAndBaselineId(id);
             if (foundProjectAndBaselineIds.BaselineId != Guid.Empty)
             {
-                NavManager.NavigateTo($"/BaselineTreeView/{foundProjectAndBaselineIds.BaselineId}?autoSelectedRecordId={id}", true);
+                // NavManager.NavigateTo($"/BaselineTreeView/{foundProjectAndBaselineIds.BaselineId}?autoSelectedRecordId={id}", true);
+                NavManager.NavigateTo($"/BaselineTreeView/{foundProjectAndBaselineIds.BaselineId}?autoSelectedRecordId={id}");
             }
 
         }

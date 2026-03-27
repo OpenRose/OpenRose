@@ -48,13 +48,15 @@
                            Variant="Variant.Filled">
                     Expand All
                 </MudButton>
-
+                @if(!ViewSettings.IsKioskMode)
+                {
                 <MudSwitch T="bool"
                     Value="@ViewSettings.ReadOnlyView"
                     ValueChanged="ToggleReadOnly"
                     Label="Read-Only"
                     Color="Color.Secondary"
                     LabelPlacement="Placement.End" />
+                }
             </MudPaper>
 
             }
@@ -294,7 +296,7 @@
     {
         
         // Detect root node click (Level == 0)
-        if (presenter.Level == 1 && ViewSettings.ReadOnlyView)
+        if (presenter.Level == 1)
         {
             HandleRootNodeGesture();
         }
@@ -587,7 +589,8 @@
             var foundProjectId = await findProjectOfItemzId.getProjectIdOfItemzId(id);
             if (foundProjectId != Guid.Empty)
             {
-                NavManager.NavigateTo($"/ProjectTreeView/{foundProjectId}?autoSelectedRecordId={id}", true);
+                // NavManager.NavigateTo($"/ProjectTreeView/{foundProjectId}?autoSelectedRecordId={id}", true);
+                NavManager.NavigateTo($"/ProjectTreeView/{foundProjectId}?autoSelectedRecordId={id}");
             }
         }
     }
@@ -840,6 +843,7 @@
         if (!ViewSettings.IsKioskMode)
         {
             await FullScreenService.EnterFullscreen();
+            ViewSettings.ReadOnlyView = true; // Force read-only in kiosk mode
             ViewSettings.SetKioskMode(true);
         }
         else
