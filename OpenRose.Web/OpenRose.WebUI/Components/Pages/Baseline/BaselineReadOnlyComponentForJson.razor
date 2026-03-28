@@ -9,6 +9,9 @@
 @using OpenRose.WebUI.Client.SharedModels
 @using OpenRose.WebUI.Components.EventServices
 @using OpenRose.WebUI.Components.Pages.Common
+@using OpenRose.WebUI.Services
+@inject NavigationBlockerService NavigationBlocker
+@inject ViewSettingsService ViewSettings
 @inject BaselineTreeNodeItemzSelectionServiceForJson BaselineItemzSelectionServiceForJson
 @inject IJSRuntime JS
 @inject JsonFileDataSourceService JsonService
@@ -53,6 +56,8 @@
 
             <MudCard Elevation="0" Style="background-color:transparent;">
                 <MudCardContent>
+                @if (!ViewSettings.IsKioskMode)
+                {
                     <MudStack Row="true" Spacing="2">
                         <MudText><strong>ID:</strong></MudText>
                         <CopyableText TextToCopy="@_baseline.Id.ToString()" DisplayLength="8" />
@@ -62,11 +67,11 @@
                     </MudStack>
 
                     <br />
-
-                    @if (!string.IsNullOrEmpty(_baseline.Description))
-                    {
-                        <div class="markdown-body">@((MarkupString)_convertedMarkdown)</div>
-                    }
+                }
+                @if (!string.IsNullOrEmpty(_baseline.Description))
+                {
+                    <div class="markdown-body">@((MarkupString)_convertedMarkdown)</div>
+                }
                 </MudCardContent>
             </MudCard>
         </MudItem>
@@ -114,6 +119,11 @@
                 _convertedMarkdown = (MarkupString)_html;
                 await InvokeAsync(StateHasChanged);
             }
+        }
+        // ALWAYS run navigation blocker after render if kiosk mode is active
+        if (ViewSettings.IsKioskMode)
+        {
+            await NavigationBlocker.Enable();
         }
     }
 

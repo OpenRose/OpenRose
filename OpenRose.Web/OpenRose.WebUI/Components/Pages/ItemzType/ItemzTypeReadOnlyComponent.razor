@@ -10,6 +10,8 @@
 @using OpenRose.WebUI.Components.Pages.Common
 @using OpenRose.WebUI.Services
 @using Microsoft.AspNetCore.Components.Forms
+@inject NavigationBlockerService NavigationBlocker
+@inject ViewSettingsService ViewSettings
 @inject IDialogService DialogService
 @inject IJSRuntime JS
 
@@ -69,7 +71,8 @@
 						<MudText><strong>Status :</strong> @singleItemzType.Status</MudText>
 					</MudStack> *@
 
-
+					@if (!ViewSettings.IsKioskMode)
+					{
 					<MudStack Row="true" Spacing="2" StretchItems="StretchItems.None" AlignItems="AlignItems.Start" Class="w-100">
 						<MudStack Row="true" Spacing="2">
 							<MudText><strong>ID          : </strong></MudText>
@@ -78,6 +81,7 @@
 						</MudStack>
 						<MudText><strong> || Status      : </strong> @singleItemzType.Status</MudText>
 					</MudStack>
+					}
 
 					<br />
 					<div class="custom-markdown-editor">
@@ -136,6 +140,12 @@
 
 			initializingPage = false;
 			StateHasChanged();
+
+			// ALWAYS run navigation blocker after render if kiosk mode is active
+			if (ViewSettings.IsKioskMode)
+			{
+				await NavigationBlocker.Enable();
+			}
 		}
 	}
 

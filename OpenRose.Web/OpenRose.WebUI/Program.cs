@@ -135,6 +135,14 @@ builder.Services.AddSingleton(apiConfigurationService);
 // Register the shared checker
 builder.Services.AddSingleton<ApiVersionChecker>();
 
+// Register full screen service for use in components that need to toggle full screen mode
+builder.Services.AddScoped<FullScreenService>();
+
+
+// Register the NavigationBlockerService which allows components to block navigation
+builder.Services.AddScoped<NavigationBlockerService>();
+
+
 //// --- NEW: register HttpClient for version check + background monitor ---
 //if (startupCapabilities.ApiAvailable)
 //{

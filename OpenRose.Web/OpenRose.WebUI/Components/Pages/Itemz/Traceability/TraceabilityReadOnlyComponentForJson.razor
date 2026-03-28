@@ -8,7 +8,9 @@
 @using OpenRose.WebUI.Client.Services.JsonFile
 @using OpenRose.WebUI.Client.SharedModels.ClientSideUIOnlyModel
 @using OpenRose.WebUI.Components.Pages.Common
+@using OpenRose.WebUI.Services
 @inject JsonFileDataSourceService JsonService
+@inject ViewSettingsService ViewSettings
 
 @if (AllParentTraceViewModels.Count > 0)
 {
@@ -17,7 +19,8 @@
             <MudIcon Icon="@Icons.Material.Filled.KeyboardDoubleArrowUp" /> Parent / From Traces
         </MudText>
     </MudPaper>
-
+    @if (!ViewSettings.IsKioskMode)
+    {
     <MudDataGrid Items="@AllParentTraceViewModels"
                  Filterable="true"
                  SortMode="@SortMode.None"
@@ -55,6 +58,42 @@
             </TemplateColumn>
         </Columns>
     </MudDataGrid>
+
+    }
+    else
+    {
+
+    <MudDataGrid Items="@AllParentTraceViewModels"
+                 Filterable="true"
+                 SortMode="@SortMode.None"
+                 Groupable="false"
+                 Striped="true"
+                 FixedHeader="true">
+        <Columns>
+            <PropertyColumn Property="x => x.Name" Filterable="false" CellStyle="max-width: 100px; white-space: normal;" />
+            <PropertyColumn Property="x => x.TraceLabel" Title="Trace Label" Filterable="false">
+                <CellTemplate>
+                    @if (!string.IsNullOrWhiteSpace(context.Item.TraceLabel))
+                    {
+                        <MudChip Color="Color.Info">@context.Item.TraceLabel</MudChip>
+                    }
+                    else
+                    {
+                        <MudChip Color="Color.Default" Variant="Variant.Outlined">No Label</MudChip>
+                    }
+                </CellTemplate>
+            </PropertyColumn>
+            <TemplateColumn Title="Action">
+                <CellTemplate>
+                    <MudButton Size="@Size.Small"
+                               Variant="@Variant.Filled"
+                               Color="@Color.Success"
+                               OnClick="_ => OpenItemz(context.Item.Id)">Open</MudButton>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </MudDataGrid>
+    }    
 }
 
 @if (AllChildTraceViewModels.Count > 0)
@@ -64,7 +103,8 @@
             <MudIcon Icon="@Icons.Material.Filled.KeyboardDoubleArrowDown" /> Child / To Traces
         </MudText>
     </MudPaper>
-
+    @if (!ViewSettings.IsKioskMode)
+    {
     <MudDataGrid Items="@AllChildTraceViewModels"
                  Filterable="true"
                  SortMode="@SortMode.None"
@@ -102,6 +142,41 @@
             </TemplateColumn>
         </Columns>
     </MudDataGrid>
+    }
+    else
+    {
+    <MudDataGrid Items="@AllChildTraceViewModels"
+                 Filterable="true"
+                 SortMode="@SortMode.None"
+                 Groupable="false"
+                 Striped="true"
+                 FixedHeader="true">
+        <Columns>
+            <PropertyColumn Property="x => x.Name" Filterable="false" CellStyle="max-width: 100px; white-space: normal;" />
+            <PropertyColumn Property="x => x.TraceLabel" Title="Trace Label" Filterable="false">
+                <CellTemplate>
+                    @if (!string.IsNullOrWhiteSpace(context.Item.TraceLabel))
+                    {
+                        <MudChip Color="Color.Info">@context.Item.TraceLabel</MudChip>
+                    }
+                    else
+                    {
+                        <MudChip Color="Color.Default" Variant="Variant.Outlined">No Label</MudChip>
+                    }
+                </CellTemplate>
+            </PropertyColumn>
+            <TemplateColumn Title="Action">
+                <CellTemplate>
+                    <MudButton Size="@Size.Small"
+                               Variant="@Variant.Filled"
+                               Color="@Color.Success"
+                               OnClick="_ => OpenItemz(context.Item.Id)">Open</MudButton>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </MudDataGrid>
+    }
+
 }
 
 @code {

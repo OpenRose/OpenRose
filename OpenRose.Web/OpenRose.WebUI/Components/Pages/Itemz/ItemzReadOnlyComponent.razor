@@ -12,6 +12,8 @@
 @using OpenRose.WebUI.Components.Utilities
 @using OpenRose.WebUI.Services
 @using Microsoft.AspNetCore.Components.Forms
+@inject NavigationBlockerService NavigationBlocker
+@inject ViewSettingsService ViewSettings
 @inject IDialogService DialogService
 @inject IJSRuntime JS
 
@@ -82,8 +84,10 @@
                             </MudChipSet>
                         </MudStack>
                     }
-                    <MudStack Row="true" Spacing="2" StretchItems="StretchItems.None" AlignItems="AlignItems.Start" Class="w-100">
-                        <MudStack Row="true" Spacing="2">
+                    @if (!ViewSettings.IsKioskMode)
+                    {
+                        <MudStack Row="true" Spacing="2" StretchItems="StretchItems.None" AlignItems="AlignItems.Start" Class="w-100">
+                            <MudStack Row="true" Spacing="2">
                             <MudText><strong>ID          : </strong></MudText>
                             <CopyableText TextToCopy="@singleItemz.Id.ToString()" DisplayLength="8" />
                             <ShowHierarchyTreeButton RecordId="@singleItemz.Id" />
@@ -92,6 +96,7 @@
                         <MudText><strong> || Priority    : </strong> @singleItemz.Priority</MudText>
                         <MudText><strong> || Severity    : </strong> @singleItemz.Severity</MudText>
                     </MudStack>
+                    }
                     <br />
                     <div class="custom-markdown-editor">
                         @if (!string.IsNullOrEmpty(singleItemz.Description))
@@ -137,28 +142,36 @@
 
     private List<string>? tagsList = new List<string>();
 
-	protected override async Task OnAfterRenderAsync(bool firstRender)
-	{
-		if (firstRender)
-		{
-			initializingPage = true;
-			StateHasChanged();
-			await Task.Delay(300);
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            initializingPage = true;
+            StateHasChanged();
+            await Task.Delay(300);
 
-			singleItemz = await ItemzService.__Single_Itemz_By_GUID_ID__Async(ItemzId);
-			if (singleItemz != null && singleItemz.Description != null)
-			{
-				await ConvertMarkdownToHtml(singleItemz.Description);
-			}
+            singleItemz = await ItemzService.__Single_Itemz_By_GUID_ID__Async(ItemzId);
+            if (singleItemz != null && singleItemz.Description != null)
+            {
+                await ConvertMarkdownToHtml(singleItemz.Description);
+            }
 
             if (singleItemz?.Tags != null)
             {
                 tagsList = TagParsingUtility.ParseTags(singleItemz.Tags);
             }
-			initializingPage = false;
-			StateHasChanged();
-		}
-	}
+
+            initializingPage = false;
+            StateHasChanged();
+        }
+
+        // ALWAYS run navigation blocker after render if kiosk mode is active
+        if (ViewSettings.IsKioskMode)
+        {
+            await NavigationBlocker.Enable();
+        }
+    }
+
 
 	private async Task ConvertMarkdownToHtml(string markdown)
 	{

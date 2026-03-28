@@ -11,6 +11,8 @@
 @using OpenRose.WebUI.Services
 @using Microsoft.AspNetCore.Components.Forms
 @inject NavigationManager NavManager
+@inject NavigationBlockerService NavigationBlocker
+@inject ViewSettingsService ViewSettings
 @inject IDialogService DialogService
 @inject IJSRuntime JS
 
@@ -62,7 +64,8 @@
 
 			<MudCard Elevation="0" Outlined="false" Style="background-color:transparent;">
 				<MudCardContent>
-
+					@if (!ViewSettings.IsKioskMode)
+					{
 					<MudStack Row="true" Spacing="2" StretchItems="StretchItems.None" AlignItems="AlignItems.Start" Class="w-100">
 						<MudStack Row="true" Spacing="2">
 							<MudText><strong>ID          : </strong></MudText>
@@ -74,7 +77,7 @@
 						<MudText><strong> || Status      : </strong> @singleBaselineItemzType.Status</MudText>
 						<MudText><strong> || Is System?  : </strong> @(singleBaselineItemzType.IsSystem ? "Yes" : "No")</MudText>
 					</MudStack>
-					
+					}				
 					<br />
 					<div class="custom-markdown-editor">
 						@if (!string.IsNullOrEmpty(singleBaselineItemzType.Description))
@@ -134,6 +137,11 @@
 
 			initializingPage = false;
 			StateHasChanged();
+			// ALWAYS run navigation blocker after render if kiosk mode is active
+			if (ViewSettings.IsKioskMode)
+			{
+				await NavigationBlocker.Enable();
+			}
 		}
 	}
 

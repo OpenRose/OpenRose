@@ -12,7 +12,9 @@
 @using OpenRose.WebUI.Components.EventServices
 @using OpenRose.WebUI.Components.Pages.Common
 @using OpenRose.WebUI.Helper.TraceLabel
+@using OpenRose.WebUI.Services
 @inject NavigationManager NavManager
+@inject ViewSettingsService ViewSettings
 @inject IDialogService DialogService
 @inject TreeNodeItemzSelectionService ItemzSelectionService
 
@@ -22,6 +24,8 @@
 		<MudText Typo="Typo.h6" Align="Align.Left"> <MudIcon Icon="@Icons.Material.Filled.KeyboardDoubleArrowUp" /> Parent / From Traces </MudText>
 	</MudPaper>
 
+	@if (!ViewSettings.IsKioskMode)
+	{
 	<MudDataGrid Items="@AllParentTraceViewModels"
 				 Filterable="true"
 				 SortMode="@SortMode.None"
@@ -68,6 +72,51 @@
 			</TemplateColumn>
 		</Columns>
 	</MudDataGrid>
+	}
+	else
+	{
+	<MudDataGrid Items="@AllParentTraceViewModels"
+				 Filterable="true"
+				 SortMode="@SortMode.None"
+				 Groupable="false"
+				 Striped="true"
+				 FixedHeader="true"
+				 HeaderClass="background-color: red;">
+		<Columns>
+			<PropertyColumn Property="x => x.Name" Title="Name" Filterable="false">
+				<CellTemplate>
+					<div style="display: flex; align-items: center; gap: 6px; white-space: nowrap;">
+						<ShowHierarchyTreeButton RecordId="@context.Item.Id" />
+                        @context.Item.Name	
+					</div>
+				</CellTemplate>
+			</PropertyColumn>
+			<PropertyColumn Property="x => x.TraceLabel" Title="Trace Label" Filterable="false">
+				<CellTemplate>
+					@if (!string.IsNullOrWhiteSpace(context.Item.TraceLabel))
+					{
+						<MudChip Color="Color.Info">@context.Item.TraceLabel</MudChip>
+					}
+					else
+					{
+						<MudChip Color="Color.Default" Variant="Variant.Outlined">
+							No Label
+						</MudChip>
+					}
+				</CellTemplate>
+			</PropertyColumn>
+			<TemplateColumn Title="Action">
+				<CellTemplate>
+					<div style="display: flex; justify-content: left; align-items: center; gap: 10px;">
+						<MudButton Size="@Size.Large"
+								   Variant="@Variant.Filled" Color="@Color.Success"
+								   OnClick="_ => openItemz(context.Item.Id.ToString())"> Open </MudButton>
+					</div>
+				</CellTemplate>
+			</TemplateColumn>
+		</Columns>
+	</MudDataGrid>
+	}
 }
 
 @if (AllChildTraceViewModels.Count > 0)
@@ -75,6 +124,9 @@
 	<MudPaper Class="pa-4 align-start d-flex" Style="width: auto" Outlined="false">
 		<MudText Typo="Typo.h6" Align="Align.Left"><MudIcon Icon="@Icons.Material.Filled.KeyboardDoubleArrowDown" />Child / To Traces </MudText>
 	</MudPaper>
+
+	@if (!ViewSettings.IsKioskMode)
+	{
 	<MudDataGrid Items="@AllChildTraceViewModels"
 				 Filterable="true"
 				 SortMode="@SortMode.None"
@@ -83,15 +135,6 @@
 				 FixedHeader="true"
 				 HeaderClass="background-color: red;">
 		<Columns>
-@* 			<PropertyColumn Property="x => x.Id" Title="Id" CellStyle="white-space: nowrap;" >
-				<CellTemplate>
-					<span style="display: inline-flex; align-items: center; gap: 6px;">
-					<CopyableText TextToCopy="@context.Item.Id.ToString()" DisplayLength="8" />
-					<ShowHierarchyTreeButton RecordId="@context.Item.Id" />
-					</span>
-				</CellTemplate>
-			</PropertyColumn> *@
-
 			<PropertyColumn Property="x => x.Id"
 							Title="Id"
 							Filterable="false">
@@ -128,7 +171,50 @@
 				</CellTemplate>
 			</TemplateColumn>
 		</Columns>
+		</MudDataGrid>
+	}
+	else
+	{
+	<MudDataGrid Items="@AllChildTraceViewModels"
+					Filterable="true"
+					SortMode="@SortMode.None"
+					Groupable="false"
+					Striped="true"
+					FixedHeader="true"
+					HeaderClass="background-color: red;">
+		<Columns>
+			<PropertyColumn Property="x => x.Name" Title="Name" Filterable="false">
+				<CellTemplate>
+					<div style="display: flex; align-items: center; gap: 6px; white-space: nowrap;">
+						<ShowHierarchyTreeButton RecordId="@context.Item.Id" />
+                        @context.Item.Name	
+					</div>
+				</CellTemplate>
+			</PropertyColumn>
+			<PropertyColumn Property="x => x.TraceLabel" Title="Trace Label" Filterable="false">
+				<CellTemplate>
+					@if (!string.IsNullOrWhiteSpace(context.Item.TraceLabel))
+					{
+						<MudChip Color="Color.Info">@context.Item.TraceLabel</MudChip>
+					}
+					else
+					{
+						<MudChip Color="Color.Default" Variant="Variant.Outlined">
+							No Label
+						</MudChip>
+					}
+				</CellTemplate>
+			</PropertyColumn>
+			<TemplateColumn CellClass="d-flex justify-left">
+				<CellTemplate>
+					<MudButton Size="@Size.Large"
+								Variant="@Variant.Filled" Color="@Color.Success"
+								OnClick="_ => openItemz(context.Item.Id.ToString())"> Open </MudButton>
+				</CellTemplate>
+			</TemplateColumn>
+		</Columns>
 	</MudDataGrid>
+	}
 }
 
 @code {
