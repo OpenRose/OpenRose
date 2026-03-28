@@ -11,8 +11,12 @@
 @using OpenRose.WebUI.Components.Pages.BaselineItemzType
 @using OpenRose.WebUI.Components.Pages.Common
 @using OpenRose.WebUI.Helper.TreeViewNodes
+@using OpenRose.WebUI.Services
 @inject DataSourceStateService DataSourceState
+@inject FullScreenService FullScreenService
 @inject JsonFileDataSourceService JsonFileDataSource
+@inject NavigationBlockerService NavigationBlocker
+@inject ViewSettingsService ViewSettings
 @inject BaselineTreeNodeItemzSelectionServiceForJson BaselineItemzSelectionServiceForJson
 @inject IJSRuntime JS
 @implements IDisposable
@@ -46,9 +50,12 @@
                                Variant="Variant.Filled">
                         Expand All
                     </MudButton>
+                    @if (!ViewSettings.IsKioskMode)
+                    {
                     <MudText Class="ms-4" Color="Color.Secondary">
                         Read‑Only Baseline View
                     </MudText>
+                    }
                 </MudPaper>
 
                 <MudTreeView @ref="baselineMudTreeView"
@@ -188,6 +195,12 @@
     // splitter layout
     string _height = "calc(100vh - 80px)";
     double _percentage = 27;
+
+    // Kiosk mode variables
+    private int _rootClickCount = 0;
+    private System.Timers.Timer? _rootClickTimer;
+    private const int RequiredClicks = 5;
+    private const int ClickTimeoutMs = 700;
 
     public class TreeItemPresenter : MudBlazor.TreeItemData<Guid>
     {
@@ -480,6 +493,13 @@
 
     private async Task OnItemClick(TreeItemPresenter presenter)
     {
+
+        Console.WriteLine("Clicked node: " + presenter.Text + " (ID: " + presenter.Value + ", Type: " + presenter.RecordType + ", Level: " + presenter.Level + ")");
+        // Detect root node click (Level == 0)
+        if (presenter.Level == 0)
+        {
+            HandleRootNodeGesture();
+        }
         if (presenter is null)
             return;
 
@@ -622,6 +642,55 @@
         {
             baselineNode.Children.Remove(parkingLotNode);
         }
+    }
+
+
+    private void HandleRootNodeGesture()
+    {
+        _rootClickCount++;
+
+        // Start or reset timer
+        if (_rootClickTimer == null)
+        {
+            _rootClickTimer = new System.Timers.Timer(ClickTimeoutMs);
+            _rootClickTimer.Elapsed += (_, _) =>
+            {
+                _rootClickCount = 0;
+                _rootClickTimer?.Stop();
+            };
+        }
+
+        _rootClickTimer.Stop();
+        _rootClickTimer.Start();
+
+        if (_rootClickCount >= RequiredClicks)
+        {
+            _rootClickTimer.Stop();
+            _rootClickCount = 0;
+
+            ToggleKioskMode();
+        }
+    }
+
+    private async void ToggleKioskMode()
+    {
+        if (!ViewSettings.IsKioskMode)
+        {
+            await FullScreenService.EnterFullscreen();
+            ViewSettings.ReadOnlyView = true; // Force read-only in kiosk mode
+            ViewSettings.SetKioskMode(true);
+
+            await NavigationBlocker.Enable();
+        }
+        else
+        {
+            await FullScreenService.ExitFullscreen();
+            ViewSettings.SetKioskMode(false);
+
+            await NavigationBlocker.Disable();
+        }
+
+        StateHasChanged();
     }
 
     public void Dispose()
