@@ -11,8 +11,12 @@
 @using OpenRose.WebUI.Components.Pages.Itemz
 @using OpenRose.WebUI.Components.Pages.ItemzType
 @using OpenRose.WebUI.Helper.TreeViewNodes
+@using OpenRose.WebUI.Services
 @inject JsonFileDataSourceService JsonFileDataSource
 @inject DataSourceStateService DataSourceState
+@inject NavigationBlockerService NavigationBlocker
+@inject FullScreenService FullScreenService
+@inject ViewSettingsService ViewSettings
 @inject TreeNodeItemzSelectionServiceForJson ItemzSelectionServiceForJson
 @inject IJSRuntime JS
 @implements IDisposable
@@ -44,7 +48,10 @@
                                Variant="Variant.Filled">
                         Expand All
                     </MudButton>
-                    <MudText Class="ms-4" Color="Color.Secondary">Read‑Only Project View</MudText>
+                    @if (!ViewSettings.IsKioskMode)
+                    {
+                        <MudText Class="ms-4" Color="Color.Secondary">Read‑Only Project View</MudText>
+                    }
                 </MudPaper>
 
                 <MudTreeView @ref="projectMudTreeView"
@@ -147,6 +154,12 @@
         = new Dictionary<Guid, TreeItemPresenter>();
 
     private List<TreeItemPresenter> _flatList;
+
+    // Kiosk mode variables
+    private int _rootClickCount = 0;
+    private System.Timers.Timer? _rootClickTimer;
+    private const int RequiredClicks = 5;
+    private const int ClickTimeoutMs = 700;
 
     public class TreeItemPresenter : MudBlazor.TreeItemData<Guid>
     {
@@ -365,6 +378,13 @@
 
     private async Task OnItemClick(TreeItemPresenter presenter)
     {
+        //Console.WriteLine("Clicked node: " + presenter.Text + " (ID: " + presenter.Value + ", Type: " + presenter.RecordType + ", Level: " + presenter.Level + ")");
+        // Detect root node click (Level == 0)
+        if (presenter.Level == 0)
+        {
+            HandleRootNodeGesture();
+        }
+
         if (presenter is null || presenter.Value == _selectedValue)
             return;
 
@@ -514,6 +534,56 @@
             projectNode.Children.Remove(parkingLotNode);
         }
     }
+
+    private void HandleRootNodeGesture()
+    {
+        _rootClickCount++;
+
+        // Start or reset timer
+        if (_rootClickTimer == null)
+        {
+            _rootClickTimer = new System.Timers.Timer(ClickTimeoutMs);
+            _rootClickTimer.Elapsed += (_, _) =>
+            {
+                _rootClickCount = 0;
+                _rootClickTimer?.Stop();
+            };
+        }
+
+        _rootClickTimer.Stop();
+        _rootClickTimer.Start();
+
+        if (_rootClickCount >= RequiredClicks)
+        {
+            _rootClickTimer.Stop();
+            _rootClickCount = 0;
+
+            ToggleKioskMode();
+        }
+    }
+
+    private async void ToggleKioskMode()
+    {
+        if (!ViewSettings.IsKioskMode)
+        {
+            await FullScreenService.EnterFullscreen();
+            ViewSettings.ReadOnlyView = true; // Force read-only in kiosk mode
+            ViewSettings.SetKioskMode(true);
+
+            await NavigationBlocker.Enable();
+        }
+        else
+        {
+            await FullScreenService.ExitFullscreen();
+            ViewSettings.SetKioskMode(false);
+
+            await NavigationBlocker.Disable();
+        }
+
+        StateHasChanged();
+    }
+
+
 
     public void Dispose()
     {
