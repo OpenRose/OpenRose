@@ -20,10 +20,12 @@
 @using System.Collections.ObjectModel
 @inject IFindProjectAndBaselineIdsByBaselineItemzIdService FindProjectAndBaselineIdsByBaselineItemzIdService
 @inject NavigationManager NavManager
+@inject NavigationBlockerService NavigationBlocker
 @inject IDialogService DialogService
 @inject BaselineTreeNodeItemzSelectionService BaselineItemzSelectionService
 @inject IJSRuntime JS
 @inject FormStateService FormStateService
+@inject FullScreenService FullScreenService
 @inject ViewSettingsService ViewSettings
 @inject ProtectedSessionStorage SessionStorage
 
@@ -47,13 +49,15 @@
                                Variant="Variant.Filled">
                         Expand All
                     </MudButton>
-
+                    @if (!ViewSettings.IsKioskMode)
+                    {
                     <MudSwitch T="bool"
                                Value="@ViewSettings.ReadOnlyView"
                                ValueChanged="ToggleReadOnly"
                                Label="Read-Only"
                                Color="Color.Secondary"
                                LabelPlacement="Placement.End" />
+                    }
                 </MudPaper>
 
             }
@@ -200,6 +204,11 @@
     private List<Guid> _linearIds = new();
     private int _currentIndex = -1;
 
+    // Kiosk mode variables
+    private int _rootClickCount = 0;
+    private System.Timers.Timer? _rootClickTimer;
+    private const int RequiredClicks = 5;
+    private const int ClickTimeoutMs = 700;
 
     private Task OnDoubleClicked()
     {
@@ -287,6 +296,13 @@
 
     private async Task OnItemClick(TreeItemPresenter presenter)
     {
+
+        // Detect root node click (Level == 0)
+        if (presenter.Level == 2)
+        {
+            HandleRootNodeGesture();
+        }
+
         if (_selectedValue == presenter.Value)
             return;
 
@@ -863,6 +879,55 @@
             baselineNode.Children.Remove(parkingLotNode);
         }
     }
+
+    private void HandleRootNodeGesture()
+    {
+        _rootClickCount++;
+
+        // Start or reset timer
+        if (_rootClickTimer == null)
+        {
+            _rootClickTimer = new System.Timers.Timer(ClickTimeoutMs);
+            _rootClickTimer.Elapsed += (_, _) =>
+            {
+                _rootClickCount = 0;
+                _rootClickTimer?.Stop();
+            };
+        }
+
+        _rootClickTimer.Stop();
+        _rootClickTimer.Start();
+
+        if (_rootClickCount >= RequiredClicks)
+        {
+            _rootClickTimer.Stop();
+            _rootClickCount = 0;
+
+            ToggleKioskMode();
+        }
+    }
+
+    private async void ToggleKioskMode()
+    {
+        if (!ViewSettings.IsKioskMode)
+        {
+            await FullScreenService.EnterFullscreen();
+            ViewSettings.ReadOnlyView = true; // Force read-only in kiosk mode
+            ViewSettings.SetKioskMode(true);
+
+            await NavigationBlocker.Enable();
+        }
+        else
+        {
+            await FullScreenService.ExitFullscreen();
+            ViewSettings.SetKioskMode(false);
+
+            await NavigationBlocker.Disable();
+        }
+
+        StateHasChanged();
+    }
+
 
 
     public void Dispose()
