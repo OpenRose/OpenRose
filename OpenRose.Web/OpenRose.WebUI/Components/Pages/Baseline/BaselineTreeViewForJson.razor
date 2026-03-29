@@ -316,6 +316,11 @@
         JsonFileDataSource.OnJsonChanged += HandleStateChangedAsync;
         DataSourceState.OnDataSourceChanged += HandleStateChangedAsync;
 
+        // await ReloadTreeAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
         await ReloadTreeAsync();
     }
 
@@ -493,8 +498,6 @@
 
     private async Task OnItemClick(TreeItemPresenter presenter)
     {
-
-        Console.WriteLine("Clicked node: " + presenter.Text + " (ID: " + presenter.Value + ", Type: " + presenter.RecordType + ", Level: " + presenter.Level + ")");
         // Detect root node click (Level == 0)
         if (presenter.Level == 0)
         {
