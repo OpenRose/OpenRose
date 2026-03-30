@@ -52,7 +52,7 @@
 	}
 }
 
-<MudPaper Class="pa-1 mb-1 align-start d-flex" Style="width: 100%;" Outlined="false">
+<MudPaper Class="pa-1 mb-1 align-start d-flex" Style="width: auto" Outlined="false">
 	<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Class="w-100">
 		<MudText Typo="Typo.h6" Align="Align.Left">Itemz Details</MudText>
 		<MudSpacer />
@@ -73,8 +73,9 @@
 		}
 	</MudStack>
 </MudPaper>
-<MudGrid Class="pa-2">
-	@if (initializingPage)
+@* <MudGrid Class="ms-0 mt-0 pa-0"> *@
+<MudGrid>
+		@if (initializingPage)
 	{
 		<MudPaper Height="calc(100vh - 100px);" Width="100%">
 			<MudOverlay Visible="@initializingPage" DarkBackground="true" Absolute="true">
@@ -86,16 +87,16 @@
 	}
 	else
 	{
-		<MudItem Class="pa-2 mb-5" xs="12" sm="12" Outline="false">
-		<MudPaper Class="mb-5" Outlined="false">
-		<MudContainer Class="pa-1 mb-5" MaxWidth="MaxWidth.ExtraLarge">
+		<MudItem xs="12" sm="12" Outline="false">
+@* 		<MudPaper Class="mb-5" Outlined="false"> *@
+@* 		<MudContainer Class="mb-5" MaxWidth="MaxWidth.ExtraLarge"> *@
 		<MudTabs Outlined="true" Position="Position.Top" Rounded="true" Border="true" 
 					 IconColor="Color.Secondary" ScrollIconColor="Color.Secondary" SliderColor = "Color.Secondary"
-					 ApplyEffectsToContainer="true" PanelClass="pa-2" MinimumTabWidth="200px" >
+					 ApplyEffectsToContainer="true" PanelClass="pa-2 ms-1" MinimumTabWidth="200px" >
 			<MudTabPanel Text="Details" Icon="@Icons.Material.Filled.EditNote" >
 				@if (errors.Length > 0)
 				{
-					<MudPaper Class="pa-4 mb-5 mud-height-full mud-width-full">
+					<MudPaper Class="pa-4 mud-height-full mud-width-full">
 						<MudText Typo="Typo.subtitle2" Color="@Color.Error">@($"Validation Errors ({errors.Length})")</MudText>
 						@foreach (var error in errors)
 						{
@@ -103,8 +104,8 @@
 						}
 					</MudPaper>
 				}
-				<MudPaper Class="pa-1 mud-height-full" Width="100%">
-				<MudForm Model="@singleItemz" @ref="form" @bind-IsValid="@success" @bind-Errors="@errors" FieldChanged="formFieldChanged" >
+@* 			<MudPaper Class="pa-1 mud-height-full" Width="100%"> *@
+			<MudForm Model="@singleItemz" @ref="form" @bind-IsValid="@success" @bind-Errors="@errors" FieldChanged="formFieldChanged" >
 			<MudCardActions Class="pa-1">
 				<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Class="w-100"> 
 				<MudButton Variant="Variant.Filled" Color="Color.Primary"
@@ -275,7 +276,7 @@
 					SpellChecker="false"
 					HideIcons="@(["mde-tb-image"])" />
 
-					<MudPaper Class="pa-4 mb-5" Style="background-color: #f5f5f5;">
+					<MudPaper Class="pa-4" Style="background-color: #f5f5f5;">
 						@if (!string.IsNullOrEmpty(convertedMarkdown.Value))
 						{
 							<h3>Preview</h3>
@@ -285,7 +286,7 @@
 				</div>
 			</MudCardContent>
 		</MudForm>
-	</MudPaper>
+@* 	</MudPaper> *@
 
 			</MudTabPanel>
 			@if (ParentId != Guid.Empty) // Itemz is not Orphaned
@@ -346,24 +347,27 @@
 			</MudItem>
 			</MudTabPanel>
 		</MudTabs>
-		</MudContainer>
-		</MudPaper>
+@* 		</MudContainer> *@
+@* 		</MudPaper> *@
 		</MudItem>
-	<MudItem xs="12" sm="12">
-		<MudOverlay Visible="@updateItemzButtonClicked" DarkBackground="true" Absolute="true">
-			<MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Inherit"> Updating ...  </MudText>
-			<br />
-			<MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
-		</MudOverlay>
-	</MudItem>
-	<MudItem xs="12" sm="12">
-		<MudOverlay Visible="@deletingItemz" DarkBackground="true" Absolute="true">
-			<MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Inherit">Deleting ...</MudText>
-			<br />
-			<MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
-		</MudOverlay>
-	</MudItem>
 
+		@if (updateItemzButtonClicked || deletingItemz)
+		{
+		<MudItem xs="12" sm="12">
+			<MudOverlay Visible="@updateItemzButtonClicked" DarkBackground="true" Absolute="true">
+				<MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Inherit"> Updating ...  </MudText>
+				<br />
+				<MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+			</MudOverlay>
+		</MudItem>
+		<MudItem xs="12" sm="12">
+			<MudOverlay Visible="@deletingItemz" DarkBackground="true" Absolute="true">
+				<MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Inherit">Deleting ...</MudText>
+				<br />
+				<MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+			</MudOverlay>
+		</MudItem>
+		}
 	}
 </MudGrid>
 @code {
