@@ -7,11 +7,13 @@
 @using OpenRose.WebUI.Client.Services.Hierarchy
 @using OpenRose.WebUI.Client.Services.Baselines
 @using OpenRose.WebUI.Client.SharedModels
+@using OpenRose.WebUI.Components.EventServices
 @using OpenRose.WebUI.Components.Pages.Common
 @using OpenRose.WebUI.Services
 @using Microsoft.AspNetCore.Components.Forms
 @inject IDialogService DialogService
 @inject IJSRuntime JS
+@inject BaselineTreeNodeItemzSelectionService BaselineItemzSelectionService
 @inject NavigationManager NavManager
 @inject NavigationBlockerService NavigationBlocker
 @inject ViewSettingsService ViewSettings
@@ -68,6 +70,12 @@
 						<MudStack Row="true" Spacing="2">
 							<MudText><strong>ID          : </strong></MudText>
 							<CopyableText TextToCopy="@singleBaseline.Id.ToString()" DisplayLength="8" />
+							<MudTooltip Text="Show in Tree View" Placement="Placement.Top">
+								<MudIcon Icon="@Icons.Material.Filled.Park" Size="Size.Small"
+											Class="mouse-pointer-icon"
+											Style="cursor:pointer"
+											@onclick="findAndShowInTreeView" />
+							</MudTooltip>
 							<MudTooltip Text="GoTo Project" Placement="Placement.Top">
 								<MudIcon Icon="@Icons.Material.Filled.SportsBaseball"
 								Size="Size.Small"
@@ -188,6 +196,12 @@
 
 		// Open in new tab
 		await JS.InvokeVoidAsync("openInNewTab", url);
+	}
+
+	private void findAndShowInTreeView()
+	{
+
+		BaselineItemzSelectionService.ScrollToTreeViewNode(BaselineId);
 	}
 
 }
