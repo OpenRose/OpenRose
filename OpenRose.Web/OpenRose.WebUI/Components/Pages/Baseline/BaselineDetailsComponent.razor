@@ -117,6 +117,15 @@
 					<MudStack Row="true" Spacing="2">
 						<MudText><strong>Baseline Id: </strong></MudText>
 						<CopyableText TextToCopy="@BaselineId.ToString()" DisplayLength="8" />
+						@if (CalledFrom == nameof(BaselineTreeView))
+						{
+							<MudTooltip Text="Show in Tree View" Placement="Placement.Top">
+							<MudIcon Icon="@Icons.Material.Filled.Park" Size="Size.Small"
+										Class="mouse-pointer-icon"
+										Style="cursor:pointer"
+										@onclick="findAndShowInTreeView" />
+						</MudTooltip>
+						}
 						<MudTooltip Text="GoTo Project" Placement="Placement.Top">
 							<MudIcon Icon="@Icons.Material.Filled.SportsBaseball" 
 									Size="Size.Small" 
@@ -513,6 +522,12 @@
 
 		// Open in new tab
 		await JS.InvokeVoidAsync("openInNewTab", url);
+	}
+
+	private void findAndShowInTreeView()
+	{
+
+		BaselineItemzSelectionService.ScrollToTreeViewNode(BaselineId);
 	}
 
 }
