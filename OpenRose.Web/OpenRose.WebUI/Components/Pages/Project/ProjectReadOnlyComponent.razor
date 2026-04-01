@@ -7,11 +7,13 @@
 @using OpenRose.WebUI.Client.Services.Hierarchy
 @using OpenRose.WebUI.Client.Services.Project
 @using OpenRose.WebUI.Client.SharedModels
+@using OpenRose.WebUI.Components.EventServices
 @using OpenRose.WebUI.Components.Pages.Common
 @using OpenRose.WebUI.Services
 @using Microsoft.AspNetCore.Components.Forms
 @inject NavigationBlockerService NavigationBlocker
 @inject ViewSettingsService ViewSettings
+@inject TreeNodeItemzSelectionService TreeNodeItemzSelectionService
 @inject IDialogService DialogService
 @inject IJSRuntime JS
 
@@ -68,6 +70,9 @@
 						<MudStack Row="true" Spacing="2">
 							<MudText><strong>ID          : </strong></MudText>
 							<CopyableText TextToCopy="@singleProject.Id.ToString()" DisplayLength="8" />
+							<MudTooltip Text="Show in Tree View" Placement="Placement.Top">
+								<MudIcon Icon="@Icons.Material.Filled.Park" Size="Size.Small" Class="mouse-pointer-icon" @onclick="findAndShowInTreeView" />
+							</MudTooltip>
 						</MudStack>
 						<MudText><strong> || Status      : </strong> @singleProject.Status</MudText>
 					</MudStack>
@@ -147,5 +152,10 @@
 			StateHasChanged();
 
 		}
+	}
+
+	private void findAndShowInTreeView()
+	{
+		TreeNodeItemzSelectionService.ScrollToTreeViewNode(ProjectId);
 	}
 }

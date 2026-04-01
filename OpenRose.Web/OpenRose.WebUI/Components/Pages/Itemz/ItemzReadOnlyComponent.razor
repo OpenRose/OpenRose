@@ -7,6 +7,7 @@
 @using OpenRose.WebUI.Client.Services.Hierarchy
 @using OpenRose.WebUI.Client.Services.Itemz
 @using OpenRose.WebUI.Client.SharedModels
+@using OpenRose.WebUI.Components.EventServices
 @using OpenRose.WebUI.Components.Pages.Common
 @using OpenRose.WebUI.Components.Pages.Itemz.Traceability
 @using OpenRose.WebUI.Components.Utilities
@@ -14,6 +15,7 @@
 @using Microsoft.AspNetCore.Components.Forms
 @inject NavigationBlockerService NavigationBlocker
 @inject ViewSettingsService ViewSettings
+@inject TreeNodeItemzSelectionService TreeNodeItemzSelectionService
 @inject IDialogService DialogService
 @inject IJSRuntime JS
 
@@ -90,6 +92,9 @@
                             <MudStack Row="true" Spacing="2">
                             <MudText><strong>ID          : </strong></MudText>
                             <CopyableText TextToCopy="@singleItemz.Id.ToString()" DisplayLength="8" />
+                            <MudTooltip Text="Show in Tree View" Placement="Placement.Top">
+                                <MudIcon Icon="@Icons.Material.Filled.Park" Size="Size.Small" Class="mouse-pointer-icon" @onclick="findAndShowInTreeView" />
+                            </MudTooltip>
                             <ShowHierarchyTreeButton RecordId="@singleItemz.Id" />
                         </MudStack>
                         <MudText><strong> || Status      : </strong> @singleItemz.Status</MudText>
@@ -183,6 +188,12 @@
 
 		}
 	}
+
+
+    private void findAndShowInTreeView()
+    {
+        TreeNodeItemzSelectionService.ScrollToTreeViewNode(ItemzId);
+    }
 
     // private async Task ScrollUp()
     // {

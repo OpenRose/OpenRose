@@ -128,6 +128,12 @@
 						<MudStack Row="true" Spacing="2">
 							<MudText><strong>Project Id: </strong></MudText>
 							<CopyableText TextToCopy="@singleProject.Id.ToString()" />
+							@if (CalledFrom == nameof(ProjectTreeView))
+							{
+								<MudTooltip Text="Show in Tree View" Placement="Placement.Top">
+									<MudIcon Icon="@Icons.Material.Filled.Park" Size="Size.Small" Class="mouse-pointer-icon" @onclick="findAndShowInTreeView" />
+								</MudTooltip>
+							}
 						</MudStack>
 
 						<MudTextField T="string" Label="Name" Required="true" RequiredError="Name is required!"
@@ -573,6 +579,11 @@
 			// User confirmed discard → clear dirty state
 			FormStateService.SetDirty(ProjectId, false);
 		}
+	}
+
+	private void findAndShowInTreeView()
+	{
+		TreeNodeItemzSelectionService.ScrollToTreeViewNode(ProjectId);
 	}
 
 }

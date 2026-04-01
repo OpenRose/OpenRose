@@ -215,6 +215,12 @@
 				<MudStack Row="true" Spacing="2" Class="mt-2">
 					<MudText><strong>Itemz Id: </strong></MudText>
 					<CopyableText TextToCopy="@ItemzId.ToString()" />
+					@if (CalledFrom == nameof(ProjectTreeView))
+					{
+						<MudTooltip Text="Show in Tree View" Placement="Placement.Top">
+							<MudIcon Icon="@Icons.Material.Filled.Park" Size="Size.Small" Class="mouse-pointer-icon" @onclick="findAndShowInTreeView" />
+						</MudTooltip>
+					}
 					<ShowHierarchyTreeButton RecordId="@singleItemz.Id" />
 				</MudStack>
 				<br />
@@ -951,4 +957,9 @@
 	}
 
 	#endregion
+
+	private void findAndShowInTreeView()
+	{
+		TreeNodeItemzSelectionService.ScrollToTreeViewNode(ItemzId);
+	}
 }

@@ -7,11 +7,13 @@
 @using OpenRose.WebUI.Client.Services.Hierarchy
 @using OpenRose.WebUI.Client.Services.BaselineItemz
 @using OpenRose.WebUI.Client.SharedModels
+@using OpenRose.WebUI.Components.EventServices
 @using OpenRose.WebUI.Components.Pages.BaselineItemz.BaselineTraceability
 @using OpenRose.WebUI.Components.Pages.Common
 @using OpenRose.WebUI.Components.Utilities
 @using OpenRose.WebUI.Services
 @using Microsoft.AspNetCore.Components.Forms
+@inject BaselineTreeNodeItemzSelectionService BaselineItemzSelectionService
 @inject NavigationBlockerService NavigationBlocker
 @inject ViewSettingsService ViewSettings
 @inject IDialogService DialogService
@@ -91,6 +93,12 @@
 						<MudStack Row="true" Spacing="2">
 							<MudText><strong>ID          : </strong></MudText>
 							<CopyableText TextToCopy="@singleBaselineItemz.Id.ToString()" DisplayLength="8" />
+							<MudTooltip Text="Show in Tree View" Placement="Placement.Top">
+								<MudIcon Icon="@Icons.Material.Filled.Park" Size="Size.Small"
+											Class="mouse-pointer-icon"
+											Style="cursor:pointer"
+											@onclick="findAndShowInTreeView" />
+							</MudTooltip>
 							<GoToOriginalItemzButton BaselineItemzId="@singleBaselineItemz.Id" UseTreeView="true" />
 							<ShowHierarchyTreeButton RecordId="@singleBaselineItemz.Id" />
 						</MudStack>
@@ -195,5 +203,11 @@
 			StateHasChanged();
 
 		}
+	}
+
+	private void findAndShowInTreeView()
+	{
+
+		BaselineItemzSelectionService.ScrollToTreeViewNode(BaselineItemzId);
 	}
 }
