@@ -45,10 +45,13 @@ BUT primarily, **Itemz** is nothing but Requirements / Needs / Wants / Notes / F
 
 ## Overview of Current State
 
-Latest release [version 0.2.0-334](https://github.com/OpenRose/OpenRose/releases/tag/v0.2.0-334)
+Latest release [version 0.2.0-393](https://github.com/OpenRose/OpenRose/releases/tag/v0.2.0-393)
 
 Main New Feature
 
+- Supporting Client Off-Line Read Only JSON Data file Views based on Exported Data from Open Rose [Demo](https://www.youtube.com/watch?v=3Wl6xnN3ba0)
+
+version v0.2.0-334
 - Enable windows services deployment for WebUI and API (Auto-start OpenRose) [Demo](https://www.youtube.com/watch?v=wO1bKZHl-I0)
 
 version v0.2.0-295
