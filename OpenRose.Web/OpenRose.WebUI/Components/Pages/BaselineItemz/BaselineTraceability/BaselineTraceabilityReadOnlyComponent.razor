@@ -291,6 +291,13 @@
 
 	public async Task openBaselineItemz(string baselineItemzId)
 	{
+
+		if (CalledFrom == nameof(BaselineItemz))
+		{
+			// If we are already in BaselineItemz, just navigate within the same page.
+			NavManager.NavigateTo($"/baselineitemz/{baselineItemzId}", true);
+			return;
+		}
 		BaselineItemzSelectionService.SelectBaselineTreeNodeItemz(Guid.Parse(baselineItemzId));
 		BaselineItemzSelectionService.ScrollToTreeViewNode(Guid.Parse(baselineItemzId));
 

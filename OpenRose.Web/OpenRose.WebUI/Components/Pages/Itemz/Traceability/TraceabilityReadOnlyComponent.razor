@@ -296,6 +296,13 @@
 
 	public async Task openItemz(string itemzId)
 	{
+		if (CalledFrom == nameof(Itemz))
+		{
+			// If we are already in ItemzDetails, just navigate within the same page.
+			NavManager.NavigateTo($"/itemz/{itemzId}", true);
+			return;
+        }
+
 		ItemzSelectionService.SelectTreeNodeItemz(Guid.Parse(itemzId));
 		ItemzSelectionService.ScrollToTreeViewNode(Guid.Parse(itemzId));
 

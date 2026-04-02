@@ -5,6 +5,7 @@
 *@
 
 @page "/itemz/{ItemzId:guid}"
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
 @using OpenRose.WebUI.Client.Services.Hierarchy
 @using OpenRose.WebUI.Client.Services.Itemz
 @using OpenRose.WebUI.Client.Services.ItemzTypeItemzsService
@@ -14,12 +15,15 @@
 @using OpenRose.WebUI.Components.FindServices
 @using OpenRose.WebUI.Components.Pages.Breadcrums
 @using OpenRose.WebUI.Components.Pages.Common
+@using OpenRose.WebUI.Components.Pages.Itemz.Traceability
 @using OpenRose.WebUI.Components.Utilities
 @using OpenRose.WebUI.Services
 @using Microsoft.AspNetCore.Components.Forms
 @inject NavigationManager NavManager
 @inject IDialogService DialogService
 @inject BreadcrumsService breadcrumsService
+@inject ProtectedSessionStorage SessionStorage
+@inject ViewSettingsService ViewSettings
 @inject IJSRuntime JS
 @inject IServiceProvider serviceProvider
 
@@ -28,12 +32,31 @@
 	<ItemzBreadcrums produceBreadcrums="BreadcrumsParameter" />
 }
 
-<MudPaper Class="pa-3 mb-3 align-start d-flex" Style="width: auto " Outlined="false">
-    <MudStack Row="true" Spacing="3">
-        <MudIcon Icon="@Icons.Material.Filled.Stream" Size="Size.Large" Color="Color.Secondary" />
-		<MudText Typo="Typo.h6" Align="Align.Left">Itemz </MudText>
-    </MudStack>
+<MudPaper Class="pa-3 mb-3 d-flex" Style="width: auto" Outlined="false">
+	<MudStack Row="true" Spacing="3" AlignItems="AlignItems.Center" Class="w-100">
+
+		<MudIcon Icon="@Icons.Material.Filled.Stream"
+				 Size="Size.Large"
+				 Color="Color.Secondary" />
+
+		<MudText Typo="Typo.h6" Align="Align.Left">
+			Itemz
+		</MudText>
+
+		<!-- This spacer pushes everything after it to the far right -->
+		<MudSpacer />
+
+		<MudSwitch T="bool"
+				   Value="@ViewSettings.ShowTraceabilityInItemzDetails"
+				   ValueChanged="ToggleShowTraces"
+				   Label="Show Traces"
+				   UncheckedColor="Color.Success"
+				   Color="Color.Success"
+				   LabelPlacement="Placement.End" />
+
+	</MudStack>
 </MudPaper>
+
 
 <MudGrid>
 	@if (initializingPage)
@@ -172,6 +195,13 @@
 				</Columns>
 			</MudDataGrid>
  		</MudItem>
+        @if (ViewSettings.ShowTraceabilityInItemzDetails)
+		{
+			<MudItem Class="mb-3" xs="12" sm="12">
+				<TraceabilityReadOnlyComponent ItemzId="@ItemzId" CalledFrom="@nameof(Itemz)" />
+			</MudItem>
+
+		}
 		}
 	}
 	}
@@ -256,6 +286,14 @@
 	{
 		if (firstRender)
 		{
+
+			// Load view settings
+			var result = await SessionStorage.GetAsync<bool>("SHOWTRACEABILITYINITEMZDETAILS");
+			if (result.Success)
+			{
+				ViewSettings.ShowTraceabilityInItemzDetails = result.Value;
+			}
+
 			initializingPage = true;
 			await Task.Delay(200); // Wanted Breadcrums to load so that decision about displaying Child Itemz can be taken properly.
 		}
@@ -465,6 +503,16 @@
 			// await Task.Delay(1000);
 			// await JS.InvokeVoidAsync("applyMarkdownEditorFullscreenStyles");
 		}
+	}
+
+	private async Task ToggleShowTraces(bool newValue)
+	{
+
+		// Apply the new setting
+		ViewSettings.ShowTraceabilityInItemzDetails = newValue;
+		await SessionStorage.SetAsync("SHOWTRACEABILITYINITEMZDETAILS", newValue);
+
+		StateHasChanged();
 	}
 
 }

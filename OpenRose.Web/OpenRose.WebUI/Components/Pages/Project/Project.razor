@@ -23,11 +23,6 @@
     </MudStack>
 </MudPaper>
 
-
-@* <MudPaper Class="pa-3 mb-5 align-start d-flex" Style="width: auto " Outlined="false">
-	<MudText Typo="Typo.h6" Align="Align.Left">Project</MudText>
-</MudPaper>
- *@
 <MudGrid>
 	@if (initializingPage)
 	{
@@ -58,8 +53,7 @@
 						</MudItem>
 					</MudGrid>
 				</MudItem>
-@* 				<MudDivider Style="color: darkgray background-color: white; border-width: 2px; border-color: black; height: 2px; " /> *@
-					</MudCardContent>
+				</MudCardContent>
 				</MudCard>
 				<MudCard >
 					<MudCardContent>
@@ -133,8 +127,6 @@
 	<MudPaper Height="calc(100vh - 100px);" Width="100%">
 		<MudOverlay Visible="@_showOverlay" DarkBackground="true" Absolute="true">
 			<MudContainer Class="d-flex flex-column justify-center align-center" Style="height: 100%;">
-				@* <MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Inherit">Moving ... </MudText>
-			<br /> *@
 				<MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
 			</MudContainer>
 		</MudOverlay>

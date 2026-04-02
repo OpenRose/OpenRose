@@ -78,6 +78,15 @@ namespace OpenRose.WebUI.Services
 		/// </summary>
 		public bool ShowDataSourceSwitchControl { get; set; } = true;
 
+
+		/// <summary>
+		/// Indicates whether traceability information is displayed in Itemz details view.
+		/// This is a user preference stored per session using local storage.
+		/// This setting will cover both, Itemz and Baseline Itemz 
+		/// as user preference will be same for both!
+		/// </summary>
+		public bool ShowTraceabilityInItemzDetails { get; set; } = true;
+
 		public bool IsKioskMode { get; private set; } = false;
 
 		public event Action? OnKioskModeChanged;
