@@ -298,7 +298,7 @@
 	{
 		if (CalledFrom == nameof(Itemz))
 		{
-			// If we are already in ItemzDetails, just navigate within the same page without forcing a reload
+			// If we are already in ItemzDetails, just navigate within the same page.
 			NavManager.NavigateTo($"/itemz/{itemzId}", true);
 			return;
         }
