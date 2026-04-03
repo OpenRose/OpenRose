@@ -464,6 +464,90 @@ namespace ItemzApp.API.Controllers
 			}
 		}
 
+		// PHASE 1: Add this endpoint to HierarchyController for updating estimation values
+
+		/// <summary>
+		/// Updates estimation fields (own estimation and/or estimation unit) for a hierarchy record
+		/// PHASE 1: Automatically triggers roll-up recalculation after update
+		/// </summary>
+		/// <param name="updateHierarchyEstimationDTO">Contains record ID and updated estimation fields</param>
+		/// <param name="hierarchyRepository">Repository for hierarchy data</param>
+		/// <param name="estimationRollupService">Service for roll-up calculations</param>
+		/// <returns>Updated estimation data or error message</returns>
+		/// <response code="200">Estimation fields updated successfully</response>
+		/// <response code="400">Bad Request or update failed</response>
+		/// <response code="404">Hierarchy record not found</response>
+		[HttpPut("UpdateEstimation", Name = "__Update_Hierarchy_Estimation__")]
+		[ProducesResponseType(StatusCodes.Status200OK)]
+		[ProducesResponseType(StatusCodes.Status400BadRequest)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		public async Task<ActionResult<dynamic>> UpdateHierarchyEstimation(
+			[FromBody] UpdateHierarchyEstimationDTO updateHierarchyEstimationDTO,
+			[FromServices] IHierarchyRepository hierarchyRepository,
+			[FromServices] EstimationRollupService estimationRollupService)
+		{
+			try
+			{
+				if (updateHierarchyEstimationDTO == null || updateHierarchyEstimationDTO.RecordId == Guid.Empty)
+				{
+					return BadRequest(new
+					{
+						success = false,
+						message = "Valid Record ID is required"
+					});
+				}
+
+				_logger.LogInformation($"Request to update estimation for hierarchy record ID: {updateHierarchyEstimationDTO.RecordId}");
+
+				// PHASE 1: Update the estimation fields - this will trigger roll-up recalculation
+				var updateResult = await hierarchyRepository.UpdateHierarchyEstimationFieldsAsync(
+					updateHierarchyEstimationDTO.RecordId,
+					updateHierarchyEstimationDTO.EstimationUnit,
+					updateHierarchyEstimationDTO.OwnEstimation,
+					estimationRollupService);
+
+				if (!updateResult)
+				{
+					_logger.LogWarning($"Failed to update estimation for record ID: {updateHierarchyEstimationDTO.RecordId}");
+					return NotFound(new
+					{
+						success = false,
+						message = "Hierarchy record not found"
+					});
+				}
+
+				// PHASE 1: Retrieve and return updated record with new estimation values
+				var updatedRecord = await hierarchyRepository.GetHierarchyRecordDetailsByID(updateHierarchyEstimationDTO.RecordId);
+
+				_logger.LogInformation($"Successfully updated estimation for hierarchy record ID: {updateHierarchyEstimationDTO.RecordId}");
+
+				return Ok(new
+				{
+					success = true,
+					message = "Estimation fields updated successfully",
+					data = updatedRecord
+				});
+			}
+			catch (ArgumentNullException argEx)
+			{
+				_logger.LogWarning($"Argument validation failed: {argEx.Message}");
+				return BadRequest(new
+				{
+					success = false,
+					message = argEx.Message
+				});
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Exception occurred while updating estimation: {ex.Message}", ex);
+				return BadRequest(new
+				{
+					success = false,
+					message = $"An error occurred: {ex.Message}"
+				});
+			}
+		}
+
 		// We have configured in startup class our own custom implementation of 
 		// problem Details. Now we are overriding ValidationProblem method that is defined in ControllerBase
 		// class to make sure that we use that custom problem details builder. 
