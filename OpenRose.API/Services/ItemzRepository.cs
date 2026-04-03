@@ -1067,6 +1067,50 @@ namespace ItemzApp.API.Services
 			return returnValue;
 		}
 
+		// Add this method to handle estimation change logging
+		// PHASE 1: Log when OwnEstimation value changes for auditing purposes
+
+		/// <summary>
+		/// Creates a change history entry when Own Estimation value changes for an Itemz record
+		/// PHASE 1: Logs only own estimation changes, not roll-up value changes
+		/// </summary>
+		/// <param name="itemzId">The ID of the Itemz record</param>
+		/// <param name="oldEstimation">Previous own estimation value</param>
+		/// <param name="newEstimation">New own estimation value</param>
+		/// <returns>True if successfully logged, False otherwise</returns>
+		public async Task<bool> LogEstimationChangeAsync(Guid itemzId, decimal oldEstimation, decimal newEstimation)
+		{
+			try
+			{
+				// Only log if values actually changed
+				if (oldEstimation == newEstimation)
+				{
+					return true;
+				}
+
+				var changeHistoryEntry = new ItemzChangeHistory
+				{
+					ItemzId = itemzId,
+					CreatedDate = DateTimeOffset.Now,
+					OldValues = oldEstimation.ToString(),
+					NewValues = newEstimation.ToString(),
+					ChangeEvent = "OwnEstimationChanged" // PHASE 1: Specific event for estimation changes
+				};
+
+				_context.ItemzChangeHistory!.Add(changeHistoryEntry);
+				await _context.SaveChangesAsync();
+
+				// _logger.LogDebug($"Logged estimation change for Itemz ID {itemzId}: {oldEstimation} -> {newEstimation}");
+				return true;
+			}
+			catch (Exception ex)
+			{
+				// _logger.LogError($"Exception occurred while logging estimation change for Itemz ID {itemzId}: {ex.Message}", ex);
+				// PHASE 1: Gentle error handling - don't crash if change log fails
+				return false;
+			}
+		}
+
 		#region NOT USED ANYMORE CODE 
 
 		///// <summary>
