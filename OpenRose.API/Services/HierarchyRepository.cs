@@ -163,13 +163,18 @@ namespace ItemzApp.API.Services
 			hierarchyIdRecordDetails.HierarchyId = foundHierarchyRecord.FirstOrDefault()!.ItemzHierarchyId!.ToString();
             hierarchyIdRecordDetails.RecordType = foundHierarchyRecord.FirstOrDefault()!.RecordType;
             hierarchyIdRecordDetails.Level = foundHierarchyRecord.FirstOrDefault()!.ItemzHierarchyId!.GetLevel();
+			
+			// Adding estimation fields
+			hierarchyIdRecordDetails.EstimationUnit = foundHierarchyRecord.FirstOrDefault()!.EstimationUnit;
+			hierarchyIdRecordDetails.OwnEstimation = foundHierarchyRecord.FirstOrDefault()!.OwnEstimation;
+			hierarchyIdRecordDetails.RolledUpEstimation = foundHierarchyRecord.FirstOrDefault()!.RolledUpEstimation;
+			
+			// EXPLANATION : We are using SQL Server HierarchyID field type. Now we can use EF Core special
+			// methods to query for all Decendents as per below. We are actually finding all Decendents by saying
+			// First find the ItemzHierarchy record where ID matches RootItemz ID. This is expected to be the
+			// repository ID itself which is the root. then we find all desendents of Repository which is nothing but Project(s). 
 
-            // EXPLANATION : We are using SQL Server HierarchyID field type. Now we can use EF Core special
-            // methods to query for all Decendents as per below. We are actually finding all Decendents by saying
-            // First find the ItemzHierarchy record where ID matches RootItemz ID. This is expected to be the
-            // repository ID itself which is the root. then we find all desendents of Repository which is nothing but Project(s). 
-
-            var itemzTypeHierarchyItemz = await _context.ItemzHierarchy!
+			var itemzTypeHierarchyItemz = await _context.ItemzHierarchy!
                     .AsNoTracking()
                     .Where(ih => ih.ItemzHierarchyId!.GetAncestor(1) == foundHierarchyRecord.FirstOrDefault()!.ItemzHierarchyId!)
                     .OrderBy(ih => ih.ItemzHierarchyId!)
