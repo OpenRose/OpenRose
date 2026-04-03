@@ -410,6 +410,60 @@ namespace ItemzApp.API.Controllers
             }
         }
 
+		/// <summary>
+		/// Recalculates all roll-up estimations for a specific project on-demand
+		/// PHASE 1: User can click a button in UI to trigger this recalculation
+		/// </summary>
+		/// <param name="projectHierarchyRecordId">The GUID of the Project hierarchy record</param>
+		/// <returns>Success or failure status with message</returns>
+		/// <response code="200">Roll-up recalculation completed successfully</response>
+		/// <response code="400">Recalculation failed or timed out</response>
+		[HttpPost("RecalculateProjectRollUpEstimations/{projectHierarchyRecordId:Guid}",
+			Name = "__Post_Recalculate_Project_RollUp_Estimations_By_GUID__")]
+		[ProducesResponseType(StatusCodes.Status200OK)]
+		[ProducesResponseType(StatusCodes.Status400BadRequest)]
+		public async Task<ActionResult<dynamic>> RecalculateProjectRollUpEstimations(
+			Guid projectHierarchyRecordId,
+			[FromServices] EstimationRollupService estimationRollupService)
+		{
+			try
+			{
+				_logger.LogInformation($"Request received to recalculate roll-up estimations for Project ID: {projectHierarchyRecordId}");
+
+				var result = await estimationRollupService.RecalculateProjectRollUpEstimationsAsync(projectHierarchyRecordId);
+
+				if (result)
+				{
+					var successMessage = new
+					{
+						success = true,
+						message = "Roll-up estimations recalculated successfully for the project"
+					};
+					_logger.LogInformation(successMessage.message);
+					return Ok(successMessage);
+				}
+				else
+				{
+					var errorMessage = new
+					{
+						success = false,
+						message = "Roll-up estimation recalculation failed or exceeded maximum execution time (2 seconds). Please try again."
+					};
+					_logger.LogWarning(errorMessage.message);
+					return BadRequest(errorMessage);
+				}
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Exception occurred during roll-up recalculation: {ex.Message}", ex);
+				return BadRequest(new
+				{
+					success = false,
+					message = $"An error occurred: {ex.Message}"
+				});
+			}
+		}
+
 		// We have configured in startup class our own custom implementation of 
 		// problem Details. Now we are overriding ValidationProblem method that is defined in ControllerBase
 		// class to make sure that we use that custom problem details builder. 
