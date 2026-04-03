@@ -31,5 +31,12 @@ namespace ItemzApp.API.Services
 
 		public Task<bool> UpdateHierarchyRecordNameByID(Guid recordId, string name);
 
+		// PHASE 1: Update estimation fields and trigger roll-up recalculation
+		public Task<bool> UpdateHierarchyEstimationFieldsAsync(
+			Guid recordId,
+			string? estimationUnit = null,
+			decimal? ownEstimation = null,
+			EstimationRollupService? estimationRollupService = null);
+
 	}
 }

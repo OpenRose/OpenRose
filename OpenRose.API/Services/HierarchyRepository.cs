@@ -730,5 +730,102 @@ namespace ItemzApp.API.Services
 
 			return (await _context.SaveChangesAsync() >= 0);
 		}
+
+
+
+		// PHASE 1: Add this method to HierarchyRepository to handle estimation field updates
+
+		/// <summary>
+		/// Updates estimation fields (EstimationUnit and/or OwnEstimation) for a hierarchy record
+		/// PHASE 1: Triggers roll-up recalculation after update
+		/// </summary>
+		/// <param name="recordId">The ID of the hierarchy record to update</param>
+		/// <param name="estimationUnit">New estimation unit (optional)</param>
+		/// <param name="ownEstimation">New own estimation value (optional)</param>
+		/// <param name="estimationRollupService">Service to handle roll-up recalculation</param>
+		/// <returns>True if update successful, False otherwise</returns>
+		public async Task<bool> UpdateHierarchyEstimationFieldsAsync(
+			Guid recordId,
+			string? estimationUnit = null,
+			decimal? ownEstimation = null,
+			EstimationRollupService? estimationRollupService = null)
+		{
+			if (recordId == Guid.Empty)
+			{
+				throw new ArgumentNullException(nameof(recordId));
+			}
+
+			var hierarchyRecord = await _context.ItemzHierarchy!
+				.FirstOrDefaultAsync(ih => ih.Id == recordId);
+
+			if (hierarchyRecord == null)
+			{
+				return false;
+			}
+
+			bool hasChanged = false;
+
+			// PHASE 1: Update estimation unit if provided
+			if (!string.IsNullOrWhiteSpace(estimationUnit) && hierarchyRecord.EstimationUnit != estimationUnit)
+			{
+				hierarchyRecord.EstimationUnit = estimationUnit;
+				hasChanged = true;
+			}
+
+			// PHASE 1: Update own estimation if provided and trigger recalculation if changed
+			if (ownEstimation.HasValue && hierarchyRecord.OwnEstimation != ownEstimation.Value)
+			{
+				var oldEstimationValue = hierarchyRecord.OwnEstimation;
+				hierarchyRecord.OwnEstimation = ownEstimation.Value;
+				hasChanged = true;
+
+				// PHASE 1: Log this change to ItemzChangeHistory for auditing
+				// NOTE: We log only own estimation changes, not roll-up changes per requirements
+				try
+				{
+					var changeHistoryEntry = new ItemzChangeHistory
+					{
+						ItemzId = recordId, // Store the hierarchy record ID for traceability
+						CreatedDate = DateTimeOffset.Now,
+						OldValues = oldEstimationValue.ToString(),
+						NewValues = ownEstimation.Value.ToString(),
+						ChangeEvent = "OwnEstimationChanged"
+					};
+					_context.ItemzChangeHistory!.Add(changeHistoryEntry);
+				}
+				catch (Exception ex)
+				{
+					// PHASE 1: Log but don't fail the operation if change history logging fails
+					// TODO :: Add Logging!
+					// _logger.LogWarning($"Warning: Could not log estimation change for record {recordId}: {ex.Message}");
+				}
+			}
+
+			if (hasChanged)
+			{
+				await _context.SaveChangesAsync();
+
+				// PHASE 1: Trigger roll-up recalculation for parent hierarchy after estimation change
+				if (estimationRollupService != null && hierarchyRecord.ItemzHierarchyId != null)
+				{
+					// Get parent and trigger its roll-up recalculation
+					var parentHierarchyId = hierarchyRecord.ItemzHierarchyId.GetAncestor(1);
+					if (parentHierarchyId != null)
+					{
+						var parentRecord = await _context.ItemzHierarchy!
+							.FirstOrDefaultAsync(ih => ih.ItemzHierarchyId == parentHierarchyId);
+
+						if (parentRecord != null)
+						{
+							await estimationRollupService.RecalculateSingleRecordRollUpAsync(parentRecord.Id);
+						}
+					}
+				}
+
+				return true;
+			}
+
+			return true; // No changes needed
+		}
 	}
 }
