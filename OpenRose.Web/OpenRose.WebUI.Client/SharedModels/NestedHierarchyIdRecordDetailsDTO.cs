@@ -34,8 +34,6 @@ namespace OpenRose.WebUI.Client.SharedModels
 		/// </summary>
 		public string? Name { get; set; }
 
-		public List<NestedHierarchyIdRecordDetailsDTO>? Children { get; set; }
-
 		// PHASE 1: Estimation fields for roll-up calculations
 		/// <summary>
 		/// Estimation Unit (e.g., "Days", "Hours", "Story Points", "$", "GBP")
@@ -52,6 +50,7 @@ namespace OpenRose.WebUI.Client.SharedModels
 		/// Roll-up Estimation - sum of own estimation plus all child estimations
 		/// </summary>
 		public decimal RolledUpEstimation { get; set; } = 0;
+		public List<NestedHierarchyIdRecordDetailsDTO>? Children { get; set; }
 
 	}
 }
