@@ -393,6 +393,7 @@ namespace ItemzApp.API.Services
                 throw new ArgumentNullException(nameof(itemz));
             }
             _context.Itemzs!.Add(itemz);
+
         }
 
         public async Task AddOrMoveItemzBetweenTwoHierarchyRecordsAsync(Guid between1stItemzId, Guid between2ndItemzId, Guid addingOrMovingItemzId, string? itemzName)
@@ -617,8 +618,10 @@ namespace ItemzApp.API.Services
 
         }
 
-        public async Task MoveItemzHierarchyAsync(Guid movingItemzId, Guid targetId, bool atBottomOfChildNodes = true, string? movingItemzName = null)
-        {
+		//public async Task MoveItemzHierarchyAsync(Guid movingItemzId, Guid targetId, bool atBottomOfChildNodes = true, string? movingItemzName = null)
+		// PHASE 1: Modified to return the hierarchy record ID for trigger event processing
+		public async Task<Guid> MoveItemzHierarchyAsync(Guid movingItemzId, Guid targetId, bool atBottomOfChildNodes = true, string? movingItemzName = null)
+		{
             if (movingItemzId == Guid.Empty)
             {
                 throw new ArgumentNullException(nameof(movingItemzId));
@@ -788,12 +791,15 @@ namespace ItemzApp.API.Services
                     );
                 }
             }
-            else
-            {
-                //_context.ItemzHierarchy.Add()
-                _context.ItemzHierarchy!.Add(movingItemzHierarchyRecord);
-            }
-        }
+			else
+			{
+				//_context.ItemzHierarchy.Add()
+				_context.ItemzHierarchy!.Add(movingItemzHierarchyRecord);
+			}
+
+			// PHASE 1: Return the hierarchy record ID for trigger event processing
+			return movingItemzHierarchyRecord.Id;
+		}
 
         public async Task<bool> ItemzExistsAsync(Guid itemzId)
         {

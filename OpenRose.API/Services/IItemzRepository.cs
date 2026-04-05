@@ -53,9 +53,11 @@ namespace ItemzApp.API.Services
 
         public Task DeleteItemzAsync(Guid itemzId);
 
-        public Task MoveItemzHierarchyAsync(Guid movingItemzId, Guid targetId, bool atBottomOfChildNodes = true,  string? movingItemzName = null );
+        //public Task MoveItemzHierarchyAsync(Guid movingItemzId, Guid targetId, bool atBottomOfChildNodes = true,  string? movingItemzName = null );
+		// PHASE 1: Modified to return hierarchy record ID for trigger event processing
+		public Task<Guid> MoveItemzHierarchyAsync(Guid movingItemzId, Guid targetId, bool atBottomOfChildNodes = true, string? movingItemzName = null);
 
-        public Task DeleteAllOrphanItemz();
+		public Task DeleteAllOrphanItemz();
 
         public Task<Guid> CopyItemzAsync(Guid ItemzId);
 
