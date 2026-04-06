@@ -12,6 +12,7 @@
 @using OpenRose.WebUI.Components.Pages.Baseline
 @using OpenRose.WebUI.Components.Pages.Common
 @using Microsoft.AspNetCore.Components.Forms
+@using OpenRose.WebUI.Components.Pages.SharedComponents
 @using PSC.Blazor.Components.MarkdownEditor
 @using PSC.Blazor.Components.MarkdownEditor.EventsArgs
 @inject NavigationManager NavManager
@@ -125,6 +126,8 @@
 						</MudStack>
 					</MudCardActions>
 					<MudCardContent>
+						<!-- PHASE 1: Estimation Management Section -->
+@* 						<EstimationManagementComponent RecordId="@ProjectId" RecordType="Project" /> *@
 						<MudStack Row="true" Spacing="2">
 							<MudText><strong>Project Id: </strong></MudText>
 							<CopyableText TextToCopy="@singleProject.Id.ToString()" />
@@ -185,10 +188,18 @@
 				</MudForm>
 				</MudPaper>
 			</MudTabPanel>
-				<MudTabPanel @ref="baselineTab" Icon="@Icons.Material.Filled.ContentCopy" Text="Baselines">
-					<MudPaper Class="pa-4 mb-5 mud-height-full" Width="100%">
-						<ProjectBaselineComponent ProjectId="@ProjectId" />
-					</MudPaper>
+			<MudTabPanel Icon="@Icons.Material.Filled.Money" Text="Estimation">
+				<MudPaper Class="pa-0 mud-height-full"
+							Width="100%"
+							Outlined="false"
+							Elevation="0">
+					<EstimationManagementComponent RecordId="@ProjectId" RecordType="Project" />
+				</MudPaper>
+			</MudTabPanel>
+			<MudTabPanel @ref="baselineTab" Icon="@Icons.Material.Filled.ContentCopy" Text="Baselines">
+				<MudPaper Class="pa-4 mb-5 mud-height-full" Width="100%">
+					<ProjectBaselineComponent ProjectId="@ProjectId" />
+				</MudPaper>
 			</MudTabPanel>
 			@if (CalledFrom == nameof(ProjectDetails))
 			{
