@@ -791,7 +791,8 @@ namespace ItemzApp.API.Services
 			bool hasChanged = false;
 
 			// PHASE 1: Update estimation unit if provided
-			if (!string.IsNullOrWhiteSpace(estimationUnit) && hierarchyRecord.EstimationUnit != estimationUnit)
+			if (!string.IsNullOrWhiteSpace(estimationUnit) && hierarchyRecord.EstimationUnit != estimationUnit
+				&& string.Equals(hierarchyRecord.RecordType, "Project", StringComparison.OrdinalIgnoreCase) )
 			{
 				hierarchyRecord.EstimationUnit = estimationUnit;
 				hasChanged = true;
@@ -806,23 +807,26 @@ namespace ItemzApp.API.Services
 
 				// PHASE 1: Log this change to ItemzChangeHistory for auditing
 				// NOTE: We log only own estimation changes, not roll-up changes per requirements
-				try
+				if (string.Equals(hierarchyRecord.RecordType, "Itemz", StringComparison.OrdinalIgnoreCase))
 				{
-					var changeHistoryEntry = new ItemzChangeHistory
+					try
 					{
-						ItemzId = recordId, // Store the hierarchy record ID for traceability
-						CreatedDate = DateTimeOffset.Now,
-						OldValues = oldEstimationValue.ToString(),
-						NewValues = ownEstimation.Value.ToString(),
-						ChangeEvent = "OwnEstimationChanged"
-					};
-					_context.ItemzChangeHistory!.Add(changeHistoryEntry);
-				}
-				catch (Exception ex)
-				{
-					// PHASE 1: Log but don't fail the operation if change history logging fails
-					// TODO :: Add Logging!
-					// _logger.LogWarning($"Warning: Could not log estimation change for record {recordId}: {ex.Message}");
+						var changeHistoryEntry = new ItemzChangeHistory
+						{
+							ItemzId = recordId, // Store the hierarchy record ID for traceability
+							CreatedDate = DateTimeOffset.Now,
+							OldValues = oldEstimationValue.ToString(),
+							NewValues = ownEstimation.Value.ToString(),
+							ChangeEvent = "OwnEstimationChanged"
+						};
+						_context.ItemzChangeHistory!.Add(changeHistoryEntry);
+					}
+					catch (Exception ex)
+					{
+						// PHASE 1: Log but don't fail the operation if change history logging fails
+						// TODO :: Add Logging!
+						// _logger.LogWarning($"Warning: Could not log estimation change for record {recordId}: {ex.Message}");
+					}
 				}
 			}
 
