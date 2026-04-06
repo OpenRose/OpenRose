@@ -12,6 +12,7 @@
 @using OpenRose.WebUI.Components.FindServices
 @using OpenRose.WebUI.Components.Pages.Breadcrums
 @using OpenRose.WebUI.Components.Pages.Itemz.ChangeLog
+@using OpenRose.WebUI.Components.Pages.Itemz.Estimation
 @using OpenRose.WebUI.Components.Pages.Itemz.Tags
 @using OpenRose.WebUI.Components.Pages.Itemz.Traceability
 @using OpenRose.WebUI.Components.Pages.Common
@@ -202,9 +203,8 @@
 
 				</MudStack>
 
-
-
-
+				<!-- PHASE 1: Estimation Management Section -->
+@* 				<EstimationManagementComponent RecordId="@ItemzId" RecordType="Itemz" /> *@
 
 
 
@@ -303,6 +303,16 @@
 						<TraceabilityComponent ItemzId="@ItemzId" CalledFrom="@CalledFrom" /> @* // TODO :: Perhaps we can change @nameof with Cascading Parameter in future *@
 				 	</MudPaper> 
 				</MudItem>
+			</MudTabPanel>
+					<MudTabPanel Icon="@Icons.Material.Filled.Money" Text="Estimation">
+@* 				<MudItem xs="12" sm="12" md="12" lg="12"> *@
+						<MudPaper Class="pa-0 mud-height-full"
+								  Width="100%"
+								  Outlined="false"
+								  Elevation="0">
+							<ItemzEstimationComponent ItemzId="@ItemzId" />
+						</MudPaper>
+				@* </MudItem> *@
 			</MudTabPanel>
 			}
 			<MudTabPanel Icon="@Icons.Material.Filled.ChangeHistory" Text="Change History">
