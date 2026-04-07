@@ -483,8 +483,7 @@ namespace ItemzApp.API.Controllers
 		[ProducesResponseType(StatusCodes.Status404NotFound)]
 		public async Task<ActionResult<dynamic>> UpdateHierarchyEstimation(
 			[FromBody] UpdateHierarchyEstimationDTO updateHierarchyEstimationDTO,
-			[FromServices] IHierarchyRepository hierarchyRepository,
-			[FromServices] EstimationRollupService estimationRollupService)
+			[FromServices] IHierarchyRepository hierarchyRepository)
 		{
 			try
 			{
@@ -503,8 +502,7 @@ namespace ItemzApp.API.Controllers
 				var updateResult = await hierarchyRepository.UpdateHierarchyEstimationFieldsAsync(
 					updateHierarchyEstimationDTO.RecordId,
 					updateHierarchyEstimationDTO.EstimationUnit,
-					updateHierarchyEstimationDTO.OwnEstimation,
-					estimationRollupService);
+					updateHierarchyEstimationDTO.OwnEstimation);
 
 				if (!updateResult)
 				{

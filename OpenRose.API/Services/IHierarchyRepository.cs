@@ -39,8 +39,7 @@ namespace ItemzApp.API.Services
 		public Task<bool> UpdateHierarchyEstimationFieldsAsync(
 			Guid recordId,
 			string? estimationUnit = null,
-			decimal? ownEstimation = null,
-			EstimationRollupService? estimationRollupService = null);
+			decimal? ownEstimation = null);
 
 	}
 }

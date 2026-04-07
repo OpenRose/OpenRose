@@ -192,5 +192,116 @@ namespace ItemzApp.API.Services
 				return 0;
 			}
 		}
+
+		/// <summary>
+		/// Optimized method: Delta-based propagation
+		/// Used for: Single record updates (real-time)
+		/// </summary>
+		public async Task<bool> RecalculateSingleRecordRollUpOptimizedAsync(
+			Guid hierarchyRecordId,
+			decimal estimationDelta)
+		{
+			try
+			{
+				var currentRecord = await _context.ItemzHierarchy!
+					.FirstOrDefaultAsync(ih => ih.Id == hierarchyRecordId);
+
+				if (currentRecord == null || currentRecord.ItemzHierarchyId == null)
+				{
+					_logger.LogWarning($"Hierarchy record not found for ID: {hierarchyRecordId}");
+					return false;
+				}
+
+				// Check if we've reached the Project level (Level 1) BEFORE updating
+				int currentLevel = currentRecord.ItemzHierarchyId.GetLevel();
+
+				if (currentLevel == 1)
+				{
+
+					currentRecord.RolledUpEstimation += estimationDelta;
+					_context.ItemzHierarchy!.Update(currentRecord);
+					await _context.SaveChangesAsync();
+
+					_logger.LogInformation(
+						$"Updated rolled-up estimation for Project {hierarchyRecordId} by delta {estimationDelta}. " +
+						$"New value: {currentRecord.RolledUpEstimation}");
+
+					_logger.LogInformation(
+						$"Current record {hierarchyRecordId} is at Project level (Level 1). " +
+						$"Applying delta and STOPPING propagation.");
+
+					return true; // STOP - don't propagate beyond Project level
+				}
+
+				// Apply the delta
+				currentRecord.RolledUpEstimation += estimationDelta;
+				_context.ItemzHierarchy!.Update(currentRecord);
+				await _context.SaveChangesAsync();
+
+				_logger.LogInformation(
+					$"Updated rolled-up estimation for {hierarchyRecordId} by delta {estimationDelta}. " +
+					$"New value: {currentRecord.RolledUpEstimation}");
+
+				// Get immediate parent and continue
+				var parentHierarchyId = currentRecord.ItemzHierarchyId.GetAncestor(1);
+				if (parentHierarchyId != null)
+				{
+					var parentRecord = await _context.ItemzHierarchy!
+						.FirstOrDefaultAsync(ih => ih.ItemzHierarchyId == parentHierarchyId);
+
+					if (parentRecord != null)
+					{
+						// Recurse for ancestors
+						await RecalculateSingleRecordRollUpOptimizedAsync(parentRecord.Id, estimationDelta);
+					}
+				}
+
+				return true;
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Exception in RecalculateSingleRecordRollUpOptimizedAsync: {ex.Message}", ex);
+				return false;
+			}
+		}
+
+		///// <summary>
+		///// Propagates delta through all ancestors (wrapper for optimized method)
+		///// Used for: Batch processing of hierarchy updates
+		///// </summary>
+		//public async Task<bool> PropagateEstimationDeltaToAncestorsAsync(Guid recordId, decimal delta)
+		//{
+		//	try
+		//	{
+		//		var currentRecord = await _context.ItemzHierarchy!
+		//			.FirstOrDefaultAsync(ih => ih.Id == recordId);
+
+		//		if (currentRecord == null || currentRecord.ItemzHierarchyId == null)
+		//		{
+		//			_logger.LogWarning($"Record not found for ID: {recordId}");
+		//			return false;
+		//		}
+
+		//		// Get parent and start propagation
+		//		var parentHierarchyId = currentRecord.ItemzHierarchyId.GetAncestor(1);
+		//		if (parentHierarchyId != null)
+		//		{
+		//			var parentRecord = await _context.ItemzHierarchy!
+		//				.FirstOrDefaultAsync(ih => ih.ItemzHierarchyId == parentHierarchyId);
+
+		//			if (parentRecord != null)
+		//			{
+		//				return await RecalculateSingleRecordRollUpOptimizedAsync(parentRecord.Id, delta);
+		//			}
+		//		}
+
+		//		return true;
+		//	}
+		//	catch (Exception ex)
+		//	{
+		//		_logger.LogError($"Exception in PropagateEstimationDeltaToAncestorsAsync: {ex.Message}", ex);
+		//		return false;
+		//	}
+		//}
 	}
 }
