@@ -798,14 +798,15 @@ namespace ItemzApp.API.Services
 				hasChanged = true;
 			}
 
-			// PHASE 1: Update own estimation if provided and trigger recalculation if changed
+			// PHASE 2: Update own estimation if provided and trigger recalculation if changed
 			if (ownEstimation.HasValue && hierarchyRecord.OwnEstimation != ownEstimation.Value)
 			{
 				var oldEstimationValue = hierarchyRecord.OwnEstimation;
 				hierarchyRecord.OwnEstimation = ownEstimation.Value;
+				hierarchyRecord.RolledUpEstimation = hierarchyRecord.RolledUpEstimation - oldEstimationValue + ownEstimation.Value; // Update rolled-up estimation for Changed node
 				hasChanged = true;
 
-				// PHASE 1: Log this change to ItemzChangeHistory for auditing
+				// PHASE 2: Log this change to ItemzChangeHistory for auditing
 				// NOTE: We log only own estimation changes, not roll-up changes per requirements
 				if (string.Equals(hierarchyRecord.RecordType, "Itemz", StringComparison.OrdinalIgnoreCase))
 				{
@@ -832,13 +833,13 @@ namespace ItemzApp.API.Services
 
 			if (hasChanged)
 			{
-				// PHASE 1: First, update the child's rolledUpEstimation to match ownEstimation (for leaf nodes)
-				// A leaf node's rolled-up estimation should equal its own estimation
-				if (hierarchyRecord.RolledUpEstimation != hierarchyRecord.OwnEstimation)
-				{
-					_logger.LogInformation($"PHASE 1: Updating child's rolledUpEstimation from {hierarchyRecord.RolledUpEstimation} to {hierarchyRecord.OwnEstimation}");
-					hierarchyRecord.RolledUpEstimation = hierarchyRecord.OwnEstimation;
-				}
+				//// PHASE 1: First, update the child's rolledUpEstimation to match ownEstimation (for leaf nodes)
+				//// A leaf node's rolled-up estimation should equal its own estimation
+				//if (hierarchyRecord.RolledUpEstimation != hierarchyRecord.OwnEstimation)
+				//{
+				//	_logger.LogInformation($"PHASE 1: Updating child's rolledUpEstimation from {hierarchyRecord.RolledUpEstimation} to {hierarchyRecord.OwnEstimation}");
+				//	hierarchyRecord.RolledUpEstimation = hierarchyRecord.OwnEstimation;
+				//}
 
 				await _context.SaveChangesAsync();
 
