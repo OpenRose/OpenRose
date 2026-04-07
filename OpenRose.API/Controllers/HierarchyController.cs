@@ -428,6 +428,19 @@ namespace ItemzApp.API.Controllers
 		{
 			try
 			{
+				var hierarchyIdRecordDetailsDTO = await _hierarchyRepository.GetHierarchyRecordDetailsByID(projectHierarchyRecordId);
+				
+				if (hierarchyIdRecordDetailsDTO == null || hierarchyIdRecordDetailsDTO.RecordType != "Project")
+				{
+					var errorMessage = new
+					{
+						success = false,
+						message = "Invalid Project Hierarchy Record ID provided. Please provide a valid Project record ID."
+					};
+					_logger.LogWarning(errorMessage.message);
+					return BadRequest(errorMessage);
+				}
+
 				_logger.LogInformation($"Request received to recalculate roll-up estimations for Project ID: {projectHierarchyRecordId}");
 
 				var result = await estimationRollupService.RecalculateProjectRollUpEstimationsAsync(projectHierarchyRecordId);
