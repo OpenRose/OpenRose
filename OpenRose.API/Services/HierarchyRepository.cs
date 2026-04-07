@@ -763,8 +763,6 @@ namespace ItemzApp.API.Services
 
 
 
-		// PHASE 1: Add this method to HierarchyRepository to handle estimation field updates
-
 		/// <summary>
 		/// Updates estimation fields (EstimationUnit and/or OwnEstimation) for a hierarchy record
 		/// PHASE 1: Triggers roll-up recalculation after update
