@@ -1161,32 +1161,59 @@ namespace ItemzApp.API.Controllers
 					if (copiedHierarchyRecord != null)
 					{
 						copiedItemzHierarchyRecordId = copiedHierarchyRecord.Id;
+
+						_logger.LogDebug(
+							"{FormattedControllerAndActionNames}Retrieved hierarchy record for newly copied Itemz. " +
+							"CopiedItemzId: {newlyCopiedItemzId}, HierarchyRecordId: {copiedItemzHierarchyRecordId}, " +
+							"RolledUpEstimation: {rolledUpEstimation}",
+							ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+							newlyCopiedItemzId,
+							copiedItemzHierarchyRecordId,
+							copiedHierarchyRecord.RolledUpEstimation);
 					}
 				}
 			}
 			catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
 			{
-				_logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to copy existing Itemz:" + dbUpdateException.InnerException,
-					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
-					);
+				_logger.LogDebug("{FormattedControllerAndActionNames}DbUpdateException occurred while trying to copy existing Itemz: {Exception}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					dbUpdateException.InnerException);
 				return Conflict($"Failed to create Itemz Copy for '{copyItemzDTO.ItemzId}'. DB Error reported, check the log file.");
 			}
+			catch (Exception ex)
+			{
+				_logger.LogError("Exception occurred during ItemzCopy: {Exception}", ex.Message);
+				throw;
+			}
 
-			_logger.LogDebug("{FormattedControllerAndActionNames}Created new Itemz with ID {newlyCopiedItemzId} by copying from Itemz ID {copyItemzDTO.ItemzId}",
+			_logger.LogDebug("{FormattedControllerAndActionNames}Created new Itemz with ID {newlyCopiedItemzId} by copying from Itemz ID {SourceItemzId}",
 				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
 				newlyCopiedItemzId,
 				copyItemzDTO.ItemzId);
 
-			// PHASE 1 TRIGGER: After successful copy, trigger roll-up recalculation for copied Itemz
+			// PHASE 1 TRIGGER: After successful copy, trigger roll-up estimation update for copied Itemz
 			if (copiedItemzHierarchyRecordId != Guid.Empty && itemzHierarchyTriggerService != null)
 			{
-				_logger.LogInformation("PHASE 1 TRIGGER: Invoking OnItemzCopiedAsync after Itemz copy");
-				var triggerResult = await itemzHierarchyTriggerService.OnItemzCopiedAsync(copiedItemzHierarchyRecordId);
+				_logger.LogInformation(
+					"PHASE 1 TRIGGER: Invoking OnHierarchyRecordCopiedAsync after Itemz copy. " +
+					"CopiedItemz: {newlyCopiedItemzId}, HierarchyRecordId: {copiedItemzHierarchyRecordId}",
+					newlyCopiedItemzId,
+					copiedItemzHierarchyRecordId);
+
+				var triggerResult = await itemzHierarchyTriggerService.OnHierarchyRecordCopiedAsync(copiedItemzHierarchyRecordId);
 				if (!triggerResult)
 				{
-					_logger.LogWarning("PHASE 1 TRIGGER: Roll-up recalculation failed for copied Itemz ID {copiedItemzHierarchyRecordId}",
+					_logger.LogWarning(
+						"PHASE 1 TRIGGER: Roll-up estimation update failed for copied Itemz ID {copiedItemzHierarchyRecordId}",
 						copiedItemzHierarchyRecordId);
 				}
+			}
+			else if (copiedItemzHierarchyRecordId == Guid.Empty)
+			{
+				_logger.LogInformation(
+					"PHASE 1 TRIGGER: Copied Itemz {newlyCopiedItemzId} was not added to hierarchy. " +
+					"No roll-up estimation updates required.",
+					newlyCopiedItemzId);
 			}
 
 			// EXPLANATION: Because we are creating new Itemz by copying existing Itemz by using custom user defined stored procedure

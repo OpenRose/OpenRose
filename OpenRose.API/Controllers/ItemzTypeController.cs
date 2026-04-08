@@ -998,20 +998,22 @@ namespace ItemzApp.API.Controllers
 		}
 
 		/// <summary>
-		/// Copy ItemzType including all it's child Itemz
+		/// Copy ItemzType including all its child ItemzTypes
 		/// </summary>
-		/// <param name="copyItemzTypeDTO">DTO containing unique ID of the ItemzType that shall be copied</param>
-		/// <returns>Newly created ItemzType property details</returns>		
+		/// <param name="copyItemzTypeDTO">Contains the source ItemzType ID to copy</param>
+		/// <param name="itemzHierarchyTriggerService">Service to trigger roll-up recalculation</param>
+		/// <returns>Newly created ItemzType property details</returns>
 		/// <response code="201">Returns newly created ItemzType property details</response>
 		/// <response code="404">Expected source ItemzType with ID was not found in the repository</response>
 		/// <response code="409">Conflicts encountered while creating a copy from existing ItemzType</response>
-
 		[HttpPost("CopyItemzType", Name = "__Copy_ItemzType_By_GUID_ID__")]
 		[ProducesResponseType(StatusCodes.Status201Created)]
 		[ProducesResponseType(StatusCodes.Status404NotFound)]
 		[ProducesResponseType(StatusCodes.Status409Conflict)]
 		[ProducesDefaultResponseType]
-		public async Task<ActionResult<GetItemzTypeDTO>> CopyItemzTypeAsync(CopyItemzTypeDTO copyItemzTypeDTO)
+		public async Task<ActionResult<GetItemzTypeDTO>> CopyItemzTypeAsync(
+			CopyItemzTypeDTO copyItemzTypeDTO,
+			[FromServices] ItemzHierarchyTriggerService itemzHierarchyTriggerService = null)
 		{
 			if (!(await _ItemzTypeRepository.ItemzTypeExistsAsync(copyItemzTypeDTO.ItemzTypeId)))
 			{
@@ -1021,28 +1023,77 @@ namespace ItemzApp.API.Controllers
 				return NotFound($"Cannot Copy ItemzType with ID {copyItemzTypeDTO.ItemzTypeId} as it could not be found");
 			}
 
-			Guid newlyCopiedItemzTypeId;
+			Guid newlyCopiedItemzTypeId = Guid.Empty;
+			Guid copiedItemzTypeHierarchyRecordId = Guid.Empty;
 
 			try
 			{
 				// EXPLANATION: Because copy is created via User Defined Stored Procedure,
-				// We therefor do not call SaveAsync() method on the _ItemzTypeRepository. 
+				// We therefor do not call SaveAsync() method on the _ItemzTypeRepository.
 
 				newlyCopiedItemzTypeId = await _ItemzTypeRepository.CopyItemzTypeAsync(copyItemzTypeDTO.ItemzTypeId);
-				// await _ItemzTypeRepository.SaveAsync();
+
+				// PHASE 1: After copy is created, get the hierarchy record ID of the newly copied ItemzType
+				if (newlyCopiedItemzTypeId != Guid.Empty)
+				{
+					var copiedHierarchyRecord = await _hierarchyRepository.GetHierarchyRecordForUpdateAsync(newlyCopiedItemzTypeId);
+					if (copiedHierarchyRecord != null)
+					{
+						copiedItemzTypeHierarchyRecordId = copiedHierarchyRecord.Id;
+
+						_logger.LogDebug(
+							"{FormattedControllerAndActionNames}Retrieved hierarchy record for newly copied ItemzType. " +
+							"CopiedItemzTypeId: {newlyCopiedItemzTypeId}, HierarchyRecordId: {copiedItemzTypeHierarchyRecordId}, " +
+							"RolledUpEstimation: {rolledUpEstimation}",
+							ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+							newlyCopiedItemzTypeId,
+							copiedItemzTypeHierarchyRecordId,
+							copiedHierarchyRecord.RolledUpEstimation);
+					}
+				}
 			}
 			catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
 			{
-				_logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to copy existing ItemzType:" + dbUpdateException.InnerException,
-					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
-					);
+				_logger.LogDebug("{FormattedControllerAndActionNames}DbUpdateException occurred while trying to copy existing ItemzType: {Exception}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					dbUpdateException.InnerException);
 				return Conflict($"Failed to create ItemzType Copy for '{copyItemzTypeDTO.ItemzTypeId}'. DB Error reported, check the log file.");
 			}
+			catch (Exception ex)
+			{
+				_logger.LogError("Exception occurred during ItemzTypeCopy: {Exception}", ex.Message);
+				throw;
+			}
 
-			_logger.LogDebug("{FormattedControllerAndActionNames}Created new ItemzType with ID {newlyCopiedItemzTypeId} by copying from ItemzType ID {copyItemzTypeDTO.ItemzTypeId}",
+			_logger.LogDebug("{FormattedControllerAndActionNames}Created new ItemzType with ID {newlyCopiedItemzTypeId} by copying from ItemzType ID {SourceItemzTypeId}",
 				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
 				newlyCopiedItemzTypeId,
 				copyItemzTypeDTO.ItemzTypeId);
+
+			// PHASE 1 TRIGGER: After successful copy, trigger roll-up estimation update for copied ItemzType
+			if (copiedItemzTypeHierarchyRecordId != Guid.Empty && itemzHierarchyTriggerService != null)
+			{
+				_logger.LogInformation(
+					"PHASE 1 TRIGGER: Invoking OnHierarchyRecordCopiedAsync after ItemzType copy. " +
+					"CopiedItemzType: {newlyCopiedItemzTypeId}, HierarchyRecordId: {copiedItemzTypeHierarchyRecordId}",
+					newlyCopiedItemzTypeId,
+					copiedItemzTypeHierarchyRecordId);
+
+				var triggerResult = await itemzHierarchyTriggerService.OnHierarchyRecordCopiedAsync(copiedItemzTypeHierarchyRecordId);
+				if (!triggerResult)
+				{
+					_logger.LogWarning(
+						"PHASE 1 TRIGGER: Roll-up estimation update failed for copied ItemzType ID {copiedItemzTypeHierarchyRecordId}",
+						copiedItemzTypeHierarchyRecordId);
+				}
+			}
+			else if (copiedItemzTypeHierarchyRecordId == Guid.Empty)
+			{
+				_logger.LogInformation(
+					"PHASE 1 TRIGGER: Copied ItemzType {newlyCopiedItemzTypeId} was not added to hierarchy. " +
+					"No roll-up estimation updates required.",
+					newlyCopiedItemzTypeId);
+			}
 
 			// EXPLANATION: Because we are creating new ItemzType by copying existing ItemzType by using custom user defined stored procedure
 			// we do not have access to the underlying Entity. That's why we have to call _ItemzTypeRepository.GetItemzTypeAsync
@@ -1051,7 +1102,6 @@ namespace ItemzApp.API.Controllers
 			return CreatedAtRoute("__Single_ItemzType_By_GUID_ID__", new { ItemzTypeId = newlyCopiedItemzTypeId },
 				 _mapper.Map<GetItemzTypeDTO>(await _ItemzTypeRepository.GetItemzTypeAsync(newlyCopiedItemzTypeId)) // Converting to DTO as this is going out to the consumer 
 				);
-
 		}
 
 		///// <summary>

@@ -456,6 +456,149 @@ namespace ItemzApp.API.Services
 				return false;
 			}
 		}
+		#endregion
+
+		#region Record Copy Operations
+
+		/// <summary>
+		/// Updates roll-up estimations when a hierarchy record is copied.
+		/// This method implements a delta-based addition approach to add the copied record's
+		/// estimation to the entire parent ancestor chain. Must be called AFTER the record has been successfully copied.
+		/// 
+		/// Supports all record types: Itemz, ItemzType, and any other hierarchy record type.
+		/// 
+		/// Flow:
+		/// Step 1: Obtain the copied record and its rolled-up estimation value
+		/// Step 2: Identify the copied record's parent
+		/// Step 3: Add rolled-up estimation to parent and entire ancestor chain up to Project level
+		/// 
+		/// PHASE 1: Non-fatal error handling - logs errors but doesn't fail the operation
+		/// </summary>
+		/// <param name="copiedRecordId">The ID of the copied hierarchy record</param>
+		/// <returns>True if successful, False only if critical validation fails</returns>
+		public async Task<bool> UpdateRollUpEstimationsForRecordCopyAsync(Guid copiedRecordId)
+		{
+			try
+			{
+				var startTime = DateTime.UtcNow;
+
+				_logger.LogInformation(
+					$"Starting roll-up estimation update for record copy. " +
+					$"CopiedRecordId: {copiedRecordId}");
+
+				// Check execution time
+				if ((DateTime.UtcNow - startTime).TotalMilliseconds > MaxExecutionTimeMs)
+				{
+					_logger.LogWarning(
+						$"Roll-up estimation update for record copy exceeded maximum execution time of {MaxExecutionTimeMs}ms. " +
+						$"Operation cancelled to prevent blocking.");
+					return false;
+				}
+
+				// STEP 1: Get the copied record and obtain its rolled-up estimation value
+				var copiedRecord = await _context.ItemzHierarchy!
+					.FirstOrDefaultAsync(ih => ih.Id == copiedRecordId);
+
+				if (copiedRecord == null)
+				{
+					_logger.LogWarning($"Copied record not found for ID: {copiedRecordId}");
+					return false;
+				}
+
+				// Early exit if no estimation to add
+				if (copiedRecord.RolledUpEstimation == 0)
+				{
+					_logger.LogInformation(
+						$"Copied record {copiedRecordId} has zero estimation. " +
+						$"No roll-up estimation updates required.");
+					return true;
+				}
+
+				decimal rolledUpEstimationDelta = copiedRecord.RolledUpEstimation;
+
+				_logger.LogDebug(
+					$"Step 1 - Retrieved copied record {copiedRecordId} (Type: {copiedRecord.RecordType}) " +
+					$"with rolled-up estimation: {rolledUpEstimationDelta}");
+
+				// Check if record is in hierarchy (has parent)
+				if (copiedRecord.ItemzHierarchyId == null)
+				{
+					_logger.LogInformation(
+						$"Copied record {copiedRecordId} is orphaned (not in hierarchy). " +
+						$"No roll-up estimation updates required.");
+					return true;
+				}
+
+				// STEP 2: Get parent record
+				var parentHierarchyIdPath = copiedRecord.ItemzHierarchyId.GetAncestor(1);
+				if (parentHierarchyIdPath == null)
+				{
+					_logger.LogWarning(
+						$"Could not determine parent HierarchyId path for copied record {copiedRecordId}");
+					return false;
+				}
+
+				var parentRecord = await _context.ItemzHierarchy!
+					.FirstOrDefaultAsync(ih => ih.ItemzHierarchyId == parentHierarchyIdPath);
+
+				if (parentRecord == null)
+				{
+					_logger.LogWarning(
+						$"Parent record not found for HierarchyId path: {parentHierarchyIdPath}");
+					return false;
+				}
+
+				_logger.LogDebug(
+					$"Step 2 - Parent record: Id={parentRecord.Id}, Type={parentRecord.RecordType}, " +
+					$"Level={parentRecord.ItemzHierarchyId!.GetLevel()}");
+
+				// Check execution time
+				if ((DateTime.UtcNow - startTime).TotalMilliseconds > MaxExecutionTimeMs)
+				{
+					_logger.LogWarning($"Operation exceeded maximum execution time during parent retrieval.");
+					return false;
+				}
+
+				// STEP 3: Add to parent and its ancestry chain up to Project level
+				bool additionSuccess = await AddRollUpToAncestryChainAsync(
+					parentRecord,
+					rolledUpEstimationDelta,
+					startTime);
+
+				if (!additionSuccess)
+				{
+					_logger.LogWarning(
+						$"Step 3 - Failed to add roll-up estimation to parent ancestry chain. " +
+						$"Continuing...");
+					// Non-fatal error
+				}
+				else
+				{
+					_logger.LogDebug(
+						$"Step 3 - Successfully added {rolledUpEstimationDelta} to parent ancestry chain");
+				}
+
+				_logger.LogInformation(
+					$"Successfully completed roll-up estimation update for record copy. " +
+					$"CopiedRecordId: {copiedRecordId}, RecordType: {copiedRecord.RecordType}, Delta: {rolledUpEstimationDelta}, " +
+					$"Duration: {(DateTime.UtcNow - startTime).TotalMilliseconds}ms");
+
+				return true;
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(
+					$"Exception occurred while updating roll-up estimations for record copy. " +
+					$"CopiedRecordId: {copiedRecordId}. Exception: {ex.Message}",
+					ex);
+				// PHASE 1: Gentle error handling - log error but don't crash
+				return false;
+			}
+		}
+
+		#endregion
+
+		#region Common helper method for hierarchy traversal and roll-up updates
 
 		/// <summary>
 		/// Helper method: Deducts roll-up estimation value from a parent and traverses up the ancestor chain.

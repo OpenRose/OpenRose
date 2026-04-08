@@ -175,6 +175,70 @@ namespace ItemzApp.API.Services
 			}
 		}
 
+		/// <summary>
+		/// PHASE 1: Trigger Event 6 - Hierarchy Record Copied
+		/// Called when a hierarchy record (Itemz or ItemzType) is copied
+		/// The copy inherits the original's estimation unit and own estimation
+		/// Uses delta-based roll-up estimation addition to update parent ancestry chain
+		/// Handles all hierarchy record types: Itemz, ItemzType
+		/// </summary>
+		/// <param name="copiedHierarchyRecordId">The ID of the newly copied hierarchy record</param>
+		/// <returns>True if successful</returns>
+		public async Task<bool> OnHierarchyRecordCopiedAsync(Guid copiedHierarchyRecordId)
+		{
+			try
+			{
+				_logger.LogInformation($"PHASE 1 TRIGGER: Hierarchy record copied. Copied record ID: {copiedHierarchyRecordId}");
+
+				var copiedHierarchyRecord = await _context.ItemzHierarchy!
+					.FirstOrDefaultAsync(ih => ih.Id == copiedHierarchyRecordId);
+
+				if (copiedHierarchyRecord == null)
+				{
+					_logger.LogWarning($"Copied hierarchy record not found for ID: {copiedHierarchyRecordId}");
+					return false;
+				}
+
+				_logger.LogDebug(
+					$"PHASE 1 TRIGGER: Copied record (Type: {copiedHierarchyRecord.RecordType}) " +
+					$"with rolled-up estimation: {copiedHierarchyRecord.RolledUpEstimation}");
+
+				// PHASE 1: Only trigger roll-up update if copied record has estimation value
+				if (copiedHierarchyRecord.RolledUpEstimation != 0)
+				{
+					var updateResult = await _estimationRollupService.UpdateRollUpEstimationsForRecordCopyAsync(copiedHierarchyRecordId);
+
+					if (!updateResult)
+					{
+						_logger.LogWarning(
+							$"PHASE 1 TRIGGER: Roll-up estimation update for copy failed. " +
+							$"Copied record: {copiedHierarchyRecordId} (Type: {copiedHierarchyRecord.RecordType})");
+						// Non-fatal: continue despite failure
+					}
+					else
+					{
+						_logger.LogInformation(
+							$"PHASE 1 TRIGGER: Successfully updated roll-up estimations for copied record. " +
+							$"Copied record: {copiedHierarchyRecordId} (Type: {copiedHierarchyRecord.RecordType})");
+					}
+				}
+				else
+				{
+					_logger.LogInformation(
+						$"PHASE 1 TRIGGER: Copied record {copiedHierarchyRecordId} (Type: {copiedHierarchyRecord.RecordType}) " +
+						$"has zero estimation. No roll-up updates required.");
+				}
+
+				return true;
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Exception in OnHierarchyRecordCopiedAsync: {ex.Message}", ex);
+				return false;
+			}
+		}
+
+
 		///// <summary>
 		///// PHASE 1: Trigger Event 4 - Itemz Deleted
 		///// Called when an Itemz is deleted from the hierarchy
@@ -239,42 +303,42 @@ namespace ItemzApp.API.Services
 		//	}
 		//}
 
-		/// <summary>
-		/// PHASE 1: Trigger Event 6 - Itemz Copied
-		/// Called when an existing Itemz is copied (with or without child records)
-		/// The copy inherits the original's estimation unit and own estimation
-		/// </summary>
-		/// <param name="copiedItemzHierarchyId">The ID of the newly copied ItemzHierarchy record</param>
-		/// <returns>True if successful</returns>
-		public async Task<bool> OnItemzCopiedAsync(Guid copiedItemzHierarchyId)
-		{
-			try
-			{
-				_logger.LogInformation($"PHASE 1 TRIGGER: Itemz copied. Copied hierarchy record ID: {copiedItemzHierarchyId}");
+		///// <summary>
+		///// PHASE 1: Trigger Event 6 - Itemz Copied
+		///// Called when an existing Itemz is copied (with or without child records)
+		///// The copy inherits the original's estimation unit and own estimation
+		///// </summary>
+		///// <param name="copiedItemzHierarchyId">The ID of the newly copied ItemzHierarchy record</param>
+		///// <returns>True if successful</returns>
+		//public async Task<bool> OnItemzCopiedAsync(Guid copiedItemzHierarchyId)
+		//{
+		//	try
+		//	{
+		//		_logger.LogInformation($"PHASE 1 TRIGGER: Itemz copied. Copied hierarchy record ID: {copiedItemzHierarchyId}");
 
-				var copiedHierarchyRecord = await _context.ItemzHierarchy!
-					.FirstOrDefaultAsync(ih => ih.Id == copiedItemzHierarchyId);
+		//		var copiedHierarchyRecord = await _context.ItemzHierarchy!
+		//			.FirstOrDefaultAsync(ih => ih.Id == copiedItemzHierarchyId);
 
-				if (copiedHierarchyRecord == null)
-				{
-					_logger.LogWarning($"Copied ItemzHierarchy record not found for ID: {copiedItemzHierarchyId}");
-					return false;
-				}
+		//		if (copiedHierarchyRecord == null)
+		//		{
+		//			_logger.LogWarning($"Copied ItemzHierarchy record not found for ID: {copiedItemzHierarchyId}");
+		//			return false;
+		//		}
 
-				// PHASE 1: Only trigger recalculation if copied Itemz has estimation value
-				if (copiedHierarchyRecord.OwnEstimation != 0)
-				{
-					return await RecalculateParentHierarchyAsync(copiedItemzHierarchyId);
-				}
+		//		// PHASE 1: Only trigger recalculation if copied Itemz has estimation value
+		//		if (copiedHierarchyRecord.OwnEstimation != 0)
+		//		{
+		//			return await RecalculateParentHierarchyAsync(copiedItemzHierarchyId);
+		//		}
 
-				return true;
-			}
-			catch (Exception ex)
-			{
-				_logger.LogError($"Exception in OnItemzCopiedAsync: {ex.Message}", ex);
-				return false;
-			}
-		}
+		//		return true;
+		//	}
+		//	catch (Exception ex)
+		//	{
+		//		_logger.LogError($"Exception in OnItemzCopiedAsync: {ex.Message}", ex);
+		//		return false;
+		//	}
+		//}
 
 		/// <summary>
 		/// PHASE 1: Similar trigger events for ItemzType records
@@ -435,40 +499,40 @@ namespace ItemzApp.API.Services
 
 		#endregion
 
-		/// <summary>
-		/// PHASE 1: ItemzType copied
-		/// </summary>
-		/// <param name="copiedItemzTypeHierarchyId">The ID of the newly copied ItemzTypeHierarchy record</param>
-		/// <returns>True if successful</returns>
-		public async Task<bool> OnItemzTypeCopiedAsync(Guid copiedItemzTypeHierarchyId)
-		{
-			try
-			{
-				_logger.LogInformation($"PHASE 1 TRIGGER: ItemzType copied. Copied hierarchy record ID: {copiedItemzTypeHierarchyId}");
+		///// <summary>
+		///// PHASE 1: ItemzType copied
+		///// </summary>
+		///// <param name="copiedItemzTypeHierarchyId">The ID of the newly copied ItemzTypeHierarchy record</param>
+		///// <returns>True if successful</returns>
+		//public async Task<bool> OnItemzTypeCopiedAsync(Guid copiedItemzTypeHierarchyId)
+		//{
+		//	try
+		//	{
+		//		_logger.LogInformation($"PHASE 1 TRIGGER: ItemzType copied. Copied hierarchy record ID: {copiedItemzTypeHierarchyId}");
 
-				var copiedHierarchyRecord = await _context.ItemzHierarchy!
-					.FirstOrDefaultAsync(ih => ih.Id == copiedItemzTypeHierarchyId);
+		//		var copiedHierarchyRecord = await _context.ItemzHierarchy!
+		//			.FirstOrDefaultAsync(ih => ih.Id == copiedItemzTypeHierarchyId);
 
-				if (copiedHierarchyRecord == null)
-				{
-					_logger.LogWarning($"Copied ItemzTypeHierarchy record not found for ID: {copiedItemzTypeHierarchyId}");
-					return false;
-				}
+		//		if (copiedHierarchyRecord == null)
+		//		{
+		//			_logger.LogWarning($"Copied ItemzTypeHierarchy record not found for ID: {copiedItemzTypeHierarchyId}");
+		//			return false;
+		//		}
 
-				// PHASE 1: Only trigger recalculation if copied ItemzType has estimation value
-				if (copiedHierarchyRecord.OwnEstimation != 0)
-				{
-					return await RecalculateParentHierarchyAsync(copiedItemzTypeHierarchyId);
-				}
+		//		// PHASE 1: Only trigger recalculation if copied ItemzType has estimation value
+		//		if (copiedHierarchyRecord.OwnEstimation != 0)
+		//		{
+		//			return await RecalculateParentHierarchyAsync(copiedItemzTypeHierarchyId);
+		//		}
 
-				return true;
-			}
-			catch (Exception ex)
-			{
-				_logger.LogError($"Exception in OnItemzTypeCopiedAsync: {ex.Message}", ex);
-				return false;
-			}
-		}
+		//		return true;
+		//	}
+		//	catch (Exception ex)
+		//	{
+		//		_logger.LogError($"Exception in OnItemzTypeCopiedAsync: {ex.Message}", ex);
+		//		return false;
+		//	}
+		//}
 
 		// ============= PRIVATE HELPER METHODS =============
 
