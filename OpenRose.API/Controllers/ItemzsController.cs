@@ -997,11 +997,11 @@ namespace ItemzApp.API.Controllers
 
 			return RedirectToRoute("__Single_Itemz_By_GUID_ID__", new { Controller = "Itemzs", ItemzId = MovingItemzId });
 		}
-
 		/// <summary>
 		/// Deleting a specific Itemz
 		/// </summary>
 		/// <param name="itemzId">GUID representing an unique ID of the Itemz that you want to get</param>
+		/// <param name="itemzHierarchyTriggerService">Service for triggering roll-up estimation updates</param>
 		/// <returns>Status code 204 is returned without any content indicating that deletion of the specified Itemz was successful</returns>
 		/// <response code="404">Itemz based on itemzId was not found</response>
 		[HttpDelete("{itemzId}", Name = "__DELETE_Itemz_By_GUID_ID__")]
@@ -1022,12 +1022,16 @@ namespace ItemzApp.API.Controllers
 
 			try
 			{
-				// PHASE 1: Before deletion, capture the parent hierarchy record ID for roll-up recalculation
+				// PHASE 1: Before deletion, capture the parent hierarchy record ID and deleted record's rolled-up estimation
 				Guid parentHierarchyRecordId = Guid.Empty;
+				decimal deletedRecordRolledUpEstimation = 0;
 				var hierarchyRecordToDelete = await _hierarchyRepository.GetHierarchyRecordForUpdateAsync(itemzId);
 
 				if (hierarchyRecordToDelete != null && hierarchyRecordToDelete.ItemzHierarchyId != null)
 				{
+					// Capture the deleted record's rolled-up estimation for later deduction from parent chain
+					deletedRecordRolledUpEstimation = hierarchyRecordToDelete.RolledUpEstimation;
+
 					// Get the parent HierarchyId by going up one level
 					var parentHierarchyIdPath = hierarchyRecordToDelete.ItemzHierarchyId.GetAncestor(1);
 
@@ -1049,12 +1053,32 @@ namespace ItemzApp.API.Controllers
 				// PHASE 1 TRIGGER: After successful deletion, trigger roll-up recalculation on parent
 				if (parentHierarchyRecordId != Guid.Empty && itemzHierarchyTriggerService != null)
 				{
-					_logger.LogInformation("PHASE 1 TRIGGER: Invoking OnItemzDeletedAsync after Itemz deletion");
-					var triggerResult = await itemzHierarchyTriggerService.OnItemzDeletedAsync(parentHierarchyRecordId);
+					_logger.LogInformation(
+						"PHASE 1 TRIGGER: Invoking OnHierarchyRecordDeletedAsync after Itemz deletion. " +
+						"DeletedItemz: {ItemzId}, ParentId: {ParentId}, EstimationDelta: {EstimationDelta}",
+						itemzId,
+						parentHierarchyRecordId,
+						deletedRecordRolledUpEstimation);
+
+					var triggerResult = await itemzHierarchyTriggerService.OnHierarchyRecordDeletedAsync(
+						deletedRecordRolledUpEstimation,
+						parentHierarchyRecordId);
+
 					if (!triggerResult)
 					{
-						_logger.LogWarning("PHASE 1 TRIGGER: Roll-up recalculation failed after Itemz deletion");
+						_logger.LogWarning(
+							"PHASE 1 TRIGGER: Roll-up estimation update failed after Itemz deletion. " +
+							"DeletedItemz: {ItemzId}, EstimationDelta: {EstimationDelta}",
+							itemzId,
+							deletedRecordRolledUpEstimation);
 					}
+				}
+				else if (parentHierarchyRecordId == Guid.Empty)
+				{
+					_logger.LogInformation(
+						"PHASE 1 TRIGGER: Deleted Itemz {ItemzId} was orphaned (not in hierarchy). " +
+						"No roll-up estimation updates required.",
+						itemzId);
 				}
 			}
 			catch (Exception ex)

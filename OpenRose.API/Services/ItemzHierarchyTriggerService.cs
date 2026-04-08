@@ -175,27 +175,27 @@ namespace ItemzApp.API.Services
 			}
 		}
 
-		/// <summary>
-		/// PHASE 1: Trigger Event 4 - Itemz Deleted
-		/// Called when an Itemz is deleted from the hierarchy
-		/// Recalculates parent hierarchy to reflect removed estimation
-		/// </summary>
-		/// <param name="parentItemzHierarchyId">The ID of the parent ItemzHierarchy record</param>
-		/// <returns>True if successful</returns>
-		public async Task<bool> OnItemzDeletedAsync(Guid parentItemzHierarchyId)
-		{
-			try
-			{
-				_logger.LogInformation($"PHASE 1 TRIGGER: Itemz deleted. Parent hierarchy record ID: {parentItemzHierarchyId}");
+		///// <summary>
+		///// PHASE 1: Trigger Event 4 - Itemz Deleted
+		///// Called when an Itemz is deleted from the hierarchy
+		///// Recalculates parent hierarchy to reflect removed estimation
+		///// </summary>
+		///// <param name="parentItemzHierarchyId">The ID of the parent ItemzHierarchy record</param>
+		///// <returns>True if successful</returns>
+		//public async Task<bool> OnItemzDeletedAsync(Guid parentItemzHierarchyId)
+		//{
+		//	try
+		//	{
+		//		_logger.LogInformation($"PHASE 1 TRIGGER: Itemz deleted. Parent hierarchy record ID: {parentItemzHierarchyId}");
 
-				return await RecalculateParentHierarchyAsync(parentItemzHierarchyId);
-			}
-			catch (Exception ex)
-			{
-				_logger.LogError($"Exception in OnItemzDeletedAsync: {ex.Message}", ex);
-				return false;
-			}
-		}
+		//		return await RecalculateParentHierarchyAsync(parentItemzHierarchyId);
+		//	}
+		//	catch (Exception ex)
+		//	{
+		//		_logger.LogError($"Exception in OnItemzDeletedAsync: {ex.Message}", ex);
+		//		return false;
+		//	}
+		//}
 		///// <summary>
 		///// PHASE 1: Trigger Event 5 - Itemz Becomes Orphaned
 		///// Called when an Itemz becomes orphaned (parent deleted, not part of any project)
@@ -312,25 +312,128 @@ namespace ItemzApp.API.Services
 			}
 		}
 
+		///// <summary>
+		///// PHASE 1: ItemzType deleted
+		///// </summary>
+		///// <param name="parentHierarchyRecordId">The ID of the parent ItemzHierarchy record</param>
+		///// <returns>True if successful</returns>
+		//public async Task<bool> OnItemzTypeDeletedAsync(Guid parentHierarchyRecordId)
+		//{
+		//	try
+		//	{
+		//		_logger.LogInformation($"PHASE 1 TRIGGER: ItemzType deleted. Parent hierarchy record ID: {parentHierarchyRecordId}");
+
+		//		return await RecalculateParentHierarchyAsync(parentHierarchyRecordId);
+		//	}
+		//	catch (Exception ex)
+		//	{
+		//		_logger.LogError($"Exception in OnItemzTypeDeletedAsync: {ex.Message}", ex);
+		//		return false;
+		//	}
+		//}
+
+
+		#region On Record Deletion
 		/// <summary>
-		/// PHASE 1: ItemzType deleted
+		/// PHASE 1: Trigger Event 4 - Hierarchy Record Deleted
+		/// Called when a hierarchy record (Itemz or ItemzType) is deleted from the hierarchy
+		/// Uses delta-based roll-up estimation deduction to update parent ancestry chain
+		/// Handles all hierarchy record types: Itemz, ItemzType
 		/// </summary>
+		/// <param name="deletedRecordRolledUpEstimation">The rolled-up estimation value of the deleted record (needed for delta calculation)</param>
 		/// <param name="parentHierarchyRecordId">The ID of the parent ItemzHierarchy record</param>
 		/// <returns>True if successful</returns>
-		public async Task<bool> OnItemzTypeDeletedAsync(Guid parentHierarchyRecordId)
+		public async Task<bool> OnHierarchyRecordDeletedAsync(decimal deletedRecordRolledUpEstimation, Guid parentHierarchyRecordId)
 		{
 			try
 			{
-				_logger.LogInformation($"PHASE 1 TRIGGER: ItemzType deleted. Parent hierarchy record ID: {parentHierarchyRecordId}");
+				_logger.LogInformation(
+					$"PHASE 1 TRIGGER: Hierarchy record deleted. " +
+					$"Deleted record rolled-up estimation: {deletedRecordRolledUpEstimation}, " +
+					$"Parent hierarchy record ID: {parentHierarchyRecordId}");
 
-				return await RecalculateParentHierarchyAsync(parentHierarchyRecordId);
+				// If no parent or no estimation delta, nothing to update
+				if (parentHierarchyRecordId == Guid.Empty || deletedRecordRolledUpEstimation == 0)
+				{
+					_logger.LogDebug(
+						$"PHASE 1 TRIGGER: Skipping roll-up estimation update. " +
+						$"ParentId is empty: {parentHierarchyRecordId == Guid.Empty}, " +
+						$"EstimationDelta is zero: {deletedRecordRolledUpEstimation == 0}");
+					return true;
+				}
+
+				// Get the parent record to determine its parent (grandparent of deleted record)
+				var parentRecord = await _context.ItemzHierarchy!
+					.FirstOrDefaultAsync(ih => ih.Id == parentHierarchyRecordId);
+
+				if (parentRecord == null)
+				{
+					_logger.LogWarning($"Parent hierarchy record not found for ID: {parentHierarchyRecordId}");
+					return false;
+				}
+
+				if (parentRecord.ItemzHierarchyId == null)
+				{
+					_logger.LogWarning($"HierarchyId path is null for parent record ID: {parentHierarchyRecordId}");
+					return false;
+				}
+
+				// Get the current (parent of the deleted record's parent) for deduction propagation
+				var currentParentHierarchyIdPath = parentRecord.ItemzHierarchyId.GetAncestor(1);
+
+				_logger.LogDebug(
+					$"PHASE 1 TRIGGER: Deleted record (Type: {(await _context.ItemzHierarchy!.FirstOrDefaultAsync(ih => ih.Id == parentHierarchyRecordId))?.RecordType}) " +
+					$"with rolled-up estimation: {deletedRecordRolledUpEstimation} from parent {parentHierarchyRecordId}");
+
+				// PHASE 1: Use optimized method for deletion-based roll-up updates
+				// This deducts the deleted record's estimation from entire ancestor chain up to Project level
+				if (currentParentHierarchyIdPath != null)
+				{
+					var currentParentRecord = await _context.ItemzHierarchy!
+						.FirstOrDefaultAsync(ih => ih.ItemzHierarchyId == currentParentHierarchyIdPath);
+
+					if (currentParentRecord != null)
+					{
+						var deductionResult = await _estimationRollupService.UpdateRollUpEstimationsForRecordDeletionAsync(
+							parentHierarchyRecordId,
+							deletedRecordRolledUpEstimation);
+
+						if (!deductionResult)
+						{
+							_logger.LogWarning(
+								$"PHASE 1 TRIGGER: Roll-up estimation deduction for deletion failed. " +
+								$"Parent record: {parentHierarchyRecordId}, " +
+								$"Estimation delta: {deletedRecordRolledUpEstimation}");
+							// Non-fatal: continue despite failure
+						}
+						else
+						{
+							_logger.LogInformation(
+								$"PHASE 1 TRIGGER: Successfully updated roll-up estimations for deleted record. " +
+								$"Deducted {deletedRecordRolledUpEstimation} from parent chain");
+						}
+					}
+				}
+				else
+				{
+					// Parent has no parent (is at Project level or higher), only update the immediate parent
+					await _estimationRollupService.RecalculateSingleRecordRollUpAsync(parentHierarchyRecordId);
+					_logger.LogDebug(
+						$"PHASE 1 TRIGGER: Parent record is at top level. " +
+						$"Recalculated parent {parentHierarchyRecordId}");
+				}
+
+				return true;
 			}
 			catch (Exception ex)
 			{
-				_logger.LogError($"Exception in OnItemzTypeDeletedAsync: {ex.Message}", ex);
+				_logger.LogError(
+					$"Exception in OnHierarchyRecordDeletedAsync: {ex.Message}", ex);
 				return false;
 			}
 		}
+
+		#endregion
 
 		/// <summary>
 		/// PHASE 1: ItemzType copied

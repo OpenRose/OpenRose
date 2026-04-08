@@ -866,68 +866,136 @@ namespace ItemzApp.API.Controllers
             return (ActionResult)options.Value.InvalidModelStateResponseFactory(ControllerContext);
         }
 
-        /// <summary>
-        /// Deleting a specific ItemzType
-        /// </summary>
-        /// <param name="ItemzTypeId">GUID representing an unique ID of the ItemzType that you want to get</param>
-        /// <returns>Status code 204 is returned without any content indicating that deletion of the specified ItemzType was successful</returns>
-        /// <response code="404">ItemzType based on ItemzTypeId was not found</response>
-        /// <response code="405">ItemzType is not allowed to be deleted. example, ItemzType is a System one.</response>
-        [HttpDelete("{ItemzTypeId}", Name = "__DELETE_ItemzType_By_GUID_ID__")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status405MethodNotAllowed)]
-        [ProducesDefaultResponseType]
-        public async Task<ActionResult> DeleteItemzTypeAsync(Guid ItemzTypeId)
-        {
-            if (!(await _ItemzTypeRepository.ItemzTypeExistsAsync(ItemzTypeId)))
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Cannot Delete ItemzType with ID {ItemzTypeId} as it could not be found",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    ItemzTypeId);
-                return NotFound($"Cannot Delete ItemzType with ID {ItemzTypeId} as it could not be found");
-            }
+		/// <summary>
+		/// Deleting a specific ItemzType
+		/// </summary>
+		/// <param name="ItemzTypeId">GUID representing an unique ID of the ItemzType that you want to get</param>
+		/// <param name="itemzHierarchyTriggerService">Service for triggering roll-up estimation updates</param>
+		/// <returns>Status code 204 is returned without any content indicating that deletion of the specified ItemzType was successful</returns>
+		/// <response code="404">ItemzType based on ItemzTypeId was not found</response>
+		/// <response code="405">ItemzType is not allowed to be deleted. example, ItemzType is a System one.</response>
+		[HttpDelete("{ItemzTypeId}", Name = "__DELETE_ItemzType_By_GUID_ID__")]
+		[ProducesResponseType(StatusCodes.Status204NoContent)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		[ProducesResponseType(StatusCodes.Status405MethodNotAllowed)]
+		[ProducesDefaultResponseType]
+		public async Task<ActionResult> DeleteItemzTypeAsync(
+			Guid ItemzTypeId,
+			[FromServices] ItemzHierarchyTriggerService itemzHierarchyTriggerService = null)
+		{
+			if (!(await _ItemzTypeRepository.ItemzTypeExistsAsync(ItemzTypeId)))
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Cannot Delete ItemzType with ID {ItemzTypeId} as it could not be found",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					ItemzTypeId);
+				return NotFound($"Cannot Delete ItemzType with ID {ItemzTypeId} as it could not be found");
+			}
 
-            var ItemzTypeFromRepo = await _ItemzTypeRepository.GetItemzTypeForUpdateAsync(ItemzTypeId);
+			var ItemzTypeFromRepo = await _ItemzTypeRepository.GetItemzTypeForUpdateAsync(ItemzTypeId);
 
-            if (ItemzTypeFromRepo == null)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Cannot Delete ItemzType with ID {ItemzTypeId} as it could not be found in the Repository",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    ItemzTypeId);
-                return NotFound($"Cannot Delete ItemzType with ID {ItemzTypeId} as it could not be found in the Repository");
-            }
+			if (ItemzTypeFromRepo == null)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Cannot Delete ItemzType with ID {ItemzTypeId} as it could not be found in the Repository",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					ItemzTypeId);
+				return NotFound($"Cannot Delete ItemzType with ID {ItemzTypeId} as it could not be found in the Repository");
+			}
 
-            if(ItemzTypeFromRepo.IsSystem == true)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}System ItemzType with name {ItemzTypeName} and Id {ItemzTypeId} is NOT ALLOWED to be deleted",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    ItemzTypeFromRepo.Name, ItemzTypeFromRepo.Id);
-                return StatusCode(
-                        Microsoft.AspNetCore.Http.StatusCodes.Status405MethodNotAllowed,
-                        $"System ItemzType with name '{ItemzTypeFromRepo.Name}' and Id '{ItemzTypeFromRepo.Id}' is NOT ALLOWED to be deleted"
-                    );
-            }
+			if (ItemzTypeFromRepo.IsSystem == true)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}System ItemzType with name {ItemzTypeName} and Id {ItemzTypeId} is NOT ALLOWED to be deleted",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					ItemzTypeFromRepo.Name, ItemzTypeFromRepo.Id);
+				return StatusCode(
+						Microsoft.AspNetCore.Http.StatusCodes.Status405MethodNotAllowed,
+						$"System ItemzType with name '{ItemzTypeFromRepo.Name}' and Id '{ItemzTypeFromRepo.Id}' is NOT ALLOWED to be deleted"
+					);
+			}
 
-            _ItemzTypeRepository.DeleteItemzType(ItemzTypeFromRepo);
-            await _ItemzTypeRepository.SaveAsync();
+			try
+			{
+				// PHASE 1: Before deletion, capture the parent hierarchy record ID and deleted record's rolled-up estimation
+				Guid parentHierarchyRecordId = Guid.Empty;
+				decimal deletedRecordRolledUpEstimation = 0;
+				var hierarchyRecordToDelete = await _hierarchyRepository.GetHierarchyRecordForUpdateAsync(ItemzTypeId);
 
-            _logger.LogDebug("{FormattedControllerAndActionNames}Delete request for ItemzType with ID {ItemzTypeId} processed successfully",
-                ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-            ItemzTypeId);
+				if (hierarchyRecordToDelete != null && hierarchyRecordToDelete.ItemzHierarchyId != null)
+				{
+					// Capture the deleted record's rolled-up estimation for later deduction from parent chain
+					deletedRecordRolledUpEstimation = hierarchyRecordToDelete.RolledUpEstimation;
 
-            var itemzTypeYtemzHierarchyDeletionSuccessStatus = await 
-                    _ItemzTypeRepository.DeleteItemzTypeItemzHierarchyAsync(ItemzTypeId);
+					// Get the parent HierarchyId by going up one level
+					var parentHierarchyIdPath = hierarchyRecordToDelete.ItemzHierarchyId.GetAncestor(1);
 
-            if (!itemzTypeYtemzHierarchyDeletionSuccessStatus)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Delete ItemzHierarchy records for ItemzType with ID {ItemzTypeId} process failed",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    ItemzTypeId);
-            }
+					if (parentHierarchyIdPath != null)
+					{
+						// PHASE 1: Use repository method to get parent record details
+						var parentRecord = await _hierarchyRepository.GetHierarchyRecordDetailsByHierarchyIdPath(parentHierarchyIdPath);
+						if (parentRecord != null)
+						{
+							parentHierarchyRecordId = parentRecord.RecordId;
+						}
+					}
+				}
 
-            return NoContent();
-        }
+				// Delete ItemzType record
+				_ItemzTypeRepository.DeleteItemzType(ItemzTypeFromRepo);
+				await _ItemzTypeRepository.SaveAsync();
+
+				_logger.LogDebug("{FormattedControllerAndActionNames}Delete request for ItemzType with ID {ItemzTypeId} processed successfully",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					ItemzTypeId);
+
+				// Delete ItemzType hierarchy records
+				var itemzTypeHierarchyDeletionSuccessStatus = await
+						_ItemzTypeRepository.DeleteItemzTypeItemzHierarchyAsync(ItemzTypeId);
+
+				if (!itemzTypeHierarchyDeletionSuccessStatus)
+				{
+					_logger.LogDebug("{FormattedControllerAndActionNames}Delete ItemzHierarchy records for ItemzType with ID {ItemzTypeId} process failed",
+						ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+						ItemzTypeId);
+				}
+
+				// PHASE 1 TRIGGER: After successful deletion, trigger roll-up estimation update on parent
+				if (parentHierarchyRecordId != Guid.Empty && itemzHierarchyTriggerService != null)
+				{
+					_logger.LogInformation(
+						"PHASE 1 TRIGGER: Invoking OnHierarchyRecordDeletedAsync after ItemzType deletion. " +
+						"DeletedItemzType: {ItemzTypeId}, ParentId: {ParentId}, EstimationDelta: {EstimationDelta}",
+						ItemzTypeId,
+						parentHierarchyRecordId,
+						deletedRecordRolledUpEstimation);
+
+					var triggerResult = await itemzHierarchyTriggerService.OnHierarchyRecordDeletedAsync(
+						deletedRecordRolledUpEstimation,
+						parentHierarchyRecordId);
+
+					if (!triggerResult)
+					{
+						_logger.LogWarning(
+							"PHASE 1 TRIGGER: Roll-up estimation update failed after ItemzType deletion. " +
+							"DeletedItemzType: {ItemzTypeId}, EstimationDelta: {EstimationDelta}",
+							ItemzTypeId,
+							deletedRecordRolledUpEstimation);
+					}
+				}
+				else if (parentHierarchyRecordId == Guid.Empty)
+				{
+					_logger.LogInformation(
+						"PHASE 1 TRIGGER: Deleted ItemzType {ItemzTypeId} was not part of active hierarchy. " +
+						"No roll-up estimation updates required.",
+						ItemzTypeId);
+				}
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError("Exception occurred during ItemzTypeDelete: {Exception}", ex.Message);
+				throw;
+			}
+
+			return NoContent();
+		}
 
 		/// <summary>
 		/// Copy ItemzType including all it's child Itemz

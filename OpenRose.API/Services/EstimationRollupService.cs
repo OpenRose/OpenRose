@@ -629,6 +629,107 @@ namespace ItemzApp.API.Services
 
 		#endregion
 
+
+		/// <summary>
+		/// Updates roll-up estimations when a hierarchy record is deleted.
+		/// This method implements a delta-based deduction approach to remove the deleted record's
+		/// estimation from the entire parent ancestor chain. Must be called AFTER the record has been successfully deleted.
+		/// 
+		/// Supports all record types: Itemz, ItemzType, and any other hierarchy record type.
+		/// 
+		/// Flow:
+		/// Step 1: Obtain the parent record and its rolled-up estimation value
+		/// Step 2: Deduct the deleted record's estimation from the parent
+		/// Step 3: Recursively deduct from entire ancestor chain up to Project level
+		/// 
+		/// PHASE 1: Non-fatal error handling - logs errors but doesn't fail the operation
+		/// </summary>
+		/// <param name="parentRecordId">The ID of the parent record of the deleted record</param>
+		/// <param name="deletedRecordRolledUpEstimation">The rolled-up estimation value of the deleted record (the delta to deduct)</param>
+		/// <returns>True if successful, False only if critical validation fails</returns>
+		public async Task<bool> UpdateRollUpEstimationsForRecordDeletionAsync(
+			Guid parentRecordId,
+			decimal deletedRecordRolledUpEstimation)
+		{
+			try
+			{
+				var startTime = DateTime.UtcNow;
+
+				_logger.LogInformation(
+					$"Starting roll-up estimation update for record deletion. " +
+					$"ParentRecordId: {parentRecordId}, " +
+					$"DeletedRecordEstimation: {deletedRecordRolledUpEstimation}");
+
+				// Early exit if no estimation to deduct
+				if (deletedRecordRolledUpEstimation == 0)
+				{
+					_logger.LogInformation(
+						$"Deleted record has zero estimation. " +
+						$"No roll-up estimation updates required.");
+					return true;
+				}
+
+				// Check execution time
+				if ((DateTime.UtcNow - startTime).TotalMilliseconds > MaxExecutionTimeMs)
+				{
+					_logger.LogWarning(
+						$"Roll-up estimation update for record deletion exceeded maximum execution time of {MaxExecutionTimeMs}ms. " +
+						$"Operation cancelled to prevent blocking.");
+					return false;
+				}
+
+				// STEP 1: Get the parent record
+				var parentRecord = await _context.ItemzHierarchy!
+					.FirstOrDefaultAsync(ih => ih.Id == parentRecordId);
+
+				if (parentRecord == null)
+				{
+					_logger.LogWarning($"Parent record not found for ID: {parentRecordId}");
+					return false;
+				}
+
+				_logger.LogDebug(
+					$"Step 1 - Retrieved parent record {parentRecordId} (Type: {parentRecord.RecordType}) " +
+					$"for deduction chain");
+
+				// STEP 2 & 3: Deduct from parent and its ancestry chain up to Project level
+				bool deductionSuccess = await DeductRollUpFromAncestryChainAsync(
+					parentRecord,
+					deletedRecordRolledUpEstimation,
+					startTime);
+
+				if (!deductionSuccess)
+				{
+					_logger.LogWarning(
+						$"Failed to deduct roll-up estimation from parent ancestry chain. " +
+						$"Parent: {parentRecordId}");
+					// Non-fatal error
+				}
+				else
+				{
+					_logger.LogDebug(
+						$"Successfully deducted {deletedRecordRolledUpEstimation} from parent ancestry chain");
+				}
+
+				_logger.LogInformation(
+					$"Successfully completed roll-up estimation update for record deletion. " +
+					$"ParentRecordId: {parentRecordId}, Delta: {deletedRecordRolledUpEstimation}, " +
+					$"Duration: {(DateTime.UtcNow - startTime).TotalMilliseconds}ms");
+
+				return true;
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(
+					$"Exception occurred while updating roll-up estimations for record deletion. " +
+					$"ParentRecordId: {parentRecordId}, DeletedRecordEstimation: {deletedRecordRolledUpEstimation}. " +
+					$"Exception: {ex.Message}",
+					ex);
+				// PHASE 1: Gentle error handling - log error but don't crash
+				return false;
+			}
+		}
+
 		///// <summary>
 		///// Propagates delta through all ancestors (wrapper for optimized method)
 		///// Used for: Batch processing of hierarchy updates
