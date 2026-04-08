@@ -39,41 +39,41 @@ namespace ItemzApp.API.Services
 			_estimationRollupService = estimationRollupService;
 		}
 
-		/// <summary>
-		/// PHASE 1: Trigger Event 1 - New Itemz Added
-		/// Called when a new Itemz is added to the hierarchy with estimation value
-		/// </summary>
-		/// <param name="itemzHierarchyRecordId">The ID of the newly created ItemzHierarchy record</param>
-		/// <returns>True if successful</returns>
-		public async Task<bool> OnItemzAddedAsync(Guid itemzHierarchyRecordId)
-		{
-			try
-			{
-				_logger.LogInformation($"PHASE 1 TRIGGER: New Itemz added with hierarchy record ID: {itemzHierarchyRecordId}");
+		///// <summary>
+		///// PHASE 1: Trigger Event 1 - New Itemz Added
+		///// Called when a new Itemz is added to the hierarchy with estimation value
+		///// </summary>
+		///// <param name="itemzHierarchyRecordId">The ID of the newly created ItemzHierarchy record</param>
+		///// <returns>True if successful</returns>
+		//public async Task<bool> OnItemzAddedAsync(Guid itemzHierarchyRecordId)
+		//{
+		//	try
+		//	{
+		//		_logger.LogInformation($"PHASE 1 TRIGGER: New Itemz added with hierarchy record ID: {itemzHierarchyRecordId}");
 
-				var hierarchyRecord = await _context.ItemzHierarchy!
-					.FirstOrDefaultAsync(ih => ih.Id == itemzHierarchyRecordId);
+		//		var hierarchyRecord = await _context.ItemzHierarchy!
+		//			.FirstOrDefaultAsync(ih => ih.Id == itemzHierarchyRecordId);
 
-				if (hierarchyRecord == null)
-				{
-					_logger.LogWarning($"ItemzHierarchy record not found for ID: {itemzHierarchyRecordId}");
-					return false;
-				}
+		//		if (hierarchyRecord == null)
+		//		{
+		//			_logger.LogWarning($"ItemzHierarchy record not found for ID: {itemzHierarchyRecordId}");
+		//			return false;
+		//		}
 
-				// PHASE 1: Only trigger recalculation if own estimation is not zero
-				if (hierarchyRecord.OwnEstimation != 0)
-				{
-					return await RecalculateParentHierarchyAsync(hierarchyRecord.Id);
-				}
+		//		// PHASE 1: Only trigger recalculation if own estimation is not zero
+		//		if (hierarchyRecord.OwnEstimation != 0)
+		//		{
+		//			return await RecalculateParentHierarchyAsync(hierarchyRecord.Id);
+		//		}
 
-				return true;
-			}
-			catch (Exception ex)
-			{
-				_logger.LogError($"Exception in OnItemzAddedAsync: {ex.Message}", ex);
-				return false;
-			}
-		}
+		//		return true;
+		//	}
+		//	catch (Exception ex)
+		//	{
+		//		_logger.LogError($"Exception in OnItemzAddedAsync: {ex.Message}", ex);
+		//		return false;
+		//	}
+		//}
 
 		/// <summary>
 		/// PHASE 1: Trigger Event 3 - Hierarchy Record Moved to New Parent
@@ -340,41 +340,41 @@ namespace ItemzApp.API.Services
 		//	}
 		//}
 
-		/// <summary>
-		/// PHASE 1: Similar trigger events for ItemzType records
-		/// ItemzType added with estimation value
-		/// </summary>
-		/// <param name="itemzTypeHierarchyRecordId">The ID of the newly created ItemzTypeHierarchy record</param>
-		/// <returns>True if successful</returns>
-		public async Task<bool> OnItemzTypeAddedAsync(Guid itemzTypeHierarchyRecordId)
-		{
-			try
-			{
-				_logger.LogInformation($"PHASE 1 TRIGGER: New ItemzType added with hierarchy record ID: {itemzTypeHierarchyRecordId}");
+		///// <summary>
+		///// PHASE 1: Similar trigger events for ItemzType records
+		///// ItemzType added with estimation value
+		///// </summary>
+		///// <param name="itemzTypeHierarchyRecordId">The ID of the newly created ItemzTypeHierarchy record</param>
+		///// <returns>True if successful</returns>
+		//public async Task<bool> OnItemzTypeAddedAsync(Guid itemzTypeHierarchyRecordId)
+		//{
+		//	try
+		//	{
+		//		_logger.LogInformation($"PHASE 1 TRIGGER: New ItemzType added with hierarchy record ID: {itemzTypeHierarchyRecordId}");
 
-				var hierarchyRecord = await _context.ItemzHierarchy!
-					.FirstOrDefaultAsync(ih => ih.Id == itemzTypeHierarchyRecordId);
+		//		var hierarchyRecord = await _context.ItemzHierarchy!
+		//			.FirstOrDefaultAsync(ih => ih.Id == itemzTypeHierarchyRecordId);
 
-				if (hierarchyRecord == null)
-				{
-					_logger.LogWarning($"ItemzHierarchy record not found for ID: {itemzTypeHierarchyRecordId}");
-					return false;
-				}
+		//		if (hierarchyRecord == null)
+		//		{
+		//			_logger.LogWarning($"ItemzHierarchy record not found for ID: {itemzTypeHierarchyRecordId}");
+		//			return false;
+		//		}
 
-				// PHASE 1: Only trigger recalculation if own estimation is not zero
-				if (hierarchyRecord.OwnEstimation != 0)
-				{
-					return await RecalculateParentHierarchyAsync(itemzTypeHierarchyRecordId);
-				}
+		//		// PHASE 1: Only trigger recalculation if own estimation is not zero
+		//		if (hierarchyRecord.OwnEstimation != 0)
+		//		{
+		//			return await RecalculateParentHierarchyAsync(itemzTypeHierarchyRecordId);
+		//		}
 
-				return true;
-			}
-			catch (Exception ex)
-			{
-				_logger.LogError($"Exception in OnItemzTypeAddedAsync: {ex.Message}", ex);
-				return false;
-			}
-		}
+		//		return true;
+		//	}
+		//	catch (Exception ex)
+		//	{
+		//		_logger.LogError($"Exception in OnItemzTypeAddedAsync: {ex.Message}", ex);
+		//		return false;
+		//	}
+		//}
 
 		///// <summary>
 		///// PHASE 1: ItemzType deleted
@@ -540,89 +540,89 @@ namespace ItemzApp.API.Services
 		/// PHASE 1: Helper method to recalculate parent and all ancestors
 		/// Called after a child record changes
 		/// </summary>
-		private async Task<bool> RecalculateParentHierarchyAsync(Guid childHierarchyRecordId)
-		{
-			try
-			{
-				var childRecord = await _context.ItemzHierarchy!
-					.FirstOrDefaultAsync(ih => ih.Id == childHierarchyRecordId);
+		//private async Task<bool> RecalculateParentHierarchyAsync(Guid childHierarchyRecordId)
+		//{
+		//	try
+		//	{
+		//		var childRecord = await _context.ItemzHierarchy!
+		//			.FirstOrDefaultAsync(ih => ih.Id == childHierarchyRecordId);
 
-				if (childRecord == null || childRecord.ItemzHierarchyId == null)
-				{
-					return false;
-				}
+		//		if (childRecord == null || childRecord.ItemzHierarchyId == null)
+		//		{
+		//			return false;
+		//		}
 
-				// Get parent hierarchy
-				var parentHierarchyId = childRecord.ItemzHierarchyId.GetAncestor(1);
-				if (parentHierarchyId == null)
-				{
-					return true; // No parent to recalculate
-				}
+		//		// Get parent hierarchy
+		//		var parentHierarchyId = childRecord.ItemzHierarchyId.GetAncestor(1);
+		//		if (parentHierarchyId == null)
+		//		{
+		//			return true; // No parent to recalculate
+		//		}
 
-				var parentRecord = await _context.ItemzHierarchy!
-					.FirstOrDefaultAsync(ih => ih.ItemzHierarchyId == parentHierarchyId);
+		//		var parentRecord = await _context.ItemzHierarchy!
+		//			.FirstOrDefaultAsync(ih => ih.ItemzHierarchyId == parentHierarchyId);
 
-				if (parentRecord != null)
-				{
-					// PHASE 1: Recalculate immediate parent
-					await _estimationRollupService.RecalculateSingleRecordRollUpAsync(parentRecord.Id);
+		//		if (parentRecord != null)
+		//		{
+		//			// PHASE 1: Recalculate immediate parent
+		//			await _estimationRollupService.RecalculateSingleRecordRollUpAsync(parentRecord.Id);
 
-					// PHASE 1: Also recalculate all ancestors up the hierarchy
-					await RecalculateAncestorsAsync(parentRecord.Id);
-				}
+		//			// PHASE 1: Also recalculate all ancestors up the hierarchy
+		//			await RecalculateAncestorsAsync(parentRecord.Id);
+		//		}
 
-				return true;
-			}
-			catch (Exception ex)
-			{
-				_logger.LogWarning($"Exception in RecalculateParentHierarchyAsync: {ex.Message}");
-				return false;
-			}
-		}
+		//		return true;
+		//	}
+		//	catch (Exception ex)
+		//	{
+		//		_logger.LogWarning($"Exception in RecalculateParentHierarchyAsync: {ex.Message}");
+		//		return false;
+		//	}
+		//}
 
-		/// <summary>
-		/// PHASE 1: Helper method to recalculate all ancestor records up the hierarchy
-		/// Ensures complete hierarchy consistency
-		/// </summary>
-		private async Task<bool> RecalculateAncestorsAsync(Guid recordId)
-		{
-			try
-			{
-				var currentRecord = await _context.ItemzHierarchy!
-					.FirstOrDefaultAsync(ih => ih.Id == recordId);
+		///// <summary>
+		///// PHASE 1: Helper method to recalculate all ancestor records up the hierarchy
+		///// Ensures complete hierarchy consistency
+		///// </summary>
+		//private async Task<bool> RecalculateAncestorsAsync(Guid recordId)
+		//{
+		//	try
+		//	{
+		//		var currentRecord = await _context.ItemzHierarchy!
+		//			.FirstOrDefaultAsync(ih => ih.Id == recordId);
 
-				if (currentRecord == null || currentRecord.ItemzHierarchyId == null)
-				{
-					return false;
-				}
+		//		if (currentRecord == null || currentRecord.ItemzHierarchyId == null)
+		//		{
+		//			return false;
+		//		}
 
-				// Get all ancestors by following the hierarchy upward
-				var currentLevel = currentRecord.ItemzHierarchyId.GetLevel();
+		//		// Get all ancestors by following the hierarchy upward
+		//		var currentLevel = currentRecord.ItemzHierarchyId.GetLevel();
 
-				for (int i = currentLevel - 1; i > 0; i--)
-				{
-					var ancestorHierarchyId = currentRecord.ItemzHierarchyId.GetAncestor(currentLevel - i);
-					if (ancestorHierarchyId == null)
-					{
-						break;
-					}
+		//		for (int i = currentLevel - 1; i > 0; i--)
+		//		{
+		//			var ancestorHierarchyId = currentRecord.ItemzHierarchyId.GetAncestor(currentLevel - i);
+		//			if (ancestorHierarchyId == null)
+		//			{
+		//				break;
+		//			}
 
-					var ancestorRecord = await _context.ItemzHierarchy!
-						.FirstOrDefaultAsync(ih => ih.ItemzHierarchyId == ancestorHierarchyId);
+		//			var ancestorRecord = await _context.ItemzHierarchy!
+		//				.FirstOrDefaultAsync(ih => ih.ItemzHierarchyId == ancestorHierarchyId);
 
-					if (ancestorRecord != null)
-					{
-						await _estimationRollupService.RecalculateSingleRecordRollUpAsync(ancestorRecord.Id);
-					}
-				}
+		//			if (ancestorRecord != null)
+		//			{
+		//				await _estimationRollupService.RecalculateSingleRecordRollUpAsync(ancestorRecord.Id);
+		//			}
+		//		}
 
-				return true;
-			}
-			catch (Exception ex)
-			{
-				_logger.LogWarning($"Exception in RecalculateAncestorsAsync: {ex.Message}");
-				return false;
-			}
-		}
+		//		return true;
+		//	}
+		//	catch (Exception ex)
+		//	{
+		//		_logger.LogWarning($"Exception in RecalculateAncestorsAsync: {ex.Message}");
+		//		return false;
+		//	}
+		//}
 	}
 }
