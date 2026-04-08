@@ -478,6 +478,7 @@ namespace ItemzApp.API.Controllers
 		/// <param name="MovingItemzTypeId">GUID representing an unique ID of the moving ItemzType</param>
 		/// <param name="TargetProjectId">Details about target Project ID under which ItemzType will be moving</param>
 		/// <param name="AtBottomOfChildNodes">Boolean value where by true means at the bottom of the existing nodes and false means at the top</param>
+		/// <param name="itemzHierarchyTriggerService">Service for triggering roll-up estimation updates</param>
 		/// <returns>No contents are returned when ItemzType gets moved to its new desired location</returns>
 		/// <response code="204">No content are returned but status of 204 indicating that ItemzType has successfully moved to its desired location</response>
 		/// <response code="404">Either moving ItemzType or target Project was not found</response>
@@ -487,7 +488,11 @@ namespace ItemzApp.API.Controllers
 		[ProducesResponseType(StatusCodes.Status404NotFound)]
 		[ProducesResponseType(StatusCodes.Status409Conflict)]
 		[ProducesDefaultResponseType]
-		public async Task<ActionResult> MoveItemzTypeAsync([FromRoute] Guid MovingItemzTypeId, [FromQuery] Guid TargetProjectId, [FromQuery] bool AtBottomOfChildNodes = true)
+		public async Task<ActionResult> MoveItemzTypeAsync(
+			[FromRoute] Guid MovingItemzTypeId,
+			[FromQuery] Guid TargetProjectId,
+			[FromQuery] bool AtBottomOfChildNodes = true,
+			[FromServices] ItemzHierarchyTriggerService itemzHierarchyTriggerService = null)
 		{
 			if (!(await _ItemzTypeRepository.ItemzTypeExistsAsync(MovingItemzTypeId)))
 			{
@@ -497,7 +502,7 @@ namespace ItemzApp.API.Controllers
 				return NotFound();
 			}
 
-			// TODO :: WE HAVE TO ALSO CHECK IN THE HIERARCHY TABLE IF TARGET EXISTITS OTHERWISE THERE IS NO
+			// TODO :: WE HAVE TO ALSO CHECK IN THE HIERARCHY TABLE IF TARGET EXISTS OTHERWISE THERE IS NO
 			// POINT IN MOVING ITEMZTYPE.
 
 			if (!(await _projectRepository.ProjectExistsAsync(TargetProjectId)))
@@ -511,10 +516,13 @@ namespace ItemzApp.API.Controllers
 			var itemzTypeFromRepo = await _ItemzTypeRepository.GetItemzTypeForUpdateAsync(MovingItemzTypeId);
 			if (itemzTypeFromRepo == null)
 			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}ItemzType for update could not be retrieved for ID {MovingItemzTypeId}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					MovingItemzTypeId);
 				return NotFound();
 			}
 
-			// Uniqueness check in target project before moving requirement type
+			// Uniqueness check in target project before moving ItemzType
 			if (await _itemzTypeRules.UniqueItemzTypeNameRuleAsync(TargetProjectId, itemzTypeFromRepo.Name, itemzTypeFromRepo.Id))
 			{
 				_logger.LogDebug("{FormattedControllerAndActionNames}ItemzType with name {ItemzTypeName} already exists in target project {TargetProjectId}",
@@ -524,27 +532,120 @@ namespace ItemzApp.API.Controllers
 				return Conflict($"ItemzType with name '{itemzTypeFromRepo.Name}' already exists in the target project with Id '{TargetProjectId}'");
 			}
 
-			// TODO :: ADD NECESSARY EXCEPTION HANDLING CODE FOR MOVING ITEMZTYPE TO ANOTHER PROJECT
 			try
 			{
-				await _ItemzTypeRepository.MoveItemzTypeToAnotherProjectAsync(MovingItemzTypeId, TargetProjectId, atBottomOfChildNodes: AtBottomOfChildNodes);
+				// PHASE 1: Capture the previous parent hierarchy record ID before the move
+				// Note: When moving to another project, the previous parent is the current project
+				Guid previousParentHierarchyId = Guid.Empty;
+				var movingHierarchyRecord = await _hierarchyRepository.GetHierarchyRecordForUpdateAsync(MovingItemzTypeId);
+
+				if (movingHierarchyRecord != null && movingHierarchyRecord.ItemzHierarchyId != null)
+				{
+					// Get the parent HierarchyId by going up one level
+					var previousParentHierarchyIdPath = movingHierarchyRecord.ItemzHierarchyId.GetAncestor(1);
+
+					if (previousParentHierarchyIdPath != null)
+					{
+						// Use repository method to get parent record details
+						var previousParentRecord = await _hierarchyRepository.GetHierarchyRecordDetailsByHierarchyIdPath(previousParentHierarchyIdPath);
+						if (previousParentRecord != null)
+						{
+							previousParentHierarchyId = previousParentRecord.RecordId;
+						}
+					}
+				}
+
+				// PHASE 1: Perform the actual move to another project
+				await _ItemzTypeRepository.MoveItemzTypeToAnotherProjectAsync(
+					MovingItemzTypeId,
+					TargetProjectId,
+					atBottomOfChildNodes: AtBottomOfChildNodes);
+
 				await _ItemzTypeRepository.SaveAsync();
+
+				_logger.LogDebug(
+					"{FormattedControllerAndActionNames}Moving ItemzType ID {MovingItemzTypeId} moved to target project {TargetProjectId}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					MovingItemzTypeId,
+					TargetProjectId);
+
+				// PHASE 1: Get the hierarchy record ID of the moved ItemzType for trigger events
+				var movedHierarchyRecord = await _hierarchyRepository.GetHierarchyRecordForUpdateAsync(MovingItemzTypeId);
+				Guid movedItemzTypeHierarchyRecordId = movedHierarchyRecord?.Id ?? Guid.Empty;
+
+				// PHASE 1 TRIGGER: After successful move, trigger roll-up estimation update for moved ItemzType
+				if (movedItemzTypeHierarchyRecordId != Guid.Empty && itemzHierarchyTriggerService != null)
+				{
+					_logger.LogInformation(
+						"Invoking OnHierarchyRecordMovedAsync after ItemzType move to another project. " +
+						"MovingItemzType: {MovingItemzTypeId}, PreviousParent: {previousParentHierarchyId}, TargetProject: {TargetProjectId}",
+						MovingItemzTypeId,
+						previousParentHierarchyId,
+						TargetProjectId);
+
+					var triggerResult = await itemzHierarchyTriggerService.OnHierarchyRecordMovedAsync(
+						movedItemzTypeHierarchyRecordId,
+						previousParentHierarchyId);
+
+					if (!triggerResult)
+					{
+						_logger.LogWarning(
+							"Roll-up estimation update failed for moved ItemzType ID {MovingItemzTypeId} " +
+							"to target project {TargetProjectId}",
+							MovingItemzTypeId,
+							TargetProjectId);
+						// Non-fatal: operation still succeeds despite trigger failure
+					}
+				}
+
+				_logger.LogDebug(
+					"{FormattedControllerAndActionNames}ItemzType ID {MovingItemzTypeId} successfully moved to target project {TargetProjectId}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					MovingItemzTypeId,
+					TargetProjectId);
 			}
 			catch (ApplicationException appException)
 			{
-				_logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to move ItemzType :" + appException.Message,
-					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
-					);
-				var tempMessage = $"Could not move Itemz Type with ID '{MovingItemzTypeId}' " +
-					$":: InnerException :: {appException.Message} ";
+				_logger.LogDebug(
+					"{FormattedControllerAndActionNames}ApplicationException occurred while trying to move ItemzType: {Exception}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					appException.Message);
+
+				var tempMessage = $"Could not move ItemzType with ID '{MovingItemzTypeId}' to project '{TargetProjectId}'. " +
+					$":: InnerException :: {appException.Message}";
 				return BadRequest(tempMessage);
 			}
+			catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
+			{
+				_logger.LogDebug(
+					"{FormattedControllerAndActionNames}DBUpdateException occurred while trying to move ItemzType: {Exception}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					dbUpdateException.Message);
 
-			_logger.LogDebug("{FormattedControllerAndActionNames}ItemzType ID {MovingItemzTypeId} successfully moved under Target Project ID {TargetProjectId}",
-				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-				MovingItemzTypeId,
-				TargetProjectId);
-			return NoContent(); // This indicates that update was successfully saved in the DB.
+				return Conflict($"DBUpdateException: Could not move ItemzType with ID '{MovingItemzTypeId}' to project '{TargetProjectId}'. " +
+					$"DB Error reported, check the log file. " +
+					$":: InnerException :: '{dbUpdateException.Message}'");
+			}
+			catch (Microsoft.SqlServer.Types.HierarchyIdException hierarchyIDException)
+			{
+				_logger.LogDebug(
+					"{FormattedControllerAndActionNames}HierarchyIdException occurred while trying to move ItemzType: {Exception}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					hierarchyIDException.Message);
+
+				return Conflict($"HierarchyIdException: Could not move ItemzType with ID '{MovingItemzTypeId}' to project '{TargetProjectId}'. " +
+					$"DB Error reported, check the log file. " +
+					$":: InnerException :: '{hierarchyIDException.Message}'");
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(
+					"Unexpected exception occurred during MoveItemzTypeAsync: {Exception}",
+					ex.Message);
+				throw;
+			}
+
+			return NoContent();
 		}
 
 		/// <summary>
@@ -553,16 +654,21 @@ namespace ItemzApp.API.Controllers
 		/// <param name="movingItemzTypeId">Source moving ItemzType ID that will be moved to new location</param>
 		/// <param name="firstItemzTypeId">Used as first ItemzType for moving ItemzType between existing two ItemzTypes</param>
 		/// <param name="secondItemzTypeId">Used as second ItemzType for moving ItemzType between existing two ItemzTypes</param>
+		/// <param name="itemzHierarchyTriggerService">Service for triggering roll-up estimation updates</param>
 		/// <returns>No Content</returns>
 		/// <response code="204">No Content</response>
-		/// <response code="404">Expected moveing OR target between ItemzTypes could not found</response>
+		/// <response code="404">Expected moving OR target between ItemzTypes could not found</response>
 		/// <response code="409">ItemzType with the same name already exists in the target Project</response>
 		[HttpPost("MoveItemzTypeBetweenItemzTypes/", Name = "__POST_Move_ItemzType_Between_ItemzTypes__")]
 		[ProducesResponseType(StatusCodes.Status204NoContent)]
 		[ProducesResponseType(StatusCodes.Status404NotFound)]
 		[ProducesResponseType(StatusCodes.Status409Conflict)]
 		[ProducesDefaultResponseType]
-		public async Task<ActionResult> MoveItemzTypeBetweenItemzTypesAsync([FromQuery] Guid movingItemzTypeId, [FromQuery] Guid firstItemzTypeId, [FromQuery] Guid secondItemzTypeId)
+		public async Task<ActionResult> MoveItemzTypeBetweenItemzTypesAsync(
+			[FromQuery] Guid movingItemzTypeId,
+			[FromQuery] Guid firstItemzTypeId,
+			[FromQuery] Guid secondItemzTypeId,
+			[FromServices] ItemzHierarchyTriggerService itemzHierarchyTriggerService = null)
 		{
 			if (movingItemzTypeId == Guid.Empty)
 			{
@@ -570,12 +676,14 @@ namespace ItemzApp.API.Controllers
 					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext));
 				return NotFound();
 			}
+
 			if (firstItemzTypeId == Guid.Empty)
 			{
 				_logger.LogDebug("{FormattedControllerAndActionNames}First ItemzTypeID from between two ItemzTypes is an empty ID.",
 					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext));
 				return NotFound();
 			}
+
 			if (secondItemzTypeId == Guid.Empty)
 			{
 				_logger.LogDebug("{FormattedControllerAndActionNames}Second ItemzTypeID from between two ItemzTypes is an empty ID.",
@@ -627,43 +735,117 @@ namespace ItemzApp.API.Controllers
 
 			try
 			{
-				await _ItemzTypeRepository.MoveItemzTypeBetweenTwoHierarchyRecordsAsync(firstItemzTypeId, secondItemzTypeId, movingItemzTypeId);
+				// PHASE 1: Capture the previous parent hierarchy record ID before the move
+				Guid previousParentHierarchyId = Guid.Empty;
+				var movingHierarchyRecord = await _hierarchyRepository.GetHierarchyRecordForUpdateAsync(movingItemzTypeId);
+
+				if (movingHierarchyRecord != null && movingHierarchyRecord.ItemzHierarchyId != null)
+				{
+					// Get the parent HierarchyId by going up one level
+					var previousParentHierarchyIdPath = movingHierarchyRecord.ItemzHierarchyId.GetAncestor(1);
+
+					if (previousParentHierarchyIdPath != null)
+					{
+						// Use repository method to get parent record details
+						var previousParentRecord = await _hierarchyRepository.GetHierarchyRecordDetailsByHierarchyIdPath(previousParentHierarchyIdPath);
+						if (previousParentRecord != null)
+						{
+							previousParentHierarchyId = previousParentRecord.RecordId;
+						}
+					}
+				}
+
+				// PHASE 1: Perform the actual move between existing ItemzType records
+				await _ItemzTypeRepository.MoveItemzTypeBetweenTwoHierarchyRecordsAsync(
+					firstItemzTypeId,
+					secondItemzTypeId,
+					movingItemzTypeId);
+
 				await _ItemzTypeRepository.SaveAsync();
+
+				_logger.LogDebug(
+					"{FormattedControllerAndActionNames}Moving ItemzType ID {movingItemzTypeId} moved between {firstItemzTypeId} and {secondItemzTypeId}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					movingItemzTypeId,
+					firstItemzTypeId,
+					secondItemzTypeId);
+
+				// PHASE 1: Get the hierarchy record ID of the moved ItemzType for trigger events
+				var movedHierarchyRecord = await _hierarchyRepository.GetHierarchyRecordForUpdateAsync(movingItemzTypeId);
+				Guid movedItemzTypeHierarchyRecordId = movedHierarchyRecord?.Id ?? Guid.Empty;
+
+				// PHASE 1 TRIGGER: After successful move, trigger roll-up estimation update for moved ItemzType
+				if (movedItemzTypeHierarchyRecordId != Guid.Empty && itemzHierarchyTriggerService != null)
+				{
+					_logger.LogInformation(
+						"Invoking OnHierarchyRecordMovedAsync after ItemzType move between existing ItemzTypes. " +
+						"MovingItemzType: {movingItemzTypeId}, PreviousParent: {previousParentHierarchyId}",
+						movingItemzTypeId,
+						previousParentHierarchyId);
+
+					var triggerResult = await itemzHierarchyTriggerService.OnHierarchyRecordMovedAsync(
+						movedItemzTypeHierarchyRecordId,
+						previousParentHierarchyId);
+
+					if (!triggerResult)
+					{
+						_logger.LogWarning(
+							"Roll-up estimation update failed for moved ItemzType ID {movingItemzTypeId} " +
+							"between existing ItemzTypes {firstItemzTypeId} and {secondItemzTypeId}",
+							movingItemzTypeId,
+							firstItemzTypeId,
+							secondItemzTypeId);
+					}
+				}
+
+				_logger.LogDebug(
+					"{FormattedControllerAndActionNames}ItemzType ID {movingItemzTypeId} successfully moved between ItemzTypes {firstItemzTypeId} and {secondItemzTypeId}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					movingItemzTypeId,
+					firstItemzTypeId,
+					secondItemzTypeId);
 			}
 			catch (ApplicationException appException)
 			{
-				_logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to move ItemzType between two existing ItemzTypes :" + appException.Message,
-					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
-					);
-                var tempMessage = $"Could not move ItemzType with Id {movingItemzTypeId} between ItemzType '{firstItemzTypeId}' " +
-                    $"and '{secondItemzTypeId}'. " +
-                    $":: InnerException :: {appException.Message} ";
+				_logger.LogDebug(
+					"{FormattedControllerAndActionNames}ApplicationException occurred while trying to move ItemzType between two existing ItemzTypes: {Exception}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					appException.Message);
+
+				var tempMessage = $"Could not move ItemzType with Id {movingItemzTypeId} between ItemzType '{firstItemzTypeId}' " +
+					$"and '{secondItemzTypeId}'. " +
+					$":: InnerException :: {appException.Message}";
 				return BadRequest(tempMessage);
 			}
 			catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
 			{
-				_logger.LogDebug("{FormattedControllerAndActionNames}DBUpdateException Occured while trying to move ItemzType between two existing ItemzTypes :" + dbUpdateException.Message,
-                ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
-                    );
-                return Conflict($"DBUpdateException : Could not move ItemzType with Id {movingItemzTypeId} between ItemzTypes " +
-                    $"'{firstItemzTypeId}' and '{secondItemzTypeId}'. DB Error reported, check the log file. " +
-                    $":: InnerException :: '{dbUpdateException.Message}' ");
+				_logger.LogDebug(
+					"{FormattedControllerAndActionNames}DBUpdateException occurred while trying to move ItemzType between two existing ItemzTypes: {Exception}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					dbUpdateException.Message);
+
+				return Conflict($"DBUpdateException: Could not move ItemzType with Id {movingItemzTypeId} between ItemzTypes " +
+					$"'{firstItemzTypeId}' and '{secondItemzTypeId}'. DB Error reported, check the log file. " +
+					$":: InnerException :: '{dbUpdateException.Message}'");
 			}
 			catch (Microsoft.SqlServer.Types.HierarchyIdException hierarchyIDException)
 			{
-				_logger.LogDebug("{FormattedControllerAndActionNames}HierarchyIdException Occured while trying to add Itemz between two existing Itemz :" + hierarchyIDException.Message,
-                ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
-                    );
-                return Conflict($"HierarchyIdException : Could not move ItemzType with Id {movingItemzTypeId} between ItemzTypes " +
-                    $"'{firstItemzTypeId}' and '{secondItemzTypeId}'. DB Error reported, check the log file. " +
-                    $":: InnerException :: '{hierarchyIDException.Message}' ");
-			}
+				_logger.LogDebug(
+					"{FormattedControllerAndActionNames}HierarchyIdException occurred while trying to move ItemzType between two existing ItemzTypes: {Exception}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					hierarchyIDException.Message);
 
-			_logger.LogDebug("{FormattedControllerAndActionNames}ItemzType ID {movingItemzTypeId} successfully moved between ItemzTypes {firstItemzTypeId} and {secondItemzTypeId}",
-				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-				movingItemzTypeId,
-				firstItemzTypeId,
-				secondItemzTypeId);
+				return Conflict($"HierarchyIdException: Could not move ItemzType with Id {movingItemzTypeId} between ItemzTypes " +
+					$"'{firstItemzTypeId}' and '{secondItemzTypeId}'. DB Error reported, check the log file. " +
+					$":: InnerException :: '{hierarchyIDException.Message}'");
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(
+					"Unexpected exception occurred during MoveItemzTypeBetweenItemzTypesAsync: {Exception}",
+					ex.Message);
+				throw;
+			}
 
 			return NoContent();
 		}

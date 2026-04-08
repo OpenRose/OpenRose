@@ -594,7 +594,7 @@ namespace ItemzApp.API.Controllers
 				if (movedItemzHierarchyRecordId != Guid.Empty && itemzHierarchyTriggerService != null)
 				{
 
-					var triggerResult = await itemzHierarchyTriggerService.OnItemzMovedAsync(
+					var triggerResult = await itemzHierarchyTriggerService.OnHierarchyRecordMovedAsync(
 						movedItemzHierarchyRecordId,
 						previousParentHierarchyId);
 
@@ -972,14 +972,14 @@ namespace ItemzApp.API.Controllers
 				// PHASE 1 TRIGGER: After successful save, trigger roll-up recalculation for moved Itemz
 				if (movingItemzHierarchyRecordId != Guid.Empty && itemzHierarchyTriggerService != null)
 				{
-					_logger.LogInformation("PHASE 1 TRIGGER: Invoking OnItemzMovedAsync after Itemz move");
-					var triggerResult = await itemzHierarchyTriggerService.OnItemzMovedAsync(
+					_logger.LogInformation("Invoking OnHierarchyRecordMovedAsync after Itemz move");
+					var triggerResult = await itemzHierarchyTriggerService.OnHierarchyRecordMovedAsync(
 						movingItemzHierarchyRecordId,
 						previousParentHierarchyId);
 
 					if (!triggerResult)
 					{
-						_logger.LogWarning("PHASE 1 TRIGGER: Roll-up recalculation failed for moved Itemz ID {MovingItemzId}",
+						_logger.LogWarning("Roll-up recalculation failed for moved Itemz ID {MovingItemzId}",
 							MovingItemzId);
 					}
 				}

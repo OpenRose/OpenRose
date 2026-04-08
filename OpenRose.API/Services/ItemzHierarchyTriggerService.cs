@@ -16,12 +16,12 @@ namespace ItemzApp.API.Services
 	/// <summary>
 	/// PHASE 1: Service that handles trigger events for ItemzHierarchy changes
 	/// Automatically recalculates roll-up estimations when specific events occur:
-	/// - New Itemz added with estimation != 0
-	/// - Itemz estimation value changed
-	/// - Itemz moved to new parent
-	/// - Itemz deleted
-	/// - Itemz becomes orphaned
-	/// - Itemz copied
+	/// - New Itemz/ItemzType added with estimation != 0
+	/// - Itemz/ItemzType estimation value changed
+	/// - Itemz/ItemzType moved to new parent (handles both record types)
+	/// - Itemz/ItemzType deleted
+	/// - Itemz/ItemzType becomes orphaned
+	/// - Itemz/ItemzType copied
 	/// </summary>
 	public class ItemzHierarchyTriggerService
 	{
@@ -76,33 +76,34 @@ namespace ItemzApp.API.Services
 		}
 
 		/// <summary>
-		/// PHASE 1: Trigger Event 3 - Itemz Moved to New Parent
-		/// Called when an Itemz is moved from one parent to another
+		/// PHASE 1: Trigger Event 3 - Hierarchy Record Moved to New Parent
+		/// Called when a record (Itemz or ItemzType) is moved from one parent to another
 		/// Uses delta-based roll-up estimation propagation for efficiency
+		/// Handles all hierarchy record types: Itemz, ItemzType
 		/// </summary>
-		/// <param name="movingItemzHierarchyId">The ID of the moved ItemzHierarchy record</param>
+		/// <param name="movingHierarchyRecordId">The ID of the moved hierarchy record</param>
 		/// <param name="previousParentHierarchyId">Optional: ID of previous parent before the move</param>
 		/// <returns>True if successful</returns>
-		public async Task<bool> OnItemzMovedAsync(Guid movingItemzHierarchyId, Guid? previousParentHierarchyId = null)
+		public async Task<bool> OnHierarchyRecordMovedAsync(Guid movingHierarchyRecordId, Guid? previousParentHierarchyId = null)
 		{
 			try
 			{
 				_logger.LogInformation(
-					$"PHASE 1 TRIGGER: Itemz moved. Moving hierarchy record ID: {movingItemzHierarchyId}, " +
+					$"PHASE 1 TRIGGER: Hierarchy record moved. Moving record ID: {movingHierarchyRecordId}, " +
 					$"Previous parent: {(previousParentHierarchyId.HasValue ? previousParentHierarchyId.ToString() : "None")}");
 
 				var movingHierarchyRecord = await _context.ItemzHierarchy!
-					.FirstOrDefaultAsync(ih => ih.Id == movingItemzHierarchyId);
+					.FirstOrDefaultAsync(ih => ih.Id == movingHierarchyRecordId);
 
 				if (movingHierarchyRecord == null)
 				{
-					_logger.LogWarning($"ItemzHierarchy record not found for ID: {movingItemzHierarchyId}");
+					_logger.LogWarning($"Hierarchy record not found for ID: {movingHierarchyRecordId}");
 					return false;
 				}
 
 				if (movingHierarchyRecord.ItemzHierarchyId == null)
 				{
-					_logger.LogWarning($"ItemzHierarchyId (HierarchyId path) is null for record ID: {movingItemzHierarchyId}");
+					_logger.LogWarning($"HierarchyId path is null for record ID: {movingHierarchyRecordId}");
 					return false;
 				}
 
@@ -111,7 +112,7 @@ namespace ItemzApp.API.Services
 				if (currentParentHierarchyIdPath == null)
 				{
 					_logger.LogWarning(
-						$"Could not determine current parent HierarchyId path for moving record {movingItemzHierarchyId}");
+						$"Could not determine current parent HierarchyId path for moving record {movingHierarchyRecordId}");
 					return false;
 				}
 
@@ -128,15 +129,15 @@ namespace ItemzApp.API.Services
 				Guid currentParentHierarchyId = currentParentRecord.Id;
 
 				_logger.LogDebug(
-					$"PHASE 1 TRIGGER: Moving record {movingItemzHierarchyId} from parent {previousParentHierarchyId} " +
-					$"to parent {currentParentHierarchyId}");
+					$"PHASE 1 TRIGGER: Moving record {movingHierarchyRecordId} (Type: {movingHierarchyRecord.RecordType}) " +
+					$"from parent {previousParentHierarchyId} to parent {currentParentHierarchyId}");
 
 				// PHASE 1: Use new optimized method for move-based roll-up updates
 				// This handles all scenarios: same parent, different parent, cross-type moves
 				if (previousParentHierarchyId.HasValue && previousParentHierarchyId != Guid.Empty)
 				{
 					var moveUpdateResult = await _estimationRollupService.UpdateRollUpEstimationsForRecordMoveAsync(
-						movingItemzHierarchyId,
+						movingHierarchyRecordId,
 						previousParentHierarchyId.Value,
 						currentParentHierarchyId);
 
@@ -144,7 +145,7 @@ namespace ItemzApp.API.Services
 					{
 						_logger.LogWarning(
 							$"PHASE 1 TRIGGER: Roll-up estimation update for move failed. " +
-							$"Moving record: {movingItemzHierarchyId}, " +
+							$"Moving record: {movingHierarchyRecordId} (Type: {movingHierarchyRecord.RecordType}), " +
 							$"Previous parent: {previousParentHierarchyId}, " +
 							$"Current parent: {currentParentHierarchyId}");
 						// Non-fatal: continue despite failure
@@ -152,15 +153,16 @@ namespace ItemzApp.API.Services
 					else
 					{
 						_logger.LogInformation(
-							$"PHASE 1 TRIGGER: Successfully updated roll-up estimations for moved Itemz. " +
-							$"Moving record: {movingItemzHierarchyId}");
+							$"PHASE 1 TRIGGER: Successfully updated roll-up estimations for moved record. " +
+							$"Moving record: {movingHierarchyRecordId} (Type: {movingHierarchyRecord.RecordType})");
 					}
 				}
 				else
 				{
 					_logger.LogInformation(
 						$"PHASE 1 TRIGGER: No previous parent available. " +
-						$"Skipping roll-up estimation update for moved Itemz {movingItemzHierarchyId}");
+						$"Skipping roll-up estimation update for moved record {movingHierarchyRecordId} " +
+						$"(Type: {movingHierarchyRecord.RecordType})");
 				}
 
 				return true;
@@ -168,7 +170,7 @@ namespace ItemzApp.API.Services
 			catch (Exception ex)
 			{
 				_logger.LogError(
-					$"Exception in OnItemzMovedAsync for moving record {movingItemzHierarchyId}: {ex.Message}", ex);
+					$"Exception in OnHierarchyRecordMovedAsync for moving record {movingHierarchyRecordId}: {ex.Message}", ex);
 				return false;
 			}
 		}
@@ -194,7 +196,6 @@ namespace ItemzApp.API.Services
 				return false;
 			}
 		}
-
 		///// <summary>
 		///// PHASE 1: Trigger Event 5 - Itemz Becomes Orphaned
 		///// Called when an Itemz becomes orphaned (parent deleted, not part of any project)
@@ -307,35 +308,6 @@ namespace ItemzApp.API.Services
 			catch (Exception ex)
 			{
 				_logger.LogError($"Exception in OnItemzTypeAddedAsync: {ex.Message}", ex);
-				return false;
-			}
-		}
-
-		/// <summary>
-		/// PHASE 1: ItemzType moved to new parent
-		/// </summary>
-		/// <param name="movingItemzTypeHierarchyId">The ID of the moved ItemzTypeHierarchy record</param>
-		/// <param name="previousParentHierarchyId">Optional: ID of previous parent</param>
-		/// <returns>True if successful</returns>
-		public async Task<bool> OnItemzTypeMovedAsync(Guid movingItemzTypeHierarchyId, Guid? previousParentHierarchyId = null)
-		{
-			try
-			{
-				_logger.LogInformation($"PHASE 1 TRIGGER: ItemzType moved. Moving hierarchy record ID: {movingItemzTypeHierarchyId}");
-
-				var result = await RecalculateParentHierarchyAsync(movingItemzTypeHierarchyId);
-
-				// PHASE 1: Also recalculate previous parent if provided
-				if (previousParentHierarchyId.HasValue && previousParentHierarchyId != Guid.Empty)
-				{
-					await RecalculateParentHierarchyAsync(previousParentHierarchyId.Value);
-				}
-
-				return result;
-			}
-			catch (Exception ex)
-			{
-				_logger.LogError($"Exception in OnItemzTypeMovedAsync: {ex.Message}", ex);
 				return false;
 			}
 		}
