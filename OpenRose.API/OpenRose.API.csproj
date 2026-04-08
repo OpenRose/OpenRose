@@ -50,7 +50,7 @@
 	<ItemGroup>
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\Old\userProcCopyRecordWithChildrenByRecordID_202503221207.sql" />
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\Old\userProcCreateBaselineByExistingBaselineID_202410300246.sql" />
-		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcCopyRecordWithChildrenByRecordID_202512251653.sql" />
+		<EmbeddedResource Include="DbContexts\UserStoredProcedure\Old\userProcCopyRecordWithChildrenByRecordID_202512251653.sql" />
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\Old\userProcCreateBaselineByExistingBaselineID_202511051622.sql" />
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\Old\userProcCreateBaselineByItemzTypeID_202410300238.sql" />
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\Old\userProcCreateBaselineByExistingBaselineID_202512251705.sql" />
