@@ -287,8 +287,7 @@ namespace ItemzApp.API.Controllers
 		public async Task<ActionResult<GetItemzDTO>> CreateItemzAsync(
 					[FromBody] CreateItemzDTO createItemzDTO
 					, [FromQuery] Guid parentId
-					, [FromQuery] bool AtBottomOfChildNodes = true,
-					[FromServices] ItemzHierarchyTriggerService itemzHierarchyTriggerService = null)
+					, [FromQuery] bool AtBottomOfChildNodes = true)
 		{
 			Itemz itemzEntity;
 			try
@@ -330,17 +329,6 @@ namespace ItemzApp.API.Controllers
 			}
 
 			await _itemzRepository.SaveAsync();
-
-			// PHASE 1 TRIGGER: After successful save, trigger roll-up recalculation if new Itemz was added to hierarchy
-			if (createdHierarchyRecordId != Guid.Empty && itemzHierarchyTriggerService != null)
-			{
-				_logger.LogInformation("PHASE 1 TRIGGER: Invoking OnItemzAddedAsync after new Itemz creation");
-				var triggerResult = await itemzHierarchyTriggerService.OnItemzAddedAsync(createdHierarchyRecordId);
-				if (!triggerResult)
-				{
-					_logger.LogWarning("PHASE 1 TRIGGER: Roll-up recalculation failed for newly added Itemz ID {ItemzId}", createdHierarchyRecordId);
-				}
-			}
 
 			_logger.LogDebug("{FormattedControllerAndActionNames}Created new Itemz with ID {ItemzId}",
 				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
