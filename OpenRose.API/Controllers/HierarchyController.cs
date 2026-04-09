@@ -422,7 +422,7 @@ namespace ItemzApp.API.Controllers
 			Name = "__Post_Recalculate_Project_RollUp_Estimations_By_GUID__")]
 		[ProducesResponseType(StatusCodes.Status200OK)]
 		[ProducesResponseType(StatusCodes.Status400BadRequest)]
-		public async Task<ActionResult<dynamic>> RecalculateProjectRollUpEstimations(
+		public async Task<IActionResult> RecalculateProjectRollUpEstimations(
 			Guid projectHierarchyRecordId,
 			[FromServices] EstimationRollupService estimationRollupService)
 		{
@@ -438,7 +438,7 @@ namespace ItemzApp.API.Controllers
 						message = "Invalid Project Hierarchy Record ID provided. Please provide a valid Project record ID."
 					};
 					_logger.LogWarning(errorMessage.message);
-					return BadRequest(errorMessage);
+					return BadRequest("Invalid Project Hierarchy Record ID provided. Please provide a valid Project record ID.");
 				}
 
 				_logger.LogInformation($"Request received to recalculate roll-up estimations for Project ID: {projectHierarchyRecordId}");
@@ -453,7 +453,7 @@ namespace ItemzApp.API.Controllers
 						message = "Roll-up estimations recalculated successfully for the project"
 					};
 					_logger.LogInformation(successMessage.message);
-					return Ok(successMessage);
+					return Ok("Roll-up estimations recalculated successfully for the project");
 				}
 				else
 				{
@@ -463,17 +463,13 @@ namespace ItemzApp.API.Controllers
 						message = "Roll-up estimation recalculation failed or exceeded maximum execution time (2 seconds). Please try again."
 					};
 					_logger.LogWarning(errorMessage.message);
-					return BadRequest(errorMessage);
+					return BadRequest("Roll-up estimation recalculation failed or exceeded maximum execution time (2 seconds). Please try again.");
 				}
 			}
 			catch (Exception ex)
 			{
 				_logger.LogError($"Exception occurred during roll-up recalculation: {ex.Message}", ex);
-				return BadRequest(new
-				{
-					success = false,
-					message = $"An error occurred: {ex.Message}"
-				});
+				return BadRequest($"Exception occurred during roll-up recalculation: {ex.Message}");
 			}
 		}
 

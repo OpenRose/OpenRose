@@ -4,6 +4,7 @@
 
 using ItemzApp.API.DbContexts;
 using ItemzApp.API.Entities;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
@@ -34,112 +35,123 @@ namespace ItemzApp.API.Services
 		/// Recalculates roll-up estimations for all records under a specific project.
 		/// This is an on-demand operation that user can trigger manually.
 		/// PHASE 1: Used for Live Project hierarchy data
+		/// 
+		/// Uses optimized SQL Server stored procedure for superior performance and scalability.
+		/// The stored procedure uses CTE-based recursive query combined with set-based UPDATE,
+		/// leveraging SQL Server's built-in HierarchyId optimizations.
+		/// 
+		/// Single database roundtrip with minimal server load and memory usage.
 		/// </summary>
 		/// <param name="projectHierarchyRecordId">The ID of the Project hierarchy record to recalculate</param>
-		/// <returns>True if successful, False if operation timed out or failed</returns>
+		/// <returns>True if successful, False if operation failed</returns>
 		public async Task<bool> RecalculateProjectRollUpEstimationsAsync(Guid projectHierarchyRecordId)
 		{
+			if (projectHierarchyRecordId == Guid.Empty)
+			{
+				throw new ArgumentNullException(nameof(projectHierarchyRecordId));
+			}
+
+			// EXPLANATION: Check if record exists in ItemzHierarchy table
+			if (!_context.ItemzHierarchy!.AsNoTracking()
+							.Where(ih => ih.Id == projectHierarchyRecordId)
+							.Any())
+			{
+				throw new ArgumentException("Project hierarchy record not found", nameof(projectHierarchyRecordId));
+			}
+
 			try
 			{
-				var startTime = DateTime.UtcNow;
-
-				_logger.LogInformation($"Starting roll-up estimation recalculation for Project hierarchy record ID: {projectHierarchyRecordId}");
-
-				// Get the project hierarchy record
-				var projectRecord = await _context.ItemzHierarchy!
-					.FirstOrDefaultAsync(ih => ih.Id == projectHierarchyRecordId);
-
-				if (projectRecord == null)
+				var sqlParameters = new[]
 				{
-					_logger.LogWarning($"Project hierarchy record not found for ID: {projectHierarchyRecordId}");
-					return false;
-				}
-
-				// Get all descendants of this project record
-				var allProjectDescendants = await _context.ItemzHierarchy!
-					.AsNoTracking()
-					.Where(ih => ih.ItemzHierarchyId!.IsDescendantOf(projectRecord.ItemzHierarchyId!))
-					.OrderByDescending(ih => ih.ItemzHierarchyId!.GetLevel()) // Process from deepest to shallowest
-					.ToListAsync();
-
-				// PHASE 1: Calculate roll-ups from bottom to top
-				// This ensures child calculations are complete before parent calculations
-				foreach (var hierarchyRecord in allProjectDescendants)
-				{
-					// Check execution time to avoid long-running operations
-					if ((DateTime.UtcNow - startTime).TotalMilliseconds > MaxExecutionTimeMs)
+					new SqlParameter
 					{
-						_logger.LogWarning($"Roll-up estimation recalculation exceeded maximum execution time of {MaxExecutionTimeMs}ms for Project ID: {projectHierarchyRecordId}. Operation cancelled to prevent blocking.");
-						return false;
+						ParameterName = "ProjectHierarchyRecordId",
+						Value = projectHierarchyRecordId,
+						SqlDbType = System.Data.SqlDbType.UniqueIdentifier
 					}
+				};
 
-					// Calculate roll-up for this record
-					await RecalculateSingleRecordRollUpAsync(hierarchyRecord.Id);
-				}
+				// EXPLANATION:
+				// Matches your existing pattern for calling stored procedures.
+				// No OUTPUT parameter needed because your SP does not return one.
+				await _context.Database.ExecuteSqlRawAsync(
+					"EXEC userProcRecalculateProjectRollUpEstimations @ProjectHierarchyRecordId",
+					sqlParameters);
 
-				_logger.LogInformation($"Successfully completed roll-up estimation recalculation for Project hierarchy record ID: {projectHierarchyRecordId} in {(DateTime.UtcNow - startTime).TotalMilliseconds}ms");
 				return true;
+			}
+			catch (SqlException sqlEx)
+			{
+				_logger.LogError(
+					$"RecalculateProjectRollUpEstimationsAsync: SQL Exception occurred while recalculating roll-up estimations " +
+					$"for Project ID {projectHierarchyRecordId}: {sqlEx.Message}", sqlEx);
+
+				return false;
 			}
 			catch (Exception ex)
 			{
-				_logger.LogError($"Exception occurred while recalculating roll-up estimations for Project ID {projectHierarchyRecordId}: {ex.Message}", ex);
-				// PHASE 1: Gentle error handling - log error but don't crash the application
+				_logger.LogError(
+					$"RecalculateProjectRollUpEstimationsAsync: Exception occurred while recalculating roll-up estimations " +
+					$"for Project ID {projectHierarchyRecordId}: {ex.Message}", ex);
+
 				return false;
 			}
 		}
 
-		/// <summary>
-		/// Recalculates roll-up estimation for a single hierarchy record based on its children.
-		/// This is called after any change to a record's own estimation or hierarchy structure.
-		/// PHASE 1: Triggered by record updates (own estimation changes, record moved, etc.)
-		/// </summary>
-		/// <param name="hierarchyRecordId">The ID of the hierarchy record to recalculate</param>
-		/// <returns>True if successful, False otherwise</returns>
-		public async Task<bool> RecalculateSingleRecordRollUpAsync(Guid hierarchyRecordId)
-		{
-			try
-			{
-				var hierarchyRecord = await _context.ItemzHierarchy!
-					.FirstOrDefaultAsync(ih => ih.Id == hierarchyRecordId);
 
-				if (hierarchyRecord == null)
-				{
-					_logger.LogWarning($"Hierarchy record not found for ID: {hierarchyRecordId}");
-					return false;
-				}
+		///// <summary>
+		///// Recalculates roll-up estimation for a single hierarchy record based on its children.
+		///// This is called after any change to a record's own estimation or hierarchy structure.
+		///// PHASE 1: Triggered by record updates (own estimation changes, record moved, etc.)
+		///// </summary>
+		///// <param name="hierarchyRecordId">The ID of the hierarchy record to recalculate</param>
+		///// <returns>True if successful, False otherwise</returns>
+		//public async Task<bool> RecalculateSingleRecordRollUpAsync(Guid hierarchyRecordId)
+		//{
+		//	try
+		//	{
+		//		var hierarchyRecord = await _context.ItemzHierarchy!
+		//			.FirstOrDefaultAsync(ih => ih.Id == hierarchyRecordId);
 
-				// Calculate new roll-up value: own estimation + sum of all immediate children's rolled-up estimations
-				decimal newRolledUpEstimation = hierarchyRecord.OwnEstimation;
+		//		if (hierarchyRecord == null)
+		//		{
+		//			_logger.LogWarning($"Hierarchy record not found for ID: {hierarchyRecordId}");
+		//			return false;
+		//		}
 
-				// Get all immediate children
-				var immediateChildren = await _context.ItemzHierarchy!
-					.Where(ih => ih.ItemzHierarchyId!.GetAncestor(1) == hierarchyRecord.ItemzHierarchyId!)
-					.ToListAsync();
+		//		// Calculate new roll-up value: own estimation + sum of all immediate children's rolled-up estimations
+		//		decimal newRolledUpEstimation = hierarchyRecord.OwnEstimation;
 
-				// Add all children's rolled-up estimations to this record's roll-up
-				foreach (var child in immediateChildren)
-				{
-					newRolledUpEstimation += child.RolledUpEstimation;
-				}
+		//		// Get all immediate children
+		//		var immediateChildren = await _context.ItemzHierarchy!
+		//			.Where(ih => ih.ItemzHierarchyId!.GetAncestor(1) == hierarchyRecord.ItemzHierarchyId!)
+		//			.ToListAsync();
 
-				// Update the record if roll-up value changed
-				if (hierarchyRecord.RolledUpEstimation != newRolledUpEstimation)
-				{
-					hierarchyRecord.RolledUpEstimation = newRolledUpEstimation;
-					_context.ItemzHierarchy!.Update(hierarchyRecord);
-					await _context.SaveChangesAsync();
+		//		// Add all children's rolled-up estimations to this record's roll-up
+		//		foreach (var child in immediateChildren)
+		//		{
+		//			newRolledUpEstimation += child.RolledUpEstimation;
+		//		}
 
-					_logger.LogDebug($"Updated roll-up estimation for hierarchy record ID {hierarchyRecordId}. New value: {newRolledUpEstimation}");
-				}
+		//		// Update the record if roll-up value changed
+		//		if (hierarchyRecord.RolledUpEstimation != newRolledUpEstimation)
+		//		{
+		//			hierarchyRecord.RolledUpEstimation = newRolledUpEstimation;
+		//			_context.ItemzHierarchy!.Update(hierarchyRecord);
+		//			await _context.SaveChangesAsync();
 
-				return true;
-			}
-			catch (Exception ex)
-			{
-				_logger.LogError($"Exception occurred while recalculating roll-up for record ID {hierarchyRecordId}: {ex.Message}", ex);
-				return false;
-			}
-		}
+		//			_logger.LogDebug($"Updated roll-up estimation for hierarchy record ID {hierarchyRecordId}. New value: {newRolledUpEstimation}");
+		//		}
+
+		//		return true;
+		//	}
+		//	catch (Exception ex)
+		//	{
+		//		_logger.LogError($"Exception occurred while recalculating roll-up for record ID {hierarchyRecordId}: {ex.Message}", ex);
+		//		return false;
+		//	}
+		//}
+
 
 		/// <summary>
 		/// Sets estimation unit for all records in a project hierarchy.
@@ -193,15 +205,16 @@ namespace ItemzApp.API.Services
 			}
 		}
 
+
 		/// <summary>
-		/// Optimized method: Delta-based propagation
+		/// Optimized method: Delta-based propagation for single record updates
 		/// Used for: Single record updates (real-time)
+		/// This is used when a single record's estimation changes and we need to propagate the delta upward
 		/// </summary>
 		public async Task<bool> RecalculateSingleRecordRollUpOptimizedAsync(
 			Guid hierarchyRecordId,
 			decimal estimationDelta)
 		{
-
 			var startTime = DateTime.UtcNow;
 
 			try
@@ -220,7 +233,6 @@ namespace ItemzApp.API.Services
 
 				if (currentLevel == 1)
 				{
-
 					currentRecord.RolledUpEstimation += estimationDelta;
 					_context.ItemzHierarchy!.Update(currentRecord);
 					await _context.SaveChangesAsync();
@@ -772,7 +784,7 @@ namespace ItemzApp.API.Services
 
 		#endregion
 
-		#region Common helper method for hierarchy traversal and roll-up updates
+		#region Common helper methods for hierarchy traversal and roll-up updates
 
 		/// <summary>
 		/// Helper method: Deducts roll-up estimation value from a parent and traverses up the ancestor chain.
@@ -945,145 +957,5 @@ namespace ItemzApp.API.Services
 		}
 
 		#endregion
-
-
-		///// <summary>
-		///// Updates roll-up estimations when a hierarchy record is deleted.
-		///// This method implements a delta-based deduction approach to remove the deleted record's
-		///// estimation from the entire parent ancestor chain. Must be called AFTER the record has been successfully deleted.
-		///// 
-		///// Supports all record types: Itemz, ItemzType, and any other hierarchy record type.
-		///// 
-		///// Flow:
-		///// Step 1: Obtain the parent record and its rolled-up estimation value
-		///// Step 2: Deduct the deleted record's estimation from the parent
-		///// Step 3: Recursively deduct from entire ancestor chain up to Project level
-		///// 
-		///// PHASE 1: Non-fatal error handling - logs errors but doesn't fail the operation
-		///// </summary>
-		///// <param name="parentRecordId">The ID of the parent record of the deleted record</param>
-		///// <param name="deletedRecordRolledUpEstimation">The rolled-up estimation value of the deleted record (the delta to deduct)</param>
-		///// <returns>True if successful, False only if critical validation fails</returns>
-		//public async Task<bool> UpdateRollUpEstimationsForRecordDeletionAsync(
-		//	Guid parentRecordId,
-		//	decimal deletedRecordRolledUpEstimation)
-		//{
-		//	try
-		//	{
-		//		var startTime = DateTime.UtcNow;
-
-		//		_logger.LogInformation(
-		//			$"Starting roll-up estimation update for record deletion. " +
-		//			$"ParentRecordId: {parentRecordId}, " +
-		//			$"DeletedRecordEstimation: {deletedRecordRolledUpEstimation}");
-
-		//		// Early exit if no estimation to deduct
-		//		if (deletedRecordRolledUpEstimation == 0)
-		//		{
-		//			_logger.LogInformation(
-		//				$"Deleted record has zero estimation. " +
-		//				$"No roll-up estimation updates required.");
-		//			return true;
-		//		}
-
-		//		// Check execution time
-		//		if ((DateTime.UtcNow - startTime).TotalMilliseconds > MaxExecutionTimeMs)
-		//		{
-		//			_logger.LogWarning(
-		//				$"Roll-up estimation update for record deletion exceeded maximum execution time of {MaxExecutionTimeMs}ms. " +
-		//				$"Operation cancelled to prevent blocking.");
-		//			return false;
-		//		}
-
-		//		// STEP 1: Get the parent record
-		//		var parentRecord = await _context.ItemzHierarchy!
-		//			.FirstOrDefaultAsync(ih => ih.Id == parentRecordId);
-
-		//		if (parentRecord == null)
-		//		{
-		//			_logger.LogWarning($"Parent record not found for ID: {parentRecordId}");
-		//			return false;
-		//		}
-
-		//		_logger.LogDebug(
-		//			$"Step 1 - Retrieved parent record {parentRecordId} (Type: {parentRecord.RecordType}) " +
-		//			$"for deduction chain");
-
-		//		// STEP 2 & 3: Deduct from parent and its ancestry chain up to Project level
-		//		bool deductionSuccess = await DeductRollUpFromAncestryChainAsync(
-		//			parentRecord,
-		//			deletedRecordRolledUpEstimation,
-		//			startTime);
-
-		//		if (!deductionSuccess)
-		//		{
-		//			_logger.LogWarning(
-		//				$"Failed to deduct roll-up estimation from parent ancestry chain. " +
-		//				$"Parent: {parentRecordId}");
-		//			// Non-fatal error
-		//		}
-		//		else
-		//		{
-		//			_logger.LogDebug(
-		//				$"Successfully deducted {deletedRecordRolledUpEstimation} from parent ancestry chain");
-		//		}
-
-		//		_logger.LogInformation(
-		//			$"Successfully completed roll-up estimation update for record deletion. " +
-		//			$"ParentRecordId: {parentRecordId}, Delta: {deletedRecordRolledUpEstimation}, " +
-		//			$"Duration: {(DateTime.UtcNow - startTime).TotalMilliseconds}ms");
-
-		//		return true;
-		//	}
-		//	catch (Exception ex)
-		//	{
-		//		_logger.LogError(
-		//			$"Exception occurred while updating roll-up estimations for record deletion. " +
-		//			$"ParentRecordId: {parentRecordId}, DeletedRecordEstimation: {deletedRecordRolledUpEstimation}. " +
-		//			$"Exception: {ex.Message}",
-		//			ex);
-		//		// PHASE 1: Gentle error handling - log error but don't crash
-		//		return false;
-		//	}
-		//}
-
-		///// <summary>
-		///// Propagates delta through all ancestors (wrapper for optimized method)
-		///// Used for: Batch processing of hierarchy updates
-		///// </summary>
-		//public async Task<bool> PropagateEstimationDeltaToAncestorsAsync(Guid recordId, decimal delta)
-		//{
-		//	try
-		//	{
-		//		var currentRecord = await _context.ItemzHierarchy!
-		//			.FirstOrDefaultAsync(ih => ih.Id == recordId);
-
-		//		if (currentRecord == null || currentRecord.ItemzHierarchyId == null)
-		//		{
-		//			_logger.LogWarning($"Record not found for ID: {recordId}");
-		//			return false;
-		//		}
-
-		//		// Get parent and start propagation
-		//		var parentHierarchyId = currentRecord.ItemzHierarchyId.GetAncestor(1);
-		//		if (parentHierarchyId != null)
-		//		{
-		//			var parentRecord = await _context.ItemzHierarchy!
-		//				.FirstOrDefaultAsync(ih => ih.ItemzHierarchyId == parentHierarchyId);
-
-		//			if (parentRecord != null)
-		//			{
-		//				return await RecalculateSingleRecordRollUpOptimizedAsync(parentRecord.Id, delta);
-		//			}
-		//		}
-
-		//		return true;
-		//	}
-		//	catch (Exception ex)
-		//	{
-		//		_logger.LogError($"Exception in PropagateEstimationDeltaToAncestorsAsync: {ex.Message}", ex);
-		//		return false;
-		//	}
-		//}
 	}
 }
