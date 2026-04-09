@@ -39,6 +39,7 @@
 	  <None Remove="DbContexts\UserStoredProcedure\userProcCreateBaselineByProjectID_202511051626.sql" />
 	  <None Remove="DbContexts\UserStoredProcedure\userProcCreateBaselineByProjectID_202512251819.sql" />
 	  <None Remove="DbContexts\UserStoredProcedure\userProcCreateBaselineByProjectID_202603061820.sql" />
+	  <None Remove="DbContexts\UserStoredProcedure\userProcRecalculateProjectRollUpEstimations_202604091450.sql" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -67,6 +68,7 @@
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcDeleteItemzHierarchyRecordsByItemzTypeId_202412091028.sql" />
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcDeleteItemzHierarchyRecordsByProjectId_202412090713.sql" />
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcDeleteSingleItemzByItemzID_202406081944.sql" />
+		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcRecalculateProjectRollUpEstimations_202604091450.sql" />
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcUpdateBaselineItemz_202408060015.sql" />
 		<EmbeddedResource Include="Schemas\OpenRose.Export.schema.1.0.json" />
 	</ItemGroup>
