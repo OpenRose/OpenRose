@@ -447,13 +447,13 @@ namespace ItemzApp.API.Controllers
                 _mapper.Map<GetItemzDTO>(itemzEntity) // Converting to DTO as this is going out to the consumer
                 );
         }
-
 		/// <summary>
 		/// Used for moving Itemz record between two existing Itemz records
 		/// </summary>
 		/// <param name="movingItemzId">Source moving Itemz ID that will be moved to new location</param>
 		/// <param name="firstItemzId">Used as first Itemz for moving Itemz between existing two Itemz</param>
 		/// <param name="secondItemzId">Used as second Itemz for moving Itemz between existing two Itemz</param>
+		/// <param name="estimationRollupService">Service for updating roll-up estimations after move</param>
 		/// <returns>No Content</returns>
 		/// <response code="204">No Content</response>
 		/// <response code="404">Expected moving OR target between Itemz could not found</response>
@@ -465,7 +465,7 @@ namespace ItemzApp.API.Controllers
 			[FromQuery, BindRequired] Guid movingItemzId,
 			[FromQuery, BindRequired] Guid firstItemzId,
 			[FromQuery, BindRequired] Guid secondItemzId,
-			[FromServices] ItemzHierarchyTriggerService itemzHierarchyTriggerService = null)
+			[FromServices] EstimationRollupService estimationRollupService = null)
 		{
 			if (movingItemzId == Guid.Empty)
 			{
@@ -562,31 +562,39 @@ namespace ItemzApp.API.Controllers
 				Guid movedItemzHierarchyRecordId = movedHierarchyRecord?.Id ?? Guid.Empty;
 
 				// PHASE 1: Determine the current (new) parent after the move
-				//Guid currentParentHierarchyId = Guid.Empty;
-				//if (movedHierarchyRecord != null && movedHierarchyRecord.ItemzHierarchyId != null)
-				//{
-				//	// Get the parent HierarchyId by going up one level
-				//	var currentParentHierarchyIdPath = movedHierarchyRecord.ItemzHierarchyId.GetAncestor(1);
-
-				//	if (currentParentHierarchyIdPath != null)
-				//	{
-				//		var currentParentRecord = await _hierarchyRepository.GetHierarchyRecordDetailsByHierarchyIdPath(currentParentHierarchyIdPath);
-				//		if (currentParentRecord != null)
-				//		{
-				//			currentParentHierarchyId = currentParentRecord.RecordId;
-				//		}
-				//	}
-				//}
-
-				// After successful move, trigger roll-up estimation update for moved Itemz
-				if (movedItemzHierarchyRecordId != Guid.Empty && itemzHierarchyTriggerService != null)
+				// When moving between existing Itemz records, the parent is the parent of those Itemz
+				Guid currentParentHierarchyId = previousParentHierarchyId; // Same parent when moving between siblings
+				if (movedHierarchyRecord != null && movedHierarchyRecord.ItemzHierarchyId != null)
 				{
+					// Verify current parent by getting it from the moved record's hierarchy path
+					var currentParentHierarchyIdPath = movedHierarchyRecord.ItemzHierarchyId.GetAncestor(1);
 
-					var triggerResult = await itemzHierarchyTriggerService.OnHierarchyRecordMovedAsync(
+					if (currentParentHierarchyIdPath != null)
+					{
+						var currentParentRecord = await _hierarchyRepository.GetHierarchyRecordDetailsByHierarchyIdPath(currentParentHierarchyIdPath);
+						if (currentParentRecord != null)
+						{
+							currentParentHierarchyId = currentParentRecord.RecordId;
+						}
+					}
+				}
+
+				// PHASE 1: After successful move, trigger roll-up estimation update for moved Itemz
+				if (movedItemzHierarchyRecordId != Guid.Empty && estimationRollupService != null)
+				{
+					_logger.LogInformation(
+						"Invoking roll-up estimation update after Itemz move between existing Itemz. " +
+						"MovingItemz: {movingItemzId}, PreviousParent: {previousParentHierarchyId}, CurrentParent: {currentParentHierarchyId}",
+						movingItemzId,
+						previousParentHierarchyId,
+						currentParentHierarchyId);
+
+					var rollupResult = await estimationRollupService.UpdateRollUpEstimationsForRecordMoveAsync(
 						movedItemzHierarchyRecordId,
-						previousParentHierarchyId);
+						previousParentHierarchyId,
+						currentParentHierarchyId);
 
-					if (!triggerResult)
+					if (!rollupResult)
 					{
 						_logger.LogWarning(
 							"Roll-up estimation update failed for moved Itemz ID {movingItemzId} " +
@@ -890,25 +898,17 @@ namespace ItemzApp.API.Controllers
 		/// <summary>
 		/// Move Itemz and it's sub-Itemz to a new location in the repository
 		/// </summary>
-		/// <param name="MovingItemzId">GUID representing an unique ID of the moving Itemz</param>
-		/// <param name="TargetId">Details about target ID under which Itemz will be moving</param>
-		/// <param name="AtBottomOfChildNodes">Boolean value where by true means at the bottom of the existing nodes and false means at the top</param>
-		/// <returns>No contents are returned when Itemz gets moved to its new desired location</returns>
-		/// <response code="200">Itemz to Parent Itemz association was either found or added successfully</response>
-		/// <response code="204">No content are returned but status of 204 indicating that Itemz has successfully moved to its desired location</response>
-		/// <response code="404">Either Itemz or ItemzType was not found</response>
 		[HttpPost("{MovingItemzId}", Name = "__POST_Move_Itemz__")]
-		[ProducesResponseType(StatusCodes.Status200OK)]
 		[ProducesResponseType(StatusCodes.Status204NoContent)]
 		[ProducesResponseType(StatusCodes.Status404NotFound)]
 		[ProducesDefaultResponseType]
 		public async Task<ActionResult> MoveItemzAsync(
-			[FromRoute] Guid MovingItemzId
-			, [FromQuery, BindRequired] Guid TargetId
-			, [FromQuery] bool AtBottomOfChildNodes = true
-			, [FromServices] ItemzHierarchyTriggerService itemzHierarchyTriggerService = null)
+			[FromRoute] Guid MovingItemzId,
+			[FromQuery, BindRequired] Guid TargetId,
+			[FromQuery] bool AtBottomOfChildNodes = true,
+			[FromServices] EstimationRollupService estimationRollupService = null)
 		{
-			if (!(await _itemzRepository.ItemzExistsAsync(MovingItemzId)))// Check if Itemz exists
+			if (!(await _itemzRepository.ItemzExistsAsync(MovingItemzId)))
 			{
 				_logger.LogDebug("{FormattedControllerAndActionNames}Itemz for ID {MovingItemzId} could not be found",
 					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
@@ -916,10 +916,7 @@ namespace ItemzApp.API.Controllers
 				return NotFound();
 			}
 
-			// TODO :: WE HAVE TO ALSO CHECK IN THE HIERARCHY TABLE IF TARGET EXISTITS OTHERWISE THERE IS NO
-			// POINT IN MOVING ITEMZ UNDER AN ORPHANED ITEMZ.
-
-			if (!((await _itemzRepository.ItemzTypeExistsAsync(TargetId)) || (await _itemzRepository.ItemzExistsAsync(TargetId))))  // Check if Target ItemzType or Itemz Exists
+			if (!((await _itemzRepository.ItemzTypeExistsAsync(TargetId)) || (await _itemzRepository.ItemzExistsAsync(TargetId))))
 			{
 				_logger.LogDebug("{FormattedControllerAndActionNames}Target ID {TargetId} could not be found for either 'ItemzType' or 'Itemz'",
 					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
@@ -929,18 +926,15 @@ namespace ItemzApp.API.Controllers
 
 			try
 			{
-				// PHASE 1: Capture the previous parent hierarchy record ID before the move
+				// Capture the previous parent hierarchy record ID before the move
 				Guid previousParentHierarchyId = Guid.Empty;
 				var movingHierarchyRecord = await _hierarchyRepository.GetHierarchyRecordForUpdateAsync(MovingItemzId);
 
 				if (movingHierarchyRecord != null && movingHierarchyRecord.ItemzHierarchyId != null)
 				{
-					// Get the parent HierarchyId by going up one level
 					var previousParentHierarchyIdPath = movingHierarchyRecord.ItemzHierarchyId.GetAncestor(1);
-
 					if (previousParentHierarchyIdPath != null)
 					{
-						// PHASE 1: Use repository method to get parent record details
 						var previousParentRecord = await _hierarchyRepository.GetHierarchyRecordDetailsByHierarchyIdPath(previousParentHierarchyIdPath);
 						if (previousParentRecord != null)
 						{
@@ -949,7 +943,7 @@ namespace ItemzApp.API.Controllers
 					}
 				}
 
-				// PHASE 1: Perform the actual move and capture the hierarchy record ID
+				// Perform the actual move
 				var movingItemzHierarchyRecordId = await _itemzRepository.MoveItemzHierarchyAsync(
 					MovingItemzId,
 					TargetId,
@@ -957,17 +951,37 @@ namespace ItemzApp.API.Controllers
 
 				await _itemzRepository.SaveAsync();
 
-				// PHASE 1 TRIGGER: After successful save, trigger roll-up recalculation for moved Itemz
-				if (movingItemzHierarchyRecordId != Guid.Empty && itemzHierarchyTriggerService != null)
+				// Get the current (new) parent after move
+				Guid currentParentHierarchyId = Guid.Empty;
+				if (movingItemzHierarchyRecordId != Guid.Empty)
 				{
-					_logger.LogInformation("Invoking OnHierarchyRecordMovedAsync after Itemz move");
-					var triggerResult = await itemzHierarchyTriggerService.OnHierarchyRecordMovedAsync(
-						movingItemzHierarchyRecordId,
-						previousParentHierarchyId);
-
-					if (!triggerResult)
+					var movedHierarchyRecord = await _hierarchyRepository.GetHierarchyRecordForUpdateAsync(MovingItemzId);
+					if (movedHierarchyRecord != null && movedHierarchyRecord.ItemzHierarchyId != null)
 					{
-						_logger.LogWarning("Roll-up recalculation failed for moved Itemz ID {MovingItemzId}",
+						var currentParentHierarchyIdPath = movedHierarchyRecord.ItemzHierarchyId.GetAncestor(1);
+						if (currentParentHierarchyIdPath != null)
+						{
+							var currentParentRecord = await _hierarchyRepository.GetHierarchyRecordDetailsByHierarchyIdPath(currentParentHierarchyIdPath);
+							if (currentParentRecord != null)
+							{
+								currentParentHierarchyId = currentParentRecord.RecordId;
+							}
+						}
+					}
+				}
+
+				// After successful save, trigger roll-up estimation update
+				if (movingItemzHierarchyRecordId != Guid.Empty && estimationRollupService != null)
+				{
+					_logger.LogInformation("Invoking roll-up estimation update after Itemz move");
+					var rollupResult = await estimationRollupService.UpdateRollUpEstimationsForRecordMoveAsync(
+						movingItemzHierarchyRecordId,
+						previousParentHierarchyId,
+						currentParentHierarchyId);
+
+					if (!rollupResult)
+					{
+						_logger.LogWarning("Roll-up estimation update failed for moved Itemz ID {MovingItemzId}",
 							MovingItemzId);
 					}
 				}
@@ -988,17 +1002,13 @@ namespace ItemzApp.API.Controllers
 		/// <summary>
 		/// Deleting a specific Itemz
 		/// </summary>
-		/// <param name="itemzId">GUID representing an unique ID of the Itemz that you want to get</param>
-		/// <param name="itemzHierarchyTriggerService">Service for triggering roll-up estimation updates</param>
-		/// <returns>Status code 204 is returned without any content indicating that deletion of the specified Itemz was successful</returns>
-		/// <response code="404">Itemz based on itemzId was not found</response>
 		[HttpDelete("{itemzId}", Name = "__DELETE_Itemz_By_GUID_ID__")]
 		[ProducesResponseType(StatusCodes.Status204NoContent)]
 		[ProducesResponseType(StatusCodes.Status404NotFound)]
 		[ProducesDefaultResponseType]
 		public async Task<ActionResult> DeleteItemzAsync(
 			Guid itemzId,
-			[FromServices] ItemzHierarchyTriggerService itemzHierarchyTriggerService = null)
+			[FromServices] EstimationRollupService estimationRollupService = null)
 		{
 			if (!(await _itemzRepository.ItemzExistsAsync(itemzId)))
 			{
@@ -1010,22 +1020,19 @@ namespace ItemzApp.API.Controllers
 
 			try
 			{
-				// PHASE 1: Before deletion, capture the parent hierarchy record ID and deleted record's rolled-up estimation
-				Guid parentHierarchyRecordId = Guid.Empty;
+				// Capture deleted record's rolled-up estimation and parent before deletion
 				decimal deletedRecordRolledUpEstimation = 0;
+				Guid parentHierarchyRecordId = Guid.Empty;
+
 				var hierarchyRecordToDelete = await _hierarchyRepository.GetHierarchyRecordForUpdateAsync(itemzId);
 
 				if (hierarchyRecordToDelete != null && hierarchyRecordToDelete.ItemzHierarchyId != null)
 				{
-					// Capture the deleted record's rolled-up estimation for later deduction from parent chain
 					deletedRecordRolledUpEstimation = hierarchyRecordToDelete.RolledUpEstimation;
 
-					// Get the parent HierarchyId by going up one level
 					var parentHierarchyIdPath = hierarchyRecordToDelete.ItemzHierarchyId.GetAncestor(1);
-
 					if (parentHierarchyIdPath != null)
 					{
-						// PHASE 1: Use repository method to get parent record details
 						var parentRecord = await _hierarchyRepository.GetHierarchyRecordDetailsByHierarchyIdPath(parentHierarchyIdPath);
 						if (parentRecord != null)
 						{
@@ -1034,39 +1041,21 @@ namespace ItemzApp.API.Controllers
 					}
 				}
 
-				// Proceed with deletion via stored procedure
-				// NOTE: No SaveAsync() needed here because stored procedure executes immediately
+				// Proceed with deletion
 				await _itemzRepository.DeleteItemzAsync(itemzId);
 
-				// PHASE 1 TRIGGER: After successful deletion, trigger roll-up recalculation on parent
-				if (parentHierarchyRecordId != Guid.Empty && itemzHierarchyTriggerService != null)
+				// After successful deletion, trigger roll-up estimation update
+				if (parentHierarchyRecordId != Guid.Empty && estimationRollupService != null)
 				{
-					_logger.LogInformation(
-						"PHASE 1 TRIGGER: Invoking OnHierarchyRecordDeletedAsync after Itemz deletion. " +
-						"DeletedItemz: {ItemzId}, ParentId: {ParentId}, EstimationDelta: {EstimationDelta}",
-						itemzId,
+					_logger.LogInformation("Invoking roll-up estimation update after Itemz deletion");
+					var rollupResult = await estimationRollupService.UpdateRollUpEstimationsForRecordDeletionAsync(
 						parentHierarchyRecordId,
 						deletedRecordRolledUpEstimation);
 
-					var triggerResult = await itemzHierarchyTriggerService.OnHierarchyRecordDeletedAsync(
-						deletedRecordRolledUpEstimation,
-						parentHierarchyRecordId);
-
-					if (!triggerResult)
+					if (!rollupResult)
 					{
-						_logger.LogWarning(
-							"PHASE 1 TRIGGER: Roll-up estimation update failed after Itemz deletion. " +
-							"DeletedItemz: {ItemzId}, EstimationDelta: {EstimationDelta}",
-							itemzId,
-							deletedRecordRolledUpEstimation);
+						_logger.LogWarning("Roll-up estimation update failed after Itemz deletion");
 					}
-				}
-				else if (parentHierarchyRecordId == Guid.Empty)
-				{
-					_logger.LogInformation(
-						"PHASE 1 TRIGGER: Deleted Itemz {ItemzId} was orphaned (not in hierarchy). " +
-						"No roll-up estimation updates required.",
-						itemzId);
 				}
 			}
 			catch (Exception ex)
@@ -1109,12 +1098,6 @@ namespace ItemzApp.API.Controllers
 		/// <summary>
 		/// Copy Itemz including all it's child Itemz
 		/// </summary>
-		/// <param name="copyItemzDTO">Contains the source Itemz ID to copy</param>
-		/// <param name="itemzHierarchyTriggerService">Service to trigger roll-up recalculation</param>
-		/// <returns>Newly created Itemz property details</returns>		
-		/// <response code="201">Returns newly created itemz property details</response>
-		/// <response code="404">Expected source Itemz with ID was not found in the repository</response>
-		/// <response code="409">Conflicts encountered while creating a copy from existing Itemz</response>
 		[HttpPost("CopyItemz", Name = "__Copy_Itemz_By_GUID_ID__")]
 		[ProducesResponseType(StatusCodes.Status201Created)]
 		[ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -1122,7 +1105,7 @@ namespace ItemzApp.API.Controllers
 		[ProducesDefaultResponseType]
 		public async Task<ActionResult<GetItemzDTO>> CopyItemzAsync(
 			CopyItemzDTO copyItemzDTO,
-			[FromServices] ItemzHierarchyTriggerService itemzHierarchyTriggerService = null)
+			[FromServices] EstimationRollupService estimationRollupService = null)
 		{
 			if (!(await _itemzRepository.ItemzExistsAsync(copyItemzDTO.ItemzId)))
 			{
@@ -1137,27 +1120,15 @@ namespace ItemzApp.API.Controllers
 
 			try
 			{
-				// EXPLANATION: Because copy is created via User Defined Stored Procedure,
-				// We therefor do not call SaveAsync() method on the _itemzRepository. 
-
 				newlyCopiedItemzId = await _itemzRepository.CopyItemzAsync(copyItemzDTO.ItemzId);
 
-				// PHASE 1: After copy is created, get the hierarchy record ID of the newly copied Itemz
+				// After copy is created, get the hierarchy record ID of the newly copied Itemz
 				if (newlyCopiedItemzId != Guid.Empty)
 				{
 					var copiedHierarchyRecord = await _hierarchyRepository.GetHierarchyRecordForUpdateAsync(newlyCopiedItemzId);
 					if (copiedHierarchyRecord != null)
 					{
 						copiedItemzHierarchyRecordId = copiedHierarchyRecord.Id;
-
-						_logger.LogDebug(
-							"{FormattedControllerAndActionNames}Retrieved hierarchy record for newly copied Itemz. " +
-							"CopiedItemzId: {newlyCopiedItemzId}, HierarchyRecordId: {copiedItemzHierarchyRecordId}, " +
-							"RolledUpEstimation: {rolledUpEstimation}",
-							ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-							newlyCopiedItemzId,
-							copiedItemzHierarchyRecordId,
-							copiedHierarchyRecord.RolledUpEstimation);
 					}
 				}
 			}
@@ -1179,37 +1150,21 @@ namespace ItemzApp.API.Controllers
 				newlyCopiedItemzId,
 				copyItemzDTO.ItemzId);
 
-			// PHASE 1 TRIGGER: After successful copy, trigger roll-up estimation update for copied Itemz
-			if (copiedItemzHierarchyRecordId != Guid.Empty && itemzHierarchyTriggerService != null)
+			// After successful copy, trigger roll-up estimation update
+			if (copiedItemzHierarchyRecordId != Guid.Empty && estimationRollupService != null)
 			{
-				_logger.LogInformation(
-					"PHASE 1 TRIGGER: Invoking OnHierarchyRecordCopiedAsync after Itemz copy. " +
-					"CopiedItemz: {newlyCopiedItemzId}, HierarchyRecordId: {copiedItemzHierarchyRecordId}",
-					newlyCopiedItemzId,
-					copiedItemzHierarchyRecordId);
+				_logger.LogInformation("Invoking roll-up estimation update after Itemz copy");
+				var rollupResult = await estimationRollupService.UpdateRollUpEstimationsForRecordCopyAsync(copiedItemzHierarchyRecordId);
 
-				var triggerResult = await itemzHierarchyTriggerService.OnHierarchyRecordCopiedAsync(copiedItemzHierarchyRecordId);
-				if (!triggerResult)
+				if (!rollupResult)
 				{
-					_logger.LogWarning(
-						"PHASE 1 TRIGGER: Roll-up estimation update failed for copied Itemz ID {copiedItemzHierarchyRecordId}",
+					_logger.LogWarning("Roll-up estimation update failed for copied Itemz ID {copiedItemzHierarchyRecordId}",
 						copiedItemzHierarchyRecordId);
 				}
 			}
-			else if (copiedItemzHierarchyRecordId == Guid.Empty)
-			{
-				_logger.LogInformation(
-					"PHASE 1 TRIGGER: Copied Itemz {newlyCopiedItemzId} was not added to hierarchy. " +
-					"No roll-up estimation updates required.",
-					newlyCopiedItemzId);
-			}
-
-			// EXPLANATION: Because we are creating new Itemz by copying existing Itemz by using custom user defined stored procedure
-			// we do not have access to the underlying Entity. That's why we have to call _itemzRepository.GetItemzAsync
-			// and then use Automapper to convert it into DTO that is returned back to the user of the API.
 
 			return CreatedAtRoute("__Single_Itemz_By_GUID_ID__", new { ItemzId = newlyCopiedItemzId },
-				 _mapper.Map<GetItemzDTO>(await _itemzRepository.GetItemzAsync(newlyCopiedItemzId)) // Converting to DTO as this is going out to the consumer 
+				 _mapper.Map<GetItemzDTO>(await _itemzRepository.GetItemzAsync(newlyCopiedItemzId))
 				);
 		}
 

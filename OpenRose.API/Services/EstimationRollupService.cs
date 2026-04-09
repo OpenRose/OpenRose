@@ -294,8 +294,10 @@ namespace ItemzApp.API.Services
 		/// and adding to the new ancestor chain. Must be called AFTER the record has been successfully moved
 		/// in the hierarchy structure.
 		/// 
+		/// Enhanced with comprehensive validation and logging for direct controller calls.
+		/// 
 		/// Flow:
-		/// Step 0: Early exit if current parent equals target parent (no changes needed)
+		/// Step 0: Validate inputs and check if parents are the same (no update needed)
 		/// Step 1: Obtain the moving record's existing rolled-up estimation value (trust existing value)
 		/// Step 2: Identify the moving record's current (old) parent
 		/// Step 3: Deduct rolled-up estimation from old parent and entire ancestor chain up to Project level
@@ -304,30 +306,66 @@ namespace ItemzApp.API.Services
 		/// PHASE 1: Non-fatal error handling - logs errors but doesn't fail the operation
 		/// </summary>
 		/// <param name="movingRecordId">The ID of the record that has been moved</param>
-		/// <param name="currentParentId">The ID of the current (old) parent before the move</param>
-		/// <param name="targetParentId">The ID of the target (new) parent after the move</param>
+		/// <param name="previousParentId">The ID of the previous parent (old parent before move)</param>
+		/// <param name="currentParentId">The ID of the current parent (new parent after move)</param>
 		/// <returns>True if successful or if move is within same parent, False only if critical validation fails</returns>
 		public async Task<bool> UpdateRollUpEstimationsForRecordMoveAsync(
 			Guid movingRecordId,
-			Guid currentParentId,
-			Guid targetParentId)
+			Guid previousParentId,
+			Guid currentParentId)
 		{
 			try
 			{
 				var startTime = DateTime.UtcNow;
 
+				// STEP 0: Validate inputs
+				if (movingRecordId == Guid.Empty)
+				{
+					_logger.LogWarning("UpdateRollUpEstimationsForRecordMoveAsync: Moving record ID is empty");
+					return false;
+				}
+
+				if (previousParentId == Guid.Empty)
+				{
+					_logger.LogWarning(
+						$"UpdateRollUpEstimationsForRecordMoveAsync: Previous parent ID is empty for moving record {movingRecordId}. " +
+						$"Skipping roll-up updates.");
+					return true; // Not an error - record may have been orphaned before
+				}
+
+				if (currentParentId == Guid.Empty)
+				{
+					_logger.LogWarning(
+						$"UpdateRollUpEstimationsForRecordMoveAsync: Current parent ID is empty for moving record {movingRecordId}. " +
+						$"Record may have become orphaned.");
+					return true; // Not an error - moved to orphan state
+				}
+
 				_logger.LogInformation(
-					$"Starting roll-up estimation update for record move. " +
-					$"MovingRecordId: {movingRecordId}, " +
-					$"CurrentParentId: {currentParentId}, " +
-					$"TargetParentId: {targetParentId}");
+					$"UpdateRollUpEstimationsForRecordMoveAsync: Starting roll-up estimation update for record move. " +
+					$"MovingRecordId: {movingRecordId}, PreviousParentId: {previousParentId}, CurrentParentId: {currentParentId}");
+
+				// Verify moving record exists
+				var movingRecord = await _context.ItemzHierarchy!
+					.FirstOrDefaultAsync(ih => ih.Id == movingRecordId);
+
+				if (movingRecord == null)
+				{
+					_logger.LogWarning(
+						$"UpdateRollUpEstimationsForRecordMoveAsync: Moving record not found for ID: {movingRecordId}");
+					return false;
+				}
+
+				_logger.LogDebug(
+					$"UpdateRollUpEstimationsForRecordMoveAsync: Moving record found. Type: {movingRecord.RecordType}, " +
+					$"RolledUpEstimation: {movingRecord.RolledUpEstimation}");
 
 				// STEP 0: Early exit if moving to same parent (Scenario 1)
-				if (currentParentId == targetParentId)
+				if (previousParentId == currentParentId)
 				{
 					_logger.LogInformation(
-						$"Record {movingRecordId} moving to same parent {targetParentId}. " +
-						$"No roll-up estimation updates required (Scenario 1).");
+						$"UpdateRollUpEstimationsForRecordMoveAsync: Record {movingRecordId} moving to same parent {currentParentId}. " +
+						$"No roll-up estimation updates required (Scenario 1 - Same Parent).");
 					return true;
 				}
 
@@ -335,112 +373,113 @@ namespace ItemzApp.API.Services
 				if ((DateTime.UtcNow - startTime).TotalMilliseconds > MaxExecutionTimeMs)
 				{
 					_logger.LogWarning(
-						$"Roll-up estimation update for record move exceeded maximum execution time of {MaxExecutionTimeMs}ms. " +
+						$"UpdateRollUpEstimationsForRecordMoveAsync: Operation exceeded maximum execution time of {MaxExecutionTimeMs}ms. " +
 						$"Operation cancelled to prevent blocking.");
 					return false;
 				}
 
 				// STEP 1: Get the moving record and obtain its rolled-up estimation value
-				var movingRecord = await _context.ItemzHierarchy!
-					.FirstOrDefaultAsync(ih => ih.Id == movingRecordId);
-
-				if (movingRecord == null)
-				{
-					_logger.LogWarning($"Moving record not found for ID: {movingRecordId}");
-					return false;
-				}
-
 				decimal rolledUpEstimationDelta = movingRecord.RolledUpEstimation;
 
 				_logger.LogDebug(
-					$"Step 1 - Retrieved moving record {movingRecordId} with rolled-up estimation: {rolledUpEstimationDelta}");
+					$"UpdateRollUpEstimationsForRecordMoveAsync: Step 1 - Retrieved moving record {movingRecordId} " +
+					$"with rolled-up estimation: {rolledUpEstimationDelta}");
 
-				//// Check execution time
-				//if ((DateTime.UtcNow - startTime).TotalMilliseconds > MaxExecutionTimeMs)
-				//{
-				//	_logger.LogWarning($"Operation exceeded maximum execution time during record retrieval.");
-				//	return false;
-				//}
+				// Early exit if no estimation to move
+				if (rolledUpEstimationDelta == 0)
+				{
+					_logger.LogInformation(
+						$"UpdateRollUpEstimationsForRecordMoveAsync: Moving record {movingRecordId} has zero estimation. " +
+						$"No roll-up updates required.");
+					return true;
+				}
 
 				// STEP 2: Get current (old) parent record
-				var currentParent = await _context.ItemzHierarchy!
-					.FirstOrDefaultAsync(ih => ih.Id == currentParentId);
+				var previousParent = await _context.ItemzHierarchy!
+					.FirstOrDefaultAsync(ih => ih.Id == previousParentId);
 
-				if (currentParent == null)
+				if (previousParent == null)
 				{
-					_logger.LogWarning($"Current parent record not found for ID: {currentParentId}. Skipping deduction phase.");
+					_logger.LogWarning(
+						$"UpdateRollUpEstimationsForRecordMoveAsync: Previous parent record not found for ID: {previousParentId}. " +
+						$"Skipping deduction phase.");
 					// Non-fatal: continue to addition phase
 				}
 				else
 				{
 					_logger.LogDebug(
-						$"Step 2 - Current parent: Id={currentParentId}, Type={currentParent.RecordType}, " +
-						$"Level={currentParent.ItemzHierarchyId!.GetLevel()}");
+						$"UpdateRollUpEstimationsForRecordMoveAsync: Step 2 - Previous parent: Id={previousParentId}, " +
+						$"Type={previousParent.RecordType}, Level={previousParent.ItemzHierarchyId!.GetLevel()}");
 
-					// STEP 3: Deduct from current parent and its ancestry chain up to Project level
+					// STEP 3: Deduct from previous parent and its ancestry chain up to Project level
 					bool deductionSuccess = await DeductRollUpFromAncestryChainAsync(
-						currentParent,
+						previousParent,
 						rolledUpEstimationDelta,
 						startTime);
 
 					if (!deductionSuccess)
 					{
 						_logger.LogWarning(
-							$"Step 3 - Failed to deduct roll-up estimation from current parent ancestry chain. " +
+							$"UpdateRollUpEstimationsForRecordMoveAsync: Failed to deduct roll-up estimation from previous parent ancestry chain. " +
 							$"Continuing with addition phase...");
 						// Non-fatal error - continue to addition phase
 					}
 					else
 					{
 						_logger.LogDebug(
-							$"Step 3 - Successfully deducted {rolledUpEstimationDelta} from current parent ancestry chain");
+							$"UpdateRollUpEstimationsForRecordMoveAsync: Step 3 - Successfully deducted {rolledUpEstimationDelta} " +
+							$"from previous parent ancestry chain");
 					}
 				}
 
-				//// Check execution time
-				//if ((DateTime.UtcNow - startTime).TotalMilliseconds > MaxExecutionTimeMs)
-				//{
-				//	_logger.LogWarning($"Operation exceeded maximum execution time during deduction phase.");
-				//	return false;
-				//}
-
-				// STEP 4: Get target (new) parent record
-				var targetParent = await _context.ItemzHierarchy!
-					.FirstOrDefaultAsync(ih => ih.Id == targetParentId);
-
-				if (targetParent == null)
+				// Check execution time
+				if ((DateTime.UtcNow - startTime).TotalMilliseconds > MaxExecutionTimeMs)
 				{
-					_logger.LogWarning($"Target parent record not found for ID: {targetParentId}. Skipping addition phase.");
+					_logger.LogWarning(
+						$"UpdateRollUpEstimationsForRecordMoveAsync: Operation exceeded maximum execution time during deduction phase.");
+					return false;
+				}
+
+				// STEP 4: Get current (new) parent record
+				var currentParent = await _context.ItemzHierarchy!
+					.FirstOrDefaultAsync(ih => ih.Id == currentParentId);
+
+				if (currentParent == null)
+				{
+					_logger.LogWarning(
+						$"UpdateRollUpEstimationsForRecordMoveAsync: Current parent record not found for ID: {currentParentId}. " +
+						$"Skipping addition phase.");
 					// Non-fatal: at least deduction was performed
 					return true;
 				}
 
 				_logger.LogDebug(
-					$"Step 4 - Target parent: Id={targetParentId}, Type={targetParent.RecordType}, " +
-					$"Level={targetParent.ItemzHierarchyId!.GetLevel()}");
+					$"UpdateRollUpEstimationsForRecordMoveAsync: Step 4 - Current parent: Id={currentParentId}, " +
+					$"Type={currentParent.RecordType}, Level={currentParent.ItemzHierarchyId!.GetLevel()}");
 
-				// Add to target parent and its ancestry chain up to Project level
+				// Add to current parent and its ancestry chain up to Project level
 				bool additionSuccess = await AddRollUpToAncestryChainAsync(
-					targetParent,
+					currentParent,
 					rolledUpEstimationDelta,
 					startTime);
 
 				if (!additionSuccess)
 				{
 					_logger.LogWarning(
-						$"Step 4 - Failed to add roll-up estimation to target parent ancestry chain.");
+						$"UpdateRollUpEstimationsForRecordMoveAsync: Failed to add roll-up estimation to current parent ancestry chain.");
 					// Non-fatal error - operation still considered successful
 				}
 				else
 				{
 					_logger.LogDebug(
-						$"Step 4 - Successfully added {rolledUpEstimationDelta} to target parent ancestry chain");
+						$"UpdateRollUpEstimationsForRecordMoveAsync: Step 4 - Successfully added {rolledUpEstimationDelta} " +
+						$"to current parent ancestry chain");
 				}
 
 				_logger.LogInformation(
-					$"Successfully completed roll-up estimation update for record move. " +
-					$"RecordId: {movingRecordId}, Delta: {rolledUpEstimationDelta}, " +
-					$"Duration: {(DateTime.UtcNow - startTime).TotalMilliseconds}ms. " +
+					$"UpdateRollUpEstimationsForRecordMoveAsync: Successfully completed roll-up estimation update for record move. " +
+					$"RecordId: {movingRecordId} (Type: {movingRecord.RecordType}), Delta: {rolledUpEstimationDelta}, " +
+					$"Duration: {(DateTime.UtcNow - startTime).TotalMilliseconds}ms " +
 					$"(Scenario 2/3 - Different parents)");
 
 				return true;
@@ -448,14 +487,15 @@ namespace ItemzApp.API.Services
 			catch (Exception ex)
 			{
 				_logger.LogError(
-					$"Exception occurred while updating roll-up estimations for record move. " +
-					$"MovingRecordId: {movingRecordId}, CurrentParentId: {currentParentId}, " +
-					$"TargetParentId: {targetParentId}. Exception: {ex.Message}",
+					$"UpdateRollUpEstimationsForRecordMoveAsync: Exception occurred while updating roll-up estimations for record move. " +
+					$"MovingRecordId: {movingRecordId}, PreviousParentId: {previousParentId}, " +
+					$"CurrentParentId: {currentParentId}. Exception: {ex.Message}",
 					ex);
 				// PHASE 1: Gentle error handling - log error but don't crash
 				return false;
 			}
 		}
+
 		#endregion
 
 		#region Record Copy Operations
@@ -463,12 +503,14 @@ namespace ItemzApp.API.Services
 		/// <summary>
 		/// Updates roll-up estimations when a hierarchy record is copied.
 		/// This method implements a delta-based addition approach to add the copied record's
-		/// estimation to the entire parent ancestor chain. Must be called AFTER the record has been successfully copied.
+		/// estimation to the entire parent ancestor chain. Must be called AFTER the record has been successfully copied
+		/// in the hierarchy structure.
 		/// 
+		/// Enhanced with comprehensive validation and logging for direct controller calls.
 		/// Supports all record types: Itemz, ItemzType, and any other hierarchy record type.
 		/// 
 		/// Flow:
-		/// Step 1: Obtain the copied record and its rolled-up estimation value
+		/// Step 1: Validate input and obtain the copied record and its rolled-up estimation value
 		/// Step 2: Identify the copied record's parent
 		/// Step 3: Add rolled-up estimation to parent and entire ancestor chain up to Project level
 		/// 
@@ -482,15 +524,22 @@ namespace ItemzApp.API.Services
 			{
 				var startTime = DateTime.UtcNow;
 
+				// Validate input
+				if (copiedRecordId == Guid.Empty)
+				{
+					_logger.LogWarning("UpdateRollUpEstimationsForRecordCopyAsync: Copied record ID is empty");
+					return false;
+				}
+
 				_logger.LogInformation(
-					$"Starting roll-up estimation update for record copy. " +
+					$"UpdateRollUpEstimationsForRecordCopyAsync: Starting roll-up estimation update for record copy. " +
 					$"CopiedRecordId: {copiedRecordId}");
 
 				// Check execution time
 				if ((DateTime.UtcNow - startTime).TotalMilliseconds > MaxExecutionTimeMs)
 				{
 					_logger.LogWarning(
-						$"Roll-up estimation update for record copy exceeded maximum execution time of {MaxExecutionTimeMs}ms. " +
+						$"UpdateRollUpEstimationsForRecordCopyAsync: Operation exceeded maximum execution time of {MaxExecutionTimeMs}ms. " +
 						$"Operation cancelled to prevent blocking.");
 					return false;
 				}
@@ -501,30 +550,31 @@ namespace ItemzApp.API.Services
 
 				if (copiedRecord == null)
 				{
-					_logger.LogWarning($"Copied record not found for ID: {copiedRecordId}");
+					_logger.LogWarning(
+						$"UpdateRollUpEstimationsForRecordCopyAsync: Copied record not found for ID: {copiedRecordId}");
 					return false;
 				}
+
+				_logger.LogDebug(
+					$"UpdateRollUpEstimationsForRecordCopyAsync: Step 1 - Retrieved copied record {copiedRecordId} " +
+					$"(Type: {copiedRecord.RecordType}) with rolled-up estimation: {copiedRecord.RolledUpEstimation}");
 
 				// Early exit if no estimation to add
 				if (copiedRecord.RolledUpEstimation == 0)
 				{
 					_logger.LogInformation(
-						$"Copied record {copiedRecordId} has zero estimation. " +
+						$"UpdateRollUpEstimationsForRecordCopyAsync: Copied record {copiedRecordId} has zero estimation. " +
 						$"No roll-up estimation updates required.");
 					return true;
 				}
 
 				decimal rolledUpEstimationDelta = copiedRecord.RolledUpEstimation;
 
-				_logger.LogDebug(
-					$"Step 1 - Retrieved copied record {copiedRecordId} (Type: {copiedRecord.RecordType}) " +
-					$"with rolled-up estimation: {rolledUpEstimationDelta}");
-
 				// Check if record is in hierarchy (has parent)
 				if (copiedRecord.ItemzHierarchyId == null)
 				{
 					_logger.LogInformation(
-						$"Copied record {copiedRecordId} is orphaned (not in hierarchy). " +
+						$"UpdateRollUpEstimationsForRecordCopyAsync: Copied record {copiedRecordId} is orphaned (not in hierarchy). " +
 						$"No roll-up estimation updates required.");
 					return true;
 				}
@@ -534,7 +584,7 @@ namespace ItemzApp.API.Services
 				if (parentHierarchyIdPath == null)
 				{
 					_logger.LogWarning(
-						$"Could not determine parent HierarchyId path for copied record {copiedRecordId}");
+						$"UpdateRollUpEstimationsForRecordCopyAsync: Could not determine parent HierarchyId path for copied record {copiedRecordId}");
 					return false;
 				}
 
@@ -544,18 +594,19 @@ namespace ItemzApp.API.Services
 				if (parentRecord == null)
 				{
 					_logger.LogWarning(
-						$"Parent record not found for HierarchyId path: {parentHierarchyIdPath}");
+						$"UpdateRollUpEstimationsForRecordCopyAsync: Parent record not found for HierarchyId path: {parentHierarchyIdPath}");
 					return false;
 				}
 
 				_logger.LogDebug(
-					$"Step 2 - Parent record: Id={parentRecord.Id}, Type={parentRecord.RecordType}, " +
-					$"Level={parentRecord.ItemzHierarchyId!.GetLevel()}");
+					$"UpdateRollUpEstimationsForRecordCopyAsync: Step 2 - Parent record: Id={parentRecord.Id}, " +
+					$"Type={parentRecord.RecordType}, Level={parentRecord.ItemzHierarchyId!.GetLevel()}");
 
 				// Check execution time
 				if ((DateTime.UtcNow - startTime).TotalMilliseconds > MaxExecutionTimeMs)
 				{
-					_logger.LogWarning($"Operation exceeded maximum execution time during parent retrieval.");
+					_logger.LogWarning(
+						$"UpdateRollUpEstimationsForRecordCopyAsync: Operation exceeded maximum execution time during parent retrieval.");
 					return false;
 				}
 
@@ -568,19 +619,20 @@ namespace ItemzApp.API.Services
 				if (!additionSuccess)
 				{
 					_logger.LogWarning(
-						$"Step 3 - Failed to add roll-up estimation to parent ancestry chain. " +
+						$"UpdateRollUpEstimationsForRecordCopyAsync: Failed to add roll-up estimation to parent ancestry chain. " +
 						$"Continuing...");
 					// Non-fatal error
 				}
 				else
 				{
 					_logger.LogDebug(
-						$"Step 3 - Successfully added {rolledUpEstimationDelta} to parent ancestry chain");
+						$"UpdateRollUpEstimationsForRecordCopyAsync: Step 3 - Successfully added {rolledUpEstimationDelta} " +
+						$"to parent ancestry chain");
 				}
 
 				_logger.LogInformation(
-					$"Successfully completed roll-up estimation update for record copy. " +
-					$"CopiedRecordId: {copiedRecordId}, RecordType: {copiedRecord.RecordType}, Delta: {rolledUpEstimationDelta}, " +
+					$"UpdateRollUpEstimationsForRecordCopyAsync: Successfully completed roll-up estimation update for record copy. " +
+					$"CopiedRecordId: {copiedRecordId} (Type: {copiedRecord.RecordType}), Delta: {rolledUpEstimationDelta}, " +
 					$"Duration: {(DateTime.UtcNow - startTime).TotalMilliseconds}ms");
 
 				return true;
@@ -588,8 +640,130 @@ namespace ItemzApp.API.Services
 			catch (Exception ex)
 			{
 				_logger.LogError(
-					$"Exception occurred while updating roll-up estimations for record copy. " +
+					$"UpdateRollUpEstimationsForRecordCopyAsync: Exception occurred while updating roll-up estimations for record copy. " +
 					$"CopiedRecordId: {copiedRecordId}. Exception: {ex.Message}",
+					ex);
+				// PHASE 1: Gentle error handling - log error but don't crash
+				return false;
+			}
+		}
+
+		#endregion
+
+		#region Record Deletion Operations
+
+		/// <summary>
+		/// Updates roll-up estimations when a hierarchy record is deleted.
+		/// This method implements a delta-based deduction approach to remove the deleted record's
+		/// estimation from the entire parent ancestor chain. Must be called AFTER the record has been successfully deleted.
+		/// 
+		/// Enhanced with comprehensive validation and logging for direct controller calls.
+		/// Supports all record types: Itemz, ItemzType, and any other hierarchy record type.
+		/// 
+		/// Flow:
+		/// Step 1: Validate inputs and obtain the parent record
+		/// Step 2: Deduct the deleted record's estimation from the parent
+		/// Step 3: Recursively deduct from entire ancestor chain up to Project level
+		/// 
+		/// PHASE 1: Non-fatal error handling - logs errors but doesn't fail the operation
+		/// </summary>
+		/// <param name="parentRecordId">The ID of the parent record of the deleted record</param>
+		/// <param name="deletedRecordRolledUpEstimation">The rolled-up estimation value of the deleted record (the delta to deduct)</param>
+		/// <returns>True if successful, False only if critical validation fails</returns>
+		public async Task<bool> UpdateRollUpEstimationsForRecordDeletionAsync(
+			Guid parentRecordId,
+			decimal deletedRecordRolledUpEstimation)
+		{
+			try
+			{
+				var startTime = DateTime.UtcNow;
+
+				// Validate inputs
+				if (parentRecordId == Guid.Empty)
+				{
+					_logger.LogWarning(
+						"UpdateRollUpEstimationsForRecordDeletionAsync: Parent record ID is empty. " +
+						"Skipping roll-up updates.");
+					return true; // Not an error - deleted record may have been orphaned
+				}
+
+				if (deletedRecordRolledUpEstimation == 0)
+				{
+					_logger.LogInformation(
+						$"UpdateRollUpEstimationsForRecordDeletionAsync: Deleted record has zero estimation. " +
+						$"No roll-up estimation updates required.");
+					return true;
+				}
+
+				_logger.LogInformation(
+					$"UpdateRollUpEstimationsForRecordDeletionAsync: Starting roll-up estimation update for record deletion. " +
+					$"ParentRecordId: {parentRecordId}, DeletedRecordEstimation: {deletedRecordRolledUpEstimation}");
+
+				// Check execution time
+				if ((DateTime.UtcNow - startTime).TotalMilliseconds > MaxExecutionTimeMs)
+				{
+					_logger.LogWarning(
+						$"UpdateRollUpEstimationsForRecordDeletionAsync: Operation exceeded maximum execution time of {MaxExecutionTimeMs}ms. " +
+						$"Operation cancelled to prevent blocking.");
+					return false;
+				}
+
+				// STEP 1: Get the parent record
+				var parentRecord = await _context.ItemzHierarchy!
+					.FirstOrDefaultAsync(ih => ih.Id == parentRecordId);
+
+				if (parentRecord == null)
+				{
+					_logger.LogWarning(
+						$"UpdateRollUpEstimationsForRecordDeletionAsync: Parent record not found for ID: {parentRecordId}");
+					return false;
+				}
+
+				_logger.LogDebug(
+					$"UpdateRollUpEstimationsForRecordDeletionAsync: Step 1 - Retrieved parent record {parentRecordId} " +
+					$"(Type: {parentRecord.RecordType}) for deduction chain");
+
+				// Verify parent has a hierarchy path
+				if (parentRecord.ItemzHierarchyId == null)
+				{
+					_logger.LogWarning(
+						$"UpdateRollUpEstimationsForRecordDeletionAsync: HierarchyId path is null for parent record ID: {parentRecordId}");
+					return false;
+				}
+
+				// STEP 2 & 3: Deduct from parent and its ancestry chain up to Project level
+				bool deductionSuccess = await DeductRollUpFromAncestryChainAsync(
+					parentRecord,
+					deletedRecordRolledUpEstimation,
+					startTime);
+
+				if (!deductionSuccess)
+				{
+					_logger.LogWarning(
+						$"UpdateRollUpEstimationsForRecordDeletionAsync: Failed to deduct roll-up estimation from parent ancestry chain. " +
+						$"Parent: {parentRecordId}");
+					// Non-fatal error
+				}
+				else
+				{
+					_logger.LogDebug(
+						$"UpdateRollUpEstimationsForRecordDeletionAsync: Successfully deducted {deletedRecordRolledUpEstimation} " +
+						$"from parent ancestry chain");
+				}
+
+				_logger.LogInformation(
+					$"UpdateRollUpEstimationsForRecordDeletionAsync: Successfully completed roll-up estimation update for record deletion. " +
+					$"ParentRecordId: {parentRecordId}, Delta: {deletedRecordRolledUpEstimation}, " +
+					$"Duration: {(DateTime.UtcNow - startTime).TotalMilliseconds}ms");
+
+				return true;
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(
+					$"UpdateRollUpEstimationsForRecordDeletionAsync: Exception occurred while updating roll-up estimations for record deletion. " +
+					$"ParentRecordId: {parentRecordId}, DeletedRecordEstimation: {deletedRecordRolledUpEstimation}. " +
+					$"Exception: {ex.Message}",
 					ex);
 				// PHASE 1: Gentle error handling - log error but don't crash
 				return false;
@@ -773,105 +947,105 @@ namespace ItemzApp.API.Services
 		#endregion
 
 
-		/// <summary>
-		/// Updates roll-up estimations when a hierarchy record is deleted.
-		/// This method implements a delta-based deduction approach to remove the deleted record's
-		/// estimation from the entire parent ancestor chain. Must be called AFTER the record has been successfully deleted.
-		/// 
-		/// Supports all record types: Itemz, ItemzType, and any other hierarchy record type.
-		/// 
-		/// Flow:
-		/// Step 1: Obtain the parent record and its rolled-up estimation value
-		/// Step 2: Deduct the deleted record's estimation from the parent
-		/// Step 3: Recursively deduct from entire ancestor chain up to Project level
-		/// 
-		/// PHASE 1: Non-fatal error handling - logs errors but doesn't fail the operation
-		/// </summary>
-		/// <param name="parentRecordId">The ID of the parent record of the deleted record</param>
-		/// <param name="deletedRecordRolledUpEstimation">The rolled-up estimation value of the deleted record (the delta to deduct)</param>
-		/// <returns>True if successful, False only if critical validation fails</returns>
-		public async Task<bool> UpdateRollUpEstimationsForRecordDeletionAsync(
-			Guid parentRecordId,
-			decimal deletedRecordRolledUpEstimation)
-		{
-			try
-			{
-				var startTime = DateTime.UtcNow;
+		///// <summary>
+		///// Updates roll-up estimations when a hierarchy record is deleted.
+		///// This method implements a delta-based deduction approach to remove the deleted record's
+		///// estimation from the entire parent ancestor chain. Must be called AFTER the record has been successfully deleted.
+		///// 
+		///// Supports all record types: Itemz, ItemzType, and any other hierarchy record type.
+		///// 
+		///// Flow:
+		///// Step 1: Obtain the parent record and its rolled-up estimation value
+		///// Step 2: Deduct the deleted record's estimation from the parent
+		///// Step 3: Recursively deduct from entire ancestor chain up to Project level
+		///// 
+		///// PHASE 1: Non-fatal error handling - logs errors but doesn't fail the operation
+		///// </summary>
+		///// <param name="parentRecordId">The ID of the parent record of the deleted record</param>
+		///// <param name="deletedRecordRolledUpEstimation">The rolled-up estimation value of the deleted record (the delta to deduct)</param>
+		///// <returns>True if successful, False only if critical validation fails</returns>
+		//public async Task<bool> UpdateRollUpEstimationsForRecordDeletionAsync(
+		//	Guid parentRecordId,
+		//	decimal deletedRecordRolledUpEstimation)
+		//{
+		//	try
+		//	{
+		//		var startTime = DateTime.UtcNow;
 
-				_logger.LogInformation(
-					$"Starting roll-up estimation update for record deletion. " +
-					$"ParentRecordId: {parentRecordId}, " +
-					$"DeletedRecordEstimation: {deletedRecordRolledUpEstimation}");
+		//		_logger.LogInformation(
+		//			$"Starting roll-up estimation update for record deletion. " +
+		//			$"ParentRecordId: {parentRecordId}, " +
+		//			$"DeletedRecordEstimation: {deletedRecordRolledUpEstimation}");
 
-				// Early exit if no estimation to deduct
-				if (deletedRecordRolledUpEstimation == 0)
-				{
-					_logger.LogInformation(
-						$"Deleted record has zero estimation. " +
-						$"No roll-up estimation updates required.");
-					return true;
-				}
+		//		// Early exit if no estimation to deduct
+		//		if (deletedRecordRolledUpEstimation == 0)
+		//		{
+		//			_logger.LogInformation(
+		//				$"Deleted record has zero estimation. " +
+		//				$"No roll-up estimation updates required.");
+		//			return true;
+		//		}
 
-				// Check execution time
-				if ((DateTime.UtcNow - startTime).TotalMilliseconds > MaxExecutionTimeMs)
-				{
-					_logger.LogWarning(
-						$"Roll-up estimation update for record deletion exceeded maximum execution time of {MaxExecutionTimeMs}ms. " +
-						$"Operation cancelled to prevent blocking.");
-					return false;
-				}
+		//		// Check execution time
+		//		if ((DateTime.UtcNow - startTime).TotalMilliseconds > MaxExecutionTimeMs)
+		//		{
+		//			_logger.LogWarning(
+		//				$"Roll-up estimation update for record deletion exceeded maximum execution time of {MaxExecutionTimeMs}ms. " +
+		//				$"Operation cancelled to prevent blocking.");
+		//			return false;
+		//		}
 
-				// STEP 1: Get the parent record
-				var parentRecord = await _context.ItemzHierarchy!
-					.FirstOrDefaultAsync(ih => ih.Id == parentRecordId);
+		//		// STEP 1: Get the parent record
+		//		var parentRecord = await _context.ItemzHierarchy!
+		//			.FirstOrDefaultAsync(ih => ih.Id == parentRecordId);
 
-				if (parentRecord == null)
-				{
-					_logger.LogWarning($"Parent record not found for ID: {parentRecordId}");
-					return false;
-				}
+		//		if (parentRecord == null)
+		//		{
+		//			_logger.LogWarning($"Parent record not found for ID: {parentRecordId}");
+		//			return false;
+		//		}
 
-				_logger.LogDebug(
-					$"Step 1 - Retrieved parent record {parentRecordId} (Type: {parentRecord.RecordType}) " +
-					$"for deduction chain");
+		//		_logger.LogDebug(
+		//			$"Step 1 - Retrieved parent record {parentRecordId} (Type: {parentRecord.RecordType}) " +
+		//			$"for deduction chain");
 
-				// STEP 2 & 3: Deduct from parent and its ancestry chain up to Project level
-				bool deductionSuccess = await DeductRollUpFromAncestryChainAsync(
-					parentRecord,
-					deletedRecordRolledUpEstimation,
-					startTime);
+		//		// STEP 2 & 3: Deduct from parent and its ancestry chain up to Project level
+		//		bool deductionSuccess = await DeductRollUpFromAncestryChainAsync(
+		//			parentRecord,
+		//			deletedRecordRolledUpEstimation,
+		//			startTime);
 
-				if (!deductionSuccess)
-				{
-					_logger.LogWarning(
-						$"Failed to deduct roll-up estimation from parent ancestry chain. " +
-						$"Parent: {parentRecordId}");
-					// Non-fatal error
-				}
-				else
-				{
-					_logger.LogDebug(
-						$"Successfully deducted {deletedRecordRolledUpEstimation} from parent ancestry chain");
-				}
+		//		if (!deductionSuccess)
+		//		{
+		//			_logger.LogWarning(
+		//				$"Failed to deduct roll-up estimation from parent ancestry chain. " +
+		//				$"Parent: {parentRecordId}");
+		//			// Non-fatal error
+		//		}
+		//		else
+		//		{
+		//			_logger.LogDebug(
+		//				$"Successfully deducted {deletedRecordRolledUpEstimation} from parent ancestry chain");
+		//		}
 
-				_logger.LogInformation(
-					$"Successfully completed roll-up estimation update for record deletion. " +
-					$"ParentRecordId: {parentRecordId}, Delta: {deletedRecordRolledUpEstimation}, " +
-					$"Duration: {(DateTime.UtcNow - startTime).TotalMilliseconds}ms");
+		//		_logger.LogInformation(
+		//			$"Successfully completed roll-up estimation update for record deletion. " +
+		//			$"ParentRecordId: {parentRecordId}, Delta: {deletedRecordRolledUpEstimation}, " +
+		//			$"Duration: {(DateTime.UtcNow - startTime).TotalMilliseconds}ms");
 
-				return true;
-			}
-			catch (Exception ex)
-			{
-				_logger.LogError(
-					$"Exception occurred while updating roll-up estimations for record deletion. " +
-					$"ParentRecordId: {parentRecordId}, DeletedRecordEstimation: {deletedRecordRolledUpEstimation}. " +
-					$"Exception: {ex.Message}",
-					ex);
-				// PHASE 1: Gentle error handling - log error but don't crash
-				return false;
-			}
-		}
+		//		return true;
+		//	}
+		//	catch (Exception ex)
+		//	{
+		//		_logger.LogError(
+		//			$"Exception occurred while updating roll-up estimations for record deletion. " +
+		//			$"ParentRecordId: {parentRecordId}, DeletedRecordEstimation: {deletedRecordRolledUpEstimation}. " +
+		//			$"Exception: {ex.Message}",
+		//			ex);
+		//		// PHASE 1: Gentle error handling - log error but don't crash
+		//		return false;
+		//	}
+		//}
 
 		///// <summary>
 		///// Propagates delta through all ancestors (wrapper for optimized method)
