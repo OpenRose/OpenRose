@@ -49,6 +49,12 @@ namespace OpenRose.WebUI.Client.Services.Hierarchy
             throw new NotImplementedException();
         }
 
+		public async Task<string> __POST_Recalculate_Project_RollUpEstimations__Async(Guid projectHierarchyRecordId)
+        {             
+            throw new NotImplementedException();
+		}
+
+
 	}
 
 }

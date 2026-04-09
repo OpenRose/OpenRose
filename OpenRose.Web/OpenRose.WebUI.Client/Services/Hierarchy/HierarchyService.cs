@@ -263,5 +263,62 @@ namespace OpenRose.WebUI.Client.Services.Hierarchy
 
 		#endregion
 
+		#region __POST_Recalculate_Project_RollUpEstimations__Async
+		public async Task<string> __POST_Recalculate_Project_RollUpEstimations__Async(Guid projectHierarchyRecordId)
+		{
+			return await __POST_Recalculate_Project_RollUpEstimations__Async(projectHierarchyRecordId, CancellationToken.None);
+		}
+
+		public async Task<string> __POST_Recalculate_Project_RollUpEstimations__Async(Guid projectHierarchyRecordId, CancellationToken cancellationToken)
+		{
+			try
+			{
+				if (projectHierarchyRecordId == Guid.Empty)
+				{
+					throw new ArgumentNullException(nameof(projectHierarchyRecordId),
+						"Project hierarchy record ID cannot be empty.");
+				}
+
+				// Build URL exactly like your existing pattern
+				var url = $"/RecalculateProjectRollUpEstimations/{projectHierarchyRecordId}";
+
+				// POST with no body (API expects no body)
+				var httpResponseMessage = await _httpClient.PostAsync(url, content: null, cancellationToken);
+
+				// Handle 400 BadRequest explicitly (same pattern as your CreateItemz method)
+				if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.BadRequest)
+				{
+					var errorContent = await httpResponseMessage.Content.ReadAsStringAsync();
+					throw new ApplicationException($"FAILED : {errorContent}");
+				}
+
+				httpResponseMessage.EnsureSuccessStatusCode();
+
+				// Read plain string response
+				string responseContent = await httpResponseMessage.Content.ReadAsStringAsync(cancellationToken);
+
+				// If API returns empty content, treat as failure message
+				if (string.IsNullOrWhiteSpace(responseContent))
+				{
+					return "No response received from server.";
+				}
+
+				return responseContent; // <-- Return the actual API message
+			}
+			catch (HttpRequestException httpEx)
+			{
+				throw new Exception($"HTTP error occurred: {httpEx.Message}");
+			}
+			catch (ArgumentNullException argEx)
+			{
+				throw new Exception($"Argument Null Exception: {argEx.Message}");
+			}
+			catch (Exception)
+			{
+				throw;
+			}
+		}
+		#endregion
+
 	}
 }
