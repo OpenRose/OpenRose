@@ -453,6 +453,23 @@ namespace ItemzApp.API.Controllers
 						message = "Roll-up estimations recalculated successfully for the project"
 					};
 					_logger.LogInformation(successMessage.message);
+
+					// EXPLANATION :: After successful roll-up recalculation, we need to ensure that the estimation unit
+					// for all the records within the project is set correctly based on estimation units set at the project level.
+
+					try
+					{
+						var resultSetEstimationUni = await estimationRollupService.SetEstimationUnitForProjectAsync(projectHierarchyRecordId);
+						if (!resultSetEstimationUni)
+						{
+							_logger.LogWarning($"Failed to set estimation unit for project ID: {projectHierarchyRecordId} after successful roll-up recalculation.");
+						}
+					}
+					catch (Exception ex)
+					{
+						_logger.LogError($"Exception occurred while setting estimation unit for project ID: {projectHierarchyRecordId} :: {ex.Message}", ex);
+					}
+
 					return Ok("Roll-up estimations recalculated successfully for the project");
 				}
 				else
@@ -465,6 +482,7 @@ namespace ItemzApp.API.Controllers
 					_logger.LogWarning(errorMessage.message);
 					return BadRequest("Roll-up estimation recalculation failed or exceeded maximum execution time (2 seconds). Please try again.");
 				}
+
 			}
 			catch (Exception ex)
 			{
