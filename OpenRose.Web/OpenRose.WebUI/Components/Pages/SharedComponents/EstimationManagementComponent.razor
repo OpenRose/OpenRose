@@ -49,7 +49,7 @@ else if (HierarchyData != null)
 
             @if (RecordType == "Project")
             {
-                <MudItem xs="12" md="4">
+                <MudItem xs="12" md="2">
                     <div class="text-end">
                     <MudTextField T="string"
                                   Label="Estimation Unit"
@@ -65,7 +65,7 @@ else if (HierarchyData != null)
             }
             else
             {
-                <MudItem xs="12" md="4">
+                <MudItem xs="12" md="2">
                     <div class="text-end">
                     <MudTextField T="string"
                                   Label="Estimation Unit"
@@ -79,7 +79,8 @@ else if (HierarchyData != null)
                 </MudItem>
             }
 
-            <MudItem xs="12" md="4">
+            <MudItem xs="12" md="2">
+                    <div class="text-end">
                 <MudTextField T="string"
                               Label="Own Estimation"
                               Variant="Variant.Outlined"
@@ -87,10 +88,13 @@ else if (HierarchyData != null)
                               Dense="true"
                               @bind-Value="OwnEstimationText"
                               Immediate="true" />
+                </div>
+
             </MudItem>
 
-            <MudItem xs="12" md="4">
+            <MudItem xs="12" md="2">
                 @* Always ReadOnly because Roll-Ups are always calculated *@
+                <div class="text-end">
                 <MudTextField T="decimal"
                               Label="Rolled-up Estimation"
                               Variant="Variant.Outlined"
@@ -99,6 +103,8 @@ else if (HierarchyData != null)
                               Value="@HierarchyData.RolledUpEstimation"
                               ReadOnly="true"
                               Disabled="true" />
+                </div>
+
             </MudItem>
         </MudGrid>
     </MudForm>
