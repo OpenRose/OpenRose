@@ -162,82 +162,117 @@ namespace ItemzApp.API.Controllers
 
 
 
-        /// <summary>
-        /// Used for creating new ItemzType record in the database
-        /// </summary>
-        /// <param name="createItemzTypeDTO">Used for populating information in the newly created ItemzType in the database</param>
-        /// <returns>Newly created ItemzType property details</returns>
-        /// <response code="201">Returns newly created ItemzTypes property details</response>
-        /// <response code="404">Expected Project with ID was not found in the repository</response>
-        /// <response code="409">ItemzType with the same name already exists in the target Project</response>
+		/// <summary>
+		/// Used for creating new ItemzType record in the database
+		/// </summary>
+		/// <param name="createItemzTypeDTO">Used for populating information in the newly created ItemzType in the database</param>
+		/// <returns>Newly created ItemzType property details</returns>
+		/// <response code="201">Returns newly created ItemzTypes property details</response>
+		/// <response code="404">Expected Project with ID was not found in the repository</response>
+		/// <response code="409">ItemzType with the same name already exists in the target Project</response>
 
-        [HttpPost(Name = "__POST_Create_ItemzType__")]
-        [ProducesResponseType(StatusCodes.Status201Created)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status409Conflict)]
-        [ProducesDefaultResponseType]
-        public async Task<ActionResult<GetItemzTypeDTO>> CreateItemzTypeAsync(CreateItemzTypeDTO createItemzTypeDTO)
-        {
-            if (!(await _projectRepository.ProjectExistsAsync(createItemzTypeDTO.ProjectId)))
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Project with {ProjectId} could not be found while creating new ItemzType in the repository",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    createItemzTypeDTO.ProjectId);
-                return NotFound();
-            }    
-            var ItemzTypeEntity = _mapper.Map<Entities.ItemzType>(createItemzTypeDTO);
+		[HttpPost(Name = "__POST_Create_ItemzType__")]
+		[ProducesResponseType(StatusCodes.Status201Created)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		[ProducesResponseType(StatusCodes.Status409Conflict)]
+		[ProducesDefaultResponseType]
+		public async Task<ActionResult<GetItemzTypeDTO>> CreateItemzTypeAsync(CreateItemzTypeDTO createItemzTypeDTO)
+		{
+			if (!(await _projectRepository.ProjectExistsAsync(createItemzTypeDTO.ProjectId)))
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Project with {ProjectId} could not be found while creating new ItemzType in the repository",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					createItemzTypeDTO.ProjectId);
+				return NotFound();
+			}
+			var ItemzTypeEntity = _mapper.Map<Entities.ItemzType>(createItemzTypeDTO);
 
-            if (await _itemzTypeRules.UniqueItemzTypeNameRuleAsync(createItemzTypeDTO.ProjectId, createItemzTypeDTO.Name!))
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}ItemzType with name {createItemzTypeDTO_Name} already exists in the project with Id {createItemzTypeDTO_ProjectId}",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    createItemzTypeDTO.Name,
-                    createItemzTypeDTO.ProjectId);
-                return Conflict($"ItemzType with name '{createItemzTypeDTO.Name}' already exists in the project with Id '{createItemzTypeDTO.ProjectId}'");
-            }
-            try
-            {
+			if (await _itemzTypeRules.UniqueItemzTypeNameRuleAsync(createItemzTypeDTO.ProjectId, createItemzTypeDTO.Name!))
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}ItemzType with name {createItemzTypeDTO_Name} already exists in the project with Id {createItemzTypeDTO_ProjectId}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					createItemzTypeDTO.Name,
+					createItemzTypeDTO.ProjectId);
+				return Conflict($"ItemzType with name '{createItemzTypeDTO.Name}' already exists in the project with Id '{createItemzTypeDTO.ProjectId}'");
+			}
+			try
+			{
 
-                _ItemzTypeRepository.AddItemzType(ItemzTypeEntity);
-                await _ItemzTypeRepository.SaveAsync();
-            }
-            catch(Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Exception occured while trying to add new itemzType:" + dbUpdateException.InnerException,
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
-                    );
-                return Conflict($"ItemzType with name '{createItemzTypeDTO.Name}' already exists in the project with Id '{createItemzTypeDTO.ProjectId}'");
-            }
+				_ItemzTypeRepository.AddItemzType(ItemzTypeEntity);
+				await _ItemzTypeRepository.SaveAsync();
+			}
+			catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Exception occured while trying to add new itemzType:" + dbUpdateException.InnerException,
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
+					);
+				return Conflict($"ItemzType with name '{createItemzTypeDTO.Name}' already exists in the project with Id '{createItemzTypeDTO.ProjectId}'");
+			}
 
-            _logger.LogDebug("{FormattedControllerAndActionNames}Created new ItemzType with ID {ItemzTypeId}",
-                ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                ItemzTypeEntity.Id);
+			_logger.LogDebug("{FormattedControllerAndActionNames}Created new ItemzType with ID {ItemzTypeId}",
+				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+				ItemzTypeEntity.Id);
 
-            // TODO: Try and Catch logic here is not clear and it might add ItemzType
-            // in the DB even if adding hierarchy record fails. In such cases 
-            // we need both this steps to be included in one single transaction. 
-            // If there is an issue to add ItemzType into hierarchy table then we will not be
-            // able to work with it's Itemz which are expected to be childrens.
+			// TODO: Try and Catch logic here is not clear and it might add ItemzType
+			// in the DB even if adding hierarchy record fails. In such cases 
+			// we need both this steps to be included in one single transaction. 
+			// If there is an issue to add ItemzType into hierarchy table then we will not be
+			// able to work with it's Itemz which are expected to be childrens.
 
-            try
-            {
-                await _ItemzTypeRepository.AddNewItemzTypeHierarchyAsync(ItemzTypeEntity);
-                await _ItemzTypeRepository.SaveAsync();
-            }
-            catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to add new ItemzType Hierarchy:" + dbUpdateException.InnerException,
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
-                    );
-                return Conflict($"Could not add Hierarchy for newly created ItemzType '{ItemzTypeEntity.Name}' ");
-            }
+			try
+			{
+				await _ItemzTypeRepository.AddNewItemzTypeHierarchyAsync(ItemzTypeEntity);
+				await _ItemzTypeRepository.SaveAsync();
+			}
+			catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to add new ItemzType Hierarchy:" + dbUpdateException.InnerException,
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
+					);
+				return Conflict($"Could not add Hierarchy for newly created ItemzType '{ItemzTypeEntity.Name}' ");
+			}
 
+			// Add EstimationUnit from parent Project to newly created ItemzType
+			_logger.LogDebug(
+				"{FormattedControllerAndActionNames}Adding EstimationUnit to newly created ItemzType {ItemzTypeId} from parent Project {ProjectId}",
+				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+				ItemzTypeEntity.Id,
+				createItemzTypeDTO.ProjectId);
 
+			try
+			{
+				bool estimationUnitAddSuccess = await _hierarchyRepository.AddHierarchyRecordEstimationUnitAsync(ItemzTypeEntity.Id);
 
-            return CreatedAtRoute("__Single_ItemzType_By_GUID_ID__", new { ItemzTypeId = ItemzTypeEntity.Id },
-                _mapper.Map<GetItemzTypeDTO>(ItemzTypeEntity) // Converting to DTO as this is going out to the consumer
-                );
-        }
+				if (!estimationUnitAddSuccess)
+				{
+					_logger.LogWarning(
+						"{FormattedControllerAndActionNames}Failed to add EstimationUnit for newly created ItemzType {ItemzTypeId}",
+						ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+						ItemzTypeEntity.Id);
+					// Non-fatal error - ItemzType was created successfully, but EstimationUnit sync failed
+				}
+				else
+				{
+					_logger.LogDebug(
+						"{FormattedControllerAndActionNames}Successfully added EstimationUnit to newly created ItemzType {ItemzTypeId}",
+						ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+						ItemzTypeEntity.Id);
+				}
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(
+					"{FormattedControllerAndActionNames}Exception occurred while adding EstimationUnit for newly created ItemzType {ItemzTypeId}: {ExceptionMessage}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					ItemzTypeEntity.Id,
+					ex.Message);
+				// Non-fatal error - continue
+			}
+
+			return CreatedAtRoute("__Single_ItemzType_By_GUID_ID__", new { ItemzTypeId = ItemzTypeEntity.Id },
+				_mapper.Map<GetItemzTypeDTO>(ItemzTypeEntity) // Converting to DTO as this is going out to the consumer
+				);
+		}
 
 		/// <summary>
 		/// Updating existing ItemzType based on ItemzType Id (GUID)

@@ -41,5 +41,6 @@ namespace ItemzApp.API.Services
 			string? estimationUnit = null,
 			decimal? ownEstimation = null);
 
+		public Task<bool> AddHierarchyRecordEstimationUnitAsync(Guid recordId);
 	}
 }

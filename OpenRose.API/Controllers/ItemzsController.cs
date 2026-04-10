@@ -271,19 +271,19 @@ namespace ItemzApp.API.Controllers
             return Ok(foundNumberOfOrphanItemz);
         }
 
-        /// <summary>
-        /// Used for creating new Itemz record in the database
-        /// </summary>
-        /// <param name="createItemzDTO">Used for populating information in the newly created itemz in the database</param>
-        /// <param name="parentId">Used as parent for adding new Itemz as children</param>
-        /// <param name="AtBottomOfChildNodes">Indicates if we should add new Itemz at TOP or BOTTOM of child Itemz nodes list</param>
-        /// <returns>Newly created Itemz property details</returns>
-        /// <response code="201">Returns newly created itemzs property details</response>
-        /// <response code="404">Expected Parent Itemz not found</response>
-        [HttpPost(Name = "__POST_Create_Itemz__")]
-        [ProducesResponseType(StatusCodes.Status201Created)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesDefaultResponseType]
+		/// <summary>
+		/// Used for creating new Itemz record in the database
+		/// </summary>
+		/// <param name="createItemzDTO">Used for populating information in the newly created itemz in the database</param>
+		/// <param name="parentId">Used as parent for adding new Itemz as children</param>
+		/// <param name="AtBottomOfChildNodes">Indicates if we should add new Itemz at TOP or BOTTOM of child Itemz nodes list</param>
+		/// <returns>Newly created Itemz property details</returns>
+		/// <response code="201">Returns newly created itemzs property details</response>
+		/// <response code="404">Expected Parent Itemz not found</response>
+		[HttpPost(Name = "__POST_Create_Itemz__")]
+		[ProducesResponseType(StatusCodes.Status201Created)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		[ProducesDefaultResponseType]
 		public async Task<ActionResult<GetItemzDTO>> CreateItemzAsync(
 					[FromBody] CreateItemzDTO createItemzDTO
 					, [FromQuery] Guid parentId
@@ -330,6 +330,46 @@ namespace ItemzApp.API.Controllers
 
 			await _itemzRepository.SaveAsync();
 
+			// Add EstimationUnit from parent to newly created Itemz
+			if (!parentId.Equals(Guid.Empty))
+			{
+				_logger.LogDebug(
+					"{FormattedControllerAndActionNames}Adding EstimationUnit to newly created Itemz {ItemzId} from parent {parentId}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					itemzEntity.Id,
+					parentId);
+
+				try
+				{
+					bool estimationUnitAddSuccess = await _hierarchyRepository.AddHierarchyRecordEstimationUnitAsync(itemzEntity.Id);
+
+					if (!estimationUnitAddSuccess)
+					{
+						_logger.LogWarning(
+							"{FormattedControllerAndActionNames}Failed to add EstimationUnit for newly created Itemz {ItemzId}",
+							ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+							itemzEntity.Id);
+						// Non-fatal error - Itemz was created successfully, but EstimationUnit sync failed
+					}
+					else
+					{
+						_logger.LogDebug(
+							"{FormattedControllerAndActionNames}Successfully added EstimationUnit to newly created Itemz {ItemzId}",
+							ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+							itemzEntity.Id);
+					}
+				}
+				catch (Exception ex)
+				{
+					_logger.LogError(
+						"{FormattedControllerAndActionNames}Exception occurred while adding EstimationUnit for newly created Itemz {ItemzId}: {ExceptionMessage}",
+						ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+						itemzEntity.Id,
+						ex.Message);
+					// Non-fatal error - continue
+				}
+			}
+
 			_logger.LogDebug("{FormattedControllerAndActionNames}Created new Itemz with ID {ItemzId}",
 				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
 				itemzEntity.Id);
@@ -337,9 +377,8 @@ namespace ItemzApp.API.Controllers
 				_mapper.Map<GetItemzDTO>(itemzEntity) // Converting to DTO as this is going out to the consumer
 				);
 		}
-
 		/// <summary>
-		/// Used for creating new Itemz record in the database
+		/// Used for creating new Itemz record in the database between two existing Itemz
 		/// </summary>
 		/// <param name="createItemzDTO">Used for populating information in the newly created itemz in the database</param>
 		/// <param name="firstItemzId">Used as first Itemz for adding new Itemz between existing two Itemz</param>
@@ -348,28 +387,28 @@ namespace ItemzApp.API.Controllers
 		/// <response code="201">Returns newly created itemzs property details</response>
 		/// <response code="404">Expected first or second from between Itemz not found</response>
 		[HttpPost("CreateItemzBetweenExistingItemz/", Name = "__POST_Create_Itemz_Between_Existing_Itemz__")]
-        [ProducesResponseType(StatusCodes.Status201Created)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesDefaultResponseType]
-        public async Task<ActionResult<GetItemzDTO>> CreateItemzBetweenExistingItemzAsync([FromBody] CreateItemzDTO createItemzDTO, [FromQuery] Guid firstItemzId, [FromQuery] Guid secondItemzId)
-        {
-            if (firstItemzId == Guid.Empty)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}First ItemzID from between two Itemz is an empty ID.",
-                        ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext));
-                return NotFound();
-            }
-            if (secondItemzId == Guid.Empty)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Second ItemzID from between two Itemz is an empty ID.",
-                        ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext));
-                return NotFound();
-            }
+		[ProducesResponseType(StatusCodes.Status201Created)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		[ProducesDefaultResponseType]
+		public async Task<ActionResult<GetItemzDTO>> CreateItemzBetweenExistingItemzAsync([FromBody] CreateItemzDTO createItemzDTO, [FromQuery] Guid firstItemzId, [FromQuery] Guid secondItemzId)
+		{
+			if (firstItemzId == Guid.Empty)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}First ItemzID from between two Itemz is an empty ID.",
+						ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext));
+				return NotFound();
+			}
+			if (secondItemzId == Guid.Empty)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Second ItemzID from between two Itemz is an empty ID.",
+						ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext));
+				return NotFound();
+			}
 
-            Itemz itemzEntity;
+			Itemz itemzEntity;
 
-            try
-            {
+			try
+			{
 				itemzEntity = _mapper.Map<Entities.Itemz>(createItemzDTO);
 
 				// Normalize tags
@@ -379,74 +418,111 @@ namespace ItemzApp.API.Controllers
 
 			}
 			catch (AutoMapper.AutoMapperMappingException amm_ex)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Could not create new Itemz due to issue with value provided for {fieldname}",
-                        ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                        amm_ex.MemberMap.DestinationName);
-                return ValidationProblem();
-            }
-            _itemzRepository.AddItemz(itemzEntity);
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Could not create new Itemz due to issue with value provided for {fieldname}",
+						ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+						amm_ex.MemberMap.DestinationName);
+				return ValidationProblem();
+			}
+			_itemzRepository.AddItemz(itemzEntity);
 
-            var firstItemz = await _itemzRepository.GetItemzAsync(firstItemzId);
+			var firstItemz = await _itemzRepository.GetItemzAsync(firstItemzId);
 
-            if (firstItemz == null)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Expected first Itemz with ID {firstItemzId} could not be found",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    firstItemzId);
-                return NotFound();
-            }
+			if (firstItemz == null)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Expected first Itemz with ID {firstItemzId} could not be found",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					firstItemzId);
+				return NotFound();
+			}
 
-            var secondItemz = await _itemzRepository.GetItemzAsync(secondItemzId);
+			var secondItemz = await _itemzRepository.GetItemzAsync(secondItemzId);
 
-            if (secondItemz == null)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Expected second Itemz with ID {secondItemzId} could not be found",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    secondItemzId);
-                return NotFound();
-            }
+			if (secondItemz == null)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Expected second Itemz with ID {secondItemzId} could not be found",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					secondItemzId);
+				return NotFound();
+			}
 
-            try { 
-            await _itemzRepository.AddOrMoveItemzBetweenTwoHierarchyRecordsAsync(firstItemzId, secondItemzId, itemzEntity.Id, itemzEntity.Name!);
-            await _itemzRepository.SaveAsync();
-            }
-            catch (ApplicationException appException)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to add Itemz between two existing Itemz :" + appException.Message,
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
-                    );
-                var tempMessage = $"Could not create new Itemz between Itemz '{firstItemzId}' " +
-                    $"and '{secondItemzId}'. " +
-                    $":: InnerException :: {appException.Message} ";
-                return BadRequest(tempMessage);
-            }
-            catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}DBUpdateException Occured while trying to add Itemz between two existing Itemz :" + dbUpdateException.Message,
-                ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
-                    );
-                return Conflict( $"DBUpdateException : Could not create new Itemz between Itemz " +
-                    $"'{firstItemzId}' and '{secondItemzId}'. DB Error reported, check the log file. " +
-                    $":: InnerException :: '{dbUpdateException.Message}' ");
-            }
-            catch(Microsoft.SqlServer.Types.HierarchyIdException hierarchyIDException)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}HierarchyIdException Occured while trying to add Itemz between two existing Itemz :" + hierarchyIDException.Message,
-                ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
-                    );
-                return Conflict($"HierarchyIdException : Could not create new Itemz between Itemz " +
-                    $"'{firstItemzId}' and '{secondItemzId}'. DB Error reported, check the log file. " +
-                    $":: InnerException :: '{hierarchyIDException.Message}' ");
-            }
+			try
+			{
+				await _itemzRepository.AddOrMoveItemzBetweenTwoHierarchyRecordsAsync(firstItemzId, secondItemzId, itemzEntity.Id, itemzEntity.Name!);
+				await _itemzRepository.SaveAsync();
+			}
+			catch (ApplicationException appException)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to add Itemz between two existing Itemz :" + appException.Message,
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
+					);
+				var tempMessage = $"Could not create new Itemz between Itemz '{firstItemzId}' " +
+					$"and '{secondItemzId}'. " +
+					$":: InnerException :: {appException.Message} ";
+				return BadRequest(tempMessage);
+			}
+			catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}DBUpdateException Occured while trying to add Itemz between two existing Itemz :" + dbUpdateException.Message,
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
+					);
+				return Conflict($"DBUpdateException : Could not create new Itemz between Itemz " +
+					$"'{firstItemzId}' and '{secondItemzId}'. DB Error reported, check the log file. " +
+					$":: InnerException :: '{dbUpdateException.Message}' ");
+			}
+			catch (Microsoft.SqlServer.Types.HierarchyIdException hierarchyIDException)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}HierarchyIdException Occured while trying to add Itemz between two existing Itemz :" + hierarchyIDException.Message,
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
+					);
+				return Conflict($"HierarchyIdException : Could not create new Itemz between Itemz " +
+					$"'{firstItemzId}' and '{secondItemzId}'. DB Error reported, check the log file. " +
+					$":: InnerException :: '{hierarchyIDException.Message}' ");
+			}
 
-            _logger.LogDebug("{FormattedControllerAndActionNames}Created new Itemz with ID {ItemzId}",
-                ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                itemzEntity.Id);
-            return CreatedAtRoute("__Single_Itemz_By_GUID_ID__", new { ItemzId = itemzEntity.Id },
-                _mapper.Map<GetItemzDTO>(itemzEntity) // Converting to DTO as this is going out to the consumer
-                );
-        }
+			// Add EstimationUnit from parent to newly created Itemz
+			_logger.LogDebug(
+				"{FormattedControllerAndActionNames}Adding EstimationUnit to newly created Itemz {ItemzId} from its parent",
+				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+				itemzEntity.Id);
+
+			try
+			{
+				bool estimationUnitAddSuccess = await _hierarchyRepository.AddHierarchyRecordEstimationUnitAsync(itemzEntity.Id);
+
+				if (!estimationUnitAddSuccess)
+				{
+					_logger.LogWarning(
+						"{FormattedControllerAndActionNames}Failed to add EstimationUnit for newly created Itemz {ItemzId}",
+						ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+						itemzEntity.Id);
+					// Non-fatal error - Itemz was created successfully, but EstimationUnit sync failed
+				}
+				else
+				{
+					_logger.LogDebug(
+						"{FormattedControllerAndActionNames}Successfully added EstimationUnit to newly created Itemz {ItemzId}",
+						ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+						itemzEntity.Id);
+				}
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(
+					"{FormattedControllerAndActionNames}Exception occurred while adding EstimationUnit for newly created Itemz {ItemzId}: {ExceptionMessage}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					itemzEntity.Id,
+					ex.Message);
+				// Non-fatal error - continue
+			}
+
+			_logger.LogDebug("{FormattedControllerAndActionNames}Created new Itemz with ID {ItemzId}",
+				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+				itemzEntity.Id);
+			return CreatedAtRoute("__Single_Itemz_By_GUID_ID__", new { ItemzId = itemzEntity.Id },
+				_mapper.Map<GetItemzDTO>(itemzEntity) // Converting to DTO as this is going out to the consumer
+				);
+		}
 		/// <summary>
 		/// Used for moving Itemz record between two existing Itemz records
 		/// </summary>

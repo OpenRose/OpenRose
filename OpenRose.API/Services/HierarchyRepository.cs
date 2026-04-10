@@ -939,6 +939,107 @@ namespace ItemzApp.API.Services
 			return true;
 		}
 
+		/// <summary>
+		/// Adds EstimationUnit to a hierarchy record by copying it from its immediate parent.
+		/// This ensures new records (Itemz, ItemzType) inherit the EstimationUnit from their parent.
+		/// Used during record creation to maintain EstimationUnit integrity across the hierarchy.
+		/// 
+		/// Ensures all child records have consistent EstimationUnit with their parent
+		/// </summary>
+		/// <param name="recordId">The ID of the hierarchy record to update (newly created Itemz or ItemzType)</param>
+		/// <returns>True if update successful, False if record or parent not found</returns>
+		public async Task<bool> AddHierarchyRecordEstimationUnitAsync(Guid recordId)
+		{
+			if (recordId == Guid.Empty)
+			{
+				throw new ArgumentNullException(nameof(recordId));
+			}
+
+			try
+			{
+				// STEP 1: Get the newly created record
+				var hierarchyRecord = await _context.ItemzHierarchy!
+					.FirstOrDefaultAsync(ih => ih.Id == recordId);
+
+				if (hierarchyRecord == null)
+				{
+					_logger.LogWarning(
+						$"AddHierarchyRecordEstimationUnitAsync: Hierarchy record not found for ID: {recordId}");
+					return false;
+				}
+
+				// STEP 2: Verify the record has a valid HierarchyId path
+				if (hierarchyRecord.ItemzHierarchyId == null)
+				{
+					_logger.LogWarning(
+						$"AddHierarchyRecordEstimationUnitAsync: Record {recordId} has no ItemzHierarchyId path");
+					return false;
+				}
+
+				_logger.LogDebug(
+					$"AddHierarchyRecordEstimationUnitAsync: Processing record {recordId} " +
+					$"(Type: {hierarchyRecord.RecordType}, Current EstimationUnit: {hierarchyRecord.EstimationUnit ?? "NULL"})");
+
+				// STEP 3: Get the immediate parent HierarchyId path
+				var parentHierarchyIdPath = hierarchyRecord.ItemzHierarchyId.GetAncestor(1);
+
+				if (parentHierarchyIdPath == null)
+				{
+					_logger.LogWarning(
+						$"AddHierarchyRecordEstimationUnitAsync: Could not determine parent HierarchyId path for record {recordId}");
+					return false;
+				}
+
+				// STEP 4: Find the parent record
+				var parentRecord = await _context.ItemzHierarchy!
+					.FirstOrDefaultAsync(ih => ih.ItemzHierarchyId == parentHierarchyIdPath);
+
+				if (parentRecord == null)
+				{
+					_logger.LogWarning(
+						$"AddHierarchyRecordEstimationUnitAsync: Parent record not found for HierarchyId path: {parentHierarchyIdPath}");
+					return false;
+				}
+
+				_logger.LogDebug(
+					$"AddHierarchyRecordEstimationUnitAsync: Found parent record {parentRecord.Id} " +
+					$"(Type: {parentRecord.RecordType}, EstimationUnit: {parentRecord.EstimationUnit ?? "NULL"})");
+
+				// STEP 5: Copy EstimationUnit from parent to child record
+				// No null/empty checks needed - just copy whatever value parent has
+				string? parentEstimationUnit = parentRecord.EstimationUnit;
+
+				// Only update if the child's EstimationUnit differs from parent's
+				if (!string.Equals(hierarchyRecord.EstimationUnit ?? "", parentEstimationUnit ?? "", StringComparison.Ordinal))
+				{
+					hierarchyRecord.EstimationUnit = parentEstimationUnit;
+					_context.ItemzHierarchy!.Update(hierarchyRecord);
+					await _context.SaveChangesAsync();
+
+					_logger.LogInformation(
+						$"AddHierarchyRecordEstimationUnitAsync: Updated EstimationUnit for record {recordId} " +
+						$"from '{hierarchyRecord.EstimationUnit ?? "NULL"}' to '{parentEstimationUnit ?? "NULL"}' " +
+						$"(inherited from parent {parentRecord.Id})");
+
+					return true;
+				}
+				else
+				{
+					_logger.LogDebug(
+						$"AddHierarchyRecordEstimationUnitAsync: Record {recordId} already has matching EstimationUnit from parent. " +
+						$"No update needed.");
+					return true;
+				}
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(
+					$"AddHierarchyRecordEstimationUnitAsync: Exception occurred while adding EstimationUnit for record {recordId}: {ex.Message}",
+					ex);
+				return false;
+			}
+		}
+
 		//// PHASE 1: Helper method to recalculate all ancestor records
 		//private async Task<bool> RecalculateAncestorsAsync(Guid recordId)
 		//{
