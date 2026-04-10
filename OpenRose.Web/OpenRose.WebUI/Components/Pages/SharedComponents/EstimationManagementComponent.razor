@@ -250,4 +250,11 @@ else
         }
 
     }
+
+    public async Task RefreshDataAsync()
+    {
+        await LoadHierarchyData();
+        StateHasChanged();
+    }
+
 }

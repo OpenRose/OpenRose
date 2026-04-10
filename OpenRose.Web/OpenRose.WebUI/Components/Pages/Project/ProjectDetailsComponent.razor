@@ -4,10 +4,12 @@
  * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 *@
 
+@using OpenRose.WebUI.Client.Services.Hierarchy
 @using OpenRose.WebUI.Client.Services.ItemzType
 @using OpenRose.WebUI.Client.Services.Project
 @using OpenRose.WebUI.Client.SharedModels
 @using OpenRose.WebUI.Client.Utilities
+@using OpenRose.WebUI.Components.Dialogs
 @using OpenRose.WebUI.Components.EventServices
 @using OpenRose.WebUI.Components.Pages.Baseline
 @using OpenRose.WebUI.Components.Pages.Common
@@ -193,8 +195,48 @@
 							Width="100%"
 							Outlined="false"
 							Elevation="0">
-					<EstimationManagementComponent RecordId="@ProjectId" RecordType="Project" />
+                    <EstimationManagementComponent @ref="estimationComponent"
+                                                    RecordId="@ProjectId"
+                                                    RecordType="Project" />
 				</MudPaper>
+				<br />
+
+				<MudExpansionPanels Elevation="10" style="margin-left : 15px">
+					<MudExpansionPanel Text="Recalculate Roll-Up Estimations"
+										MaxHeight="150"
+										Expanded="false"
+										Style="background-color: #DFF6DD; color: #2E7D32;">
+						@* Light green *@
+
+						<TitleContent>
+							<div class="d-flex">
+								<MudIcon Icon="@Icons.Material.Filled.Calculate" Color="Color.Success" Size="Size.Medium" class="mr-3"></MudIcon>
+								<MudText Color="Color.Success"><strong>Recalculate Roll-Up Estimations</strong></MudText>
+							</div>
+						</TitleContent>
+
+						<ChildContent>
+							<MudText Typo="Typo.body1" Color="Color.Success">
+								This will recalculate <strong>all roll-up estimations</strong> for the entire project hierarchy.
+							</MudText>
+
+							<MudText Typo="Typo.body1" Color="Color.Success">
+								This operation may take a few seconds depending on project size.
+							</MudText>
+
+							<MudButton Variant="Variant.Filled"
+										Color="Color.Success"
+										Size="Size.Large"
+										Style="align-items: center; margin-top : 10px"
+										Disabled="@isRecalculatingRollUpEstimations"
+										OnClick="OpenRecalculateConfirmationDialogAsync">
+								Recalculate Roll-Up Estimations
+							</MudButton>
+						</ChildContent>
+
+					</MudExpansionPanel>
+				</MudExpansionPanels>
+
 			</MudTabPanel>
 			<MudTabPanel @ref="baselineTab" Icon="@Icons.Material.Filled.ContentCopy" Text="Baselines">
 				<MudPaper Class="pa-4 mb-5 mud-height-full" Width="100%">
@@ -258,343 +300,424 @@
 </MudGrid>
 @code 
 {
-	[Parameter]
-	public Guid ProjectId { get; set; }
-	[Parameter]
-	[SupplyParameterFromQuery(Name = "showBaselineTab")]
-	public bool ShowBaselineTab { get; set; } = false;
-	[Parameter]
-	[SupplyParameterFromQuery(Name = "calledFrom")]
-	public string CalledFrom { get; set; } = string.Empty;
+    [Parameter]
+    public Guid ProjectId { get; set; }
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "showBaselineTab")]
+    public bool ShowBaselineTab { get; set; } = false;
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "calledFrom")]
+    public string CalledFrom { get; set; } = string.Empty;
 
-	[Parameter]
-	public EventCallback<string> ContentChanged { get; set; }
+    [Parameter]
+    public EventCallback<string> ContentChanged { get; set; }
 
-	[Inject]
-	public IProjectService ProjectService { get; set; }
+    [Inject]
+    public IProjectService ProjectService { get; set; }
 
-	[Inject]
-	public IItemzTypeService ItemzTypeService { get; set; }
+    [Inject]
+    public IItemzTypeService ItemzTypeService { get; set; }
 
-	[Inject]
-	public FormStateService FormStateService { get; set; }
+    [Inject]
+    public IHierarchyService HierarchyService { get; set; }
 
-
-	// public Guid displayOnlyProjectID = Guid.Empty ;
-	private bool showDeleteConfirmation = false;
-	private bool updateProjectButtonClicked = false;
-
-	public GetProjectDTO singleProject { get; set; } = new();
-	private string _originalDescription;
-	public bool initializingPage { get; set; } = false;
-	private bool deletingProject { get; set; } = false;
-
-	// private string _Content = string.Empty;
-	private string MyContent
-	{
-		get => singleProject.Description ?? string.Empty;
-		set
-		{
-			// _Content = value;
-			// FormStateService.SetDirty(ProjectId, true);
-
-			singleProject.Description = value;
-			ConvertMarkdownToHtml(singleProject.Description);
-			ContentChanged.InvokeAsync(value);
-		}
-	}
-
-	private async Task ConvertMarkdownToHtml(string markdown)
-	{
-		if (!string.IsNullOrEmpty(markdown))
-		{
-			var html = await JS.InvokeAsync<string>("markdownToHtml", markdown);
-			convertedMarkdown = (MarkupString)html;
-			StateHasChanged();
-
-			// Apply fullscreen styles
-			// await Task.Delay(1000);
-			// await JS.InvokeVoidAsync("applyMarkdownEditorFullscreenStyles");
-		}
-	}
+    [Inject]
+    public FormStateService FormStateService { get; set; }
 
 
-	//MudForm related fields
-	bool success = true;
-	bool disableUpdateProjectDetailsButton = true;
-	string[] errors = { };
-	MudForm form;
-	MudTabs projectTabs;
-	MudTabPanel projectTab;
-	MudTabPanel baselineTab;
-	int activeIndex = 0;
+    // public Guid displayOnlyProjectID = Guid.Empty ;
+    private bool showDeleteConfirmation = false;
+    private bool updateProjectButtonClicked = false;
 
-	// TODO START HERE BY CREATING INSTANCE OF ProjectExceptionDialog AND SHOWING IT WHEN ERROR GETS ENCOUNTERED. 
+    public GetProjectDTO singleProject { get; set; } = new();
+    private string _originalDescription;
+    public bool initializingPage { get; set; } = false;
+    private bool deletingProject { get; set; } = false;
 
-	bool hideValidationError = true;
-	string[] _stringProjectStatusValues = { };
+    private bool isRecalculatingRollUpEstimations = false;
 
-	private MarkupString convertedMarkdown;
-
-	// protected override void OnInitialized() 
-	// {
-	// 	if (ShowBaselineTab == true)
-	// 	{
-	// 		projectTabs.ActivatePanel(baselineTab);
-	// 	}
-
-	// 	StateHasChanged();
-	// }
-
-	protected override async Task OnAfterRenderAsync(bool firstRender)
-	{
-		if (firstRender)
-		{
-			await LoadDataAsync();
-		}
-	}
+    private EstimationManagementComponent? estimationComponent;
 
 
-	private async Task LoadDataAsync()
-	{
-		initializingPage = true;
-		StateHasChanged();
-		//await Task.Delay(300);
-		singleProject = await ProjectService.__Single_Project_By_GUID_ID__Async(ProjectId);
+    // private string _Content = string.Empty;
+    private string MyContent
+    {
+        get => singleProject.Description ?? string.Empty;
+        set
+        {
+            // _Content = value;
+            // FormStateService.SetDirty(ProjectId, true);
 
-		if (singleProject != null)
-		{
-			TreeNodeItemzSelectionService.UpdateTreeNodeItemzName(ProjectId, singleProject.Name!);
-			_originalDescription = singleProject.Description ?? string.Empty;
-			MyContent = _originalDescription;
-		}
+            singleProject.Description = value;
+            ConvertMarkdownToHtml(singleProject.Description);
+            ContentChanged.InvokeAsync(value);
+        }
+    }
 
-		if (form != null)
-		{
-			await form.Validate();
-			// Always keep Save disabled on first render.
-			disableUpdateProjectDetailsButton = true;
-		}
-		initializingPage = false;
+    private async Task ConvertMarkdownToHtml(string markdown)
+    {
+        if (!string.IsNullOrEmpty(markdown))
+        {
+            var html = await JS.InvokeAsync<string>("markdownToHtml", markdown);
+            convertedMarkdown = (MarkupString)html;
+            StateHasChanged();
 
-		// EXPLANATION :: First we create string list and then just call ToArray() for producing required string array
-		List<string> tempList = new List<string>();
-		foreach (var _projectStatusValue in Enum.GetValues<ProjectStatus>())
-		{
-			tempList.Add(_projectStatusValue.ToString().Trim());
-		}
-		_stringProjectStatusValues = tempList.ToArray();
-
-		if (ShowBaselineTab == true)
-		{
-			activeIndex = 1;
-		}
-
-		await ConvertMarkdownToHtml(singleProject.Description);
-
-		// Reset dirty state
-		disableUpdateProjectDetailsButton = true;
-		FormStateService.SetDirty(singleProject.Id, false);
-
-		StateHasChanged();
-
-	}
-	public async Task HandleProjectDetailsPatchSubmission()
-	{
-		updateProjectButtonClicked = true;
-		try
-		{
-			if (FormStateService.IsDirty(ProjectId))
-			{
-				var updatedResult = await ProjectService.__PUT_Update_Project_By_GUID_ID__Async(ProjectId, singleProject);
-				TreeNodeItemzSelectionService.UpdateTreeNodeItemzName(ProjectId, singleProject.Name!);
-				// disableUpdateProjectDetailsButton = true;
-
-				if (FormStateService.IsDirty(ProjectId))
-				{
-					// Save logic...
-					FormStateService.SetDirty(ProjectId, false);
-				}
-				// await Task.Delay(800);
-			}
-		}
-		catch (Exception ex)
-		{
-			updateProjectButtonClicked = false;
-			await OpenExceptionDialogAsync("Problem Updating Project Details : " + ex.Message);
-			return;
-		}
-		finally
-		{
-			updateProjectButtonClicked = false;
-		}
-
-		// TODO :: IF IT UPDATES THE PROJECT THEN DISABLE SUBMIT BUTTON AND CONFIRM ON SCREEN THAT IT'S NOW UPDATED SUCCESSFULLY
-		await goBackToProject();
-	}
-
-	private async Task formFieldChanged()
-	{
-		// Mark this component as dirty in the shared service
-		FormStateService.SetDirty(ProjectId, true);
-
-		if (form != null)
-		{
-			await form.Validate();
-
-			// Enable/disable Save button based on form validity
-			disableUpdateProjectDetailsButton = form.IsValid ? false : true;
-		}
-	}
+            // Apply fullscreen styles
+            // await Task.Delay(1000);
+            // await JS.InvokeVoidAsync("applyMarkdownEditorFullscreenStyles");
+        }
+    }
 
 
-	public async Task deleteProject()
-	{
-		try
-		{
-			await ProjectService.__DELETE_Project_By_GUID_ID__Async(ProjectId);
-		}
-		catch (Exception ex)
-		{
-			await OpenExceptionDialogAsync("Problem Deleting Project : " + ex.Message);
-			return;
-		}
-		NavManager.NavigateTo("/projects");
-	}
-	private async Task OpenDeleteConfirmationDialogAsync()
-	{
-		activeIndex = 2; // DeleteTab is the 3rd tab in ZERO base index.
-		var options = new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, Position = DialogPosition.Center };
-		var dialogPara = new DialogParameters();
-		dialogPara.Add("deletingProjectName", singleProject.Name);
-		var dialogref = await DialogService.ShowAsync<ProjectDeletionConfirmDialog>("CONFIRM", parameters: dialogPara, options);
-		var dialogresult = await dialogref.Result;
-		if (!(dialogresult!.Canceled))
-		{
-			deletingProject = true;
-			StateHasChanged();
-			try
-			{
-				await deleteProject();
-				await Task.Delay(200);
-			}
-			finally
-			{
-				deletingProject = false;
-				StateHasChanged();
-			}	
-		}
-	}
+    //MudForm related fields
+    bool success = true;
+    bool disableUpdateProjectDetailsButton = true;
+    string[] errors = { };
+    MudForm form;
+    MudTabs projectTabs;
+    MudTabPanel projectTab;
+    MudTabPanel baselineTab;
+    int activeIndex = 0;
 
-	private async Task OpenExceptionDialogAsync(string exceptionMessage)
-	{
-		var options = new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, Position = DialogPosition.Center };
-		var dialogPara = new DialogParameters();
-		dialogPara.Add("exceptionMessage", exceptionMessage);
-		var dialogref = await DialogService.ShowAsync<ProjectExceptionDialog>("CONFIRM", dialogPara, options);
-		// var dialogresult = await dialogref.Result;
-	}
+    // TODO START HERE BY CREATING INSTANCE OF ProjectExceptionDialog AND SHOWING IT WHEN ERROR GETS ENCOUNTERED. 
 
-	public async Task HandleCreateTreeViewChildItemzTypeClicked()
-	{
-		// 🔑 First check if the project record is dirty
-		bool canProceed = await FormStateService.ConfirmDiscardChangesAsync(ProjectId);
-		if (!canProceed)
-		{
-			// User cancelled → do nothing
-			return;
-		}
+    bool hideValidationError = true;
+    string[] _stringProjectStatusValues = { };
 
-		// If user confirmed discard, clear dirty state
-		FormStateService.SetDirty(ProjectId, false);
+    private MarkupString convertedMarkdown;
 
-		// Now safe to create new ItemzType
-		var newChildItemzType = new CreateItemzTypeDTO
+    // protected override void OnInitialized() 
+    // {
+    // 	if (ShowBaselineTab == true)
+    // 	{
+    // 		projectTabs.ActivatePanel(baselineTab);
+    // 	}
+
+    // 	StateHasChanged();
+    // }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadDataAsync();
+        }
+    }
+
+
+    private async Task LoadDataAsync()
+    {
+        initializingPage = true;
+        StateHasChanged();
+        //await Task.Delay(300);
+        singleProject = await ProjectService.__Single_Project_By_GUID_ID__Async(ProjectId);
+
+        if (singleProject != null)
+        {
+            TreeNodeItemzSelectionService.UpdateTreeNodeItemzName(ProjectId, singleProject.Name!);
+            _originalDescription = singleProject.Description ?? string.Empty;
+            MyContent = _originalDescription;
+        }
+
+        if (form != null)
+        {
+            await form.Validate();
+            // Always keep Save disabled on first render.
+            disableUpdateProjectDetailsButton = true;
+        }
+        initializingPage = false;
+
+        // EXPLANATION :: First we create string list and then just call ToArray() for producing required string array
+        List<string> tempList = new List<string>();
+        foreach (var _projectStatusValue in Enum.GetValues<ProjectStatus>())
+        {
+            tempList.Add(_projectStatusValue.ToString().Trim());
+        }
+        _stringProjectStatusValues = tempList.ToArray();
+
+        if (ShowBaselineTab == true)
+        {
+            activeIndex = 1;
+        }
+
+        await ConvertMarkdownToHtml(singleProject.Description);
+
+        // Reset dirty state
+        disableUpdateProjectDetailsButton = true;
+        FormStateService.SetDirty(singleProject.Id, false);
+
+        StateHasChanged();
+
+    }
+    public async Task HandleProjectDetailsPatchSubmission()
+    {
+        updateProjectButtonClicked = true;
+        try
+        {
+            if (FormStateService.IsDirty(ProjectId))
+            {
+                var updatedResult = await ProjectService.__PUT_Update_Project_By_GUID_ID__Async(ProjectId, singleProject);
+                TreeNodeItemzSelectionService.UpdateTreeNodeItemzName(ProjectId, singleProject.Name!);
+                // disableUpdateProjectDetailsButton = true;
+
+                if (FormStateService.IsDirty(ProjectId))
+                {
+                    // Save logic...
+                    FormStateService.SetDirty(ProjectId, false);
+                }
+                // await Task.Delay(800);
+            }
+        }
+        catch (Exception ex)
+        {
+            updateProjectButtonClicked = false;
+            await OpenExceptionDialogAsync("Problem Updating Project Details : " + ex.Message);
+            return;
+        }
+        finally
+        {
+            updateProjectButtonClicked = false;
+        }
+
+        // TODO :: IF IT UPDATES THE PROJECT THEN DISABLE SUBMIT BUTTON AND CONFIRM ON SCREEN THAT IT'S NOW UPDATED SUCCESSFULLY
+        await goBackToProject();
+    }
+
+    private async Task formFieldChanged()
+    {
+        // Mark this component as dirty in the shared service
+        FormStateService.SetDirty(ProjectId, true);
+
+        if (form != null)
+        {
+            await form.Validate();
+
+            // Enable/disable Save button based on form validity
+            disableUpdateProjectDetailsButton = form.IsValid ? false : true;
+        }
+    }
+
+
+    public async Task deleteProject()
+    {
+        try
+        {
+            await ProjectService.__DELETE_Project_By_GUID_ID__Async(ProjectId);
+        }
+        catch (Exception ex)
+        {
+            await OpenExceptionDialogAsync("Problem Deleting Project : " + ex.Message);
+            return;
+        }
+        NavManager.NavigateTo("/projects");
+    }
+    private async Task OpenDeleteConfirmationDialogAsync()
+    {
+        activeIndex = 2; // DeleteTab is the 3rd tab in ZERO base index.
+        var options = new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, Position = DialogPosition.Center };
+        var dialogPara = new DialogParameters();
+        dialogPara.Add("deletingProjectName", singleProject.Name);
+        var dialogref = await DialogService.ShowAsync<ProjectDeletionConfirmDialog>("CONFIRM", parameters: dialogPara, options);
+        var dialogresult = await dialogref.Result;
+        if (!(dialogresult!.Canceled))
+        {
+            deletingProject = true;
+            StateHasChanged();
+            try
+            {
+                await deleteProject();
+                await Task.Delay(200);
+            }
+            finally
+            {
+                deletingProject = false;
+                StateHasChanged();
+            }	
+        }
+    }
+
+    private async Task OpenExceptionDialogAsync(string exceptionMessage)
+    {
+        var options = new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, Position = DialogPosition.Center };
+        var dialogPara = new DialogParameters();
+        dialogPara.Add("exceptionMessage", exceptionMessage);
+        var dialogref = await DialogService.ShowAsync<ProjectExceptionDialog>("CONFIRM", dialogPara, options);
+        // var dialogresult = await dialogref.Result;
+    }
+
+    public async Task HandleCreateTreeViewChildItemzTypeClicked()
+    {
+        // 🔑 First check if the project record is dirty
+        bool canProceed = await FormStateService.ConfirmDiscardChangesAsync(ProjectId);
+        if (!canProceed)
+        {
+            // User cancelled → do nothing
+            return;
+        }
+
+        // If user confirmed discard, clear dirty state
+        FormStateService.SetDirty(ProjectId, false);
+
+        // Now safe to create new ItemzType
+        var newChildItemzType = new CreateItemzTypeDTO
 		{
 			ProjectId = ProjectId,
 			Name = "New ItemzType RandomNumber - " + RandomNumberGeneratorHelper.GenerateRandomNumber(),
 			Status = "New"
 		};
 
+        try
+        {
+            var newlyCreatedSiblingItemzType = await ItemzTypeService.__POST_Create_ItemzType__Async(newChildItemzType);
+            if (newlyCreatedSiblingItemzType != null)
+            {
+                TreeNodeItemzSelectionService.CreatedNewItemzType(ProjectId, newlyCreatedSiblingItemzType);
+            }
+        }
+        catch (Exception ex)
+        {
+            await DialogService.ShowMessageBox(
+                "WARNING",
+                markupMessage: new MarkupString($"<p style=\"color: red; \">{ex.Message}</p>"),
+                yesText: "OK"
+            );
+        }
+        finally
+        {
+            // Add any clean-up code here if needed
+        }
+    }
+
+
+    public async Task goBackToProject()
+    {
+        FormStateService.SetDirty(ProjectId, false);
+
+        if (CalledFrom == nameof(ProjectDetails))
+        {
+            NavManager.NavigateTo($"/project/{ProjectId.ToString()}");
+        }
+        else if (CalledFrom == nameof(ProjectTreeView))
+        {
+
+            await LoadDataAsync();
+        }
+    }
+
+    public async Task HandleGoToDetailsView()
+    {
+        // EXPLANATION :: Before we navigate to a different view, ensure any unsaved changes are handled.
+        bool canProceed = await FormStateService.ConfirmDiscardChangesAsync(ProjectId);
+        if (!canProceed) return;
+
+        var url = $"/project/{ProjectId.ToString()}";
+        await JS.InvokeVoidAsync("openInNewTab", url);
+    }
+
+    public async Task HandleGoToTreeView()
+    {
+
+        // EXPLANATION :: Before we navigate to a different view, ensure any unsaved changes are handled.
+        bool canProceed = await FormStateService.ConfirmDiscardChangesAsync(ProjectId);
+        if (!canProceed) return;
+
+        var url = $"/ProjectTreeView/{ProjectId}";
+        await JS.InvokeVoidAsync("openInNewTab", url);
+    }
+
+    private async Task ConfirmNavigation(LocationChangingContext context)
+    {
+        // Use FormStateService instead of local flag
+        bool canLeave = await FormStateService.ConfirmDiscardChangesAsync(ProjectId);
+
+        if (!canLeave)
+        {
+            // User chose "Stay" → cancel navigation
+            context.PreventNavigation();
+        }
+        else
+        {
+            // User confirmed discard → clear dirty state
+            FormStateService.SetDirty(ProjectId, false);
+        }
+    }
+
+    private void findAndShowInTreeView()
+    {
+        TreeNodeItemzSelectionService.ScrollToTreeViewNode(ProjectId);
+    }
+
+    private async Task OpenRecalculateConfirmationDialogAsync()
+    {
+        var options = new DialogOptions
+        {
+            CloseButton = true,
+            CloseOnEscapeKey = true,
+            Position = DialogPosition.Center
+        };
+
+        var dialogParameters = new DialogParameters
+    {
+        {
+            "DialogMarkupMessage",
+            new MarkupString(
+                "<p style=\"color: green;\">Are you sure you want to recalculate all roll-up estimations for this project? " +
+                "This operation may take a few seconds.</p>"
+            )
+        }
+    };
+
+        var dialogRef = await DialogService.ShowAsync<YesNoDialog>(
+            title: "CONFIRM",
+            parameters: dialogParameters,
+            options: options
+        );
+
+        var dialogResult = await dialogRef.Result;
+
+        if (!dialogResult!.Canceled)
+        {
+            await PerformRollUpRecalculationAsync();
+        }
+    }
+
+	private async Task PerformRollUpRecalculationAsync()
+	{
 		try
 		{
-			var newlyCreatedSiblingItemzType = await ItemzTypeService.__POST_Create_ItemzType__Async(newChildItemzType);
-			if (newlyCreatedSiblingItemzType != null)
-			{
-				TreeNodeItemzSelectionService.CreatedNewItemzType(ProjectId, newlyCreatedSiblingItemzType);
-			}
+			isRecalculatingRollUpEstimations = true;
+			StateHasChanged();
+
+			string resultMessage = await HierarchyService.__POST_Recalculate_Project_RollUpEstimations__Async(ProjectId);
+
+            // Refresh the estimation component
+            if (estimationComponent is not null)
+            {
+                await estimationComponent.RefreshDataAsync();
+            }
+
+			// Show success message
+			// Snackbar.Add(resultMessage, Severity.Success);
+
+			await DialogService.ShowMessageBox(
+				"SUCCESS",
+				new MarkupString($"<p style=\"color: green;\"><b>{resultMessage}</b></p>"),
+				yesText: "OK"
+			);
 		}
 		catch (Exception ex)
 		{
+			// Show error dialog
 			await DialogService.ShowMessageBox(
-				"WARNING",
-				markupMessage: new MarkupString($"<p style=\"color: red; \">{ex.Message}</p>"),
+				"ERROR",
+				new MarkupString($"<p style=\"color: red;\"><b>{ex.Message}</b></p>"),
 				yesText: "OK"
 			);
 		}
 		finally
 		{
-			// Add any clean-up code here if needed
+			isRecalculatingRollUpEstimations = false;
+			StateHasChanged();
 		}
 	}
-
-
-	public async Task goBackToProject()
-	{
-		FormStateService.SetDirty(ProjectId, false);
-
-		if (CalledFrom == nameof(ProjectDetails))
-		{
-			NavManager.NavigateTo($"/project/{ProjectId.ToString()}");
-		}
-		else if (CalledFrom == nameof(ProjectTreeView))
-		{
-
-			await LoadDataAsync();
-		}
-	}
-
-	public async Task HandleGoToDetailsView()
-	{
-		// EXPLANATION :: Before we navigate to a different view, ensure any unsaved changes are handled.
-		bool canProceed = await FormStateService.ConfirmDiscardChangesAsync(ProjectId);
-		if (!canProceed) return;
-
-		var url = $"/project/{ProjectId.ToString()}";
-		await JS.InvokeVoidAsync("openInNewTab", url);
-	}
-
-	public async Task HandleGoToTreeView()
-	{
-
-		// EXPLANATION :: Before we navigate to a different view, ensure any unsaved changes are handled.
-		bool canProceed = await FormStateService.ConfirmDiscardChangesAsync(ProjectId);
-		if (!canProceed) return;
-
-		var url = $"/ProjectTreeView/{ProjectId}";
-		await JS.InvokeVoidAsync("openInNewTab", url);
-	}
-
-	private async Task ConfirmNavigation(LocationChangingContext context)
-	{
-		// Use FormStateService instead of local flag
-		bool canLeave = await FormStateService.ConfirmDiscardChangesAsync(ProjectId);
-
-		if (!canLeave)
-		{
-			// User chose "Stay" → cancel navigation
-			context.PreventNavigation();
-		}
-		else
-		{
-			// User confirmed discard → clear dirty state
-			FormStateService.SetDirty(ProjectId, false);
-		}
-	}
-
-	private void findAndShowInTreeView()
-	{
-		TreeNodeItemzSelectionService.ScrollToTreeViewNode(ProjectId);
-	}
-
 }
