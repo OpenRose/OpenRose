@@ -50,6 +50,7 @@ else if (HierarchyData != null)
             @if (RecordType == "Project")
             {
                 <MudItem xs="12" md="4">
+                    <div class="text-end">
                     <MudTextField T="string"
                                   Label="Estimation Unit"
                                   @bind-Value="HierarchyData.EstimationUnit"
@@ -58,11 +59,14 @@ else if (HierarchyData != null)
                                   Margin="Margin.Dense"
                                   Immediate="true"
                                   MaxLength="16" />
+                    </div>
+
                 </MudItem>
             }
             else
             {
                 <MudItem xs="12" md="4">
+                    <div class="text-end">
                     <MudTextField T="string"
                                   Label="Estimation Unit"
                                   @bind-Value="HierarchyData.EstimationUnit"
@@ -70,8 +74,8 @@ else if (HierarchyData != null)
                                   Variant="Variant.Outlined"
                                   Margin="Margin.Dense"
                                   ReadOnly="true"
-                                  Disabled="true"
                                   Immediate="true" />
+                    </div>
                 </MudItem>
             }
 
@@ -103,6 +107,12 @@ else
 {
     <MudText Color="Color.Warning">No hierarchy and estimation data available</MudText>
 }
+
+<style>
+    .text-end input {
+        text-align: right !important;
+    }
+</style>
 
 @code {
     [Parameter] public Guid RecordId { get; set; }
