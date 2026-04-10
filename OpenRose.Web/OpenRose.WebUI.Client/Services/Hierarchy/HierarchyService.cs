@@ -280,7 +280,7 @@ namespace OpenRose.WebUI.Client.Services.Hierarchy
 				}
 
 				// Build URL exactly like your existing pattern
-				var url = $"/RecalculateProjectRollUpEstimations/{projectHierarchyRecordId}";
+				var url = $"/api/Hierarchy/RecalculateProjectRollUpEstimations/{projectHierarchyRecordId}";
 
 				// POST with no body (API expects no body)
 				var httpResponseMessage = await _httpClient.PostAsync(url, content: null, cancellationToken);
