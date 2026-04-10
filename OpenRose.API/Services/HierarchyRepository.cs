@@ -792,11 +792,13 @@ namespace ItemzApp.API.Services
 			bool hasChanged = false;
 			decimal estimationDelta = 0;
 
+
 			// Update estimation unit if provided
 			if (!string.IsNullOrWhiteSpace(estimationUnit) &&
 				hierarchyRecord.EstimationUnit != estimationUnit &&
 				string.Equals(hierarchyRecord.RecordType, "Project", StringComparison.OrdinalIgnoreCase))
 			{
+				estimationUnit = estimationUnit?.Trim(); // Trim whitespace from estimation unit if provided
 				hierarchyRecord.EstimationUnit = estimationUnit;
 				hasChanged = true;
 			}
@@ -860,6 +862,14 @@ namespace ItemzApp.API.Services
 						}
 					}
 				}
+
+				// TODO :: This is where we have to call Stored Procedure to make sure
+				// that we update EstimationUnit for all child records when we update
+				// estimation for Project Level. We also have to check that EstimationUnit 
+				// value has changed before triggering all child record update for estimation unit.
+				// Also we have to make sure that we do not make case insensitive comparision
+				// when comparing old EstimationUnit against newly spplied EstimationUnit. User may want to change
+				// case of the existing EstimationUnit Value. 
 
 				return true;
 			}
