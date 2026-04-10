@@ -1,0 +1,58 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+<MudDialog>
+
+    <TitleContent>
+        <MudText Color="Color.Success" Typo="Typo.h6">
+            @MudDialog.Title
+        </MudText>
+    </TitleContent>
+
+    <DialogContent>
+         @* <MudGrid Class="mt-2"> *@
+        <MudGrid >
+
+            <!-- ICON COLUMN (3/12) -->
+            <MudItem xs="12" sm="2"
+                     Class="d-flex justify-center align-center">
+                <MudIcon Icon="@Icons.Material.Filled.WarningAmber"
+                         Color="Color.Success"
+                         Size="Size.Large" />
+            </MudItem>
+
+            <!-- TEXT COLUMN (9/12) -->
+            <MudItem xs="12" sm="10"
+                     Class="d-flex align-center">
+                @if (DialogMarkupMessage.HasValue)
+                {
+                    <MudText Dense="true">@DialogMarkupMessage.Value</MudText>
+                }
+                else
+                {
+                    <MudText Dense="true">@DialogMessage</MudText>
+                }
+            </MudItem>
+
+        </MudGrid>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="Submit">Yes</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="Cancel">No</MudButton>
+    </DialogActions>
+
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; }
+
+    [Parameter] public string? DialogMessage { get; set; }
+    [Parameter] public MarkupString? DialogMarkupMessage { get; set; }
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(true));
+    private void Cancel() => MudDialog.Close(DialogResult.Cancel());
+}
