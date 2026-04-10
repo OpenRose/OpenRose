@@ -154,54 +154,84 @@ namespace ItemzApp.API.Services
 
 
 		/// <summary>
-		/// Sets estimation unit for all records in a project hierarchy.
-		/// This is typically called when a project's estimation unit is defined or updated.
-		/// PHASE 1: Ensures all hierarchy records have consistent estimation unit
+		/// Synchronizes EstimationUnit for all descendants to match the Project record's value.
+		/// This is called after updating a Project's EstimationUnit to ensure all child records are synchronized.
+		/// PHASE 1: Ensures all hierarchy records have EstimationUnit synchronized to Project level
+		/// 
+		/// Uses optimized SQL Server stored procedure for superior performance and scalability.
+		/// The stored procedure uses CTE-based recursive query combined with set-based UPDATE,
+		/// leveraging SQL Server's built-in HierarchyId optimizations.
+		/// 
+		/// Project's EstimationUnit value always takes precedence and overrides all child values.
+		/// Handles case-sensitive comparison and trims whitespace.
+		/// Safe to call at any time - synchronizes to current Project EstimationUnit value.
+		/// 
+		/// Single database roundtrip with minimal server load and memory usage.
 		/// </summary>
 		/// <param name="projectHierarchyRecordId">The ID of the Project hierarchy record</param>
-		/// <param name="estimationUnit">The estimation unit to set (e.g., "Days", "$", "Story Points")</param>
-		/// <returns>Count of records updated</returns>
-		public async Task<int> SetEstimationUnitForProjectAsync(Guid projectHierarchyRecordId, string estimationUnit)
+		/// <returns>True if successful, False if operation failed</returns>
+		public async Task<bool> SetEstimationUnitForProjectAsync(Guid projectHierarchyRecordId)
 		{
+			if (projectHierarchyRecordId == Guid.Empty)
+			{
+				throw new ArgumentNullException(nameof(projectHierarchyRecordId));
+			}
+
+			// EXPLANATION: Check if record exists in ItemzHierarchy table
+			if (!_context.ItemzHierarchy!.AsNoTracking()
+							.Where(ih => ih.Id == projectHierarchyRecordId)
+							.Any())
+			{
+				throw new ArgumentException("Project hierarchy record not found", nameof(projectHierarchyRecordId));
+			}
+
 			try
 			{
-				var projectRecord = await _context.ItemzHierarchy!
-					.FirstOrDefaultAsync(ih => ih.Id == projectHierarchyRecordId);
-
-				if (projectRecord == null)
+				var sqlParameters = new[]
 				{
-					_logger.LogWarning($"Project hierarchy record not found for ID: {projectHierarchyRecordId}");
-					return 0;
-				}
-
-				// Get all descendants including the project itself
-				var allRecords = await _context.ItemzHierarchy!
-					.Where(ih => ih.Id == projectHierarchyRecordId ||
-								 ih.ItemzHierarchyId!.IsDescendantOf(projectRecord.ItemzHierarchyId!))
-					.ToListAsync();
-
-				int updatedCount = 0;
-				foreach (var record in allRecords)
-				{
-					if (record.EstimationUnit != estimationUnit)
+					new SqlParameter
 					{
-						record.EstimationUnit = estimationUnit;
-						updatedCount++;
+						ParameterName = "ProjectHierarchyRecordId",
+						Value = projectHierarchyRecordId,
+						SqlDbType = System.Data.SqlDbType.UniqueIdentifier
 					}
-				}
+				};
 
-				if (updatedCount > 0)
-				{
-					await _context.SaveChangesAsync();
-					_logger.LogInformation($"Updated estimation unit to '{estimationUnit}' for {updatedCount} records in project ID {projectHierarchyRecordId}");
-				}
+				// EXPLANATION:
+				// Matches your existing pattern for calling stored procedures.
+				// The stored procedure:
+				// - Validates the project record exists and is type 'Project'
+				// - Extracts EstimationUnit from Project record (with whitespace trimmed)
+				// - Performs case-sensitive comparison against all child records
+				// - Updates only child records where EstimationUnit differs from Project value
+				// - Trims whitespace from all values before comparison and update
+				// - Project's EstimationUnit always takes precedence (can be NULL or empty)
+				// - Returns silently on success (no output parameter needed)
+				await _context.Database.ExecuteSqlRawAsync(
+					"EXEC userProcSetEstimationUnitForProject @ProjectHierarchyRecordId",
+					sqlParameters);
 
-				return updatedCount;
+				_logger.LogInformation(
+					$"SetEstimationUnitForProjectAsync: Successfully synchronized EstimationUnit " +
+					$"for all descendants of Project ID: {projectHierarchyRecordId}");
+
+				return true;
+			}
+			catch (SqlException sqlEx)
+			{
+				_logger.LogError(
+					$"SetEstimationUnitForProjectAsync: SQL Exception occurred while synchronizing EstimationUnit " +
+					$"for Project ID {projectHierarchyRecordId}: {sqlEx.Message}", sqlEx);
+
+				return false;
 			}
 			catch (Exception ex)
 			{
-				_logger.LogError($"Exception occurred while setting estimation unit for project ID {projectHierarchyRecordId}: {ex.Message}", ex);
-				return 0;
+				_logger.LogError(
+					$"SetEstimationUnitForProjectAsync: Exception occurred while synchronizing EstimationUnit " +
+					$"for Project ID {projectHierarchyRecordId}: {ex.Message}", ex);
+
+				return false;
 			}
 		}
 
