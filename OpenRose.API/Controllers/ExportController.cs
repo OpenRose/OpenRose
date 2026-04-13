@@ -98,6 +98,9 @@ namespace ItemzApp.API.Controllers
 							Level = parentHierarchyRecord.Level,
 							RecordType = parentHierarchyRecord.RecordType,
 							Name = parentHierarchyRecord.Name,
+							EstimationUnit = parentHierarchyRecord.EstimationUnit,
+							OwnEstimation = parentHierarchyRecord.OwnEstimation,
+							RolledUpEstimation = parentHierarchyRecord.RolledUpEstimation,
 							Children = (List<NestedHierarchyIdRecordDetailsDTO>)hierarchyTree.AllRecords
 						};
 						recordType = parentHierarchyRecord.RecordType?.ToLowerInvariant();
@@ -724,6 +727,9 @@ namespace ItemzApp.API.Controllers
 					Level = node.Level,
 					RecordType = node.RecordType,
 					Name = node.Name,
+					EstimationUnit = node.EstimationUnit,
+					OwnEstimation = node.OwnEstimation,
+					RolledUpEstimation = node.RolledUpEstimation,
 					Children = keptChildren
 				};
 			}

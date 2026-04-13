@@ -195,7 +195,7 @@ namespace ItemzApp.API.Services
 			hierarchyIdRecordDetails.Level = foundHierarchyRecord.FirstOrDefault()!.ItemzHierarchyId!.GetLevel();
 
 			// Adding estimation fields
-			hierarchyIdRecordDetails.EstimationUnit = foundHierarchyRecord.FirstOrDefault()!.EstimationUnit;
+			hierarchyIdRecordDetails.EstimationUnit = foundHierarchyRecord.FirstOrDefault()!.EstimationUnit ?? "";
 			hierarchyIdRecordDetails.OwnEstimation = foundHierarchyRecord.FirstOrDefault()!.OwnEstimation;
 			hierarchyIdRecordDetails.RolledUpEstimation = foundHierarchyRecord.FirstOrDefault()!.RolledUpEstimation;
 
@@ -447,6 +447,9 @@ namespace ItemzApp.API.Services
 						Level = allHierarchyItemzs[i].ItemzHierarchyId!.GetLevel(),
 						RecordType = allHierarchyItemzs[i].RecordType,
 						Name = allHierarchyItemzs[i].Name ?? "",
+						EstimationUnit = allHierarchyItemzs[i].EstimationUnit ?? "",
+						OwnEstimation = allHierarchyItemzs[i].OwnEstimation,
+						RolledUpEstimation = allHierarchyItemzs[i].RolledUpEstimation,
 						Children = new List<NestedHierarchyIdRecordDetailsDTO>()
 					});
 				}
@@ -468,6 +471,9 @@ namespace ItemzApp.API.Services
 							Level = allHierarchyItemzs[i].ItemzHierarchyId!.GetLevel(),
 							RecordType = allHierarchyItemzs[i].RecordType,
 							Name = allHierarchyItemzs[i].Name ?? "",
+							EstimationUnit = allHierarchyItemzs[i].EstimationUnit ?? "",
+							OwnEstimation = allHierarchyItemzs[i].OwnEstimation,
+							RolledUpEstimation = allHierarchyItemzs[i].RolledUpEstimation,
 							Children = new List<NestedHierarchyIdRecordDetailsDTO>()
 						});
 					}
@@ -556,6 +562,9 @@ namespace ItemzApp.API.Services
 						Level = itemzHierarchyRecords[i].ItemzHierarchyId!.GetLevel(),
 						RecordType = itemzHierarchyRecords[i].RecordType,
 						Name = itemzHierarchyRecords[i].Name ?? "",
+						EstimationUnit = itemzHierarchyRecords[i].EstimationUnit ?? "",
+						OwnEstimation = itemzHierarchyRecords[i].OwnEstimation,
+						RolledUpEstimation = itemzHierarchyRecords[i].RolledUpEstimation,
 						Children = new List<NestedHierarchyIdRecordDetailsDTO>()
 					});
 				}
@@ -577,6 +586,9 @@ namespace ItemzApp.API.Services
 							Level = itemzHierarchyRecords[i].ItemzHierarchyId!.GetLevel(),
 							RecordType = itemzHierarchyRecords[i].RecordType,
 							Name = itemzHierarchyRecords[i].Name ?? "",
+							EstimationUnit = itemzHierarchyRecords[i].EstimationUnit ?? "",
+							OwnEstimation = itemzHierarchyRecords[i].OwnEstimation,
+							RolledUpEstimation = itemzHierarchyRecords[i].RolledUpEstimation,
 							Children = new List<NestedHierarchyIdRecordDetailsDTO>()
 						});
 

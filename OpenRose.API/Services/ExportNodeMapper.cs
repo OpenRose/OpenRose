@@ -43,11 +43,23 @@ namespace ItemzApp.API.Services
 
 		public async Task<ProjectExportNode> ConvertToProjectExportNode(NestedHierarchyIdRecordDetailsDTO node)
 		{
-			// 1. Get the full Project entity for mapping
 			var projectEntity = await _projectRepository.GetProjectAsync(node.RecordId);
 			var projectDto = _mapper.Map<GetProjectDTO>(projectEntity);
 
-			// 2. Recursively map ItemzTypes
+			// PHASE 1: Map to Export DTO with estimation fields
+			var projectExportDto = new GetProjectExportDTO
+			{
+				Id = projectDto.Id,
+				Name = projectDto.Name,
+				Status = projectDto.Status,
+				Description = projectDto.Description,
+				CreatedBy = projectDto.CreatedBy,
+				CreatedDate = projectDto.CreatedDate,
+				EstimationUnit = node.EstimationUnit,
+				OwnEstimation = node.OwnEstimation,
+				RolledUpEstimation = node.RolledUpEstimation
+			};
+
 			var itemzTypeExportNodes = new List<ItemzTypeExportNode>();
 			if (node.Children != null)
 			{
@@ -60,7 +72,7 @@ namespace ItemzApp.API.Services
 
 			return new ProjectExportNode
 			{
-				Project = projectDto,
+				Project = projectExportDto,
 				ItemzTypes = itemzTypeExportNodes.Any() ? itemzTypeExportNodes : null
 			};
 		}
@@ -70,7 +82,21 @@ namespace ItemzApp.API.Services
 			var itemzTypeEntity = await _itemzTypeRepository.GetItemzTypeAsync(node.RecordId);
 			var itemzTypeDto = _mapper.Map<GetItemzTypeDTO>(itemzTypeEntity);
 
-			// Recursively map Itemz
+			// PHASE 1: Map to Export DTO with estimation fields
+			var itemzTypeExportDto = new GetItemzTypeExportDTO
+			{
+				Id = itemzTypeDto.Id,
+				Name = itemzTypeDto.Name,
+				Status = itemzTypeDto.Status,
+				Description = itemzTypeDto.Description,
+				CreatedBy = itemzTypeDto.CreatedBy,
+				CreatedDate = itemzTypeDto.CreatedDate,
+				IsSystem = itemzTypeDto.IsSystem,
+				EstimationUnit = node.EstimationUnit,
+				OwnEstimation = node.OwnEstimation,
+				RolledUpEstimation = node.RolledUpEstimation
+			};
+
 			var itemzExportNodes = new List<ItemzExportNode>();
 			if (node.Children != null)
 			{
@@ -83,7 +109,7 @@ namespace ItemzApp.API.Services
 
 			return new ItemzTypeExportNode
 			{
-				ItemzType = itemzTypeDto,
+				ItemzType = itemzTypeExportDto,
 				Itemz = itemzExportNodes.Any() ? itemzExportNodes : null
 			};
 		}
@@ -93,10 +119,23 @@ namespace ItemzApp.API.Services
 			var itemzEntity = await _itemzRepository.GetItemzAsync(node.RecordId);
 			var itemzDto = _mapper.Map<GetItemzDTO>(itemzEntity);
 
-			// --- TAG NORMALIZATION FOR EXPORT ---
-			itemzDto.Tags = TagParsingUtility.NormalizeAndRemoveDuplicates(itemzDto.Tags);
+			// PHASE 1: Map to Export DTO with estimation fields
+			var itemzExportDto = new GetItemzExportDTO
+			{
+				Id = itemzDto.Id,
+				Name = itemzDto.Name,
+				Status = itemzDto.Status,
+				Priority = itemzDto.Priority,
+				Description = itemzDto.Description,
+				CreatedBy = itemzDto.CreatedBy,
+				CreatedDate = itemzDto.CreatedDate,
+				Severity = itemzDto.Severity,
+				Tags = TagParsingUtility.NormalizeAndRemoveDuplicates(itemzDto.Tags),
+				EstimationUnit = node.EstimationUnit,
+				OwnEstimation = node.OwnEstimation,
+				RolledUpEstimation = node.RolledUpEstimation
+			};
 
-			// Recursively map sub-Itemz
 			var subItemzExportNodes = new List<ItemzExportNode>();
 			if (node.Children != null)
 			{
@@ -110,7 +149,7 @@ namespace ItemzApp.API.Services
 
 			return new ItemzExportNode
 			{
-				Itemz = itemzDto,
+				Itemz = itemzExportDto,
 				SubItemz = subItemzExportNodes.Any() ? subItemzExportNodes : null
 			};
 		}
