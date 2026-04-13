@@ -33,17 +33,17 @@ namespace ItemzApp.API.Models
 	// Project hierarchy
 	public class ProjectExportNode
 	{
-		public GetProjectDTO Project { get; set; }
+		public GetProjectExportDTO Project { get; set; }
 		public List<ItemzTypeExportNode>? ItemzTypes { get; set; }
 	}
 	public class ItemzTypeExportNode
 	{
-		public GetItemzTypeDTO ItemzType { get; set; }
+		public GetItemzTypeExportDTO ItemzType { get; set; }
 		public List<ItemzExportNode>? Itemz { get; set; }
 	}
 	public class ItemzExportNode
 	{
-		public GetItemzDTO Itemz { get; set; }
+		public GetItemzExportDTO Itemz { get; set; }
 		public List<ItemzExportNode>? SubItemz { get; set; }
 	}
 
