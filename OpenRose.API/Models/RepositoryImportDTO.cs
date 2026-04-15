@@ -2,7 +2,6 @@
 // Licensed under the Apache License, Version 2.0. 
 // See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 
-
 using System;
 using System.Collections.Generic;
 using ItemzApp.API.Models;
@@ -30,20 +29,22 @@ namespace ItemzApp.API.Models
 		public List<BaselineItemzTraceDTO>? BaselineItemzTraces { get; set; }
 	}
 
-	// Project hierarchy
+	// PHASE 1: Project hierarchy with estimation fields
 	public class ProjectImportNode
 	{
-		public GetProjectDTO Project { get; set; }
+		public GetProjectExportDTO Project { get; set; }
 		public List<ItemzTypeImportNode>? ItemzTypes { get; set; }
 	}
+
 	public class ItemzTypeImportNode
 	{
-		public GetItemzTypeDTO ItemzType { get; set; }
+		public GetItemzTypeExportDTO ItemzType { get; set; }
 		public List<ItemzImportNode>? Itemz { get; set; }
 	}
+
 	public class ItemzImportNode
 	{
-		public GetItemzDTO Itemz { get; set; }
+		public GetItemzExportDTO Itemz { get; set; }
 		public List<ItemzImportNode>? SubItemz { get; set; }
 	}
 
@@ -53,11 +54,13 @@ namespace ItemzApp.API.Models
 		public GetBaselineDTO Baseline { get; set; }
 		public List<BaselineItemzTypeImportNode>? BaselineItemzTypes { get; set; }
 	}
+
 	public class BaselineItemzTypeImportNode
 	{
 		public GetBaselineItemzTypeDTO BaselineItemzType { get; set; }
 		public List<BaselineItemzImportNode>? BaselineItemz { get; set; }
 	}
+
 	public class BaselineItemzImportNode
 	{
 		public GetBaselineItemzDTO BaselineItemz { get; set; }

@@ -396,7 +396,33 @@ namespace ItemzApp.API.Services
 
         }
 
-        public async Task AddOrMoveItemzBetweenTwoHierarchyRecordsAsync(Guid between1stItemzId, Guid between2ndItemzId, Guid addingOrMovingItemzId, string? itemzName)
+		public async Task ImportServiceUpdateItemzEstimationInHierarchyAsync(
+			Guid itemzId,
+			string? estimationUnit = null,
+			decimal? ownEstimation = 0,
+			decimal? rolledUpEstimation = 0)
+        {
+			if (itemzId == Guid.Empty)
+            {
+                throw new ArgumentNullException(nameof(itemzId));
+            }
+            var itemzHierarchyRecordList = _context.ItemzHierarchy!
+                .Where(ih => ih.Id == itemzId);
+            var foundItemzHierarchyRecordCount = itemzHierarchyRecordList.Count();
+            if (foundItemzHierarchyRecordCount != 1)
+            {
+                throw new ApplicationException($"{itemzHierarchyRecordList.Count()} records found for the " +
+                    $"Itemz Id {itemzId} in the system. " +
+                    $"Expected 1 record but instead found {itemzHierarchyRecordList.Count()}");
+            }
+            var itemzHierarchyRecord = await itemzHierarchyRecordList.FirstOrDefaultAsync();
+            itemzHierarchyRecord!.EstimationUnit = estimationUnit;
+            itemzHierarchyRecord!.OwnEstimation = ownEstimation ?? 0;
+            itemzHierarchyRecord.RolledUpEstimation = rolledUpEstimation ?? 0;
+             _context.ItemzHierarchy!.Update(itemzHierarchyRecord);
+		}
+
+		public async Task AddOrMoveItemzBetweenTwoHierarchyRecordsAsync(Guid between1stItemzId, Guid between2ndItemzId, Guid addingOrMovingItemzId, string? itemzName)
         {
             if (between1stItemzId == Guid.Empty)
             {

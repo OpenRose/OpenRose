@@ -9,42 +9,51 @@ using ItemzApp.API.Entities;
 
 namespace ItemzApp.API.Services
 {
-    public interface IItemzTypeRepository
-    {
-        public Task<ItemzType> GetItemzTypeAsync(Guid ItemzTypeId);
+	public interface IItemzTypeRepository
+	{
+		public Task<ItemzType> GetItemzTypeAsync(Guid ItemzTypeId);
 
-        public Task<ItemzType> GetItemzTypeForUpdateAsync(Guid ItemzTypeId);
+		public Task<ItemzType> GetItemzTypeForUpdateAsync(Guid ItemzTypeId);
 
-        public Task<IEnumerable<ItemzType>?> GetItemzTypesAsync();
+		public Task<IEnumerable<ItemzType>?> GetItemzTypesAsync();
 
-        public Task<IEnumerable<ItemzType>> GetItemzTypesAsync(IEnumerable<Guid> itemzTypeIds);
-                
-        public void AddItemzType(ItemzType itemzType);
+		public Task<IEnumerable<ItemzType>> GetItemzTypesAsync(IEnumerable<Guid> itemzTypeIds);
 
-        public Task AddNewItemzTypeHierarchyAsync(ItemzType itemzTypeEntity);
+		public void AddItemzType(ItemzType itemzType);
 
-        public Task<bool> SaveAsync();
+		public Task AddNewItemzTypeHierarchyAsync(ItemzType itemzTypeEntity);
 
-        public Task<bool> ItemzTypeExistsAsync(Guid ItemzTypeId);
+		// PHASE 1: Overload to support estimation fields during import
+		public Task ImportServicesAddNewItemzTypeHierarchyAsync(
+			ItemzType itemzTypeEntity,
+			string? estimationUnit = null,
+			decimal? ownEstimation = null,
+			decimal? rolledUpEstimation = null);
 
-        public void UpdateItemzType(ItemzType itemzType);
+		public Task ImportServiceUpdateItemzTypeEstimationInHierarchyAsync(
+			Guid itemzTypeId,
+			string? estimationUnit = null,
+			decimal? ownEstimation = 0,
+			decimal? rolledUpEstimation = 0);
 
-        public void DeleteItemzType(ItemzType itemzType);
+		public Task<bool> SaveAsync();
 
-        public Task<bool> HasItemzTypeWithNameAsync(Guid projectId, string itemzTypeName);
+		public Task<bool> ItemzTypeExistsAsync(Guid ItemzTypeId);
 
-        public Task<bool> DeleteItemzTypeItemzHierarchyAsync(Guid itemzTypeId);
+		public void UpdateItemzType(ItemzType itemzType);
 
-        //public Task<string?> GetTopItemzHierarchyID(Guid parentItemzTypeId);
+		public void DeleteItemzType(ItemzType itemzType);
 
-        //public Task<string?> GetLastItemzHierarchyID(Guid parentItemzTypeId);
+		public Task<bool> HasItemzTypeWithNameAsync(Guid projectId, string itemzTypeName);
 
-        public Task MoveItemzTypeToAnotherProjectAsync(Guid movingItemzTypeId, Guid targetProjectId, bool atBottomOfChildNodes = true);
+		public Task<bool> DeleteItemzTypeItemzHierarchyAsync(Guid itemzTypeId);
 
-        public Task MoveItemzTypeBetweenTwoHierarchyRecordsAsync(Guid between1stItemzTypeId, Guid between2ndItemzTypeId, Guid movingItemzTypeId);
+		public Task MoveItemzTypeToAnotherProjectAsync(Guid movingItemzTypeId, Guid targetProjectId, bool atBottomOfChildNodes = true);
+
+		public Task MoveItemzTypeBetweenTwoHierarchyRecordsAsync(Guid between1stItemzTypeId, Guid between2ndItemzTypeId, Guid movingItemzTypeId);
 
 		public Task<Guid> CopyItemzTypeAsync(Guid ItemzTypeId);
 
-        public Task<ItemzType?> GetItemzTypeByNameAsync(Guid projectId, string itemzTypeName);
+		public Task<ItemzType?> GetItemzTypeByNameAsync(Guid projectId, string itemzTypeName);
 	}
 }

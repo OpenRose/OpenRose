@@ -32,7 +32,18 @@ namespace ItemzApp.API.Helper
 
 			return new ProjectImportNode
 			{
-				Project = projectDto,
+				Project = new GetProjectExportDTO
+				{
+					Id = projectDto.Id,
+					Name = projectDto.Name,
+					Description = projectDto.Description,
+					Status = projectDto.Status,
+					CreatedBy = projectDto.CreatedBy,
+					CreatedDate = projectDto.CreatedDate,
+					EstimationUnit = null, // EstimationUnit is not available in Baseline, set to null or default
+					OwnEstimation = 0,    // OwnEstimation is not available in Baseline, set to 0 or default
+					RolledUpEstimation = 0 // RolledUpEstimation is not available in Baseline, set to 0 or default
+				},
 				ItemzTypes = itemzTypeNodes
 			};
 		}
@@ -43,7 +54,7 @@ namespace ItemzApp.API.Helper
 		{
 			return new ItemzTypeImportNode
 			{
-				ItemzType = new GetItemzTypeDTO
+				ItemzType = new GetItemzTypeExportDTO
 				{
 					Id = baselineNode.BaselineItemzType.Id,
 					Name = baselineNode.BaselineItemzType.Name,
@@ -51,7 +62,10 @@ namespace ItemzApp.API.Helper
 					Description = baselineNode.BaselineItemzType.Description,
 					CreatedBy = baselineNode.BaselineItemzType.CreatedBy,
 					CreatedDate = baselineNode.BaselineItemzType.CreatedDate,
-					IsSystem = baselineNode.BaselineItemzType.IsSystem
+					IsSystem = baselineNode.BaselineItemzType.IsSystem,
+					EstimationUnit = null, // EstimationUnit is not available in Baseline, set to null or default
+					OwnEstimation = 0,    // OwnEstimation is not available in Baseline, set to 0 or default
+					RolledUpEstimation = 0 // RolledUpEstimation is not available in Baseline, set to 0 or default
 				},
 				Itemz = baselineNode.BaselineItemz?
 					.Select(TransformBaselineNodeToItemzNode) // this already exists
@@ -60,9 +74,9 @@ namespace ItemzApp.API.Helper
 		}
 
 
-		public static GetItemzDTO TransformBaselineItemzToItemz(GetBaselineItemzDTO baselineItemz)
+		public static GetItemzExportDTO TransformBaselineItemzToItemz(GetBaselineItemzDTO baselineItemz)
 		{
-			return new GetItemzDTO
+			return new GetItemzExportDTO
 			{
 				Id = baselineItemz.Id,
 				Name = baselineItemz.Name,
@@ -71,7 +85,10 @@ namespace ItemzApp.API.Helper
 				Description = baselineItemz.Description,
 				CreatedBy = baselineItemz.CreatedBy,
 				CreatedDate = baselineItemz.CreatedDate,
-				Severity = baselineItemz.Severity
+				Severity = baselineItemz.Severity,
+				EstimationUnit = null, // EstimationUnit is not available in Baseline, set to null or default
+				OwnEstimation = 0,    // OwnEstimation is not available in Baseline, set to 0 or default
+				RolledUpEstimation = 0 // RolledUpEstimation is not available in Baseline, set to 0 or default
 			};
 		}
 

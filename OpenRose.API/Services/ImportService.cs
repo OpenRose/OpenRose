@@ -220,6 +220,13 @@ namespace ItemzApp.API.Services
 			{
 				await _itemzRepository.MoveItemzHierarchyAsync(itemzEntity.Id, parentItemzId.Value, true, itemzEntity.Name);
 				await _itemzRepository.SaveAsync();
+
+				await _itemzRepository.ImportServiceUpdateItemzEstimationInHierarchyAsync(itemzEntity.Id
+					, estimationUnit: itemzDto.EstimationUnit
+					, ownEstimation: itemzDto.OwnEstimation
+					, rolledUpEstimation: itemzDto.RolledUpEstimation
+					);
+				await _itemzRepository.SaveAsync();
 			}
 
 			int totalCreated = 1;
@@ -355,6 +362,18 @@ namespace ItemzApp.API.Services
 
 				if (systemParkingLot != null)
 				{
+
+					// Update existing "Parking Lot" System ItemzType with imported data
+					// with estimation data from JSON data file.
+
+					await _itemzTypeRepository.ImportServiceUpdateItemzTypeEstimationInHierarchyAsync(systemParkingLot.Id
+						, estimationUnit: itemzTypeDto.EstimationUnit
+						, ownEstimation: itemzTypeDto.OwnEstimation
+						, rolledUpEstimation: itemzTypeDto.RolledUpEstimation
+						);
+					await _itemzTypeRepository.SaveAsync();
+
+
 					idMap[itemzTypeDto.Id] = systemParkingLot.Id;
 
 					int totalCreated = 0;
@@ -392,7 +411,11 @@ namespace ItemzApp.API.Services
 			_itemzTypeRepository.AddItemzType(itemzTypeEntity);
 			await _itemzTypeRepository.SaveAsync();
 
-			await _itemzTypeRepository.AddNewItemzTypeHierarchyAsync(itemzTypeEntity);
+			await _itemzTypeRepository.ImportServicesAddNewItemzTypeHierarchyAsync(itemzTypeEntity
+					, estimationUnit: itemzTypeDto.EstimationUnit
+					, ownEstimation: itemzTypeDto.OwnEstimation
+					, rolledUpEstimation: itemzTypeDto.RolledUpEstimation);				
+				
 			await _itemzTypeRepository.SaveAsync();
 
 			idMap[itemzTypeDto.Id] = itemzTypeEntity.Id;
@@ -499,7 +522,10 @@ namespace ItemzApp.API.Services
 
 			try
 			{
-				await _projectRepository.AddNewProjectHierarchyAsync(projectEntity);
+				await _projectRepository.ImportServicesAddNewProjectHierarchyAsync(projectEntity
+					, estimationUnit: projectDto.EstimationUnit
+					, ownEstimation: projectDto.OwnEstimation
+					, rolledUpEstimation: projectDto.RolledUpEstimation);
 				await _projectRepository.SaveAsync();
 			}
 			catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)

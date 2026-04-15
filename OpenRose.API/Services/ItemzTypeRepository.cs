@@ -138,7 +138,84 @@ namespace ItemzApp.API.Services
             _context.ItemzHierarchy!.Add(tempItemzTypeHierarchy);
         }
 
-        public async Task<bool> SaveAsync()
+		public async Task ImportServicesAddNewItemzTypeHierarchyAsync(
+			ItemzType itemzTypeEntity,
+			string? estimationUnit = null,
+			decimal? ownEstimation = 0,
+			decimal? rolledUpEstimation = 0)
+		{
+			if (itemzTypeEntity == null)
+			{
+				throw new ArgumentNullException(nameof(itemzTypeEntity));
+			}
+
+			var rootProjectItemz = _context.ItemzHierarchy!.AsNoTracking()
+							.Where(ih => ih.Id == itemzTypeEntity.ProjectId);
+
+			if (rootProjectItemz.Count() != 1)
+			{
+				throw new ApplicationException("Either no Root Project Repository Hierarchy record " +
+					"found OR multiple Root Project Repository Hierarchy records found in the system");
+			}
+
+			// EXPLANATION : We are using SQL Server HierarchyID field type. Now we can use EF Core special
+			// methods to query for all Decendents as per below. We are actually finding all Decendents by saying
+			// First find the ItemzHierarchy record where ID matches RootProject ID. This is expected to be the
+			// Project ID itself which is the root OR parent to newly ItemzType.
+			// Then we find all desendents of Repository which is nothing but existing ItemzType(s). 
+
+			var itemzTypeHierarchyRecords = await _context.ItemzHierarchy!
+					.AsNoTracking()
+					.Where(ih => ih.ItemzHierarchyId!.GetAncestor(1) == rootProjectItemz.FirstOrDefault()!.ItemzHierarchyId!)
+					.OrderByDescending(ih => ih.ItemzHierarchyId!)
+					.ToListAsync();
+
+			var tempItemzTypeHierarchy = new Entities.ItemzHierarchy
+			{
+				Id = itemzTypeEntity.Id,
+				RecordType = "ItemzType",
+				Name = itemzTypeEntity.Name,
+                EstimationUnit = estimationUnit,
+                OwnEstimation = ownEstimation ?? 0,
+                RolledUpEstimation = rolledUpEstimation ?? 0,
+				ItemzHierarchyId = rootProjectItemz.FirstOrDefault()!.ItemzHierarchyId!
+									.GetDescendant(itemzTypeHierarchyRecords.Count() > 0
+														? itemzTypeHierarchyRecords.FirstOrDefault()!.ItemzHierarchyId
+														: null
+												   , null),
+			};
+
+			_context.ItemzHierarchy!.Add(tempItemzTypeHierarchy);
+		}
+
+
+		public async Task ImportServiceUpdateItemzTypeEstimationInHierarchyAsync(
+			Guid itemzTypeId,
+			string? estimationUnit = null,
+			decimal? ownEstimation = 0,
+			decimal? rolledUpEstimation = 0)
+		{
+			if (itemzTypeId == Guid.Empty)
+			{
+				throw new ArgumentNullException(nameof(itemzTypeId));
+			}
+			var itemzTypeHierarchyRecordList = _context.ItemzHierarchy!
+				.Where(ih => ih.Id == itemzTypeId);
+			var foundItemzTypeHierarchyRecordCount = itemzTypeHierarchyRecordList.Count();
+			if (foundItemzTypeHierarchyRecordCount != 1)
+			{
+				throw new ApplicationException($"{itemzTypeHierarchyRecordList.Count()} records found for the " +
+					$"ItemzType Id {itemzTypeId} in the system. " +
+					$"Expected 1 record but instead found {itemzTypeHierarchyRecordList.Count()}");
+			}
+			var itemzTypeHierarchyRecord = await itemzTypeHierarchyRecordList.FirstOrDefaultAsync();
+			itemzTypeHierarchyRecord!.EstimationUnit = estimationUnit;
+			itemzTypeHierarchyRecord!.OwnEstimation = ownEstimation ?? 0;
+			itemzTypeHierarchyRecord.RolledUpEstimation = rolledUpEstimation ?? 0;
+			_context.ItemzHierarchy!.Update(itemzTypeHierarchyRecord);
+		}
+
+		public async Task<bool> SaveAsync()
         {
             return (await _context.SaveChangesAsync() >= 0);
         }
