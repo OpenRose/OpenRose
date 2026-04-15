@@ -62,14 +62,14 @@
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\Old\userProcCreateBaselineByItemzTypeID_202505111625.sql" />
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\Old\userProcCreateBaselineByProjectID_202410300219.sql" />
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcCopyRecordWithChildrenByRecordID_202604081655.sql" />
-		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcCreateBaselineByExistingBaselineID_202603061922.sql" />
+		<EmbeddedResource Include="DbContexts\UserStoredProcedure\Old\userProcCreateBaselineByExistingBaselineID_202603061922.sql" />
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\Old\userProcCreateBaselineByItemzTypeID_202512251739.sql" />
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\Old\userProcCreateBaselineByProjectID_202511051626.sql" />
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcCreateBaselineByExistingBaselineID_202604151733.sql" />
-		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcCreateBaselineByItemzTypeID_202603061821.sql" />
+		<EmbeddedResource Include="DbContexts\UserStoredProcedure\Old\userProcCreateBaselineByItemzTypeID_202603061821.sql" />
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\Old\userProcCreateBaselineByProjectID_202512251819.sql" />
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcCreateBaselineByItemzTypeID_202604151741.sql" />
-		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcCreateBaselineByProjectID_202603061820.sql" />
+		<EmbeddedResource Include="DbContexts\UserStoredProcedure\Old\userProcCreateBaselineByProjectID_202603061820.sql" />
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcCreateBaselineByProjectID_202604151737.sql" />
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcDeleteAllOrphanedBaselineItemz_202407251305.sql" />
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcDeleteItemzHierarchyRecordsByItemzTypeId_202412091028.sql" />
