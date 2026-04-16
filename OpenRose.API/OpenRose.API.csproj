@@ -42,6 +42,7 @@
 	  <None Remove="DbContexts\UserStoredProcedure\userProcCreateBaselineByProjectID_202512251819.sql" />
 	  <None Remove="DbContexts\UserStoredProcedure\userProcCreateBaselineByProjectID_202603061820.sql" />
 	  <None Remove="DbContexts\UserStoredProcedure\userProcCreateBaselineByProjectID_202604151737.sql" />
+	  <None Remove="DbContexts\UserStoredProcedure\userProcRecalculateBaselineRollUpEstimations_202604162034.sql" />
 	  <None Remove="DbContexts\UserStoredProcedure\userProcRecalculateProjectRollUpEstimations_202604091450.sql" />
 	  <None Remove="DbContexts\UserStoredProcedure\userProcSetEstimationUnitForProject_202604101615.sql" />
 	</ItemGroup>
@@ -75,6 +76,7 @@
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcDeleteItemzHierarchyRecordsByItemzTypeId_202412091028.sql" />
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcDeleteItemzHierarchyRecordsByProjectId_202412090713.sql" />
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcDeleteSingleItemzByItemzID_202406081944.sql" />
+		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcRecalculateBaselineRollUpEstimations_202604162034.sql" />
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcRecalculateProjectRollUpEstimations_202604091450.sql" />
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcSetEstimationUnitForProject_202604101615.sql" />
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcUpdateBaselineItemz_202408060015.sql" />
