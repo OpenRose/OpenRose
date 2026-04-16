@@ -99,6 +99,79 @@ namespace ItemzApp.API.Services
 		}
 
 
+
+		/// <summary>
+		/// Recalculates roll-up estimations for all records under a specific baseline.
+		/// This is an on-demand operation that user can trigger manually.
+		/// PHASE 5: Used for Baseline hierarchy data with INCLUDED/EXCLUDED support
+		/// 
+		/// Uses optimized SQL Server stored procedure for superior performance and scalability.
+		/// The stored procedure uses CTE-based recursive query combined with set-based UPDATE,
+		/// leveraging SQL Server's built-in HierarchyId optimizations.
+		/// 
+		/// Respects the isIncluded flag for each BaselineItemz record:
+		/// - If EXCLUDED: RolledUpEstimation = ZERO (never contributes to parent)
+		/// - If INCLUDED: RolledUpEstimation = OwnEstimation + SUM(INCLUDED descendants' OwnEstimation)
+		/// 
+		/// Single database roundtrip with minimal server load and memory usage.
+		/// </summary>
+		/// <param name="baselineHierarchyRecordId">The ID of the Baseline hierarchy record to recalculate</param>
+		/// <returns>True if successful, False if operation failed</returns>
+		public async Task<bool> RecalculateBaselineRollUpEstimationsAsync(Guid baselineHierarchyRecordId)
+		{
+			if (baselineHierarchyRecordId == Guid.Empty)
+			{
+				throw new ArgumentNullException(nameof(baselineHierarchyRecordId));
+			}
+
+			// EXPLANATION: Check if record exists in BaselineItemzHierarchy table
+			if (!_context.BaselineItemzHierarchy!.AsNoTracking()
+							.Where(bih => bih.Id == baselineHierarchyRecordId)
+							.Any())
+			{
+				throw new ArgumentException("Baseline hierarchy record not found", nameof(baselineHierarchyRecordId));
+			}
+
+			try
+			{
+				var sqlParameters = new[]
+				{
+			new SqlParameter
+			{
+				ParameterName = "BaselineHierarchyRecordId",
+				Value = baselineHierarchyRecordId,
+				SqlDbType = System.Data.SqlDbType.UniqueIdentifier
+			}
+		};
+
+				// EXPLANATION:
+				// Matches your existing pattern for calling stored procedures.
+				// No OUTPUT parameter needed because your SP does not return one.
+				// Calls userProcRecalculateBaselineRollUpEstimations which handles isIncluded flag logic.
+				await _context.Database.ExecuteSqlRawAsync(
+					"EXEC userProcRecalculateBaselineRollUpEstimations @BaselineHierarchyRecordId",
+					sqlParameters);
+
+				return true;
+			}
+			catch (SqlException sqlEx)
+			{
+				_logger.LogError(
+					$"RecalculateBaselineRollUpEstimationsAsync: SQL Exception occurred while recalculating roll-up estimations " +
+					$"for Baseline ID {baselineHierarchyRecordId}: {sqlEx.Message}", sqlEx);
+
+				return false;
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(
+					$"RecalculateBaselineRollUpEstimationsAsync: Exception occurred while recalculating roll-up estimations " +
+					$"for Baseline ID {baselineHierarchyRecordId}: {ex.Message}", ex);
+
+				return false;
+			}
+		}
+
 		///// <summary>
 		///// Recalculates roll-up estimation for a single hierarchy record based on its children.
 		///// This is called after any change to a record's own estimation or hierarchy structure.
