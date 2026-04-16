@@ -421,6 +421,86 @@ namespace ItemzApp.API.Controllers
 
 		}
 
+		/// <summary>
+		/// Recalculates all roll-up estimations for a specific baseline
+		/// </summary>
+		/// <param name="baselineHierarchyRecordId">The GUID of the Baseline hierarchy record</param>
+		/// <returns>Success or failure status with message</returns>
+		/// <response code="200">Roll-up recalculation completed successfully</response>
+		/// <response code="400">Recalculation failed or invalid Baseline ID</response>
+		/// <response code="404">Baseline record not found</response>
+		[HttpPost("RecalculateBaselineRollUpEstimations/{baselineHierarchyRecordId:Guid}",
+			Name = "__Post_Recalculate_Baseline_RollUp_Estimations_By_GUID__")]
+		[ProducesResponseType(StatusCodes.Status200OK)]
+		[ProducesResponseType(StatusCodes.Status400BadRequest)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		public async Task<IActionResult> RecalculateBaselineRollUpEstimations(
+			Guid baselineHierarchyRecordId,
+			[FromServices] EstimationRollupService estimationRollupService)
+		{
+			try
+			{
+				var baselineHierarchyIdRecordDetailsDTO = await _baselineHierarchyRepository.GetBaselineHierarchyRecordDetailsByID(baselineHierarchyRecordId);
+
+				if (baselineHierarchyIdRecordDetailsDTO == null || baselineHierarchyIdRecordDetailsDTO.RecordType != "Baseline")
+				{
+					var errorMessage = "Invalid Baseline Hierarchy Record ID provided. Please provide a valid Baseline record ID.";
+					_logger.LogWarning(errorMessage);
+					return BadRequest(new
+					{
+						success = false,
+						message = errorMessage
+					});
+				}
+
+				_logger.LogInformation($"Request received to recalculate roll-up estimations for Baseline ID: {baselineHierarchyRecordId}");
+
+				var result = await estimationRollupService.RecalculateBaselineRollUpEstimationsAsync(baselineHierarchyRecordId);
+
+				if (result)
+				{
+					var successMessage = "Roll-up estimations recalculated successfully for the baseline";
+					_logger.LogInformation(successMessage);
+
+					return Ok(new
+					{
+						success = true,
+						message = successMessage
+					});
+				}
+				else
+				{
+					var errorMessage = "Roll-up estimation recalculation failed. Please try again.";
+					_logger.LogWarning(errorMessage);
+					return BadRequest(new
+					{
+						success = false,
+						message = errorMessage
+					});
+				}
+			}
+			catch (ArgumentException argEx)
+			{
+				var errorMessage = $"Baseline record not found: {argEx.Message}";
+				_logger.LogWarning(errorMessage);
+				return NotFound(new
+				{
+					success = false,
+					message = errorMessage
+				});
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Exception occurred during baseline roll-up recalculation: {ex.Message}", ex);
+				return BadRequest(new
+				{
+					success = false,
+					message = $"Exception occurred during roll-up recalculation: {ex.Message}"
+				});
+			}
+		}
+
+
 
 		// We have configured in startup class our own custom implementation of 
 		// problem Details. Now we are overriding ValidationProblem method that is defined in ControllerBase
