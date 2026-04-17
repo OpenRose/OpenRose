@@ -231,37 +231,37 @@ namespace OpenRose.WebUI.Client.Services.Hierarchy
 
 		#endregion
 
-		#region __Get_Hierarchy_Record_With_Estimations_Async__
+		//#region __Get_Hierarchy_Record_With_Estimations_Async__
 
-		public async Task<HierarchyIdRecordDetailsDTO> __Get_Hierarchy_Record_With_Estimations_Async__(Guid recordId)
-		{
-			return await __Get_Hierarchy_Record_With_Estimations_Async__(recordId, CancellationToken.None);
-		}
+		//public async Task<HierarchyIdRecordDetailsDTO> __Get_Hierarchy_Record_With_Estimations_Async__(Guid recordId)
+		//{
+		//	return await __Get_Hierarchy_Record_With_Estimations_Async__(recordId, CancellationToken.None);
+		//}
 
-		public async Task<HierarchyIdRecordDetailsDTO> __Get_Hierarchy_Record_With_Estimations_Async__(Guid recordId, CancellationToken cancellationToken)
-		{
-			try
-			{
-				if (recordId == Guid.Empty)
-				{
-					throw new ArgumentNullException(nameof(recordId), "Record ID is required");
-				}
+		//public async Task<HierarchyIdRecordDetailsDTO> __Get_Hierarchy_Record_With_Estimations_Async__(Guid recordId, CancellationToken cancellationToken)
+		//{
+		//	try
+		//	{
+		//		if (recordId == Guid.Empty)
+		//		{
+		//			throw new ArgumentNullException(nameof(recordId), "Record ID is required");
+		//		}
 
-				var httpResponseMessage = await _httpClient.GetFromJsonAsync<HierarchyIdRecordDetailsDTO>(
-					$"/api/Hierarchy/{recordId}",
-					cancellationToken);
+		//		var httpResponseMessage = await _httpClient.GetFromJsonAsync<HierarchyIdRecordDetailsDTO>(
+		//			$"/api/Hierarchy/{recordId}",
+		//			cancellationToken);
 
-				return httpResponseMessage!;
-			}
-			catch (Exception)
-			{
-				// Log exception if needed
-			}
+		//		return httpResponseMessage!;
+		//	}
+		//	catch (Exception)
+		//	{
+		//		// Log exception if needed
+		//	}
 
-			return default;
-		}
+		//	return default;
+		//}
 
-		#endregion
+		//#endregion
 
 		#region __POST_Recalculate_Project_RollUpEstimations__Async
 		public async Task<string> __POST_Recalculate_Project_RollUpEstimations__Async(Guid projectHierarchyRecordId)

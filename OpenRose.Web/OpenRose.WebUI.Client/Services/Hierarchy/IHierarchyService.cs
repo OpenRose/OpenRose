@@ -27,10 +27,10 @@ namespace OpenRose.WebUI.Client.Services.Hierarchy
 		/// </summary>
 		public Task<bool> __Update_Hierarchy_Estimation_Async__(Guid recordId, UpdateHierarchyEstimationDTO updateEstimationDTO);
 
-		/// <summary>
-		/// PHASE 1: Gets hierarchy record with all estimation details
-		/// </summary>
-		public Task<HierarchyIdRecordDetailsDTO> __Get_Hierarchy_Record_With_Estimations_Async__(Guid recordId);
+		///// <summary>
+		///// PHASE 1: Gets hierarchy record with all estimation details
+		///// </summary>
+		//public Task<HierarchyIdRecordDetailsDTO> __Get_Hierarchy_Record_With_Estimations_Async__(Guid recordId);
 
 		public Task<string> __POST_Recalculate_Project_RollUpEstimations__Async(Guid projectHierarchyRecordId);
 
