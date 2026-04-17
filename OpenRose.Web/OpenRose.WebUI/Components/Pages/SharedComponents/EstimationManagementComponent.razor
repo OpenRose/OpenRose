@@ -146,7 +146,7 @@ else
         IsLoading = true;
         try
         {
-            HierarchyData = await HierarchyService.__Get_Hierarchy_Record_With_Estimations_Async__(RecordId);
+            HierarchyData = await HierarchyService.__Get_Hierarchy_Record_Details_By_GUID__Async(RecordId);
             OwnEstimationText = (HierarchyData?.OwnEstimation)?.ToString() ?? "";
             OriginalEstimationUnit = HierarchyData?.EstimationUnit ?? "";
         }
