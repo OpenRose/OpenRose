@@ -13,6 +13,7 @@
 @using OpenRose.WebUI.Components.Pages.Common
 @using OpenRose.WebUI.Client.SharedModels
 @using OpenRose.WebUI.Client.SharedModels.BetweenPagesAndComponent
+@using OpenRose.WebUI.Components.Pages.SharedComponents
 @using OpenRose.WebUI.Components.Utilities
 @using OpenRose.WebUI.Services
 @using Microsoft.AspNetCore.Components.Forms
@@ -144,6 +145,17 @@
 		</MudForm>
 	</MudPaper>
 			</MudTabPanel>
+
+			<MudTabPanel Icon="@Icons.Material.Filled.Money" Text="Estimation">
+				<MudPaper Class="pa-0 mud-height-full"
+							Width="100%"
+							Outlined="false"
+							Elevation="0">
+                    <BaselineEstimationComponent @ref="baselineEstimationComponent"
+                                                    RecordId="@BaselineItemzId"
+                                                    RecordType="BaselineItemz" />
+				</MudPaper>
+			</MudTabPanel>
 			<MudTabPanel Icon="@Icons.Material.Filled.Hub" Text="Treaceability">
 				<BaselineTraceabilityComponent BaselineItemzId="@BaselineItemzId" />
 			</MudTabPanel>
@@ -180,6 +192,8 @@
 	private MarkupString convertedMarkdown;
 
 	private List<string>? tagsList = new List<string>();
+
+	private BaselineEstimationComponent? baselineEstimationComponent;
 
 	protected override async Task OnAfterRenderAsync(bool firstRender)
 	{
