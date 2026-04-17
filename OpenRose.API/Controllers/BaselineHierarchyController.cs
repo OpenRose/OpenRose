@@ -446,11 +446,7 @@ namespace ItemzApp.API.Controllers
 				{
 					var errorMessage = "Invalid Baseline Hierarchy Record ID provided. Please provide a valid Baseline record ID.";
 					_logger.LogWarning(errorMessage);
-					return BadRequest(new
-					{
-						success = false,
-						message = errorMessage
-					});
+					return BadRequest(errorMessage);
 				}
 
 				_logger.LogInformation($"Request received to recalculate roll-up estimations for Baseline ID: {baselineHierarchyRecordId}");
@@ -462,41 +458,25 @@ namespace ItemzApp.API.Controllers
 					var successMessage = "Roll-up estimations recalculated successfully for the baseline";
 					_logger.LogInformation(successMessage);
 
-					return Ok(new
-					{
-						success = true,
-						message = successMessage
-					});
+					return Ok(successMessage);
 				}
 				else
 				{
 					var errorMessage = "Roll-up estimation recalculation failed. Please try again.";
 					_logger.LogWarning(errorMessage);
-					return BadRequest(new
-					{
-						success = false,
-						message = errorMessage
-					});
+					return BadRequest(errorMessage);
 				}
 			}
 			catch (ArgumentException argEx)
 			{
 				var errorMessage = $"Baseline record not found: {argEx.Message}";
 				_logger.LogWarning(errorMessage);
-				return NotFound(new
-				{
-					success = false,
-					message = errorMessage
-				});
+				return NotFound(errorMessage);
 			}
 			catch (Exception ex)
 			{
 				_logger.LogError($"Exception occurred during baseline roll-up recalculation: {ex.Message}", ex);
-				return BadRequest(new
-				{
-					success = false,
-					message = $"Exception occurred during roll-up recalculation: {ex.Message}"
-				});
+				return BadRequest("Exception occurred during roll-up recalculation: {ex.Message}");
 			}
 		}
 
