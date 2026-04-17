@@ -14,6 +14,7 @@
 @using OpenRose.WebUI.Components.Pages.Common
 @using Microsoft.AspNetCore.Components.Forms
 @using System.Globalization
+@using OpenRose.WebUI.Components.Pages.SharedComponents
 @using OpenRose.WebUI.Components.Utilities
 @* @inject NavigationManager NavManager *@
 @inject IFindProjectAndBaselineIdsByBaselineItemzIdService FindProjectAndBaselineIdsByBaselineItemzIdService
@@ -124,6 +125,17 @@
 					</MudCardContent>
 				</MudCard>
 			</MudTabPanel>
+
+			<MudTabPanel Icon="@Icons.Material.Filled.Money" Text="Estimation">
+				<MudPaper Class="pa-0 mud-height-full"
+							Width="100%"
+							Outlined="false"
+							Elevation="0">
+                    <BaselineEstimationComponent RecordId="@BaselineItemzId"
+												RecordType="BaselineItemz" />
+				</MudPaper>
+			</MudTabPanel>
+
 			<MudTabPanel Icon="@Icons.Material.Filled.Hub" Text="Treaceability">
 				<BaselineTraceabilityTreeViewComponent BaselineItemzId="@BaselineItemzId" />
 			</MudTabPanel>
