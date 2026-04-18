@@ -214,7 +214,137 @@ namespace ItemzApp.API.Services
         }
 
 
-        public void Dispose()
+
+
+		/// <summary>
+		/// PHASE 5: Handles EXCLUSION scenario ONLY (Scenario 1)
+		/// 
+		/// Single responsibility: Deduct a record's roll-up estimation from all ancestors
+		/// 
+		/// Prerequisites:
+		/// - The target record has already been marked as isIncluded = false by the stored procedure
+		/// - The target record MUST be of type 'BaselineItemz'
+		/// 
+		/// Process:
+		/// 1. Validate that target record is of type 'BaselineItemz'
+		/// 2. Capture the target record's current RolledUpEstimation value
+		/// 3. Set target record's RolledUpEstimation = ZERO
+		/// 4. Traverse hierarchy upward to find the parent Baseline record
+		/// 5. Deduct the captured value from every ancestor up to (and including) that Baseline record
+		/// 
+		/// This method performs NO recalculations - it only propagates the deduction upward
+		/// </summary>
+		public async Task<bool> DeductRollUpFromAncestryChainAsync(
+			Guid baselineItemzHierarchyRecordId)
+		{
+			try
+			{
+				if (baselineItemzHierarchyRecordId == Guid.Empty)
+				{
+					return false;
+				}
+
+				// Step 1: Get the target record
+				var targetRecord = await _baselineContext.BaselineItemzHierarchy!
+					.FirstOrDefaultAsync(bih => bih.Id == baselineItemzHierarchyRecordId);
+
+				if (targetRecord == null || targetRecord.BaselineItemzHierarchyId == null)
+				{
+					return false;
+				}
+
+				// Step 2: Validate that the target record is of type 'BaselineItemz'
+				if (targetRecord.RecordType != "BaselineItemz")
+				{
+					throw new ApplicationException(
+						$"DeductRollUpFromAncestryChainAsync can only be called for 'BaselineItemz' record type. " +
+						$"Provided record is of type '{targetRecord.RecordType}'");
+				}
+
+				// Step 3: Capture the RolledUpEstimation value BEFORE setting it to zero
+				decimal deductionAmount = targetRecord.RolledUpEstimation;
+
+				// Step 4: Set target record's RolledUpEstimation to ZERO
+				targetRecord.RolledUpEstimation = 0;
+				await _baselineContext.SaveChangesAsync();
+
+				// Step 5: If deduction amount is zero, no need to propagate
+				if (deductionAmount == 0)
+				{
+					return true;
+				}
+
+				// Step 6: Find the parent Baseline record by traversing the hierarchy upward
+				HierarchyId? currentHierarchyId = targetRecord.BaselineItemzHierarchyId;
+				BaselineItemzHierarchy? baselineRecord = null;
+
+				// Traverse up the hierarchy to find the Baseline record
+				while (currentHierarchyId != null && currentHierarchyId.GetLevel() > 0)
+				{
+					// Move to parent level
+					currentHierarchyId = currentHierarchyId.GetAncestor(1);
+
+					// Check if a record exists at this level with RecordType = 'Baseline'
+					baselineRecord = await _baselineContext.BaselineItemzHierarchy!
+						.FirstOrDefaultAsync(bih =>
+							bih.BaselineItemzHierarchyId == currentHierarchyId
+							&& bih.RecordType == "Baseline");
+
+					if (baselineRecord != null)
+					{
+						break;
+					}
+				}
+
+				// Step 7: If Baseline record not found, something is wrong with the hierarchy
+				if (baselineRecord == null)
+				{
+					throw new ApplicationException(
+						$"No parent Baseline record found in hierarchy for BaselineItemz {baselineItemzHierarchyRecordId}. " +
+						"The hierarchy structure may be corrupted.");
+				}
+
+				// Step 8: Get all ancestor records from target's parent up to (and including) the Baseline
+				var ancestorsToUpdate = await _baselineContext.BaselineItemzHierarchy!
+					.Where(bih =>
+						// Must be an ancestor of the target record
+						targetRecord.BaselineItemzHierarchyId!.IsDescendantOf(bih.BaselineItemzHierarchyId!) == true
+						// Must be a descendant of (or equal to) the baseline record
+						&& bih.BaselineItemzHierarchyId!.IsDescendantOf(baselineRecord.BaselineItemzHierarchyId!) == true
+						// Exclude the target record itself
+						&& bih.BaselineItemzHierarchyId != targetRecord.BaselineItemzHierarchyId)
+					.OrderByDescending(bih => bih.BaselineItemzHierarchyId!.GetLevel())
+					.ToListAsync();
+
+				// Step 9: Deduct the captured amount from each ancestor
+				foreach (var ancestor in ancestorsToUpdate)
+				{
+					ancestor.RolledUpEstimation -= deductionAmount;
+				}
+
+				// Step 10: Save all changes
+				await _baselineContext.SaveChangesAsync();
+
+				return true;
+			}
+			catch (ApplicationException ex)
+			{
+				throw; // Re-throw application exceptions as-is
+			}
+			catch (Exception ex)
+			{
+				throw new ApplicationException(
+					$"Error deducting roll-up estimation from ancestry chain: {ex.Message}",
+					ex);
+			}
+		}
+
+
+
+
+
+
+		public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);

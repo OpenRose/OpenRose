@@ -22,6 +22,8 @@ namespace ItemzApp.API.Services
         public Task<IEnumerable<BaselineItemz>> GetBaselineItemzsAsync(IEnumerable<Guid> baselineItemzIds);
 
         public Task<bool> UpdateBaselineItemzsAsync(UpdateBaselineItemz updateBaselineItemz);
-        public Task<bool> NOT_IN_USE_CheckBaselineitemzForInclusionBeforeImplementingAsync(UpdateBaselineItemz updateBaselineItemz);
+
+		Task<bool> DeductRollUpFromAncestryChainAsync(Guid baselineItemzHierarchyRecordId);
+		public Task<bool> NOT_IN_USE_CheckBaselineitemzForInclusionBeforeImplementingAsync(UpdateBaselineItemz updateBaselineItemz);
     }
 }
