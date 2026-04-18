@@ -27,6 +27,8 @@ namespace ItemzApp.API.Services
 
 		Task<bool> AddRollUpToAncestryChainAsync(Guid baselineItemzHierarchyRecordId);
 
+		Task<bool> AddRollUpToAncestryChainForIncludeAllChildBaselineItemzAsync(Guid baselineItemzHierarchyRecordId);
+
 		public Task<bool> NOT_IN_USE_CheckBaselineitemzForInclusionBeforeImplementingAsync(UpdateBaselineItemz updateBaselineItemz);
     }
 }

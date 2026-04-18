@@ -478,6 +478,99 @@ namespace ItemzApp.API.Services
 		}
 
 
+		/// <summary>
+		/// PHASE 5: Handles INCLUSION ALL CHILDREN scenario (Scenario 3)
+		/// 
+		/// Single responsibility: Call stored procedure that handles entire scenario
+		/// 
+		/// Prerequisites:
+		/// - The target record has already been marked as isIncluded = true by the stored procedure
+		/// - ALL descendants have already been marked as isIncluded = true by the stored procedure
+		/// - The target record MUST be of type 'BaselineItemz'
+		/// 
+		/// Process:
+		/// 1. Validate that target record is of type 'BaselineItemz'
+		/// 2. Call stored procedure which:
+		///    - Recalculates target and all descendants (bottom-up from leaf nodes)
+		///    - Updates all descendants with new roll-up values
+		///    - Calculates and updates target record's roll-up
+		///    - Propagates target's final value to all ancestors up to Baseline
+		/// 3. Returns success/failure status
+		/// 
+		/// The entire operation is atomic - either all succeeds or all rolls back
+		/// </summary>
+		public async Task<bool> AddRollUpToAncestryChainForIncludeAllChildBaselineItemzAsync(
+			Guid baselineItemzHierarchyRecordId)
+		{
+			try
+			{
+				if (baselineItemzHierarchyRecordId == Guid.Empty)
+				{
+					return false;
+				}
+
+				// Step 1: Get the target record for validation
+				var targetRecord = await _baselineContext.BaselineItemzHierarchy!
+					.FirstOrDefaultAsync(bih => bih.Id == baselineItemzHierarchyRecordId);
+
+				if (targetRecord == null)
+				{
+					return false;
+				}
+
+				// Step 2: Validate that the target record is of type 'BaselineItemz'
+				if (targetRecord.RecordType != "BaselineItemz")
+				{
+					throw new ApplicationException(
+						$"AddRollUpToAncestryChainForScenarioThreeAsync can only be called for 'BaselineItemz' record type. " +
+						$"Provided record is of type '{targetRecord.RecordType}'");
+				}
+
+				// Step 3: Create parameter for stored procedure
+				var sqlParameters = new[]
+				{
+					new SqlParameter
+					{
+						ParameterName = "BaselineItemzHierarchyRecordId",
+						Value = baselineItemzHierarchyRecordId,
+						SqlDbType = System.Data.SqlDbType.UniqueIdentifier
+					}
+				};
+
+				// Step 4: Execute stored procedure
+				// EXPLANATION: The stored procedure handles:
+				// - Bottom-up calculation of all descendants
+				// - Update of all descendants in database
+				// - Calculation and update of target record
+				// - Propagation of target's value to all ancestors up to Baseline
+				// - All within a single atomic transaction
+				try
+				{
+					await _baselineContext.Database.ExecuteSqlRawAsync(
+						"EXEC userProcRecalculateBaselineItemzDescendantsRollUpEstimations @BaselineItemzHierarchyRecordId",
+						sqlParameters);
+
+					return true;
+				}
+				catch (Exception ex)
+				{
+					throw new ApplicationException(
+						$"Failed to execute Scenario 3 procedure for BaselineItemz {baselineItemzHierarchyRecordId}: {ex.Message}",
+						ex);
+				}
+			}
+			catch (ApplicationException ex)
+			{
+				throw; // Re-throw application exceptions as-is
+			}
+			catch (Exception ex)
+			{
+				throw new ApplicationException(
+					$"Error in Scenario 3 processing: {ex.Message}",
+					ex);
+			}
+		}
+
 
 		public void Dispose()
         {

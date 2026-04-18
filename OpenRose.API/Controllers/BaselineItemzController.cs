@@ -258,6 +258,29 @@ namespace ItemzApp.API.Controllers
 							}
 						}
 
+						// PHASE 5: SCENARIO 3 - If INCLUDING (all children), handle descendants recalculation and ancestor propagation
+						if (isSuccessful && baselineItemzsToBeUpdated.ShouldBeIncluded == true && baselineItemzsToBeUpdated.SingleNodeInclusion == false)
+						{
+							_logger.LogInformation(
+								"{FormattedControllerAndActionNames}Processing Scenario 3: INCLUSION (all children) with descendants recalculation for {ItemCount} items",
+								ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+								baselineItemzsToBeUpdated.BaselineItemzIds.Count());
+
+							foreach (var baselineItemzId in baselineItemzsToBeUpdated.BaselineItemzIds)
+							{
+								var scenario3Success = await _baselineItemzRepository.AddRollUpToAncestryChainForIncludeAllChildBaselineItemzAsync(
+									baselineItemzId);
+
+								if (!scenario3Success)
+								{
+									_logger.LogWarning(
+										"{FormattedControllerAndActionNames}Failed to process Scenario 3 for BaselineItemz {baselineItemzId}",
+										ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+										baselineItemzId);
+								}
+							}
+						}
+
 						_logger.LogDebug("{FormattedControllerAndActionNames}Request to update BaselineItemzs for BaselineID {BaselineId} was successful",
 							ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
 							baselineItemzsToBeUpdated.BaselineId);
