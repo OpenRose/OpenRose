@@ -340,7 +340,142 @@ namespace ItemzApp.API.Services
 		}
 
 
+		/// <summary>
+		/// PHASE 5: Handles INCLUSION scenario ONLY (Scenario 2)
+		/// 
+		/// Single responsibility: Add a record's roll-up estimation to all ancestors
+		/// 
+		/// Prerequisites:
+		/// - The target record has already been marked as isIncluded = true by the stored procedure
+		/// - The target record MUST be of type 'BaselineItemz'
+		/// 
+		/// Process:
+		/// 1. Validate that target record is of type 'BaselineItemz'
+		/// 2. Recalculate target record's RolledUpEstimation = OwnEstimation + SUM(INCLUDED immediate children's RolledUpEstimation)
+		/// 3. Traverse hierarchy upward to find the parent Baseline record
+		/// 4. Add the calculated RolledUpEstimation to every ancestor up to (and including) that Baseline record
+		/// 
+		/// Note: EXCLUDED records are treated as having effective RolledUpEstimation = 0, regardless of their stored value
+		/// This method recalculates only the target record, not its descendants
+		/// </summary>
+		public async Task<bool> AddRollUpToAncestryChainAsync(
+			Guid baselineItemzHierarchyRecordId)
+		{
+			try
+			{
+				if (baselineItemzHierarchyRecordId == Guid.Empty)
+				{
+					return false;
+				}
 
+				// Step 1: Get the target record
+				var targetRecord = await _baselineContext.BaselineItemzHierarchy!
+					.FirstOrDefaultAsync(bih => bih.Id == baselineItemzHierarchyRecordId);
+
+				if (targetRecord == null || targetRecord.BaselineItemzHierarchyId == null)
+				{
+					return false;
+				}
+
+				// Step 2: Validate that the target record is of type 'BaselineItemz'
+				if (targetRecord.RecordType != "BaselineItemz")
+				{
+					throw new ApplicationException(
+						$"AddRollUpToAncestryChainAsync can only be called for 'BaselineItemz' record type. " +
+						$"Provided record is of type '{targetRecord.RecordType}'");
+				}
+
+				// Step 3: Treat EXCLUDED records as having effective RolledUpEstimation = 0
+				// This handles cases where a record was EXCLUDED but retained a stale RolledUpEstimation value
+				decimal oldRolledUpEstimation = targetRecord.isIncluded == false ? 0 : targetRecord.RolledUpEstimation;
+
+				// Step 4: Recalculate RolledUpEstimation = OwnEstimation + SUM(INCLUDED immediate children's RolledUpEstimation)
+				var childrenSum = await _baselineContext.BaselineItemzHierarchy!
+					.Where(bih =>
+						bih.BaselineItemzHierarchyId!.GetAncestor(1) == targetRecord.BaselineItemzHierarchyId
+						&& bih.isIncluded == true)
+					.SumAsync(bih => bih.RolledUpEstimation);
+
+				decimal newRolledUpEstimation = targetRecord.OwnEstimation + childrenSum;
+
+				// Step 5: Update target record with new RolledUpEstimation
+				targetRecord.RolledUpEstimation = newRolledUpEstimation;
+				await _baselineContext.SaveChangesAsync();
+
+				// Step 6: Calculate the delta (change) from old to new value
+				// Since we treated old excluded records as 0, this ensures correct propagation
+				decimal additionAmount = newRolledUpEstimation - oldRolledUpEstimation;
+
+				// Step 7: If addition amount is zero, no need to propagate
+				if (additionAmount == 0)
+				{
+					return true;
+				}
+
+				// Step 8: Find the parent Baseline record by traversing the hierarchy upward
+				HierarchyId? currentHierarchyId = targetRecord.BaselineItemzHierarchyId;
+				BaselineItemzHierarchy? baselineRecord = null;
+
+				// Traverse up the hierarchy to find the Baseline record
+				while (currentHierarchyId != null && currentHierarchyId.GetLevel() > 0)
+				{
+					// Move to parent level
+					currentHierarchyId = currentHierarchyId.GetAncestor(1);
+
+					// Check if a record exists at this level with RecordType = 'Baseline'
+					baselineRecord = await _baselineContext.BaselineItemzHierarchy!
+						.FirstOrDefaultAsync(bih =>
+							bih.BaselineItemzHierarchyId == currentHierarchyId
+							&& bih.RecordType == "Baseline");
+
+					if (baselineRecord != null)
+					{
+						break;
+					}
+				}
+
+				// Step 9: If Baseline record not found, something is wrong with the hierarchy
+				if (baselineRecord == null)
+				{
+					throw new ApplicationException(
+						$"No parent Baseline record found in hierarchy for BaselineItemz {baselineItemzHierarchyRecordId}. " +
+						"The hierarchy structure may be corrupted.");
+				}
+
+				// Step 10: Get all ancestor records from target's parent up to (and including) the Baseline
+				var ancestorsToUpdate = await _baselineContext.BaselineItemzHierarchy!
+					.Where(bih =>
+						// Must be an ancestor of the target record
+						targetRecord.BaselineItemzHierarchyId!.IsDescendantOf(bih.BaselineItemzHierarchyId!) == true
+						// Must be a descendant of (or equal to) the baseline record
+						&& bih.BaselineItemzHierarchyId!.IsDescendantOf(baselineRecord.BaselineItemzHierarchyId!) == true
+						// Exclude the target record itself
+						&& bih.BaselineItemzHierarchyId != targetRecord.BaselineItemzHierarchyId)
+					.OrderByDescending(bih => bih.BaselineItemzHierarchyId!.GetLevel())
+					.ToListAsync();
+
+				// Step 11: Add the delta amount to each ancestor
+				foreach (var ancestor in ancestorsToUpdate)
+				{
+					ancestor.RolledUpEstimation += additionAmount;
+				}
+
+				// Step 12: Save all changes
+				await _baselineContext.SaveChangesAsync();
+
+				return true;
+			}
+			catch (ApplicationException ex)
+			{
+				throw; // Re-throw application exceptions as-is
+			}
+			catch (Exception ex)
+			{
+				throw new ApplicationException(
+					$"Error adding roll-up estimation to ancestry chain: {ex.Message}",
+					ex);
+			}
+		}
 
 
 

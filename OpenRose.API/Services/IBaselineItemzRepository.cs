@@ -24,6 +24,9 @@ namespace ItemzApp.API.Services
         public Task<bool> UpdateBaselineItemzsAsync(UpdateBaselineItemz updateBaselineItemz);
 
 		Task<bool> DeductRollUpFromAncestryChainAsync(Guid baselineItemzHierarchyRecordId);
+
+		Task<bool> AddRollUpToAncestryChainAsync(Guid baselineItemzHierarchyRecordId);
+
 		public Task<bool> NOT_IN_USE_CheckBaselineitemzForInclusionBeforeImplementingAsync(UpdateBaselineItemz updateBaselineItemz);
     }
 }

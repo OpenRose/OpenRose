@@ -198,6 +198,15 @@ namespace ItemzApp.API.Controllers
 
 					try
 					{
+						_logger.LogInformation(
+							"{FormattedControllerAndActionNames}Updating BaselineItemzs. BaselineId: {BaselineId}, " +
+							"ShouldBeIncluded: {ShouldBeIncluded}, SingleNodeInclusion: {SingleNodeInclusion}, ItemCount: {ItemCount}",
+							ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+							baselineItemzsToBeUpdated.BaselineId,
+							baselineItemzsToBeUpdated.ShouldBeIncluded,
+							baselineItemzsToBeUpdated.SingleNodeInclusion,
+							baselineItemzsToBeUpdated.BaselineItemzIds.Count());
+
 						// EXPLANATION: Because baselineItemzs are updated via User Defined Stored Procedure,
 						// We therefor do not call SaveAsync() method on the _baselineRepository. 
 
@@ -220,6 +229,29 @@ namespace ItemzApp.API.Controllers
 								{
 									_logger.LogWarning(
 										"{FormattedControllerAndActionNames}Failed to deduct roll-up for BaselineItemz {baselineItemzId}",
+										ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+										baselineItemzId);
+								}
+							}
+						}
+
+						// PHASE 5: SCENARIO 2 - If INCLUDING (single record only), handle roll-up estimation addition
+						if (isSuccessful && baselineItemzsToBeUpdated.ShouldBeIncluded == true && baselineItemzsToBeUpdated.SingleNodeInclusion == true)
+						{
+							_logger.LogInformation(
+								"{FormattedControllerAndActionNames}Processing Scenario 2: INCLUSION (single record) with roll-up addition for {ItemCount} items",
+								ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+								baselineItemzsToBeUpdated.BaselineItemzIds.Count());
+
+							foreach (var baselineItemzId in baselineItemzsToBeUpdated.BaselineItemzIds)
+							{
+								var additionSuccess = await _baselineItemzRepository.AddRollUpToAncestryChainAsync(
+									baselineItemzId);
+
+								if (!additionSuccess)
+								{
+									_logger.LogWarning(
+										"{FormattedControllerAndActionNames}Failed to add roll-up for BaselineItemz {baselineItemzId}",
 										ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
 										baselineItemzId);
 								}
@@ -249,7 +281,7 @@ namespace ItemzApp.API.Controllers
 					catch (ApplicationException appEx)
 					{
 						_logger.LogError(
-							"{FormattedControllerAndActionNames}Application exception during roll-up deduction: {Message}",
+							"{FormattedControllerAndActionNames}Application exception during roll-up processing: {Message}",
 							ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
 							appEx.Message);
 						return BadRequest(appEx.Message);
