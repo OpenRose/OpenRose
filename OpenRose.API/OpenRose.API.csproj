@@ -80,7 +80,7 @@
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcRecalculateBaselineRollUpEstimations_202604162034.sql" />
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcRecalculateProjectRollUpEstimations_202604091450.sql" />
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcSetEstimationUnitForProject_202604101615.sql" />
-		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcUpdateBaselineItemz_202408060015.sql" />
+		<EmbeddedResource Include="DbContexts\UserStoredProcedure\Old\userProcUpdateBaselineItemz_202408060015.sql" />
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcUpdateBaselineItemz_202604181541.sql" />
 		<EmbeddedResource Include="Schemas\OpenRose.Export.schema.1.0.json" />
 	</ItemGroup>
