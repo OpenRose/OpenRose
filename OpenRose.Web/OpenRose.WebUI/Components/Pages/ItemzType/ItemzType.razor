@@ -15,6 +15,7 @@
 @using OpenRose.WebUI.Components.FindServices
 @using OpenRose.WebUI.Components.Pages.Breadcrums
 @using OpenRose.WebUI.Components.Pages.Common
+@using OpenRose.WebUI.Components.Pages.SharedComponents
 @using OpenRose.WebUI.Services
 @using Microsoft.AspNetCore.Components.Forms
 @inject NavigationManager NavManager
@@ -84,6 +85,7 @@
 					<ShowHierarchyTreeButton RecordId="@singleItemzType.Id" />
 				</MudStack>
 				<MudText><strong>Status      : </strong> @singleItemzType.Status</MudText>
+				<EstimationReadOnlyComponent RecordId="@ItemzTypeId" />
 				<MudText><strong>Description : </strong> </MudText>
 					<br />
 					<div class="custom-markdown-editor">
