@@ -16,6 +16,7 @@
 @using OpenRose.WebUI.Components.Pages.Breadcrums
 @using OpenRose.WebUI.Components.Pages.Common
 @using OpenRose.WebUI.Components.Pages.Itemz.Traceability
+@using OpenRose.WebUI.Components.Pages.SharedComponents
 @using OpenRose.WebUI.Components.Utilities
 @using OpenRose.WebUI.Services
 @using Microsoft.AspNetCore.Components.Forms
@@ -131,6 +132,7 @@
 					<MudText><strong> || Status      : </strong> @singleItemz.Status</MudText>
 					<MudText><strong> || Priority    : </strong> @singleItemz.Priority</MudText>
 					<MudText><strong> || Severity    : </strong> @singleItemz.Severity</MudText>
+					|| <EstimationReadOnlyComponent RecordId="@ItemzId" />
 				</MudStack>
 					<MudText><strong>Description : </strong></MudText>
 					<br />
