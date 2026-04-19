@@ -190,7 +190,7 @@
 				</MudForm>
 				</MudPaper>
 			</MudTabPanel>
-			<MudTabPanel Icon="@Icons.Material.Filled.Money" Text="Estimation">
+            <MudTabPanel @ref="estimationTab" Icon="@Icons.Material.Filled.Money" Text="Estimation">
 				<MudPaper Class="pa-0 mud-height-full"
 							Width="100%"
 							Outlined="false"
@@ -247,7 +247,7 @@
 			</MudTabPanel>
 			@if (CalledFrom == nameof(ProjectDetails))
 			{
-			<MudTabPanel Icon="@Icons.Material.Filled.Cancel" Text="Delete Project">
+			<MudTabPanel @ref="deleteTab" Icon="@Icons.Material.Filled.Cancel" Text="Delete Project">
  			<MudItem xs="12" sm="12" md="12" lg="12">
 				<MudStack Row="true" Spacing="2" StretchItems="StretchItems.None" AlignItems="AlignItems.Start" Class="w-100">
 					<MudCard style="margin: 16px;" Class="w-100">
@@ -379,6 +379,8 @@
     MudTabs projectTabs;
     MudTabPanel projectTab;
     MudTabPanel baselineTab;
+    MudTabPanel deleteTab;
+    MudTabPanel estimationTab;
     int activeIndex = 0;
 
     // TODO START HERE BY CREATING INSTANCE OF ProjectExceptionDialog AND SHOWING IT WHEN ERROR GETS ENCOUNTERED. 
@@ -437,16 +439,23 @@
         }
         _stringProjectStatusValues = tempList.ToArray();
 
-        if (ShowBaselineTab == true)
-        {
-            activeIndex = 1;
-        }
+
 
         await ConvertMarkdownToHtml(singleProject.Description);
 
         // Reset dirty state
         disableUpdateProjectDetailsButton = true;
         FormStateService.SetDirty(singleProject.Id, false);
+
+        // EXPLANATION :: Location of setting active tab is important to be here at the end of data loading, 
+        // because if we set it before data loading then it will cause multiple unnecessary renders and may 
+        // also cause the tab to not switch properly on first load due to the async nature of data loading.
+
+        if (ShowBaselineTab == true)
+        {
+            // activeIndex = 2;
+            await projectTabs.ActivatePanelAsync(baselineTab);
+        }
 
         StateHasChanged();
 
