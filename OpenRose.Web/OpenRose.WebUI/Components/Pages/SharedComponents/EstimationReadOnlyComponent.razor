@@ -1,0 +1,65 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+
+@using OpenRose.WebUI.Client.Services.Hierarchy
+@using OpenRose.WebUI.Client.SharedModels
+@using MudBlazor
+@using OpenRose.WebUI.Components.Dialogs
+@inject IHierarchyService HierarchyService
+@inject IDialogService DialogService
+
+
+@if (HierarchyData != null)
+{
+    @if (!string.IsNullOrEmpty(HierarchyData.EstimationUnit))
+    { 
+        <MudText Variant="Variant.H6"><b>Estimation [@HierarchyData.EstimationUnit] : </b> @HierarchyData.OwnEstimation <b>|| Roll-Up</b> :@HierarchyData.RolledUpEstimation </MudText>
+    }
+        else
+    {
+        <MudText Variant="Variant.H6"><b>Estimation : </b> @HierarchyData.OwnEstimation <b>|| Roll-Up</b> :@HierarchyData.RolledUpEstimation </MudText>
+    }
+}
+
+@code {
+    [Parameter] public Guid RecordId { get; set; }
+    // [Parameter] public string? RecordType { get; set; }
+
+    private HierarchyIdRecordDetailsDTO? HierarchyData;
+    // private string OwnEstimationText = "";
+    // private string OriginalEstimationUnit = ""; // To track changes for Project estimation unit
+
+    // private bool IsLoading;
+
+    //MudForm related fields
+    // bool success = true;
+    // string[] errors = { };
+    // bool disableButtons = true;
+    // MudForm form;
+
+    // protected override async Task OnInitializedAsync()
+    // {
+    //     await LoadHierarchyData();
+    // }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadHierarchyData();
+    }
+
+    private async Task LoadHierarchyData()
+    {
+            HierarchyData = await HierarchyService.__Get_Hierarchy_Record_Details_By_GUID__Async(RecordId);
+    }
+
+    public async Task RefreshDataAsync()
+    {
+        await LoadHierarchyData();
+        StateHasChanged();
+    }
+
+}
