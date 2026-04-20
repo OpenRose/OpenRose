@@ -4,14 +4,12 @@
  * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 *@
 
-
 @using OpenRose.WebUI.Client.Services.Hierarchy
 @using OpenRose.WebUI.Client.SharedModels
 @using MudBlazor
 @using OpenRose.WebUI.Components.Dialogs
 @inject IHierarchyService HierarchyService
 @inject IDialogService DialogService
-
 
 @if (HierarchyData != null)
 {
@@ -27,24 +25,8 @@
 
 @code {
     [Parameter] public Guid RecordId { get; set; }
-    // [Parameter] public string? RecordType { get; set; }
 
     private HierarchyIdRecordDetailsDTO? HierarchyData;
-    // private string OwnEstimationText = "";
-    // private string OriginalEstimationUnit = ""; // To track changes for Project estimation unit
-
-    // private bool IsLoading;
-
-    //MudForm related fields
-    // bool success = true;
-    // string[] errors = { };
-    // bool disableButtons = true;
-    // MudForm form;
-
-    // protected override async Task OnInitializedAsync()
-    // {
-    //     await LoadHierarchyData();
-    // }
 
     protected override async Task OnParametersSetAsync()
     {
