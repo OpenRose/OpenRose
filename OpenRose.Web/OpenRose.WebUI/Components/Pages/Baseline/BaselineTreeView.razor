@@ -85,10 +85,7 @@
                                      Expandable="@( @context.Children.Count()>0 ? true : false )" 
                                      LoadingIconColor="Color.Info"
                                      Items="@context.Children"
-                                     EndText="@( 
-                                        (@presenter.Children.Count() > 0 ? ("[C" + @presenter.Children.Count().ToString() + "]") : "") + 
-                                        (@presenter.Level > 0 ? ("[L" + @presenter.Level.ToString() + "]") : "")
-                                        )"
+                                     EndText="@GetEndText(presenter)"
                                      @onclick="async () => await OnItemClick(context)" />
                                      @* CanExpand="@( @context.Children.Count()>0 ? true : false )" 
                                      EndText="@presenter?.childNumber" /> *@
@@ -270,9 +267,12 @@
         public int? Level { get; set; }
         public bool IsIncluded { get; set; }
         public bool IsSelected { get; set; }
+        public string? EstimationUnit { get; set; }
+        public decimal RolledUpEstimation { get; set; } = 0;
 
         public TreeItemPresenter(Guid value, string text, string icon
-            , string recordType, int? level, bool expandable, bool isIncluded ) : base(value)
+            , string recordType, int? level, bool expandable, bool isIncluded,
+            string? estimationUnit, decimal rolledUpEstimation) : base(value)
         {
             Value = value;
             Text = text;
@@ -281,6 +281,8 @@
             Level = level ?? 0 ;
             Expandable = expandable;
             IsIncluded = isIncluded;
+            EstimationUnit = estimationUnit;
+            RolledUpEstimation = rolledUpEstimation;
             Children = new List<TreeItemData<Guid>>();
         }
     }
@@ -362,6 +364,8 @@
                     , level: child.Level
                     , expandable: (child.Children.Count() > 0 ? true : false)
                     , isIncluded: child.isIncluded
+                    , estimationUnit: child.EstimationUnit
+                    , rolledUpEstimation: child.RolledUpEstimation
                 );
 
             if (child.Children.Count() > 0)
@@ -393,6 +397,8 @@
                  , level: singleBaseline.Level
                  , expandable: true
                  , isIncluded: singleBaseline.IsIncluded
+                 , estimationUnit: singleBaseline.EstimationUnit
+                 , rolledUpEstimation: singleBaseline.RolledUpEstimation
              );
 
         List<TreeItemData<Guid>> _children = new();
@@ -414,6 +420,8 @@
                 , level: _baselineItemzType.Level
                 , expandable: true
                 , isIncluded: _baselineItemzType.IsIncluded
+                , estimationUnit: _baselineItemzType.EstimationUnit
+                , rolledUpEstimation: _baselineItemzType.RolledUpEstimation
                 ));
 
             }
@@ -455,6 +463,8 @@
                 , level: singleBaseline.Level
                 , expandable: true
                 , isIncluded: singleBaseline.IsIncluded
+                , estimationUnit: singleBaseline.EstimationUnit
+                , rolledUpEstimation: singleBaseline.RolledUpEstimation
             );
 
         _baselineHierarchyTreeNodes.Add(_tempTreeViewBaselineNode);
@@ -476,6 +486,8 @@
                         , level: singleHierarchyDataFromAPI.Level
                         , expandable: (singleHierarchyDataFromAPI.Children.Count() > 0 ? true : false)
                         , isIncluded: singleHierarchyDataFromAPI.isIncluded
+                        , estimationUnit: singleHierarchyDataFromAPI.EstimationUnit
+                        , rolledUpEstimation: singleHierarchyDataFromAPI.RolledUpEstimation
                     );
 
                 if (singleHierarchyDataFromAPI.Children.Count() > 0)
@@ -928,6 +940,52 @@
         StateHasChanged();
     }
 
+
+
+    // PHASE 5: Generate EndText for tree node display
+    // Shows child count, level, and estimation (if in Read-Only mode)
+    // an nothing when in Kiosk mode to keep it extra clean.
+    private string GetEndText(TreeItemPresenter presenter)
+    {
+        if (presenter == null)
+            return string.Empty;
+
+        string endText = string.Empty;
+
+        if (ViewSettings.IsKioskMode)
+        {
+            return endText;
+        }
+
+        // PHASE 5: Add estimation info only if in Read-Only view
+        if (ViewSettings.ReadOnlyView)
+        {
+            // I want to return empty string if estimation unit is null or whitespace to avoid showing [N/A 0] for items without estimation
+            if (string.IsNullOrWhiteSpace(presenter.EstimationUnit) && presenter.RolledUpEstimation == 0)
+            {
+                return endText;
+            }
+
+            string estimationUnit = string.IsNullOrWhiteSpace(presenter.EstimationUnit) ? "N/A" : presenter.EstimationUnit;
+            endText += $"[{estimationUnit} {presenter.RolledUpEstimation:F2}]";
+        }
+        else
+        {
+            // Add child count if present
+            if (presenter.Children.Count() > 0)
+            {
+                endText += "[C" + presenter.Children.Count().ToString() + "]";
+            }
+
+            // Add level if not root
+            if (presenter.Level > 0)
+            {
+                endText += "[L" + presenter.Level.ToString() + "]";
+            }
+        }
+
+        return endText;
+    }
 
 
     public void Dispose()
