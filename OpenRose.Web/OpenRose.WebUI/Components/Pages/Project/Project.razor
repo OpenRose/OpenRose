@@ -61,10 +61,10 @@
 						<MudText><strong> </strong> </MudText>
 						<MudStack Row="true" Spacing="2">
 						<MudText><strong>ID          : </strong></MudText>
-						<CopyableText TextToCopy="@singleProject.Id.ToString()" />
+						<CopyableText TextToCopy="@singleProject.Id.ToString()" DisplayLength="8" />
+						|| <EstimationReadOnlyComponent RecordId="@ProjectId" />
 						</MudStack>
 						<MudText><strong>Status      : </strong> @singleProject.Status 	</MudText>
-						<EstimationReadOnlyComponent RecordId="@ProjectId" />
 						<MudText><strong>Description : </strong> </MudText> 
 						<br />
 						<div class="custom-markdown-editor">

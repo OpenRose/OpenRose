@@ -132,13 +132,14 @@
 @* 						<EstimationManagementComponent RecordId="@ProjectId" RecordType="Project" /> *@
 						<MudStack Row="true" Spacing="2">
 							<MudText><strong>Project Id: </strong></MudText>
-							<CopyableText TextToCopy="@singleProject.Id.ToString()" />
+                            <CopyableText TextToCopy="@singleProject.Id.ToString()" DisplayLength="8" />
 							@if (CalledFrom == nameof(ProjectTreeView))
 							{
 								<MudTooltip Text="Show in Tree View" Placement="Placement.Top">
 									<MudIcon Icon="@Icons.Material.Filled.Park" Size="Size.Small" Class="mouse-pointer-icon" @onclick="findAndShowInTreeView" />
 								</MudTooltip>
 							}
+                        || <EstimationReadOnlyComponent RecordId="@ProjectId" />
 						</MudStack>
 
 						<MudTextField T="string" Label="Name" Required="true" RequiredError="Name is required!"

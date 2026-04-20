@@ -214,7 +214,7 @@
 
 				<MudStack Row="true" Spacing="2" Class="mt-2">
 					<MudText><strong>Itemz Id: </strong></MudText>
-					<CopyableText TextToCopy="@ItemzId.ToString()" />
+					<CopyableText TextToCopy="@ItemzId.ToString()" DisplayLength="8" />
 					@if (CalledFrom == nameof(ProjectTreeView))
 					{
 						<MudTooltip Text="Show in Tree View" Placement="Placement.Top">
@@ -222,6 +222,7 @@
 						</MudTooltip>
 					}
 					<ShowHierarchyTreeButton RecordId="@singleItemz.Id" />
+					|| <EstimationReadOnlyComponent RecordId="@ItemzId" />
 				</MudStack>
 				<br />
 				<MudTextField T="string" Label="Name" Required="true" RequiredError="Name is required!"

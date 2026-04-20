@@ -81,11 +81,11 @@
 				<MudCardContent>
 				<MudStack Row="true" Spacing="2">
 					<MudText><strong>ID          : </strong></MudText>
-					<CopyableText TextToCopy="@singleItemzType.Id.ToString()" />
+					<CopyableText TextToCopy="@singleItemzType.Id.ToString()" DisplayLength="8" />
 					<ShowHierarchyTreeButton RecordId="@singleItemzType.Id" />
+					|| <EstimationReadOnlyComponent RecordId="@ItemzTypeId" />
 				</MudStack>
 				<MudText><strong>Status      : </strong> @singleItemzType.Status</MudText>
-				<EstimationReadOnlyComponent RecordId="@ItemzTypeId" />
 				<MudText><strong>Description : </strong> </MudText>
 					<br />
 					<div class="custom-markdown-editor">
