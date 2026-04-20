@@ -134,6 +134,7 @@
 									Class="mouse-pointer-icon"
 									@onclick="async _ => await gotoBaselineProjectRecord(BaselineId.ToString())" />
 						</MudTooltip>
+						|| <BaselineEstimationReadOnlyComponent RecordId="BaselineId" />
 					</MudStack>
 					<br />
 					<MudTextField T="string" Label="Name" Required="true" RequiredError="Name is required!"

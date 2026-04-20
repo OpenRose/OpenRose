@@ -11,6 +11,7 @@
 @using OpenRose.WebUI.Client.SharedModels.BetweenPagesAndComponent
 @using OpenRose.WebUI.Components.Pages.Breadcrums
 @using OpenRose.WebUI.Components.Pages.Common
+@using OpenRose.WebUI.Components.Pages.SharedComponents
 @using OpenRose.WebUI.Services
 @using Microsoft.AspNetCore.Components.Forms
 @inject NavigationManager NavManager
@@ -73,6 +74,7 @@
 									Class="mouse-pointer-icon"
 									@onclick="async _ => await gotoBaselineProjectRecord(singleBaseline.Id.ToString())" />
 					</MudTooltip>
+					|| <BaselineEstimationReadOnlyComponent RecordId="BaselineId" />
 					</MudStack>
 					<MudText><strong>Description : </strong></MudText>
 					<br />
