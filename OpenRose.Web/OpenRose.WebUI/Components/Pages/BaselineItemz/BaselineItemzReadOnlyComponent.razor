@@ -10,6 +10,7 @@
 @using OpenRose.WebUI.Components.EventServices
 @using OpenRose.WebUI.Components.Pages.BaselineItemz.BaselineTraceability
 @using OpenRose.WebUI.Components.Pages.Common
+@using OpenRose.WebUI.Components.Pages.SharedComponents
 @using OpenRose.WebUI.Components.Utilities
 @using OpenRose.WebUI.Services
 @using Microsoft.AspNetCore.Components.Forms
@@ -105,6 +106,7 @@
 						<MudText><strong> || Status      : </strong> @singleBaselineItemz.Status</MudText>
 						<MudText><strong> || Priority    : </strong> @singleBaselineItemz.Priority</MudText>
 						<MudText><strong> || Severity    : </strong> @singleBaselineItemz.Severity</MudText>
+						|| <BaselineEstimationReadOnlyComponent RecordId="BaselineItemzId" />
 					</MudStack>
 					}
 					

@@ -108,9 +108,10 @@
 				</MudStack>
 				<MudStack Row="true" Spacing="2">
 					<MudText><strong>Baseline Itemz Id: </strong></MudText>
-					<CopyableText TextToCopy="@BaselineItemzId.ToString()" />
+					<CopyableText TextToCopy="@BaselineItemzId.ToString()" DisplayLength="8"/>
 					<GoToOriginalItemzButton BaselineItemzId="@singleBaselineItemz.Id" UseTreeView="false" />
 					<ShowHierarchyTreeButton RecordId="@singleBaselineItemz.Id" />
+					|| <BaselineEstimationReadOnlyComponent RecordId="BaselineItemzId" />
 				</MudStack>
 				<br />
 				<MudTextField T="string" Label="Name" Required="true" RequiredError="Name is required!"
