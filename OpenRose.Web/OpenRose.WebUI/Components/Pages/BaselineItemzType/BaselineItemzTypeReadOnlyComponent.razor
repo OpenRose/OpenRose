@@ -9,6 +9,7 @@
 @using OpenRose.WebUI.Client.SharedModels
 @using OpenRose.WebUI.Components.EventServices
 @using OpenRose.WebUI.Components.Pages.Common
+@using OpenRose.WebUI.Components.Pages.SharedComponents
 @using OpenRose.WebUI.Services
 @using Microsoft.AspNetCore.Components.Forms
 @inject BaselineTreeNodeItemzSelectionService BaselineItemzSelectionService
@@ -84,6 +85,7 @@
 						</MudStack>
 						<MudText><strong> || Status      : </strong> @singleBaselineItemzType.Status</MudText>
 						<MudText><strong> || Is System?  : </strong> @(singleBaselineItemzType.IsSystem ? "Yes" : "No")</MudText>
+						|| <BaselineEstimationReadOnlyComponent RecordId="BaselineItemzTypeId" />
 					</MudStack>
 					}				
 					<br />
