@@ -376,6 +376,9 @@ namespace ItemzApp.API.Services
 				Level = foundRepositoryRecord.ItemzHierarchyId.GetLevel(),
 				RecordType = foundRepositoryRecord.RecordType,
 				Name = foundRepositoryRecord.Name ?? "",
+				EstimationUnit = foundRepositoryRecord.EstimationUnit ?? "",
+				OwnEstimation = foundRepositoryRecord.OwnEstimation,
+				RolledUpEstimation = foundRepositoryRecord.RolledUpEstimation,
 				Children = new List<NestedHierarchyIdRecordDetailsDTO>()
 			};
 

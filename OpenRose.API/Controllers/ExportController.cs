@@ -16,6 +16,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+// using System.Xml.Linq;
 
 namespace ItemzApp.API.Controllers
 {
@@ -202,6 +203,11 @@ namespace ItemzApp.API.Controllers
 								RecordType = baselineHierarchyRecord.RecordType,
 								Name = baselineHierarchyRecord.Name,
 								isIncluded = baselineHierarchyRecord.IsIncluded,
+								// PHASE 5: Include estimation fields for JSON export with estimation data
+								EstimationUnit = baselineHierarchyRecord.EstimationUnit,
+								OwnEstimation = baselineHierarchyRecord.OwnEstimation,
+								// If record is excluded, return 0 for RolledUpEstimation
+								RolledUpEstimation = baselineHierarchyRecord.IsIncluded ? baselineHierarchyRecord.RolledUpEstimation : 0,
 								Children = (List<NestedBaselineHierarchyIdRecordDetailsDTO>)baselineHierarchyTree.AllRecords
 							};
 							recordType = baselineHierarchyRecord.RecordType?.ToLowerInvariant();
@@ -593,7 +599,8 @@ namespace ItemzApp.API.Controllers
 						isIncluded = baselineHierarchyRecord.IsIncluded,
 						EstimationUnit = baselineHierarchyRecord.EstimationUnit,
 						OwnEstimation = baselineHierarchyRecord.OwnEstimation,
-						RolledUpEstimation = baselineHierarchyRecord.RolledUpEstimation,
+						// If record is excluded, return 0 for RolledUpEstimation
+						RolledUpEstimation = baselineHierarchyRecord.IsIncluded ? baselineHierarchyRecord.RolledUpEstimation : 0,
 						Children = (List<NestedBaselineHierarchyIdRecordDetailsDTO>)baselineHierarchyTree.AllRecords
 					};
 
@@ -641,7 +648,8 @@ namespace ItemzApp.API.Controllers
 								isIncluded = rootNode.isIncluded,
 								EstimationUnit = rootNode.EstimationUnit,
 								OwnEstimation = rootNode.OwnEstimation,
-								RolledUpEstimation = rootNode.RolledUpEstimation,
+								// If record is excluded, return 0 for RolledUpEstimation
+								RolledUpEstimation = rootNode.isIncluded ? rootNode.RolledUpEstimation : 0,
 								Children = new List<NestedBaselineHierarchyIdRecordDetailsDTO>() // empty
 							};
 						}
@@ -813,6 +821,10 @@ namespace ItemzApp.API.Controllers
 					RecordType = node.RecordType,
 					Name = node.Name,
 					isIncluded = node.isIncluded,
+					EstimationUnit = node.EstimationUnit,
+					OwnEstimation = node.OwnEstimation,
+					// If record is excluded, return 0 for RolledUpEstimation
+					RolledUpEstimation = node.isIncluded ? node.RolledUpEstimation : 0,
 					Children = keptChildren
 				};
 			}
