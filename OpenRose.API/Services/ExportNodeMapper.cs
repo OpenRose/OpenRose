@@ -162,6 +162,20 @@ namespace ItemzApp.API.Services
 			var baselineEntity = await _baselineRepository.GetBaselineAsync(node.RecordId);
 			var baselineDto = _mapper.Map<GetBaselineDTO>(baselineEntity);
 
+			// PHASE 1: Map to Export DTO with estimation fields
+			var baselineExportDto = new GetBaselineExportDTO
+			{
+				Id = baselineDto.Id,
+				Name = baselineDto.Name,
+				Description = baselineDto.Description,
+				CreatedBy = baselineDto.CreatedBy,
+				CreatedDate = baselineDto.CreatedDate,
+				ProjectId = baselineDto.ProjectId,
+				EstimationUnit = node.EstimationUnit,
+				OwnEstimation = node.OwnEstimation,
+				RolledUpEstimation = node.RolledUpEstimation
+			};
+
 			// 2. Recursively map BaselineItemzTypes
 			var baselineItemzTypeExportNodes = new List<BaselineItemzTypeExportNode>();
 			if (node.Children != null)
@@ -175,7 +189,7 @@ namespace ItemzApp.API.Services
 
 			return new BaselineExportNode
 			{
-				Baseline = baselineDto,
+				Baseline = baselineExportDto,
 				BaselineItemzTypes = baselineItemzTypeExportNodes.Any() ? baselineItemzTypeExportNodes : null
 			};
 		}
@@ -184,6 +198,24 @@ namespace ItemzApp.API.Services
 		{
 			var baselineItemzTypeEntity = await _baselineItemzTypeRepository.GetBaselineItemzTypeAsync(node.RecordId);
 			var baselineItemzTypeDto = _mapper.Map<GetBaselineItemzTypeDTO>(baselineItemzTypeEntity);
+
+			// PHASE 1: Map to Export DTO with estimation fields
+			var baselineItemzTypeExportDto = new GetBaselineItemzTypeExportDTO		
+			{
+				Id = baselineItemzTypeDto.Id,
+				ItemzTypeId = baselineItemzTypeDto.ItemzTypeId,
+				BaselineId = baselineItemzTypeDto.BaselineId,	
+				Name = baselineItemzTypeDto.Name,
+				Status = baselineItemzTypeDto.Status,
+				Description = baselineItemzTypeDto.Description,
+				CreatedBy = baselineItemzTypeDto.CreatedBy,
+				CreatedDate = baselineItemzTypeDto.CreatedDate,
+				IsSystem = baselineItemzTypeDto.IsSystem,
+				EstimationUnit = node.EstimationUnit,
+				OwnEstimation = node.OwnEstimation,
+				RolledUpEstimation = node.RolledUpEstimation
+			};
+
 
 			// Recursively map BaselineItemz
 			var baselineItemzExportNodes = new List<BaselineItemzExportNode>();
@@ -198,7 +230,7 @@ namespace ItemzApp.API.Services
 
 			return new BaselineItemzTypeExportNode
 			{
-				BaselineItemzType = baselineItemzTypeDto,
+				BaselineItemzType = baselineItemzTypeExportDto,
 				BaselineItemz = baselineItemzExportNodes.Any() ? baselineItemzExportNodes : null
 			};
 		}
@@ -209,8 +241,30 @@ namespace ItemzApp.API.Services
 			var baselineItemzEntity = await _baselineItemzRepository.GetBaselineItemzAsync(node.RecordId);
 			var baselineItemzDto = _mapper.Map<GetBaselineItemzDTO>(baselineItemzEntity);
 
-			// --- TAG NORMALIZATION FOR EXPORT ---
-			baselineItemzDto.Tags = TagParsingUtility.NormalizeAndRemoveDuplicates(baselineItemzDto.Tags);
+			//// --- TAG NORMALIZATION FOR EXPORT ---
+			//baselineItemzDto.Tags = TagParsingUtility.NormalizeAndRemoveDuplicates(baselineItemzDto.Tags);
+
+			// PHASE 1: Map to Export DTO with estimation fields
+			var baselineItemzExportDto = new GetBaselineItemzExportDTO
+			{
+				Id = baselineItemzDto.Id,
+				ItemzId = baselineItemzDto.ItemzId,
+				Name = baselineItemzDto.Name,
+				Status = baselineItemzDto.Status,
+				Priority = baselineItemzDto.Priority,
+				Description = baselineItemzDto.Description,
+				CreatedBy = baselineItemzDto.CreatedBy,
+				CreatedDate = baselineItemzDto.CreatedDate,
+				Severity = baselineItemzDto.Severity,
+				isIncluded = baselineItemzDto.isIncluded,
+				Tags = TagParsingUtility.NormalizeAndRemoveDuplicates(baselineItemzDto.Tags),
+				EstimationUnit = node.EstimationUnit,
+				OwnEstimation = node.OwnEstimation,
+				// EXPLANATION :: For export, if the item is not included,
+				// we set its roll-up estimation to 0 (ZERO). 
+				RolledUpEstimation = baselineItemzDto.isIncluded == true ? node.RolledUpEstimation : 0
+			};
+
 
 			// Recursively map sub BaselineItemz (if any)
 			var baselineSubItemzExportNodes = new List<BaselineItemzExportNode>();
@@ -226,11 +280,10 @@ namespace ItemzApp.API.Services
 
 			return new BaselineItemzExportNode
 			{
-				BaselineItemz = baselineItemzDto,
+				BaselineItemz = baselineItemzExportDto,
 				BaselineSubItemz = baselineSubItemzExportNodes.Any() ? baselineSubItemzExportNodes : null
 			};
 		}
-
 
 	}
 }

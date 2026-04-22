@@ -16,14 +16,17 @@ namespace ItemzApp.API.Helper
 
 		public static ProjectImportNode TransformBaselineToProject(BaselineImportNode baselineNode)
 		{
-			var projectDto = new GetProjectDTO
+			var projectDto = new GetProjectExportDTO
 			{
 				Id = Guid.NewGuid(),
 				Name = baselineNode.Baseline?.Name,
 				Description = baselineNode.Baseline?.Description,
 				Status = "New",
 				CreatedBy = baselineNode.Baseline?.CreatedBy,
-				CreatedDate = baselineNode.Baseline?.CreatedDate ?? DateTimeOffset.UtcNow
+				CreatedDate = baselineNode.Baseline?.CreatedDate ?? DateTimeOffset.UtcNow,
+				EstimationUnit = baselineNode.Baseline?.EstimationUnit, 
+				OwnEstimation = baselineNode.Baseline?.OwnEstimation ?? 0,
+				RolledUpEstimation = baselineNode.Baseline?.RolledUpEstimation ?? 0
 			};
 
 			var itemzTypeNodes = baselineNode.BaselineItemzTypes?
@@ -40,9 +43,9 @@ namespace ItemzApp.API.Helper
 					Status = projectDto.Status,
 					CreatedBy = projectDto.CreatedBy,
 					CreatedDate = projectDto.CreatedDate,
-					EstimationUnit = null, // EstimationUnit is not available in Baseline, set to null or default
-					OwnEstimation = 0,    // OwnEstimation is not available in Baseline, set to 0 or default
-					RolledUpEstimation = 0 // RolledUpEstimation is not available in Baseline, set to 0 or default
+					EstimationUnit = projectDto.EstimationUnit, 
+					OwnEstimation = projectDto.OwnEstimation,  
+					RolledUpEstimation = projectDto.RolledUpEstimation 
 				},
 				ItemzTypes = itemzTypeNodes
 			};
@@ -63,9 +66,9 @@ namespace ItemzApp.API.Helper
 					CreatedBy = baselineNode.BaselineItemzType.CreatedBy,
 					CreatedDate = baselineNode.BaselineItemzType.CreatedDate,
 					IsSystem = baselineNode.BaselineItemzType.IsSystem,
-					EstimationUnit = null, // EstimationUnit is not available in Baseline, set to null or default
-					OwnEstimation = 0,    // OwnEstimation is not available in Baseline, set to 0 or default
-					RolledUpEstimation = 0 // RolledUpEstimation is not available in Baseline, set to 0 or default
+					EstimationUnit = baselineNode.BaselineItemzType.EstimationUnit,
+					OwnEstimation = baselineNode.BaselineItemzType.OwnEstimation,
+					RolledUpEstimation = baselineNode.BaselineItemzType.RolledUpEstimation
 				},
 				Itemz = baselineNode.BaselineItemz?
 					.Select(TransformBaselineNodeToItemzNode) // this already exists
@@ -74,7 +77,7 @@ namespace ItemzApp.API.Helper
 		}
 
 
-		public static GetItemzExportDTO TransformBaselineItemzToItemz(GetBaselineItemzDTO baselineItemz)
+		public static GetItemzExportDTO TransformBaselineItemzToItemz(GetBaselineItemzExportDTO baselineItemz)
 		{
 			return new GetItemzExportDTO
 			{
@@ -86,9 +89,9 @@ namespace ItemzApp.API.Helper
 				CreatedBy = baselineItemz.CreatedBy,
 				CreatedDate = baselineItemz.CreatedDate,
 				Severity = baselineItemz.Severity,
-				EstimationUnit = null, // EstimationUnit is not available in Baseline, set to null or default
-				OwnEstimation = 0,    // OwnEstimation is not available in Baseline, set to 0 or default
-				RolledUpEstimation = 0 // RolledUpEstimation is not available in Baseline, set to 0 or default
+				EstimationUnit = baselineItemz.EstimationUnit,
+				OwnEstimation = baselineItemz.OwnEstimation,
+				RolledUpEstimation = baselineItemz.RolledUpEstimation
 			};
 		}
 

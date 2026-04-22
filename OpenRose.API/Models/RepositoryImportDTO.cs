@@ -51,19 +51,19 @@ namespace ItemzApp.API.Models
 	// Baseline hierarchy (parallel to Project)
 	public class BaselineImportNode
 	{
-		public GetBaselineDTO Baseline { get; set; }
+		public GetBaselineExportDTO Baseline { get; set; }
 		public List<BaselineItemzTypeImportNode>? BaselineItemzTypes { get; set; }
 	}
 
 	public class BaselineItemzTypeImportNode
 	{
-		public GetBaselineItemzTypeDTO BaselineItemzType { get; set; }
+		public GetBaselineItemzTypeExportDTO BaselineItemzType { get; set; }
 		public List<BaselineItemzImportNode>? BaselineItemz { get; set; }
 	}
 
 	public class BaselineItemzImportNode
 	{
-		public GetBaselineItemzDTO BaselineItemz { get; set; }
+		public GetBaselineItemzExportDTO BaselineItemz { get; set; }
 		public List<BaselineItemzImportNode>? BaselineSubItemz { get; set; }
 	}
 }
