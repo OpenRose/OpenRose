@@ -36,6 +36,8 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 	/// - Exposes hierarchy DTOs for TreeView
 	/// - Exposes record DTOs for read-only detail components
 	/// - Exposes traceability data for Itemz / BaselineItemz
+	/// 
+	/// PHASE 5: Uses Export DTOs to automatically load estimation data from JSON
 	/// </summary>
 	/// 
 	public class JsonFileDataSourceService
@@ -258,7 +260,11 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 
 		#region Record details (LIVE)
 
-		public Task<GetProjectDTO> GetProjectDetailsAsync(Guid projectId)
+		/// <summary>
+		/// PHASE 5: Returns GetProjectExportDTO which includes estimation fields.
+		/// Uses Export DTO to automatically deserialize estimation data from JSON if present.
+		/// </summary>
+		public Task<GetProjectExportDTO> GetProjectDetailsAsync(Guid projectId)
 		{
 			EnsureLoaded();
 			if (_exportKind != RepositoryExportKind.Live)
@@ -268,11 +274,16 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 				throw new KeyNotFoundException($"Project with Id {projectId} not found in JSON.");
 
 			var projectToken = node["Project"] ?? node;
-			var dto = projectToken.ToObject<GetProjectDTO>() ?? new GetProjectDTO();
-			return Task.FromResult(dto);
+			// PHASE 5: Use GetProjectExportDTO to load estimation fields automatically
+			var dto = projectToken.ToObject<GetProjectExportDTO>() ?? new GetProjectExportDTO();
+			return Task.FromResult<GetProjectExportDTO>(dto);
 		}
 
-		public Task<GetItemzTypeDTO> GetItemzTypeDetailsAsync(Guid itemzTypeId)
+		/// <summary>
+		/// PHASE 5: Returns GetItemzTypeExportDTO which includes estimation fields.
+		/// Uses Export DTO to automatically deserialize estimation data from JSON if present.
+		/// </summary>
+		public Task<GetItemzTypeExportDTO> GetItemzTypeDetailsAsync(Guid itemzTypeId)
 		{
 			EnsureLoaded();
 			if (_exportKind != RepositoryExportKind.Live)
@@ -282,11 +293,16 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 				throw new KeyNotFoundException($"ItemzType with Id {itemzTypeId} not found in JSON.");
 
 			var token = node["ItemzType"] ?? node;
-			var dto = token.ToObject<GetItemzTypeDTO>() ?? new GetItemzTypeDTO();
-			return Task.FromResult(dto);
+			// PHASE 5: Use GetItemzTypeExportDTO to load estimation fields automatically
+			var dto = token.ToObject<GetItemzTypeExportDTO>() ?? new GetItemzTypeExportDTO();
+			return Task.FromResult<GetItemzTypeExportDTO>(dto);
 		}
 
-		public Task<GetItemzDTO> GetItemzDetailsAsync(Guid itemzId)
+		/// <summary>
+		/// PHASE 5: Returns GetItemzExportDTO which includes estimation fields.
+		/// Uses Export DTO to automatically deserialize estimation data from JSON if present.
+		/// </summary>
+		public Task<GetItemzExportDTO> GetItemzDetailsAsync(Guid itemzId)
 		{
 			EnsureLoaded();
 			if (_exportKind != RepositoryExportKind.Live)
@@ -296,8 +312,9 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 				throw new KeyNotFoundException($"Itemz with Id {itemzId} not found in JSON.");
 
 			var token = node["Itemz"] ?? node;
-			var dto = token.ToObject<GetItemzDTO>() ?? new GetItemzDTO();
-			return Task.FromResult(dto);
+			// PHASE 5: Use GetItemzExportDTO to load estimation fields automatically
+			var dto = token.ToObject<GetItemzExportDTO>() ?? new GetItemzExportDTO();
+			return Task.FromResult<GetItemzExportDTO>(dto);
 		}
 
 		#endregion
@@ -444,7 +461,7 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 			_itemzTraces.Clear();
 			_baselineItemzTraces.Clear();
 			_baselineItemzIncluded.Clear();
-		    _exportKind = RepositoryExportKind.Unknown;
+			_exportKind = RepositoryExportKind.Unknown;
 
 			if (_root == null)
 				return;
@@ -857,7 +874,7 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 
 		#region Record details (BASELINE)
 
-		public Task<GetBaselineDTO> GetBaselineDetailsAsync(Guid baselineId)
+		public Task<GetBaselineExportDTO> GetBaselineDetailsAsync(Guid baselineId)
 		{
 			EnsureLoaded();
 			if (_exportKind != RepositoryExportKind.Baseline)
@@ -867,11 +884,11 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 				throw new KeyNotFoundException($"Baseline with Id {baselineId} not found in JSON.");
 
 			var token = node["Baseline"] ?? node;
-			var dto = token.ToObject<GetBaselineDTO>() ?? new GetBaselineDTO();
-			return Task.FromResult(dto);
+			var dto = token.ToObject<GetBaselineExportDTO>() ?? new GetBaselineExportDTO();
+			return Task.FromResult<GetBaselineExportDTO>(dto);
 		}
 
-		public Task<GetBaselineItemzTypeDTO> GetBaselineItemzTypeDetailsAsync(Guid baselineItemzTypeId)
+		public Task<GetBaselineItemzTypeExportDTO> GetBaselineItemzTypeDetailsAsync(Guid baselineItemzTypeId)
 		{
 			EnsureLoaded();
 			if (_exportKind != RepositoryExportKind.Baseline)
@@ -881,11 +898,11 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 				throw new KeyNotFoundException($"BaselineItemzType with Id {baselineItemzTypeId} not found in JSON.");
 
 			var token = node["BaselineItemzType"] ?? node;
-			var dto = token.ToObject<GetBaselineItemzTypeDTO>() ?? new GetBaselineItemzTypeDTO();
-			return Task.FromResult(dto);
+			var dto = token.ToObject<GetBaselineItemzTypeExportDTO>() ?? new GetBaselineItemzTypeExportDTO();
+			return Task.FromResult<GetBaselineItemzTypeExportDTO>(dto);
 		}
 
-		public Task<GetBaselineItemzDTO> GetBaselineItemzDetailsAsync(Guid baselineItemzId)
+		public Task<GetBaselineItemzExportDTO> GetBaselineItemzDetailsAsync(Guid baselineItemzId)
 		{
 			EnsureLoaded();
 			if (_exportKind != RepositoryExportKind.Baseline)
@@ -895,8 +912,8 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 				throw new KeyNotFoundException($"BaselineItemz with Id {baselineItemzId} not found in JSON.");
 
 			var token = node["BaselineItemz"] ?? node;
-			var dto = token.ToObject<GetBaselineItemzDTO>() ?? new GetBaselineItemzDTO();
-			return Task.FromResult(dto);
+			var dto = token.ToObject<GetBaselineItemzExportDTO>() ?? new GetBaselineItemzExportDTO();
+			return Task.FromResult<GetBaselineItemzExportDTO>(dto);
 		}
 
 		#endregion
