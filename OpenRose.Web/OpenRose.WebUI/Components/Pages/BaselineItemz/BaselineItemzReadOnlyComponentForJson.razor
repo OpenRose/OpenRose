@@ -94,6 +94,14 @@
                         <MudText><strong> || Status      :</strong> @_baselineItemz.Status</MudText>
                         <MudText><strong> || Priority    : </strong> @_baselineItemz.Priority</MudText>
                         <MudText><strong> || Severity    : </strong> @_baselineItemz.Severity</MudText>
+                        @if (!string.IsNullOrEmpty(_baselineItemz.EstimationUnit))
+                        {
+                            <MudText Variant="Variant.H6">|| <b>Estimation [@_baselineItemz.EstimationUnit] : </b> @_baselineItemz.OwnEstimation <b>|| Roll-Up</b> :@_baselineItemz.RolledUpEstimation </MudText>
+                        }
+                        else
+                        {
+                            <MudText Variant="Variant.H6">|| <b>Estimation : </b> @_baselineItemz.OwnEstimation <b>|| Roll-Up</b> :@_baselineItemz.RolledUpEstimation </MudText>
+                        }
                     </MudStack>
 
                     <br />
@@ -123,7 +131,7 @@
 
 
     private bool initializingPage = true;
-    private GetBaselineItemzDTO _baselineItemz = new();
+    private GetBaselineItemzExportDTO _baselineItemz = new();
     private MarkupString _convertedMarkdown;
     private bool _needsRender = false;
 

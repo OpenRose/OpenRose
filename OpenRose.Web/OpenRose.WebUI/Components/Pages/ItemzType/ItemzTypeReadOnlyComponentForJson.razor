@@ -71,7 +71,15 @@
                             <MudIcon Icon="@Icons.Material.Filled.Park" Size="Size.Small" Class="mouse-pointer-icon" @onclick="async () => await findAndShowInTreeViewAsync()" />
                         </MudTooltip>
                     </MudStack>
-@*                         <MudText><strong> || Status      : </strong> @_itemzType.Status</MudText> *@
+                    <MudText><strong> || Status      : </strong> @_itemzType.Status</MudText> 
+                    @if (!string.IsNullOrEmpty(_itemzType.EstimationUnit))
+                    {
+                        <MudText Variant="Variant.H6">|| <b>Estimation [@_itemzType.EstimationUnit] : </b> @_itemzType.OwnEstimation <b>|| Roll-Up</b> :@_itemzType.RolledUpEstimation </MudText>
+                    }
+                    else
+                    {
+                        <MudText Variant="Variant.H6">|| <b>Estimation : </b> @_itemzType.OwnEstimation <b>|| Roll-Up</b> :@_itemzType.RolledUpEstimation </MudText>
+                    }
                 </MudStack>
                 <br />
                     }
@@ -94,7 +102,7 @@
     [Parameter] public EventCallback<Guid> OnNavigateNext { get; set; }
 
     private bool initializingPage = true;
-    private GetItemzTypeDTO _itemzType = new();
+    private GetItemzTypeExportDTO _itemzType = new();
     private MarkupString _convertedMarkdown;
     private bool _needsRender = false;
 

@@ -71,6 +71,14 @@
                         </MudTooltip>
                         <MudText><strong> || Status:</strong> @_baselineItemzType.Status</MudText>
                         <MudText><strong> || Is System?  : </strong> @(_baselineItemzType.IsSystem ? "Yes" : "No")</MudText>
+                        @if (!string.IsNullOrEmpty(_baselineItemzType.EstimationUnit))
+                        {
+                            <MudText Variant="Variant.H6">|| <b>Estimation [@_baselineItemzType.EstimationUnit] : </b> @_baselineItemzType.OwnEstimation <b>|| Roll-Up</b> :@_baselineItemzType.RolledUpEstimation </MudText>
+                        }
+                        else
+                        {
+                            <MudText Variant="Variant.H6">|| <b>Estimation : </b> @_baselineItemzType.OwnEstimation <b>|| Roll-Up</b> :@_baselineItemzType.RolledUpEstimation </MudText>
+                        }
                     </MudStack>
                     }
 
@@ -92,7 +100,7 @@
     [Parameter] public EventCallback<Guid> OnNavigateNext { get; set; }
 
     private bool initializingPage = true;
-    private GetBaselineItemzTypeDTO _baselineItemzType = new();
+    private GetBaselineItemzTypeExportDTO _baselineItemzType = new();
     private MarkupString _convertedMarkdown;
     private bool _needsRender = false;
 
