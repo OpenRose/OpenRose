@@ -25,7 +25,6 @@ namespace ItemzApp.API.Entities
 
 		public HierarchyId? ItemzHierarchyId { get; set; }
 
-		// PHASE 1: Estimation fields for roll-up calculations
 		/// <summary>
 		/// Estimation Unit (e.g., "Days", "Hours", "Story Points", "$", "GBP")
 		/// Maximum 16 characters for consistency across hierarchy

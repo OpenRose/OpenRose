@@ -29,7 +29,6 @@ namespace ItemzApp.API.Entities
         [DatabaseGenerated(DatabaseGeneratedOption.None)]
         public bool isIncluded { get; set; } = true;
 
-		// PHASE 1: Estimation fields for Baseline roll-up calculations
 		/// <summary>
 		/// Estimation Unit (e.g., "Days", "Hours", "Story Points", "$", "GBP")
 		/// Maximum 16 characters for consistency across hierarchy

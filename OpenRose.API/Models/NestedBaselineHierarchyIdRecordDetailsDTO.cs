@@ -39,7 +39,6 @@ namespace ItemzApp.API.Models
         /// </summary>
         public bool isIncluded { get; set; }
 
-		// PHASE 1: Estimation fields
 		/// <summary>
 		/// Estimation Unit (e.g., "Days", "Hours", "Story Points", "$", "GBP")
 		/// </summary>

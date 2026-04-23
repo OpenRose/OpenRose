@@ -29,7 +29,6 @@ namespace ItemzApp.API.Models
 		public List<BaselineItemzTraceDTO>? BaselineItemzTraces { get; set; }
 	}
 
-	// PHASE 1: Project hierarchy with estimation fields
 	public class ProjectImportNode
 	{
 		public GetProjectExportDTO Project { get; set; }

@@ -203,7 +203,7 @@ namespace ItemzApp.API.Controllers
 								RecordType = baselineHierarchyRecord.RecordType,
 								Name = baselineHierarchyRecord.Name,
 								isIncluded = baselineHierarchyRecord.IsIncluded,
-								// PHASE 5: Include estimation fields for JSON export with estimation data
+								// Include estimation fields for JSON export with estimation data
 								EstimationUnit = baselineHierarchyRecord.EstimationUnit,
 								OwnEstimation = baselineHierarchyRecord.OwnEstimation,
 								// If record is excluded, return 0 for RolledUpEstimation

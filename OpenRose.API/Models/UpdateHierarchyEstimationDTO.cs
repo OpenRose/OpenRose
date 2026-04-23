@@ -8,7 +8,7 @@ using System.ComponentModel.DataAnnotations;
 namespace ItemzApp.API.Models
 {
 	/// <summary>
-	/// PHASE 1: DTO for updating estimation-related fields on hierarchy records
+	/// DTO for updating estimation-related fields on hierarchy records
 	/// Used when user updates own estimation or estimation unit via API
 	/// </summary>
 	public class UpdateHierarchyEstimationDTO

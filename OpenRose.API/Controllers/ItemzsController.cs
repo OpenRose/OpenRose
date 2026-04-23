@@ -309,7 +309,7 @@ namespace ItemzApp.API.Controllers
 			}
 			_itemzRepository.AddItemz(itemzEntity);
 
-			// PHASE 1: Track the hierarchy record ID for trigger events
+			// Track the hierarchy record ID for trigger events
 			Guid createdHierarchyRecordId = Guid.Empty;
 
 			if (!(parentId.Equals(Guid.Empty)))
@@ -322,7 +322,7 @@ namespace ItemzApp.API.Controllers
 					return NotFound();
 				}
 
-				// PHASE 1: Capture the hierarchy record ID returned from MoveItemzHierarchyAsync
+				// Capture the hierarchy record ID returned from MoveItemzHierarchyAsync
 				createdHierarchyRecordId = await _itemzRepository.MoveItemzHierarchyAsync(itemzEntity.Id, parentId
 					, atBottomOfChildNodes: AtBottomOfChildNodes
 					, movingItemzName: itemzEntity.Name);
@@ -596,7 +596,7 @@ namespace ItemzApp.API.Controllers
 
 			try
 			{
-				// PHASE 1: Capture the previous parent hierarchy record ID before the move
+				// Capture the previous parent hierarchy record ID before the move
 				// The parent of firstItemzId IS the parent of the entire group (firstItemzId, movingItemzId, secondItemzId)
 				Guid previousParentHierarchyId = Guid.Empty;
 				var movingHierarchyRecord = await _hierarchyRepository.GetHierarchyRecordForUpdateAsync(movingItemzId);
@@ -617,7 +617,7 @@ namespace ItemzApp.API.Controllers
 					}
 				}
 
-				// PHASE 1: Perform the actual move between existing Itemz records
+				// Perform the actual move between existing Itemz records
 				await _itemzRepository.AddOrMoveItemzBetweenTwoHierarchyRecordsAsync(
 					firstItemzId,
 					secondItemzId,
@@ -633,11 +633,11 @@ namespace ItemzApp.API.Controllers
 					firstItemzId,
 					secondItemzId);
 
-				// PHASE 1: Get the hierarchy record ID of the moved Itemz for trigger events
+				// Get the hierarchy record ID of the moved Itemz for trigger events
 				var movedHierarchyRecord = await _hierarchyRepository.GetHierarchyRecordForUpdateAsync(movingItemzId);
 				Guid movedItemzHierarchyRecordId = movedHierarchyRecord?.Id ?? Guid.Empty;
 
-				// PHASE 1: Determine the current (new) parent after the move
+				// Determine the current (new) parent after the move
 				// When moving between existing Itemz records, the parent is the parent of those Itemz
 				Guid currentParentHierarchyId = previousParentHierarchyId; // Same parent when moving between siblings
 				if (movedHierarchyRecord != null && movedHierarchyRecord.ItemzHierarchyId != null)
@@ -655,7 +655,7 @@ namespace ItemzApp.API.Controllers
 					}
 				}
 
-				// PHASE 1: After successful move, trigger roll-up estimation update for moved Itemz
+				// After successful move, trigger roll-up estimation update for moved Itemz
 				if (movedItemzHierarchyRecordId != Guid.Empty && estimationRollupService != null)
 				{
 					_logger.LogInformation(

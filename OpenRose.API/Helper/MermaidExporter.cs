@@ -317,12 +317,12 @@ namespace ItemzApp.API.Helper
 			string? estimationUnit = null,
 			decimal rolledUpEstimation = 0)
 		{
-			// PHASE 5: Format estimation unit with fallback to "N/A"
+			// Format estimation unit with fallback to "N/A"
 			string estimationDisplay = string.IsNullOrWhiteSpace(estimationUnit)
 				? "N/A"
 				: estimationUnit;
 
-			// PHASE 5: Format the estimation line
+			// Format the estimation line
 			string estimationLine = $"<br/>{estimationDisplay} {rolledUpEstimation:F2}";
 
 			string label = recordType?.ToLowerInvariant() switch
@@ -365,7 +365,7 @@ namespace ItemzApp.API.Helper
 				.Replace("{", "(")       // curly brace → parenthesis
 				.Replace("}", ")");      // curly brace → parenthesis
 
-			// PHASE 5: Restore the <br/> tag for line breaks (was converted to "(br/)" above)
+			// Restore the <br/> tag for line breaks (was converted to "(br/)" above)
 			// Mermaid requires <br/> for HTML line breaks in labels
 			transformed = transformed.Replace("(br/)", "<br/>");
 

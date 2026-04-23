@@ -222,6 +222,9 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 				Level = rootMeta.Level,
 				RecordType = rootMeta.RecordType,
 				Name = rootMeta.Name,
+				EstimationUnit = rootMeta.EstimationUnit,
+				OwnEstimation = rootMeta.OwnEstimation,
+				RolledUpEstimation = rootMeta.RolledUpEstimation,
 				Children = new List<NestedHierarchyIdRecordDetailsDTO>()
 			};
 
@@ -248,6 +251,9 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 					Level = meta.Level,
 					RecordType = meta.RecordType,
 					Name = meta.Name,
+					EstimationUnit = meta.EstimationUnit,
+					OwnEstimation = meta.OwnEstimation,
+					RolledUpEstimation = meta.RolledUpEstimation,
 					Children = new List<NestedHierarchyIdRecordDetailsDTO>()
 				};
 

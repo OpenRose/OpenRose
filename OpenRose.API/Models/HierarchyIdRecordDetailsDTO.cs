@@ -73,7 +73,6 @@ namespace ItemzApp.API.Models
 		/// </summary>
 		public string? ParentName { get; set; }
 
-		// PHASE 1: Estimation fields for roll-up calculations
 		/// <summary>
 		/// Estimation Unit (e.g., "Days", "Hours", "Story Points", "$", "GBP")
 		/// Consistent across entire project hierarchy

@@ -9,7 +9,6 @@ namespace ItemzApp.API.Models
 	/// <summary>
 	/// GetItemzTypeExportDTO extends GetItemzTypeDTO with estimation fields from ItemzHierarchy table
 	/// Used specifically for exporting ItemzType data with estimation roll-ups
-	/// PHASE 1: Includes EstimationUnit, OwnEstimation, and RolledUpEstimation
 	/// </summary>
 	// EXPLANATION : We decided to new keyword for every field that is inherited. This way we control the order of 
 	// fields in the exported JSON file and ensure that the estimation fields are included in the correct position.
@@ -45,19 +44,19 @@ namespace ItemzApp.API.Models
 		/// </summary>
 		public new bool IsSystem { get; set; }
 		/// <summary>
-		/// PHASE 1: Estimation Unit for the ItemzType (e.g., "Days", "Hours", "Story Points", "$", "GBP")
+		/// Estimation Unit for the ItemzType (e.g., "Days", "Hours", "Story Points", "$", "GBP")
 		/// Optional field from ItemzHierarchy table
 		/// </summary>
 		public string? EstimationUnit { get; set; }
 
 		/// <summary>
-		/// PHASE 1: Own Estimation value for this ItemzType
+		/// Own Estimation value for this ItemzType
 		/// Optional field from ItemzHierarchy table
 		/// </summary>
 		public decimal OwnEstimation { get; set; } = 0;
 
 		/// <summary>
-		/// PHASE 1: Roll-up Estimation - sum of own estimation plus all child estimations
+		/// Roll-up Estimation - sum of own estimation plus all child estimations
 		/// Optional field from ItemzHierarchy table
 		/// </summary>
 		public decimal RolledUpEstimation { get; set; } = 0;

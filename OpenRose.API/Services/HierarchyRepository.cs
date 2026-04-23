@@ -779,7 +779,6 @@ namespace ItemzApp.API.Services
 
 		/// <summary>
 		/// Updates estimation fields (EstimationUnit and/or OwnEstimation) for a hierarchy record
-		/// PHASE 1: Triggers roll-up recalculation after update
 		/// 
 		/// When EstimationUnit is updated for a Project record, automatically synchronizes
 		/// the new value to all descendant records (ItemzType, Itemz, etc.) via stored procedure.

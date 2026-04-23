@@ -212,7 +212,7 @@ namespace ItemzApp.API.Controllers
 
 						var isSuccessful = await _baselineItemzRepository.UpdateBaselineItemzsAsync(detailsOfUpdateBaselineItemz);
 
-						// PHASE 5: SCENARIO 1 - If EXCLUDING, handle roll-up estimation deduction
+						//If EXCLUDING, handle roll-up estimation deduction
 						if (isSuccessful && baselineItemzsToBeUpdated.ShouldBeIncluded == false)
 						{
 							_logger.LogInformation(
@@ -235,7 +235,7 @@ namespace ItemzApp.API.Controllers
 							}
 						}
 
-						// PHASE 5: SCENARIO 2 - If INCLUDING (single record only), handle roll-up estimation addition
+						// If INCLUDING (single record only), handle roll-up estimation addition
 						if (isSuccessful && baselineItemzsToBeUpdated.ShouldBeIncluded == true && baselineItemzsToBeUpdated.SingleNodeInclusion == true)
 						{
 							_logger.LogInformation(
@@ -258,7 +258,7 @@ namespace ItemzApp.API.Controllers
 							}
 						}
 
-						// PHASE 5: SCENARIO 3 - If INCLUDING (all children), handle descendants recalculation and ancestor propagation
+						// If INCLUDING (all children), handle descendants recalculation and ancestor propagation
 						if (isSuccessful && baselineItemzsToBeUpdated.ShouldBeIncluded == true && baselineItemzsToBeUpdated.SingleNodeInclusion == false)
 						{
 							_logger.LogInformation(

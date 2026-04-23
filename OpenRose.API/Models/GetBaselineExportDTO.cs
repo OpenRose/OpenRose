@@ -42,19 +42,19 @@ namespace ItemzApp.API.Models
 		public new Guid ProjectId { get; set; }
 
 		/// <summary>
-		/// PHASE 1: Estimation Unit for the Project (e.g., "Days", "Hours", "Story Points", "$", "GBP")
+		/// Estimation Unit for the Project (e.g., "Days", "Hours", "Story Points", "$", "GBP")
 		/// Optional field from ItemzHierarchy table
 		/// </summary>
 		public string? EstimationUnit { get; set; }
 
 		/// <summary>
-		/// PHASE 1: Own Estimation value for this Project
+		/// Own Estimation value for this Project
 		/// Optional field from ItemzHierarchy table
 		/// </summary>
 		public decimal OwnEstimation { get; set; } = 0;
 
 		/// <summary>
-		/// PHASE 1: Roll-up Estimation - sum of own estimation plus all child estimations
+		/// Roll-up Estimation - sum of own estimation plus all child estimations
 		/// Optional field from ItemzHierarchy table
 		/// </summary>
 		public decimal RolledUpEstimation { get; set; } = 0;

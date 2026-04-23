@@ -412,7 +412,6 @@ namespace ItemzApp.API.Controllers
 
 		/// <summary>
 		/// Recalculates all roll-up estimations for a specific project on-demand
-		/// PHASE 1: User can click a button in UI to trigger this recalculation
 		/// </summary>
 		/// <param name="projectHierarchyRecordId">The GUID of the Project hierarchy record</param>
 		/// <returns>Success or failure status with message</returns>
@@ -491,11 +490,8 @@ namespace ItemzApp.API.Controllers
 			}
 		}
 
-		// PHASE 1: Add this endpoint to HierarchyController for updating estimation values
-
 		/// <summary>
 		/// Updates estimation fields (own estimation and/or estimation unit) for a hierarchy record
-		/// PHASE 1: Automatically triggers roll-up recalculation after update
 		/// </summary>
 		/// <param name="updateHierarchyEstimationDTO">Contains record ID and updated estimation fields</param>
 		/// <param name="hierarchyRepository">Repository for hierarchy data</param>
@@ -525,7 +521,7 @@ namespace ItemzApp.API.Controllers
 
 				_logger.LogInformation($"Request to update estimation for hierarchy record ID: {updateHierarchyEstimationDTO.RecordId}");
 
-				// PHASE 1: Update the estimation fields - this will trigger roll-up recalculation
+				// Update the estimation fields
 				var updateResult = await hierarchyRepository.UpdateHierarchyEstimationFieldsAsync(
 					updateHierarchyEstimationDTO.RecordId,
 					updateHierarchyEstimationDTO.EstimationUnit,
@@ -541,7 +537,7 @@ namespace ItemzApp.API.Controllers
 					});
 				}
 
-				// PHASE 1: Retrieve and return updated record with new estimation values
+				// Retrieve and return updated record with new estimation values
 				var updatedRecord = await hierarchyRepository.GetHierarchyRecordDetailsByID(updateHierarchyEstimationDTO.RecordId);
 
 				_logger.LogInformation($"Successfully updated estimation for hierarchy record ID: {updateHierarchyEstimationDTO.RecordId}");

@@ -569,7 +569,7 @@ namespace ItemzApp.API.Controllers
 
 			try
 			{
-				// PHASE 1: Capture the previous parent hierarchy record ID before the move
+				// Capture the previous parent hierarchy record ID before the move
 				// Note: When moving to another project, the previous parent is the current project
 				Guid previousParentHierarchyId = Guid.Empty;
 				var movingHierarchyRecord = await _hierarchyRepository.GetHierarchyRecordForUpdateAsync(MovingItemzTypeId);
@@ -590,7 +590,7 @@ namespace ItemzApp.API.Controllers
 					}
 				}
 
-				// PHASE 1: Perform the actual move to another project
+				// Perform the actual move to another project
 				await _ItemzTypeRepository.MoveItemzTypeToAnotherProjectAsync(
 					MovingItemzTypeId,
 					TargetProjectId,
@@ -604,11 +604,11 @@ namespace ItemzApp.API.Controllers
 					MovingItemzTypeId,
 					TargetProjectId);
 
-				// PHASE 1: Get the hierarchy record ID of the moved ItemzType for trigger events
+				// Get the hierarchy record ID of the moved ItemzType for trigger events
 				var movedHierarchyRecord = await _hierarchyRepository.GetHierarchyRecordForUpdateAsync(MovingItemzTypeId);
 				Guid movedItemzTypeHierarchyRecordId = movedHierarchyRecord?.Id ?? Guid.Empty;
 
-				// PHASE 1 TRIGGER: After successful move, trigger roll-up estimation update for moved ItemzType
+				// After successful move, trigger roll-up estimation update for moved ItemzType
 				if (movedItemzTypeHierarchyRecordId != Guid.Empty && estimationRollupService != null)
 				{
 					_logger.LogInformation(
@@ -771,7 +771,7 @@ namespace ItemzApp.API.Controllers
 
 			try
 			{
-				// PHASE 1: Capture the previous parent hierarchy record ID before the move
+				// Capture the previous parent hierarchy record ID before the move
 				// The parent of firstItemzTypeId IS the parent of the entire group (firstItemzTypeId, movingItemzTypeId, secondItemzTypeId)
 				Guid previousParentHierarchyId = Guid.Empty;
 				var movingHierarchyRecord = await _hierarchyRepository.GetHierarchyRecordForUpdateAsync(movingItemzTypeId);
@@ -792,7 +792,7 @@ namespace ItemzApp.API.Controllers
 					}
 				}
 
-				// PHASE 1: Perform the actual move between existing ItemzType records
+				// Perform the actual move between existing ItemzType records
 				await _ItemzTypeRepository.MoveItemzTypeBetweenTwoHierarchyRecordsAsync(
 					firstItemzTypeId,
 					secondItemzTypeId,
@@ -807,11 +807,11 @@ namespace ItemzApp.API.Controllers
 					firstItemzTypeId,
 					secondItemzTypeId);
 
-				// PHASE 1: Get the hierarchy record ID of the moved ItemzType for trigger events
+				// Get the hierarchy record ID of the moved ItemzType for trigger events
 				var movedHierarchyRecord = await _hierarchyRepository.GetHierarchyRecordForUpdateAsync(movingItemzTypeId);
 				Guid movedItemzTypeHierarchyRecordId = movedHierarchyRecord?.Id ?? Guid.Empty;
 
-				// PHASE 1: Determine the current (new) parent after the move
+				// Determine the current (new) parent after the move
 				// When moving between existing ItemzType records, the parent is the parent of those ItemzTypes
 				Guid currentParentHierarchyId = previousParentHierarchyId; // Same parent when moving between siblings
 				if (movedHierarchyRecord != null && movedHierarchyRecord.ItemzHierarchyId != null)
@@ -829,7 +829,7 @@ namespace ItemzApp.API.Controllers
 					}
 				}
 
-				// PHASE 1 TRIGGER: After successful move, trigger roll-up estimation update for moved ItemzType
+				// After successful move, trigger roll-up estimation update for moved ItemzType
 				if (movedItemzTypeHierarchyRecordId != Guid.Empty && estimationRollupService != null)
 				{
 					_logger.LogInformation(
