@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace OpenRose.WebUI.Client.Services.JsonFile
 {
@@ -82,6 +83,12 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 
 		public JsonViewerMetadata? CurrentMetadata { get; private set; }
 
+		/// <summary>
+		/// Indicates whether the currently loaded JSON export contains ANY estimation data.
+		/// This flag is set during JSON loading and can be used to control UI display of estimation information.
+		/// </summary>
+		public bool HasEstimationData { get; private set; } = false;
+
 
 		public void SetJsonViewerMetadata(JsonViewerMetadata metadata)
 		{
@@ -128,6 +135,13 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 			BuildIndexes();
 			_isLoaded = true;
 
+			//// Analyze loaded data for estimation availability
+			//DetectEstimationDataInLoadedNodes();
+
+			// Analyze loaded data for estimation availability
+			// Check all nodes in _hierarchyById
+			HasEstimationData = _hierarchyById.Values
+				.Any(node => !string.IsNullOrWhiteSpace(node.EstimationUnit));
 
 			await NotifyJsonChanged();
 
@@ -150,6 +164,7 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 			_baselineItemzTraces.Clear();
 			_baselineItemzIncluded.Clear();
 			CurrentMetadata = null;
+			HasEstimationData = false;
 
 
 			// NotifyStateChanged();
@@ -616,7 +631,11 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 
 		}
 
-		private void RegisterNode(Guid id, JToken wrapperNode, Guid? parentId, int level, string recordType, string name, bool isRoot)
+		private void RegisterNode(Guid id, JToken wrapperNode, Guid? parentId, int level,
+				string recordType, string name, bool isRoot,
+				string? estimationUnit = null,          // ✅ ADD THIS
+				decimal ownEstimation = 0,              // ✅ ADD THIS
+				decimal rolledUpEstimation = 0)         // ✅ ADD THIS
 		{
 			_nodeById[id] = wrapperNode;
 			_parentById[id] = parentId;
@@ -640,148 +659,426 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 				Name = name,
 				RecordType = recordType,
 				Level = level,
-				ParentRecordId = parentId ?? Guid.Empty
+				ParentRecordId = parentId ?? Guid.Empty,
+				EstimationUnit = estimationUnit,           // ✅ NOW STORED
+				OwnEstimation = ownEstimation,             // ✅ NOW STORED
+				RolledUpEstimation = rolledUpEstimation    // ✅ NOW STORED
 			};
 		}
+
+		//#region LIVE processors
+
+		//private void ProcessProjectExportNode(JToken projNode, int level, Guid? parentId)
+		//{
+		//	var projectToken = projNode["Project"];
+		//	if (projectToken == null)
+		//		return;
+
+		//	var id = ParseGuid(projectToken, "Id");
+		//	if (id == Guid.Empty)
+		//		return;
+
+		//	var name = projectToken.Value<string>("Name") ?? string.Empty;
+
+		//	var itemzData = projNode["Project"]?.ToObject<GetProjectExportDTO>();
+		//	if (itemzData == null)
+		//		return;
+
+
+		//	RegisterNode(id, projNode, parentId, level, "Project", name, isRoot: parentId == null,
+		//		estimationUnit: itemzData.EstimationUnit,           // ✅ EXTRACT FROM DTO
+		//		ownEstimation: itemzData.OwnEstimation,             // ✅ EXTRACT FROM DTO
+		//		rolledUpEstimation: itemzData.RolledUpEstimation    // ✅ EXTRACT FROM DTO
+		//															  );
+
+		//	var itemzTypes = projNode["ItemzTypes"] as JArray;
+		//	if (itemzTypes != null)
+		//	{
+		//		foreach (var itNode in itemzTypes)
+		//			ProcessItemzTypeExportNode(itNode, level + 1, id, isRoot: false);
+		//	}
+		//}
+
+
+		//private void ProcessItemzTypeExportNode(JToken itNode, int level, Guid? parentId, bool isRoot)
+		//{
+		//	var itemzTypeToken = itNode["ItemzType"];
+		//	if (itemzTypeToken == null)
+		//		return;
+
+		//	var id = ParseGuid(itemzTypeToken, "Id");
+		//	if (id == Guid.Empty)
+		//		return;
+
+		//	var name = itemzTypeToken.Value<string>("Name") ?? string.Empty;
+
+		//	RegisterNode(id, itNode, parentId, level, "ItemzType", name, isRoot);
+
+		//	var itemzArray = itNode["Itemz"] as JArray;
+		//	if (itemzArray != null)
+		//	{
+		//		foreach (var itemNode in itemzArray)
+		//			ProcessItemzExportNode(itemNode, level + 1, id, isRoot: false, recordType: "Itemz");
+		//	}
+		//}
+
+		//private void ProcessItemzExportNode(JToken itemNode, int level, Guid? parentId, bool isRoot, string recordType)
+		//{
+		//	var itemToken = itemNode["Itemz"];
+		//	if (itemToken == null)
+		//		return;
+
+		//	var id = ParseGuid(itemToken, "Id");
+		//	if (id == Guid.Empty)
+		//		return;
+
+		//	var name = itemToken.Value<string>("Name") ?? string.Empty;
+
+		//	RegisterNode(id, itemNode, parentId, level, recordType, name, isRoot);
+
+		//	var subItemz = itemNode["SubItemz"] as JArray;
+		//	if (subItemz != null)
+		//	{
+		//		foreach (var subNode in subItemz)
+		//			ProcessItemzExportNode(subNode, level + 1, id, isRoot: false, recordType: "Itemz");
+		//	}
+		//}
+
+		//#endregion
+
 
 		#region LIVE processors
 
 		private void ProcessProjectExportNode(JToken projNode, int level, Guid? parentId)
 		{
-			var projectToken = projNode["Project"];
-			if (projectToken == null)
+			var projectData = projNode["Project"]?.ToObject<GetProjectExportDTO>();
+			if (projectData == null)
 				return;
 
-			var id = ParseGuid(projectToken, "Id");
-			if (id == Guid.Empty)
-				return;
-
-			var name = projectToken.Value<string>("Name") ?? string.Empty;
-
-			RegisterNode(id, projNode, parentId, level, "Project", name, isRoot: parentId == null);
+			RegisterNode(
+				id: projectData.Id,
+				wrapperNode: projNode,
+				parentId: parentId,
+				level: level,
+				recordType: "Project",
+				name: projectData.Name,
+				isRoot: level == 0,
+				estimationUnit: projectData.EstimationUnit,           // ✅ EXTRACT FROM DTO
+				ownEstimation: projectData.OwnEstimation,             // ✅ EXTRACT FROM DTO
+				rolledUpEstimation: projectData.RolledUpEstimation    // ✅ EXTRACT FROM DTO
+			);
 
 			var itemzTypes = projNode["ItemzTypes"] as JArray;
 			if (itemzTypes != null)
 			{
 				foreach (var itNode in itemzTypes)
-					ProcessItemzTypeExportNode(itNode, level + 1, id, isRoot: false);
+					ProcessItemzTypeExportNode(itNode, level + 1, projectData.Id, isRoot: false);
 			}
 		}
 
 
 		private void ProcessItemzTypeExportNode(JToken itNode, int level, Guid? parentId, bool isRoot)
 		{
-			var itemzTypeToken = itNode["ItemzType"];
-			if (itemzTypeToken == null)
+			//var itemzTypeToken = itNode["ItemzType"];
+			//if (itemzTypeToken == null)
+			//	return;
+
+			//var id = ParseGuid(itemzTypeToken, "Id");
+			//if (id == Guid.Empty)
+			//	return;
+
+			//var name = itemzTypeToken.Value<string>("Name") ?? string.Empty;
+
+			//RegisterNode(id, itNode, parentId, level, "ItemzType", name, isRoot);
+
+
+
+			var itemzTypeData = itNode["ItemzType"]?.ToObject<GetItemzTypeExportDTO>();
+			if (itemzTypeData == null)
 				return;
 
-			var id = ParseGuid(itemzTypeToken, "Id");
-			if (id == Guid.Empty)
-				return;
+			RegisterNode(
+				id: itemzTypeData.Id,
+				wrapperNode: itNode,
+				parentId: parentId,
+				level: level,
+				recordType: "ItemzType",
+				name: itemzTypeData.Name,
+				isRoot: isRoot,
+				estimationUnit: itemzTypeData.EstimationUnit,           // ✅ EXTRACT FROM DTO
+				ownEstimation: itemzTypeData.OwnEstimation,             // ✅ EXTRACT FROM DTO
+				rolledUpEstimation: itemzTypeData.RolledUpEstimation    // ✅ EXTRACT FROM DTO
+			);
 
-			var name = itemzTypeToken.Value<string>("Name") ?? string.Empty;
-
-			RegisterNode(id, itNode, parentId, level, "ItemzType", name, isRoot);
 
 			var itemzArray = itNode["Itemz"] as JArray;
 			if (itemzArray != null)
 			{
 				foreach (var itemNode in itemzArray)
-					ProcessItemzExportNode(itemNode, level + 1, id, isRoot: false, recordType: "Itemz");
+					ProcessItemzExportNode(itemNode, level + 1, itemzTypeData.Id, isRoot: false, recordType: "Itemz");
 			}
 		}
 
 		private void ProcessItemzExportNode(JToken itemNode, int level, Guid? parentId, bool isRoot, string recordType)
 		{
-			var itemToken = itemNode["Itemz"];
-			if (itemToken == null)
+			//var itemToken = itemNode["Itemz"];
+			//if (itemToken == null)
+			//	return;
+
+			//var id = ParseGuid(itemToken, "Id");
+			//if (id == Guid.Empty)
+			//	return;
+
+			//var name = itemToken.Value<string>("Name") ?? string.Empty;
+
+			//RegisterNode(id, itemNode, parentId, level, recordType, name, isRoot);
+
+			var itemzData = itemNode["Itemz"]?.ToObject<GetItemzExportDTO>();
+			if (itemzData == null)
 				return;
 
-			var id = ParseGuid(itemToken, "Id");
-			if (id == Guid.Empty)
-				return;
+			RegisterNode(
+				id: itemzData.Id,
+				wrapperNode: itemNode,
+				parentId: parentId,
+				level: level,
+				recordType: "Itemz",
+				name: itemzData.Name,
+				isRoot: isRoot,
+				estimationUnit: itemzData.EstimationUnit,           // ✅ EXTRACT FROM DTO
+				ownEstimation: itemzData.OwnEstimation,             // ✅ EXTRACT FROM DTO
+				rolledUpEstimation: itemzData.RolledUpEstimation    // ✅ EXTRACT FROM DTO
+			);
 
-			var name = itemToken.Value<string>("Name") ?? string.Empty;
-
-			RegisterNode(id, itemNode, parentId, level, recordType, name, isRoot);
 
 			var subItemz = itemNode["SubItemz"] as JArray;
 			if (subItemz != null)
 			{
 				foreach (var subNode in subItemz)
-					ProcessItemzExportNode(subNode, level + 1, id, isRoot: false, recordType: "Itemz");
+					ProcessItemzExportNode(subNode, level + 1, itemzData.Id, isRoot: false, recordType: "Itemz");
 			}
 		}
 
 		#endregion
 
+		//#region BASELINE processors
+
+		//private void ProcessBaselineExportNode(JToken baselineNode, int level, Guid? parentId)
+		//{
+		//	var baselineToken = baselineNode["Baseline"];
+		//	if (baselineToken == null)
+		//		return;
+
+		//	var id = ParseGuid(baselineToken, "Id");
+		//	if (id == Guid.Empty)
+		//		return;
+
+		//	var name = baselineToken.Value<string>("Name") ?? string.Empty;
+
+		//	RegisterNode(id, baselineNode, parentId, level, "Baseline", name, isRoot: parentId == null);
+
+		//	var baselineItemzTypes = baselineNode["BaselineItemzTypes"] as JArray;
+		//	if (baselineItemzTypes != null)
+		//	{
+		//		foreach (var bitNode in baselineItemzTypes)
+		//			ProcessBaselineItemzTypeExportNode(bitNode, level + 1, id, isRoot: false);
+		//	}
+		//}
+
+
+		//private void ProcessBaselineItemzTypeExportNode(JToken bitNode, int level, Guid? parentId, bool isRoot)
+		//{
+		//	var bitToken = bitNode["BaselineItemzType"];
+		//	if (bitToken == null)
+		//		return;
+
+		//	var id = ParseGuid(bitToken, "Id");
+		//	if (id == Guid.Empty)
+		//		return;
+
+		//	var name = bitToken.Value<string>("Name") ?? string.Empty;
+
+		//	RegisterNode(id, bitNode, parentId, level, "BaselineItemzType", name, isRoot);
+
+		//	var baselineItemz = bitNode["BaselineItemz"] as JArray;
+		//	if (baselineItemz != null)
+		//	{
+		//		foreach (var biNode in baselineItemz)
+		//			ProcessBaselineItemzExportNode(biNode, level + 1, id, isRoot: false, recordType: "BaselineItemz");
+		//	}
+		//}
+
+
+		//private void ProcessBaselineItemzExportNode(JToken biNode, int level, Guid? parentId, bool isRoot, string recordType)
+		//{
+		//	var biToken = biNode["BaselineItemz"];
+		//	if (biToken == null)
+		//		return;
+
+		//	var id = ParseGuid(biToken, "Id");
+		//	if (id == Guid.Empty)
+		//		return;
+
+		//	var name = biToken.Value<string>("Name") ?? string.Empty;
+
+		//	RegisterNode(id, biNode, parentId, level, recordType, name, isRoot);
+
+		//	var baselineSubItemz = biNode["BaselineSubItemz"] as JArray;
+		//	if (baselineSubItemz != null)
+		//	{
+		//		foreach (var subNode in baselineSubItemz)
+		//			ProcessBaselineItemzExportNode(subNode, level + 1, id, isRoot: false, recordType: "BaselineItemz");
+		//	}
+		//}
+
+
+		//#endregion
+
 		#region BASELINE processors
 
 		private void ProcessBaselineExportNode(JToken baselineNode, int level, Guid? parentId)
 		{
-			var baselineToken = baselineNode["Baseline"];
-			if (baselineToken == null)
+
+			//var projectData = projNode["Project"]?.ToObject<GetProjectExportDTO>();
+			//if (projectData == null)
+			//	return;
+
+			//RegisterNode(
+			//	id: projectData.Id,
+			//	wrapperNode: projNode,
+			//	parentId: parentId,
+			//	level: level,
+			//	recordType: "Project",
+			//	name: projectData.Name,
+			//	isRoot: level == 0,
+			//	estimationUnit: projectData.EstimationUnit,           // ✅ EXTRACT FROM DTO
+			//	ownEstimation: projectData.OwnEstimation,             // ✅ EXTRACT FROM DTO
+			//	rolledUpEstimation: projectData.RolledUpEstimation    // ✅ EXTRACT FROM DTO
+			//);
+
+			//var itemzTypes = projNode["ItemzTypes"] as JArray;
+			//if (itemzTypes != null)
+			//{
+			//	foreach (var itNode in itemzTypes)
+			//		ProcessItemzTypeExportNode(itNode, level + 1, projectData.Id, isRoot: false);
+			//}
+
+
+
+			//var baselineToken = baselineNode["Baseline"];
+			//if (baselineToken == null)
+			//	return;
+
+			//var id = ParseGuid(baselineToken, "Id");
+			//if (id == Guid.Empty)
+			//	return;
+
+			//var name = baselineToken.Value<string>("Name") ?? string.Empty;
+
+
+			var baselineData = baselineNode["Baseline"]?.ToObject<GetBaselineExportDTO>();
+			if (baselineData == null)
 				return;
 
-			var id = ParseGuid(baselineToken, "Id");
-			if (id == Guid.Empty)
-				return;
-
-			var name = baselineToken.Value<string>("Name") ?? string.Empty;
-
-			RegisterNode(id, baselineNode, parentId, level, "Baseline", name, isRoot: parentId == null);
+			RegisterNode(
+				id: baselineData.Id,
+				wrapperNode: baselineNode,
+				parentId: parentId,
+				level: level,
+				recordType: "Baseline",
+				name: baselineData.Name,
+				isRoot: level == 0, // INSTEAD OF HARDCODING WE CAN PASS IT ' isRoot: parentId == null '
+				estimationUnit: baselineData.EstimationUnit,          
+				ownEstimation: baselineData.OwnEstimation,           
+				rolledUpEstimation: baselineData.RolledUpEstimation   
+			);
 
 			var baselineItemzTypes = baselineNode["BaselineItemzTypes"] as JArray;
 			if (baselineItemzTypes != null)
 			{
 				foreach (var bitNode in baselineItemzTypes)
-					ProcessBaselineItemzTypeExportNode(bitNode, level + 1, id, isRoot: false);
+					ProcessBaselineItemzTypeExportNode(bitNode, level + 1, baselineData.Id, isRoot: false);
 			}
 		}
 
 
 		private void ProcessBaselineItemzTypeExportNode(JToken bitNode, int level, Guid? parentId, bool isRoot)
 		{
-			var bitToken = bitNode["BaselineItemzType"];
-			if (bitToken == null)
+			//var bitToken = bitNode["BaselineItemzType"];
+			//if (bitToken == null)
+			//	return;
+
+			//var id = ParseGuid(bitToken, "Id");
+			//if (id == Guid.Empty)
+			//	return;
+
+			//var name = bitToken.Value<string>("Name") ?? string.Empty;
+
+			//RegisterNode(id, bitNode, parentId, level, "BaselineItemzType", name, isRoot);
+
+			var baselineItemzTypeData = bitNode["BaselineItemzType"]?.ToObject<GetBaselineItemzTypeExportDTO>();
+			if (baselineItemzTypeData == null)
 				return;
 
-			var id = ParseGuid(bitToken, "Id");
-			if (id == Guid.Empty)
-				return;
-
-			var name = bitToken.Value<string>("Name") ?? string.Empty;
-
-			RegisterNode(id, bitNode, parentId, level, "BaselineItemzType", name, isRoot);
+			RegisterNode(
+				id: baselineItemzTypeData.Id,
+				wrapperNode: bitNode,
+				parentId: parentId,
+				level: level,
+				recordType: "BaselineItemzType",
+				name: baselineItemzTypeData.Name,
+				isRoot: isRoot,
+				estimationUnit: baselineItemzTypeData.EstimationUnit,
+				ownEstimation: baselineItemzTypeData.OwnEstimation,
+				rolledUpEstimation: baselineItemzTypeData.RolledUpEstimation
+			);
 
 			var baselineItemz = bitNode["BaselineItemz"] as JArray;
 			if (baselineItemz != null)
 			{
 				foreach (var biNode in baselineItemz)
-					ProcessBaselineItemzExportNode(biNode, level + 1, id, isRoot: false, recordType: "BaselineItemz");
+					ProcessBaselineItemzExportNode(biNode, level + 1, baselineItemzTypeData.Id, isRoot: false, recordType: "BaselineItemz");
 			}
 		}
 
 
 		private void ProcessBaselineItemzExportNode(JToken biNode, int level, Guid? parentId, bool isRoot, string recordType)
 		{
-			var biToken = biNode["BaselineItemz"];
-			if (biToken == null)
+			//var biToken = biNode["BaselineItemz"];
+			//if (biToken == null)
+			//	return;
+
+			//var id = ParseGuid(biToken, "Id");
+			//if (id == Guid.Empty)
+			//	return;
+
+			//var name = biToken.Value<string>("Name") ?? string.Empty;
+
+			//RegisterNode(id, biNode, parentId, level, recordType, name, isRoot);
+
+
+			var baselineItemzData = biNode["BaselineItemz"]?.ToObject<GetBaselineItemzExportDTO>();
+			if (baselineItemzData == null)
 				return;
 
-			var id = ParseGuid(biToken, "Id");
-			if (id == Guid.Empty)
-				return;
-
-			var name = biToken.Value<string>("Name") ?? string.Empty;
-
-			RegisterNode(id, biNode, parentId, level, recordType, name, isRoot);
+			RegisterNode(
+				id: baselineItemzData.Id,
+				wrapperNode: biNode,
+				parentId: parentId,
+				level: level,
+				recordType: "BaselineItemz",
+				name: baselineItemzData.Name,
+				isRoot: isRoot,
+				estimationUnit: baselineItemzData.EstimationUnit,
+				ownEstimation: baselineItemzData.OwnEstimation,
+				rolledUpEstimation: baselineItemzData.RolledUpEstimation
+			);
 
 			var baselineSubItemz = biNode["BaselineSubItemz"] as JArray;
 			if (baselineSubItemz != null)
 			{
 				foreach (var subNode in baselineSubItemz)
-					ProcessBaselineItemzExportNode(subNode, level + 1, id, isRoot: false, recordType: "BaselineItemz");
+					ProcessBaselineItemzExportNode(subNode, level + 1, baselineItemzData.Id, isRoot: false, recordType: "BaselineItemz");
 			}
 		}
 
