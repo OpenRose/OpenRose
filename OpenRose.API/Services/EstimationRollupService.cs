@@ -172,59 +172,6 @@ namespace ItemzApp.API.Services
 			}
 		}
 
-		///// <summary>
-		///// Recalculates roll-up estimation for a single hierarchy record based on its children.
-		///// This is called after any change to a record's own estimation or hierarchy structure.
-		///// PHASE 1: Triggered by record updates (own estimation changes, record moved, etc.)
-		///// </summary>
-		///// <param name="hierarchyRecordId">The ID of the hierarchy record to recalculate</param>
-		///// <returns>True if successful, False otherwise</returns>
-		//public async Task<bool> RecalculateSingleRecordRollUpAsync(Guid hierarchyRecordId)
-		//{
-		//	try
-		//	{
-		//		var hierarchyRecord = await _context.ItemzHierarchy!
-		//			.FirstOrDefaultAsync(ih => ih.Id == hierarchyRecordId);
-
-		//		if (hierarchyRecord == null)
-		//		{
-		//			_logger.LogWarning($"Hierarchy record not found for ID: {hierarchyRecordId}");
-		//			return false;
-		//		}
-
-		//		// Calculate new roll-up value: own estimation + sum of all immediate children's rolled-up estimations
-		//		decimal newRolledUpEstimation = hierarchyRecord.OwnEstimation;
-
-		//		// Get all immediate children
-		//		var immediateChildren = await _context.ItemzHierarchy!
-		//			.Where(ih => ih.ItemzHierarchyId!.GetAncestor(1) == hierarchyRecord.ItemzHierarchyId!)
-		//			.ToListAsync();
-
-		//		// Add all children's rolled-up estimations to this record's roll-up
-		//		foreach (var child in immediateChildren)
-		//		{
-		//			newRolledUpEstimation += child.RolledUpEstimation;
-		//		}
-
-		//		// Update the record if roll-up value changed
-		//		if (hierarchyRecord.RolledUpEstimation != newRolledUpEstimation)
-		//		{
-		//			hierarchyRecord.RolledUpEstimation = newRolledUpEstimation;
-		//			_context.ItemzHierarchy!.Update(hierarchyRecord);
-		//			await _context.SaveChangesAsync();
-
-		//			_logger.LogDebug($"Updated roll-up estimation for hierarchy record ID {hierarchyRecordId}. New value: {newRolledUpEstimation}");
-		//		}
-
-		//		return true;
-		//	}
-		//	catch (Exception ex)
-		//	{
-		//		_logger.LogError($"Exception occurred while recalculating roll-up for record ID {hierarchyRecordId}: {ex.Message}", ex);
-		//		return false;
-		//	}
-		//}
-
 
 		/// <summary>
 		/// Synchronizes EstimationUnit for all descendants to match the Project record's value.
