@@ -38,6 +38,7 @@
 	  <None Remove="DbContexts\UserStoredProcedure\userProcCreateBaselineByItemzTypeID_202512251739.sql" />
 	  <None Remove="DbContexts\UserStoredProcedure\userProcCreateBaselineByItemzTypeID_202603061821.sql" />
 	  <None Remove="DbContexts\UserStoredProcedure\userProcCreateBaselineByItemzTypeID_202604151741.sql" />
+	  <None Remove="DbContexts\UserStoredProcedure\userProcCreateBaselineByItemzTypeID_202604251936.sql" />
 	  <None Remove="DbContexts\UserStoredProcedure\userProcCreateBaselineByProjectID_202511051626.sql" />
 	  <None Remove="DbContexts\UserStoredProcedure\userProcCreateBaselineByProjectID_202512251819.sql" />
 	  <None Remove="DbContexts\UserStoredProcedure\userProcCreateBaselineByProjectID_202603061820.sql" />
@@ -73,6 +74,7 @@
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\Old\userProcCreateBaselineByProjectID_202512251819.sql" />
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcCreateBaselineByItemzTypeID_202604151741.sql" />
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\Old\userProcCreateBaselineByProjectID_202603061820.sql" />
+		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcCreateBaselineByItemzTypeID_202604251936.sql" />
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcCreateBaselineByProjectID_202604151737.sql" />
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcDeleteAllOrphanedBaselineItemz_202407251305.sql" />
 		<EmbeddedResource Include="DbContexts\UserStoredProcedure\userProcDeleteItemzHierarchyRecordsByItemzTypeId_202412091028.sql" />
