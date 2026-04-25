@@ -21,7 +21,6 @@ namespace ItemzApp.API.Services
 		private readonly IItemzTypeRepository _itemzTypeRepository;
 		private readonly IItemzRepository _itemzRepository;
 		private readonly IItemzTraceRepository _traceRepository;
-		// PHASE 5: Add EstimationRollupService for post-import roll-up recalculation
 		private readonly EstimationRollupService _estimationRollupService;
 		private readonly IHierarchyRepository _hierarchyRepository;
 		private readonly ILogger<ImportService> _logger;
@@ -31,9 +30,7 @@ namespace ItemzApp.API.Services
 					IItemzTypeRepository itemzTypeRepository,
 					IItemzRepository itemzRepository,
 					IItemzTraceRepository traceRepository,
-					// PHASE 5: Inject EstimationRollupService
 					EstimationRollupService estimationRollupService,
-					// PHASE 5: Inject IHierarchyRepository for finding parent Project
 					IHierarchyRepository hierarchyRepository,
 					ILogger<ImportService> logger,
 					IMapper mapper)
@@ -42,9 +39,7 @@ namespace ItemzApp.API.Services
 			_itemzTypeRepository = itemzTypeRepository;
 			_itemzRepository = itemzRepository;
 			_traceRepository = traceRepository;
-			// PHASE 5: Store EstimationRollupService instance
 			_estimationRollupService = estimationRollupService ?? throw new ArgumentNullException(nameof(estimationRollupService));
-			// PHASE 5: Store IHierarchyRepository instance
 			_hierarchyRepository = hierarchyRepository ?? throw new ArgumentNullException(nameof(hierarchyRepository));
 			_logger = logger;
 			_mapper = mapper;
@@ -191,7 +186,7 @@ namespace ItemzApp.API.Services
 				};
 				result.ItemzIdMapping = idMap;
 
-				// PHASE 5: Post-import roll-up recalculation for the Project containing this Itemz
+				// Post-import roll-up recalculation for the Project containing this Itemz
 				await RecalculateProjectRollUpEstimationsPostImportAsync(rootEntity.Id, "Itemz");
 			}
 			catch (Exception ex)
@@ -347,7 +342,7 @@ namespace ItemzApp.API.Services
 				};
 				result.ItemzIdMapping = idMap;
 
-				// PHASE 5: Post-import roll-up recalculation for the Project containing this ItemzType
+				// Post-import roll-up recalculation for the Project containing this ItemzType
 				await RecalculateProjectRollUpEstimationsPostImportAsync(itemzTypeId, "ItemzType");
 			}
 			catch (Exception ex)
@@ -501,7 +496,7 @@ namespace ItemzApp.API.Services
 				};
 				result.ItemzIdMapping = idMap;
 
-				// PHASE 5: Post-import roll-up recalculation for the newly created Project
+				// Post-import roll-up recalculation for the newly created Project
 				// Note: For Project imports, we recalculate the newly created project itself
 				await RecalculateProjectRollUpEstimationsPostImportAsync(projectId, "Project");
 			}
@@ -595,7 +590,7 @@ namespace ItemzApp.API.Services
 			// Call into existing Itemz import logic
 			var result = await ImportAsync(convertedRepository, "Itemz", placementDto);
 
-			// PHASE 5: Post-import roll-up recalculation is already handled in ImportAsync
+			// Post-import roll-up recalculation is already handled in ImportAsync
 			// No additional call needed here as the base ImportAsync method handles it
 
 			return result;
@@ -642,7 +637,7 @@ namespace ItemzApp.API.Services
 				// Delegate to existing ItemzType import method
 				var itemzTypeResult = await ImportItemzTypeHierarchyAsync(convertedRepository, placementDto);
 
-				// PHASE 5: Post-import roll-up recalculation is already handled in ImportItemzTypeHierarchyAsync
+				// Post-import roll-up recalculation is already handled in ImportItemzTypeHierarchyAsync
 				// No additional call needed here as the base ImportItemzTypeHierarchyAsync method handles it
 
 				// Return delegated result
@@ -685,7 +680,7 @@ namespace ItemzApp.API.Services
 
 				var projectResult = await ImportProjectHierarchyAsync(convertedRepository, placementDto);
 
-				// PHASE 5: Post-import roll-up recalculation is already handled in ImportProjectHierarchyAsync
+				// Post-import roll-up recalculation is already handled in ImportProjectHierarchyAsync
 				// No additional call needed here as the base ImportProjectHierarchyAsync method handles it
 
 				return projectResult;
@@ -777,7 +772,7 @@ namespace ItemzApp.API.Services
 			return $"{trimmedName} {newSuffix}";
 		}
 
-		#region PHASE 5: Post-Import Roll-Up Recalculation
+		#region Post-Import Roll-Up Recalculation
 
 		/// <summary>
 		/// Finds the Project ID that contains the given record by traversing up the hierarchy.
@@ -806,7 +801,7 @@ namespace ItemzApp.API.Services
 		{
 			try
 			{
-				// PHASE 5: First, check if the record exists in live hierarchy (Project, ItemzType, Itemz)
+				// First, check if the record exists in live hierarchy (Project, ItemzType, Itemz)
 				var hierarchyRecord = await _hierarchyRepository.GetHierarchyRecordDetailsByID(recordId);
 
 				if (hierarchyRecord == null)
@@ -815,14 +810,14 @@ namespace ItemzApp.API.Services
 					return (Guid.Empty, false);
 				}
 
-				// PHASE 5: Check if this record itself is a Project
+				// Check if this record itself is a Project
 				if (string.Equals(hierarchyRecord.RecordType, "Project", StringComparison.OrdinalIgnoreCase))
 				{
 					_logger.LogDebug("Record {RecordId} is a Project itself. Using it directly for roll-up recalculation.", recordId);
 					return (recordId, true);
 				}
 
-				// PHASE 5: Record is ItemzType or Itemz, need to find parent Project
+				// Record is ItemzType or Itemz, need to find parent Project
 				// Get all parents of this record (includes the record itself in the results based on GetAllParentsOfItemzHierarchy behavior)
 				var parentsResult = await _hierarchyRepository.GetAllParentsOfItemzHierarchy(recordId);
 
@@ -831,8 +826,8 @@ namespace ItemzApp.API.Services
 					_logger.LogWarning("Could not retrieve parent hierarchy for record {RecordId}.", recordId);
 					return (Guid.Empty, false);
 				}
-
-				// PHASE 5: Search through the parent chain to find the Project record
+					
+				// Search through the parent chain to find the Project record
 				// GetAllParentsOfItemzHierarchy returns parents in order from immediate parent up to root
 				var projectRecord = parentsResult.AllRecords
 					.FirstOrDefault(p => string.Equals(p.RecordType, "Project", StringComparison.OrdinalIgnoreCase));
@@ -877,7 +872,7 @@ namespace ItemzApp.API.Services
 			{
 				_logger.LogInformation("Starting post-import roll-up recalculation for imported {ImportType} with ID {RecordId}.", importType, importedRootId);
 
-				// PHASE 5: Find the Project that contains this imported record
+				// Find the Project that contains this imported record
 				var (projectHierarchyRecordId, success) = await FindProjectHierarchyRecordIdAsync(importedRootId);
 
 				if (!success || projectHierarchyRecordId == Guid.Empty)
@@ -886,7 +881,7 @@ namespace ItemzApp.API.Services
 					return;
 				}
 
-				// PHASE 5: Recalculate the entire Project's roll-up estimations
+				// Recalculate the entire Project's roll-up estimations
 				bool recalculationSuccess = await _estimationRollupService.RecalculateProjectRollUpEstimationsAsync(projectHierarchyRecordId);
 
 				if (recalculationSuccess)

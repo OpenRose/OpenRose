@@ -46,7 +46,6 @@ namespace ItemzApp.API.Services
 			var projectEntity = await _projectRepository.GetProjectAsync(node.RecordId);
 			var projectDto = _mapper.Map<GetProjectDTO>(projectEntity);
 
-			// PHASE 1: Map to Export DTO with estimation fields
 			var projectExportDto = new GetProjectExportDTO
 			{
 				Id = projectDto.Id,
@@ -82,7 +81,7 @@ namespace ItemzApp.API.Services
 			var itemzTypeEntity = await _itemzTypeRepository.GetItemzTypeAsync(node.RecordId);
 			var itemzTypeDto = _mapper.Map<GetItemzTypeDTO>(itemzTypeEntity);
 
-			// PHASE 1: Map to Export DTO with estimation fields
+
 			var itemzTypeExportDto = new GetItemzTypeExportDTO
 			{
 				Id = itemzTypeDto.Id,
@@ -119,7 +118,6 @@ namespace ItemzApp.API.Services
 			var itemzEntity = await _itemzRepository.GetItemzAsync(node.RecordId);
 			var itemzDto = _mapper.Map<GetItemzDTO>(itemzEntity);
 
-			// PHASE 1: Map to Export DTO with estimation fields
 			var itemzExportDto = new GetItemzExportDTO
 			{
 				Id = itemzDto.Id,
@@ -162,7 +160,6 @@ namespace ItemzApp.API.Services
 			var baselineEntity = await _baselineRepository.GetBaselineAsync(node.RecordId);
 			var baselineDto = _mapper.Map<GetBaselineDTO>(baselineEntity);
 
-			// PHASE 1: Map to Export DTO with estimation fields
 			var baselineExportDto = new GetBaselineExportDTO
 			{
 				Id = baselineDto.Id,
@@ -199,7 +196,6 @@ namespace ItemzApp.API.Services
 			var baselineItemzTypeEntity = await _baselineItemzTypeRepository.GetBaselineItemzTypeAsync(node.RecordId);
 			var baselineItemzTypeDto = _mapper.Map<GetBaselineItemzTypeDTO>(baselineItemzTypeEntity);
 
-			// PHASE 1: Map to Export DTO with estimation fields
 			var baselineItemzTypeExportDto = new GetBaselineItemzTypeExportDTO		
 			{
 				Id = baselineItemzTypeDto.Id,
@@ -244,7 +240,6 @@ namespace ItemzApp.API.Services
 			//// --- TAG NORMALIZATION FOR EXPORT ---
 			//baselineItemzDto.Tags = TagParsingUtility.NormalizeAndRemoveDuplicates(baselineItemzDto.Tags);
 
-			// PHASE 1: Map to Export DTO with estimation fields
 			var baselineItemzExportDto = new GetBaselineItemzExportDTO
 			{
 				Id = baselineItemzDto.Id,

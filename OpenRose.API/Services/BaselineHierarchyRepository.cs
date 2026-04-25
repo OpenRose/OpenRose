@@ -67,7 +67,6 @@ namespace ItemzApp.API.Services
             baselineHierarchyIdRecordDetails.Name = foundBaselineHierarchyRecord.FirstOrDefault()!.Name ?? "";
             baselineHierarchyIdRecordDetails.Level = foundBaselineHierarchyRecord.FirstOrDefault()!.BaselineItemzHierarchyId!.GetLevel();
             baselineHierarchyIdRecordDetails.IsIncluded = foundBaselineHierarchyRecord.FirstOrDefault()!.isIncluded;
-			// PHASE 1: Map estimation fields from BaselineItemzHierarchy
 			baselineHierarchyIdRecordDetails.EstimationUnit = foundBaselineHierarchyRecord.FirstOrDefault()!.EstimationUnit;
 			baselineHierarchyIdRecordDetails.OwnEstimation = foundBaselineHierarchyRecord.FirstOrDefault()!.OwnEstimation;
 			// If record is excluded, return 0 for RolledUpEstimation
@@ -184,7 +183,6 @@ namespace ItemzApp.API.Services
 																							? baselineItemzTypeHierarchyItemzs[i].SourceItemzHierarchyId!.ToString()
 																							: "";
 						baselineHierarchyIdRecordDetails.IsIncluded = baselineItemzTypeHierarchyItemzs[i].isIncluded;
-						// PHASE 1: Map estimation fields from BaselineItemzHierarchy
 						baselineHierarchyIdRecordDetails.EstimationUnit = baselineItemzTypeHierarchyItemzs[i].EstimationUnit;
 						baselineHierarchyIdRecordDetails.OwnEstimation = baselineItemzTypeHierarchyItemzs[i].OwnEstimation;
 						// If record is excluded, return 0 for RolledUpEstimation
@@ -229,7 +227,6 @@ namespace ItemzApp.API.Services
 
 
 						baselineHierarchyIdRecordDetails.IsIncluded = baselineItemzTypeHierarchyItemzs[i].isIncluded;
-						// PHASE 1: Map estimation fields from BaselineItemzHierarchy
 						baselineHierarchyIdRecordDetails.EstimationUnit = baselineItemzTypeHierarchyItemzs[i].EstimationUnit;
 						baselineHierarchyIdRecordDetails.OwnEstimation = baselineItemzTypeHierarchyItemzs[i].OwnEstimation;
 						// If record is excluded, return 0 for RolledUpEstimation
@@ -459,7 +456,6 @@ namespace ItemzApp.API.Services
 						RecordType = current.RecordType,
 						Name = current.Name ?? "",
 						isIncluded = current.isIncluded,
-						// PHASE 1: Map estimation fields from BaselineItemzHierarchy
 						EstimationUnit = current.EstimationUnit,
 						OwnEstimation = current.OwnEstimation,
 						// If record is excluded, return 0 for RolledUpEstimation
@@ -485,7 +481,6 @@ namespace ItemzApp.API.Services
 							RecordType = current.RecordType,
 							Name = current.Name ?? "",
 							isIncluded = current.isIncluded,
-							// PHASE 1: Map estimation fields from BaselineItemzHierarchy
 							EstimationUnit = current.EstimationUnit,
 							OwnEstimation = current.OwnEstimation,
 							// If record is excluded, return 0 for RolledUpEstimation

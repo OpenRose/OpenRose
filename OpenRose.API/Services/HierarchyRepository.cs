@@ -147,7 +147,7 @@ namespace ItemzApp.API.Services
 
 
 
-		// PHASE 1: Get hierarchy record details by HierarchyId path value
+		// Get hierarchy record details by HierarchyId path value
 		public async Task<HierarchyIdRecordDetailsDTO?> GetHierarchyRecordDetailsByHierarchyIdPath(HierarchyId hierarchyIdPath)
 		{
 			if (hierarchyIdPath == null)
@@ -884,7 +884,7 @@ namespace ItemzApp.API.Services
 			{
 				await _context.SaveChangesAsync();
 
-				// PHASE 1: Trigger optimized roll-up recalculation for ancestors using delta
+				// Trigger optimized roll-up recalculation for ancestors using delta
 				if (hierarchyRecord.ItemzHierarchyId != null && estimationDelta != 0)
 				{
 					_logger.LogInformation(
@@ -906,7 +906,7 @@ namespace ItemzApp.API.Services
 					}
 				}
 
-				// PHASE 1: Synchronize EstimationUnit to all child records if it changed for Project
+				// Synchronize EstimationUnit to all child records if it changed for Project
 				// EXPLANATION: Only trigger if:
 				// 1. EstimationUnit was actually updated (not just provided but unchanged)
 				// 2. The record type is 'Project' (business rule: only Projects can update EstimationUnit)
@@ -1053,202 +1053,6 @@ namespace ItemzApp.API.Services
 				return false;
 			}
 		}
-
-		//// PHASE 1: Helper method to recalculate all ancestor records
-		//private async Task<bool> RecalculateAncestorsAsync(Guid recordId)
-		//{
-		//	try
-		//	{
-		//		var currentRecord = await _context.ItemzHierarchy!
-		//			.FirstOrDefaultAsync(ih => ih.Id == recordId);
-
-		//		if (currentRecord == null || currentRecord.ItemzHierarchyId == null)
-		//		{
-		//			_logger.LogWarning($"RecalculateAncestorsAsync: Current record not found for ID: {recordId}");
-		//			return false;
-		//		}
-
-		//		var currentLevel = currentRecord.ItemzHierarchyId.GetLevel();
-		//		_logger.LogInformation($"RecalculateAncestorsAsync: Starting ancestor recalculation from level {currentLevel} for record {recordId}");
-
-		//		// Traverse up the hierarchy and recalculate each level
-		//		for (int i = currentLevel - 1; i > 0; i--)
-		//		{
-		//			var ancestorHierarchyId = currentRecord.ItemzHierarchyId.GetAncestor(currentLevel - i);
-		//			if (ancestorHierarchyId == null)
-		//			{
-		//				_logger.LogWarning($"RecalculateAncestorsAsync: Ancestor HierarchyId is null at level {i}");
-		//				break;
-		//			}
-
-		//			var ancestorRecord = await _context.ItemzHierarchy!
-		//				.FirstOrDefaultAsync(ih => ih.ItemzHierarchyId == ancestorHierarchyId);
-
-		//			if (ancestorRecord != null)
-		//			{
-		//				_logger.LogInformation($"RecalculateAncestorsAsync: Recalculating ancestor at level {i}, ID: {ancestorRecord.Id}");
-		//				bool recalcResult = await RecalculateSingleRecordRollUpAsync(ancestorRecord.Id);
-		//				_logger.LogInformation($"RecalculateAncestorsAsync: Recalculation result for {ancestorRecord.Id}: {recalcResult}");
-		//			}
-		//			else
-		//			{
-		//				_logger.LogWarning($"RecalculateAncestorsAsync: Ancestor record not found at level {i}");
-		//			}
-		//		}
-
-		//		_logger.LogInformation($"RecalculateAncestorsAsync: Completed ancestor recalculation for record {recordId}");
-		//		return true;
-		//	}
-		//	catch (Exception ex)
-		//	{
-		//		_logger.LogError($"Exception in RecalculateAncestorsAsync: {ex.Message}", ex);
-		//		return false;
-		//	}
-		//}
-
-		//// Helper method for recursive ancestor recalculation
-		//// TODO :: WE NEED TO REMOVE THIS METHOD AND REPLACE CALLS TO THIS METHOD WITH CALLS TO
-		//// RecalculateSingleRecordRollUpOptimizedAsync WHICH USES DELTA BASED CALCULATION
-		//// AND ALSO STOPS PROPAGATION AT PROJECT LEVEL (LEVEL 1) TO OPTIMIZE PERFORMANCE.
-
-		//private async Task<bool> RecalculateSingleRecordRollUpAsync(Guid hierarchyRecordId)
-		//{
-		//	try
-		//	{
-		//		var hierarchyRecord = await _context.ItemzHierarchy!
-		//			.FirstOrDefaultAsync(ih => ih.Id == hierarchyRecordId);
-
-		//		if (hierarchyRecord == null)
-		//		{
-		//			_logger.LogWarning($"RecalculateSingleRecordRollUpAsync: Hierarchy record not found for ID: {hierarchyRecordId}");
-		//			return false;
-		//		}
-
-		//		_logger.LogInformation($"RecalculateSingleRecordRollUpAsync: Calculating roll-up for record ID {hierarchyRecordId}");
-
-		//		// Calculate new roll-up value: own estimation + sum of all immediate children's rolled-up estimations
-		//		decimal newRolledUpEstimation = hierarchyRecord.OwnEstimation;
-		//		_logger.LogInformation($"RecalculateSingleRecordRollUpAsync: Starting with own estimation: {newRolledUpEstimation}");
-
-		//		// Get all immediate children
-		//		var immediateChildren = await _context.ItemzHierarchy!
-		//			.Where(ih => ih.ItemzHierarchyId!.GetAncestor(1) == hierarchyRecord.ItemzHierarchyId!)
-		//			.ToListAsync();
-
-		//		_logger.LogInformation($"RecalculateSingleRecordRollUpAsync: Found {immediateChildren.Count} immediate children");
-
-		//		// Add all children's rolled-up estimations to this record's roll-up
-		//		foreach (var child in immediateChildren)
-		//		{
-		//			_logger.LogInformation($"RecalculateSingleRecordRollUpAsync: Adding child {child.Id} rolled-up estimation: {child.RolledUpEstimation}");
-		//			newRolledUpEstimation += child.RolledUpEstimation;
-		//		}
-
-		//		_logger.LogInformation($"RecalculateSingleRecordRollUpAsync: New roll-up estimation calculated: {newRolledUpEstimation} (was: {hierarchyRecord.RolledUpEstimation})");
-
-		//		// Update the record if roll-up value changed
-		//		if (hierarchyRecord.RolledUpEstimation != newRolledUpEstimation)
-		//		{
-		//			hierarchyRecord.RolledUpEstimation = newRolledUpEstimation;
-		//			_context.ItemzHierarchy!.Update(hierarchyRecord);
-		//			await _context.SaveChangesAsync();
-
-		//			_logger.LogInformation($"RecalculateSingleRecordRollUpAsync: UPDATED roll-up estimation for hierarchy record ID {hierarchyRecordId}. New value: {newRolledUpEstimation}");
-		//			return true;
-		//		}
-		//		else
-		//		{
-		//			_logger.LogInformation($"RecalculateSingleRecordRollUpAsync: Roll-up value unchanged for {hierarchyRecordId}");
-		//			return true;
-		//		}
-		//	}
-		//	catch (Exception ex)
-		//	{
-		//		_logger.LogError($"Exception occurred while recalculating roll-up for record ID {hierarchyRecordId}: {ex.Message}", ex);
-		//		return false;
-		//	}
-		//}
-
-
-		//// IMPROVED METHOD: Simple arithmetic-based roll-up calculation
-		//private async Task<bool> RecalculateSingleRecordRollUpOptimizedAsync(
-		//			Guid hierarchyRecordId,
-		//			decimal estimationDelta)
-		//{
-		//	try
-		//	{
-		//		var currentRecord = await _context.ItemzHierarchy!
-		//			.FirstOrDefaultAsync(ih => ih.Id == hierarchyRecordId);
-
-		//		if (currentRecord == null || currentRecord.ItemzHierarchyId == null)
-		//		{
-		//			_logger.LogWarning($"Hierarchy record not found for ID: {hierarchyRecordId}");
-		//			return false;
-		//		}
-
-		//		// Check if we've reached the Project level (Level 1) BEFORE updating
-		//		int currentLevel = currentRecord.ItemzHierarchyId.GetLevel();
-
-		//		if (currentLevel == 1)
-		//		{
-		//			_logger.LogInformation(
-		//				$"Current record {hierarchyRecordId} is at Project level (Level 1). " +
-		//				$"Applying delta and STOPPING propagation.");
-
-		//			currentRecord.RolledUpEstimation += estimationDelta;
-		//			_context.ItemzHierarchy!.Update(currentRecord);
-		//			await _context.SaveChangesAsync();
-
-		//			_logger.LogInformation(
-		//				$"Updated rolled-up estimation for Project {hierarchyRecordId} by delta {estimationDelta}. " +
-		//				$"New value: {currentRecord.RolledUpEstimation}");
-
-		//			return true; // STOP - don't propagate beyond Project level
-		//		}
-
-		//		// Apply the delta (difference) to rolled-up estimation
-		//		currentRecord.RolledUpEstimation += estimationDelta;
-		//		_context.ItemzHierarchy!.Update(currentRecord);
-		//		await _context.SaveChangesAsync();
-
-		//		_logger.LogInformation(
-		//			$"Updated rolled-up estimation for {hierarchyRecordId} by delta {estimationDelta}. " +
-		//			$"New value: {currentRecord.RolledUpEstimation}");
-
-		//		// Get immediate parent
-		//		var parentHierarchyId = currentRecord.ItemzHierarchyId.GetAncestor(1);
-		//		if (parentHierarchyId != null)
-		//		{
-		//			var parentRecord = await _context.ItemzHierarchy!
-		//				.FirstOrDefaultAsync(ih => ih.ItemzHierarchyId == parentHierarchyId);
-
-		//			if (parentRecord != null)
-		//			{
-		//				// Check if parent is a Project (Level 1) BEFORE recursing
-		//				if (parentRecord.ItemzHierarchyId!.GetLevel() == 1)
-		//				{
-		//					_logger.LogInformation(
-		//						$"Next parent {parentRecord.Id} is a Project (Level 1). Will apply delta and stop.");
-
-		//					// Recurse ONE MORE TIME to update the Project, then stop
-		//					await RecalculateSingleRecordRollUpOptimizedAsync(parentRecord.Id, estimationDelta);
-		//					return true;
-		//				}
-
-		//				// Continue propagating to ancestors (for non-Project levels)
-		//				await RecalculateSingleRecordRollUpOptimizedAsync(parentRecord.Id, estimationDelta);
-		//			}
-		//		}
-
-		//		return true;
-		//	}
-		//	catch (Exception ex)
-		//	{
-		//		_logger.LogError($"Exception in RecalculateSingleRecordRollUpOptimizedAsync: {ex.Message}", ex);
-		//		return false;
-		//	}
-		//}
-
 	}
 }
 

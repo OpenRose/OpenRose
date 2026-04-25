@@ -643,9 +643,9 @@ namespace ItemzApp.API.Services
             AddItemzTypeJoinItemzRecord(itemzTypeId, itemz.Id);
 
         }
-
+            
 		//public async Task MoveItemzHierarchyAsync(Guid movingItemzId, Guid targetId, bool atBottomOfChildNodes = true, string? movingItemzName = null)
-		// PHASE 1: Modified to return the hierarchy record ID for trigger event processing
+        // Modified to return the hierarchy record ID for trigger event processing
 		public async Task<Guid> MoveItemzHierarchyAsync(Guid movingItemzId, Guid targetId, bool atBottomOfChildNodes = true, string? movingItemzName = null)
 		{
             if (movingItemzId == Guid.Empty)
@@ -823,7 +823,7 @@ namespace ItemzApp.API.Services
 				_context.ItemzHierarchy!.Add(movingItemzHierarchyRecord);
 			}
 
-			// PHASE 1: Return the hierarchy record ID for trigger event processing
+			// Return the hierarchy record ID for trigger event processing
 			return movingItemzHierarchyRecord.Id;
 		}
 
@@ -1100,11 +1100,11 @@ namespace ItemzApp.API.Services
 		}
 
 		// Add this method to handle estimation change logging
-		// PHASE 1: Log when OwnEstimation value changes for auditing purposes
+		// Logs when OwnEstimation value changes for auditing purposes
 
 		/// <summary>
 		/// Creates a change history entry when Own Estimation value changes for an Itemz record
-		/// PHASE 1: Logs only own estimation changes, not roll-up value changes
+		/// Logs only own estimation changes, not roll-up value changes
 		/// </summary>
 		/// <param name="itemzId">The ID of the Itemz record</param>
 		/// <param name="oldEstimation">Previous own estimation value</param>
@@ -1126,7 +1126,7 @@ namespace ItemzApp.API.Services
 					CreatedDate = DateTimeOffset.Now,
 					OldValues = oldEstimation.ToString(),
 					NewValues = newEstimation.ToString(),
-					ChangeEvent = "OwnEstimationChanged" // PHASE 1: Specific event for estimation changes
+					ChangeEvent = "OwnEstimationChanged" // Specific event for estimation changes
 				};
 
 				_context.ItemzChangeHistory!.Add(changeHistoryEntry);
@@ -1138,7 +1138,7 @@ namespace ItemzApp.API.Services
 			catch (Exception ex)
 			{
 				// _logger.LogError($"Exception occurred while logging estimation change for Itemz ID {itemzId}: {ex.Message}", ex);
-				// PHASE 1: Gentle error handling - don't crash if change log fails
+				// Gentle error handling - don't crash if change log fails
 				return false;
 			}
 		}

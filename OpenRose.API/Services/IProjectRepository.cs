@@ -25,7 +25,6 @@ namespace ItemzApp.API.Services
 
 		public Task AddNewProjectHierarchyAsync(Project project);
 
-		// PHASE 1: Overload to support estimation fields during import
 		public Task ImportServicesAddNewProjectHierarchyAsync(
 			Project project,
 			string? estimationUnit = null,

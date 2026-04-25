@@ -16,7 +16,6 @@ namespace ItemzApp.API.Services
     {
         public Task<HierarchyIdRecordDetailsDTO?> GetHierarchyRecordDetailsByID(Guid recordId);
 
-		// PHASE 1: Get hierarchy record details by HierarchyId path value
 		public Task<HierarchyIdRecordDetailsDTO?> GetHierarchyRecordDetailsByHierarchyIdPath(HierarchyId hierarchyIdPath);
 
 		public Task<HierarchyIdRecordDetailsDTO?> GetNextSiblingHierarchyRecordDetailsByID(Guid recordId);
@@ -35,7 +34,6 @@ namespace ItemzApp.API.Services
 
 		public Task<bool> UpdateHierarchyRecordNameByID(Guid recordId, string name);
 
-		// PHASE 1: Update estimation fields and trigger roll-up recalculation
 		public Task<bool> UpdateHierarchyEstimationFieldsAsync(
 			Guid recordId,
 			string? estimationUnit = null,

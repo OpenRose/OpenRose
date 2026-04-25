@@ -17,7 +17,7 @@ namespace ItemzApp.API.Services
 	/// <summary>
 	/// Service responsible for calculating and updating roll-up estimations in the project hierarchy.
 	/// Supports both individual record updates and bulk recalculations for performance optimization.
-	/// PHASE 1: Handles roll-up calculations for Live Project Hierarchy Data
+	/// Handles roll-up calculations for Live Project Hierarchy Data
 	/// </summary>
 	public class EstimationRollupService
 	{
@@ -34,7 +34,7 @@ namespace ItemzApp.API.Services
 		/// <summary>
 		/// Recalculates roll-up estimations for all records under a specific project.
 		/// This is an on-demand operation that user can trigger manually.
-		/// PHASE 1: Used for Live Project hierarchy data
+		/// Used for Live Project hierarchy data
 		/// 
 		/// Uses optimized SQL Server stored procedure for superior performance and scalability.
 		/// The stored procedure uses CTE-based recursive query combined with set-based UPDATE,
@@ -103,7 +103,7 @@ namespace ItemzApp.API.Services
 		/// <summary>
 		/// Recalculates roll-up estimations for all records under a specific baseline.
 		/// This is an on-demand operation that user can trigger manually.
-		/// PHASE 5: Used for Baseline hierarchy data with INCLUDED/EXCLUDED support
+		/// Used for Baseline hierarchy data with INCLUDED/EXCLUDED support
 		/// 
 		/// Uses optimized SQL Server stored procedure for superior performance and scalability.
 		/// The stored procedure uses CTE-based recursive query combined with set-based UPDATE,
@@ -176,7 +176,7 @@ namespace ItemzApp.API.Services
 		/// <summary>
 		/// Synchronizes EstimationUnit for all descendants to match the Project record's value.
 		/// This is called after updating a Project's EstimationUnit to ensure all child records are synchronized.
-		/// PHASE 1: Ensures all hierarchy records have EstimationUnit synchronized to Project level
+		/// Ensures all hierarchy records have EstimationUnit synchronized to Project level
 		/// 
 		/// Uses optimized SQL Server stored procedure for superior performance and scalability.
 		/// The stored procedure uses CTE-based recursive query combined with set-based UPDATE,
@@ -365,7 +365,7 @@ namespace ItemzApp.API.Services
 		/// Step 3: Deduct rolled-up estimation from old parent and entire ancestor chain up to Project level
 		/// Step 4: Add rolled-up estimation to new parent and entire ancestor chain up to Project level
 		/// 
-		/// PHASE 1: Non-fatal error handling - logs errors but doesn't fail the operation
+		/// Non-fatal error handling - logs errors but doesn't fail the operation
 		/// </summary>
 		/// <param name="movingRecordId">The ID of the record that has been moved</param>
 		/// <param name="previousParentId">The ID of the previous parent (old parent before move)</param>
@@ -553,7 +553,7 @@ namespace ItemzApp.API.Services
 					$"MovingRecordId: {movingRecordId}, PreviousParentId: {previousParentId}, " +
 					$"CurrentParentId: {currentParentId}. Exception: {ex.Message}",
 					ex);
-				// PHASE 1: Gentle error handling - log error but don't crash
+				// Gentle error handling - log error but don't crash
 				return false;
 			}
 		}
@@ -576,7 +576,7 @@ namespace ItemzApp.API.Services
 		/// Step 2: Identify the copied record's parent
 		/// Step 3: Add rolled-up estimation to parent and entire ancestor chain up to Project level
 		/// 
-		/// PHASE 1: Non-fatal error handling - logs errors but doesn't fail the operation
+		/// Non-fatal error handling - logs errors but doesn't fail the operation
 		/// </summary>
 		/// <param name="copiedRecordId">The ID of the copied hierarchy record</param>
 		/// <returns>True if successful, False only if critical validation fails</returns>
@@ -705,7 +705,7 @@ namespace ItemzApp.API.Services
 					$"UpdateRollUpEstimationsForRecordCopyAsync: Exception occurred while updating roll-up estimations for record copy. " +
 					$"CopiedRecordId: {copiedRecordId}. Exception: {ex.Message}",
 					ex);
-				// PHASE 1: Gentle error handling - log error but don't crash
+				// Gentle error handling - log error but don't crash
 				return false;
 			}
 		}
@@ -727,7 +727,7 @@ namespace ItemzApp.API.Services
 		/// Step 2: Deduct the deleted record's estimation from the parent
 		/// Step 3: Recursively deduct from entire ancestor chain up to Project level
 		/// 
-		/// PHASE 1: Non-fatal error handling - logs errors but doesn't fail the operation
+		/// Non-fatal error handling - logs errors but doesn't fail the operation
 		/// </summary>
 		/// <param name="parentRecordId">The ID of the parent record of the deleted record</param>
 		/// <param name="deletedRecordRolledUpEstimation">The rolled-up estimation value of the deleted record (the delta to deduct)</param>
@@ -827,7 +827,7 @@ namespace ItemzApp.API.Services
 					$"ParentRecordId: {parentRecordId}, DeletedRecordEstimation: {deletedRecordRolledUpEstimation}. " +
 					$"Exception: {ex.Message}",
 					ex);
-				// PHASE 1: Gentle error handling - log error but don't crash
+				// Gentle error handling - log error but don't crash
 				return false;
 			}
 		}

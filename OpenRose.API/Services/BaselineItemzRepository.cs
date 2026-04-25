@@ -217,8 +217,7 @@ namespace ItemzApp.API.Services
 
 
 		/// <summary>
-		/// PHASE 5: Handles EXCLUSION scenario ONLY (Scenario 1)
-		/// 
+		/// Handles EXCLUSION scenario ONLY
 		/// Single responsibility: Deduct a record's roll-up estimation from all ancestors
 		/// 
 		/// Prerequisites:
@@ -341,7 +340,7 @@ namespace ItemzApp.API.Services
 
 
 		/// <summary>
-		/// PHASE 5: Handles INCLUSION scenario ONLY (Scenario 2)
+		/// Handles INCLUSION scenario ONLY
 		/// 
 		/// Single responsibility: Add a record's roll-up estimation to all ancestors
 		/// 
@@ -479,7 +478,7 @@ namespace ItemzApp.API.Services
 
 
 		/// <summary>
-		/// PHASE 5: Handles INCLUSION ALL CHILDREN scenario (Scenario 3)
+		/// Handles INCLUSION ALL CHILDREN scenario
 		/// 
 		/// Single responsibility: Call stored procedure that handles entire scenario
 		/// 
