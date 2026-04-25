@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using ItemzApp.API.Entities;
 using ItemzApp.API.Helper;
@@ -63,7 +64,7 @@ namespace ItemzApp.API.Services
 
 		public Task DeleteAllOrphanItemz();
 
-        public Task<Guid> CopyItemzAsync(Guid ItemzId);
+        public Task<Guid> CopyItemzAsync(Guid ItemzId, CancellationToken cancellationToken = default);
 
 		#region NOT USED ANYMORE CODE 
 

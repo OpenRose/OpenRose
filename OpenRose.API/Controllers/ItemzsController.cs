@@ -20,6 +20,7 @@ using Newtonsoft.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.Blazor;
 using Serilog;
@@ -1181,6 +1182,7 @@ namespace ItemzApp.API.Controllers
 		[ProducesDefaultResponseType]
 		public async Task<ActionResult<GetItemzDTO>> CopyItemzAsync(
 			CopyItemzDTO copyItemzDTO,
+			CancellationToken cancellationToken,
 			[FromServices] EstimationRollupService estimationRollupService = null)
 		{
 			if (!(await _itemzRepository.ItemzExistsAsync(copyItemzDTO.ItemzId)))
@@ -1196,7 +1198,11 @@ namespace ItemzApp.API.Controllers
 
 			try
 			{
-				newlyCopiedItemzId = await _itemzRepository.CopyItemzAsync(copyItemzDTO.ItemzId);
+				// EXPLANATION : cancellationToken is automatically populated by ASP.NET Core from
+				// HttpContext.RequestAborted. When the HTTP client closes or cancels the request,
+				// this token becomes cancelled, which propagates down through the repository to the
+				// Entity Framework ExecuteSqlRawAsync call, aborting the SQL Server command.
+				newlyCopiedItemzId = await _itemzRepository.CopyItemzAsync(copyItemzDTO.ItemzId, cancellationToken);
 
 				// After copy is created, get the hierarchy record ID of the newly copied Itemz
 				if (newlyCopiedItemzId != Guid.Empty)
@@ -1207,6 +1213,13 @@ namespace ItemzApp.API.Controllers
 						copiedItemzHierarchyRecordId = copiedHierarchyRecord.Id;
 					}
 				}
+			}
+			catch (OperationCanceledException)
+			{
+				_logger.LogInformation("{FormattedControllerAndActionNames}CopyItemz request for ID {ItemzId} was cancelled by the client",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					copyItemzDTO.ItemzId);
+				return StatusCode(StatusCodes.Status499ClientClosedRequest);
 			}
 			catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
 			{

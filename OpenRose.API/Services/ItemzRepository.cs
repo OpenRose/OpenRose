@@ -12,6 +12,7 @@ using Microsoft.VisualBasic;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Data.SqlClient;
 using Microsoft.CodeAnalysis;
@@ -1049,7 +1050,7 @@ namespace ItemzApp.API.Services
 			}
 		}
 
-		public async Task<Guid> CopyItemzAsync(Guid ItemzId)
+		public async Task<Guid> CopyItemzAsync(Guid ItemzId, CancellationToken cancellationToken = default)
 		{
 			if (ItemzId == Guid.Empty)
 			{
@@ -1093,7 +1094,11 @@ namespace ItemzApp.API.Services
 
 			sqlParameters = sqlParameters.Append(OUTPUT_ID).ToArray();
 
-			var _ = await _context.Database.ExecuteSqlRawAsync(sql: "EXEC userProcCopyRecordWithChildrenByRecordID @RecordID, @OUTPUT_Id = @OUTPUT_Id OUT", parameters: sqlParameters);
+			// EXPLANATION : cancellationToken is passed through to ExecuteSqlRawAsync so that if
+			// the client cancels the request, the underlying SQL Server command is also cancelled,
+			// freeing database resources immediately rather than waiting for the stored procedure
+			// to complete on its own.
+			var _ = await _context.Database.ExecuteSqlRawAsync(sql: "EXEC userProcCopyRecordWithChildrenByRecordID @RecordID, @OUTPUT_Id = @OUTPUT_Id OUT", parameters: sqlParameters, cancellationToken: cancellationToken);
 			returnValue = (Guid)OUTPUT_ID.Value;
 
 			return returnValue;
