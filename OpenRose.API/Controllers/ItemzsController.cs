@@ -1218,7 +1218,7 @@ namespace ItemzApp.API.Controllers
 			{
 				_logger.LogInformation("{FormattedControllerAndActionNames}CopyItemz request for ID {ItemzId} was cancelled by the client",
 					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-					copyItemzDTO.ItemzId);
+					copyItemzDTO.ItemzId.ToString());
 				return StatusCode(StatusCodes.Status499ClientClosedRequest);
 			}
 			catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)

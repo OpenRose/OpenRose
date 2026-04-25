@@ -183,7 +183,7 @@
 
 	public string radioRecordType { get; set; }
 
-	private CancellationTokenSource _copyCancellationTokenSource;
+	private CancellationTokenSource _copyCts;
 
 	public async Task SelectSourceRecord()
 	{
@@ -317,11 +317,11 @@
 				return;
 			}
 
-			_copyCancellationTokenSource = new CancellationTokenSource();
+			_copyCts = new CancellationTokenSource();
 			try
 			{
 				copyingOverlay = true;
-				await ItemzService.__POST_Copy_Itemz_By_GUID_ID__Async(new CopyItemzDTO { ItemzId = copyItemz.Id }, _copyCancellationTokenSource.Token);
+				await ItemzService.__POST_Copy_Itemz_By_GUID_ID__Async(new CopyItemzDTO { ItemzId = copyItemz.Id }, _copyCts.Token);
 				copyingOverlay = false;
 				await ShowSuccessMessage("Copying of Itemz completed successfully!");
 			}
@@ -337,8 +337,7 @@
 			}
 			finally
 			{
-				_copyCancellationTokenSource?.Dispose();
-				_copyCancellationTokenSource = null;
+				DisposeCopyCts();
 			}
 		}
 		else if (radioRecordType == "ItemzType")
@@ -389,13 +388,19 @@
 		await performCleanUpActivity();
 	}
 
-	public void CancelCopyOperation()
+	private void CancelCopyOperation()
 	{
 		// EXPLANATION : Calling Cancel() signals the CancellationToken. This causes the awaited
 		// HTTP request in ItemzService.__POST_Copy_Itemz_By_GUID_ID__Async to throw an
 		// OperationCanceledException, which unwinds the entire call chain back to PerformCopy
 		// where it is caught and reported to the user.
-		_copyCancellationTokenSource?.Cancel();
+		_copyCts?.Cancel();
+	}
+
+	private void DisposeCopyCts()
+	{
+		_copyCts?.Dispose();
+		_copyCts = null;
 	}
 
 	public async Task performCleanUpActivity()
@@ -405,8 +410,7 @@
 		copyProject = new();
 		copyItemzType = new();
 		copyingOverlay = false;
-		_copyCancellationTokenSource?.Dispose();
-		_copyCancellationTokenSource = null;
+		DisposeCopyCts();
 	}
 
 	private async Task ShowErrorMessage(string message)
