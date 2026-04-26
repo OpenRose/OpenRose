@@ -901,7 +901,7 @@ namespace ItemzApp.API.Services
 						{
 							_logger.LogDebug(
 								$"UpdateHierarchyEstimationFieldsAsync: Propagating delta {estimationDelta} to ancestors starting from {parentRecord.Id}");
-							await _estimationRollupService.RecalculateSingleRecordRollUpOptimizedAsync(parentRecord.Id, estimationDelta);
+							await _estimationRollupService.RecalculateSingleRecordRollUpAsync(parentRecord.Id, estimationDelta);
 						}
 					}
 				}

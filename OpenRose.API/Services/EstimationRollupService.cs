@@ -257,11 +257,11 @@ namespace ItemzApp.API.Services
 
 
 		/// <summary>
-		/// Optimized method: Delta-based propagation for single record updates
-		/// Used for: Single record updates (real-time)
 		/// This is used when a single record's estimation changes and we need to propagate the delta upward
+		/// Used for: Single record updates (real-time)		
+		/// /// Delta-based propagation for single record updates
 		/// </summary>
-		public async Task<bool> RecalculateSingleRecordRollUpOptimizedAsync(
+		public async Task<bool> RecalculateSingleRecordRollUpAsync(
 			Guid hierarchyRecordId,
 			decimal estimationDelta)
 		{
@@ -316,9 +316,6 @@ namespace ItemzApp.API.Services
 
 					if (parentRecord != null)
 					{
-						// Recurse for ancestors
-						// await RecalculateSingleRecordRollUpOptimizedAsync(parentRecord.Id, estimationDelta);
-
 						// Add to target parent and its ancestry chain up to Project level
 						bool additionSuccess = await AddRollUpToAncestryChainAsync(
 							parentRecord,
@@ -343,7 +340,7 @@ namespace ItemzApp.API.Services
 			}
 			catch (Exception ex)
 			{
-				_logger.LogError($"Exception in RecalculateSingleRecordRollUpOptimizedAsync: {ex.Message}", ex);
+				_logger.LogError($"Exception in RecalculateSingleRecordRollUpAsync: {ex.Message}", ex);
 				return false;
 			}
 		}
