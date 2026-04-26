@@ -198,7 +198,7 @@ namespace ItemzApp.API.Controllers
 
 					try
 					{
-						_logger.LogInformation(
+						_logger.LogDebug(
 							"{FormattedControllerAndActionNames}Updating BaselineItemzs. BaselineId: {BaselineId}, " +
 							"ShouldBeIncluded: {ShouldBeIncluded}, SingleNodeInclusion: {SingleNodeInclusion}, ItemCount: {ItemCount}",
 							ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
@@ -215,8 +215,8 @@ namespace ItemzApp.API.Controllers
 						//If EXCLUDING, handle roll-up estimation deduction
 						if (isSuccessful && baselineItemzsToBeUpdated.ShouldBeIncluded == false)
 						{
-							_logger.LogInformation(
-								"{FormattedControllerAndActionNames}Processing Scenario 1: EXCLUSION with roll-up deduction for {ItemCount} items",
+							_logger.LogDebug(
+								"{FormattedControllerAndActionNames} EXCLUSION with roll-up deduction for {ItemCount} items",
 								ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
 								baselineItemzsToBeUpdated.BaselineItemzIds.Count());
 
@@ -238,8 +238,8 @@ namespace ItemzApp.API.Controllers
 						// If INCLUDING (single record only), handle roll-up estimation addition
 						if (isSuccessful && baselineItemzsToBeUpdated.ShouldBeIncluded == true && baselineItemzsToBeUpdated.SingleNodeInclusion == true)
 						{
-							_logger.LogInformation(
-								"{FormattedControllerAndActionNames}Processing Scenario 2: INCLUSION (single record) with roll-up addition for {ItemCount} items",
+							_logger.LogDebug(
+								"{FormattedControllerAndActionNames}INCLUSION (single record) with roll-up addition for {ItemCount} items",
 								ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
 								baselineItemzsToBeUpdated.BaselineItemzIds.Count());
 
@@ -261,8 +261,8 @@ namespace ItemzApp.API.Controllers
 						// If INCLUDING (all children), handle descendants recalculation and ancestor propagation
 						if (isSuccessful && baselineItemzsToBeUpdated.ShouldBeIncluded == true && baselineItemzsToBeUpdated.SingleNodeInclusion == false)
 						{
-							_logger.LogInformation(
-								"{FormattedControllerAndActionNames}Processing Scenario 3: INCLUSION (all children) with descendants recalculation for {ItemCount} items",
+							_logger.LogDebug(
+								"{FormattedControllerAndActionNames}INCLUSION (all children) with descendants recalculation for {ItemCount} items",
 								ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
 								baselineItemzsToBeUpdated.BaselineItemzIds.Count());
 

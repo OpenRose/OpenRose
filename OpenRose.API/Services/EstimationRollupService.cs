@@ -231,7 +231,7 @@ namespace ItemzApp.API.Services
 					"EXEC userProcSetEstimationUnitForProject @ProjectHierarchyRecordId",
 					sqlParameters);
 
-				_logger.LogInformation(
+				_logger.LogDebug(
 					$"SetEstimationUnitForProjectAsync: Successfully synchronized EstimationUnit " +
 					$"for all descendants of Project ID: {projectHierarchyRecordId}");
 
@@ -287,11 +287,11 @@ namespace ItemzApp.API.Services
 					_context.ItemzHierarchy!.Update(currentRecord);
 					await _context.SaveChangesAsync();
 
-					_logger.LogInformation(
+					_logger.LogDebug(
 						$"Updated rolled-up estimation for Project {hierarchyRecordId} by delta {estimationDelta}. " +
 						$"New value: {currentRecord.RolledUpEstimation}");
 
-					_logger.LogInformation(
+					_logger.LogDebug(
 						$"Current record {hierarchyRecordId} is at Project level (Level 1). " +
 						$"Applying delta and STOPPING propagation.");
 
@@ -303,7 +303,7 @@ namespace ItemzApp.API.Services
 				_context.ItemzHierarchy!.Update(currentRecord);
 				await _context.SaveChangesAsync();
 
-				_logger.LogInformation(
+				_logger.LogDebug(
 					$"Updated rolled-up estimation for {hierarchyRecordId} by delta {estimationDelta}. " +
 					$"New value: {currentRecord.RolledUpEstimation}");
 
@@ -403,7 +403,7 @@ namespace ItemzApp.API.Services
 					return true; // Not an error - moved to orphan state
 				}
 
-				_logger.LogInformation(
+				_logger.LogDebug(
 					$"UpdateRollUpEstimationsForRecordMoveAsync: Starting roll-up estimation update for record move. " +
 					$"MovingRecordId: {movingRecordId}, PreviousParentId: {previousParentId}, CurrentParentId: {currentParentId}");
 
@@ -425,7 +425,7 @@ namespace ItemzApp.API.Services
 				// STEP 0: Early exit if moving to same parent (Scenario 1)
 				if (previousParentId == currentParentId)
 				{
-					_logger.LogInformation(
+					_logger.LogDebug(
 						$"UpdateRollUpEstimationsForRecordMoveAsync: Record {movingRecordId} moving to same parent {currentParentId}. " +
 						$"No roll-up estimation updates required (Scenario 1 - Same Parent).");
 					return true;
@@ -450,7 +450,7 @@ namespace ItemzApp.API.Services
 				// Early exit if no estimation to move
 				if (rolledUpEstimationDelta == 0)
 				{
-					_logger.LogInformation(
+					_logger.LogDebug(
 						$"UpdateRollUpEstimationsForRecordMoveAsync: Moving record {movingRecordId} has zero estimation. " +
 						$"No roll-up updates required.");
 					return true;
@@ -538,7 +538,7 @@ namespace ItemzApp.API.Services
 						$"to current parent ancestry chain");
 				}
 
-				_logger.LogInformation(
+				_logger.LogDebug(
 					$"UpdateRollUpEstimationsForRecordMoveAsync: Successfully completed roll-up estimation update for record move. " +
 					$"RecordId: {movingRecordId} (Type: {movingRecord.RecordType}), Delta: {rolledUpEstimationDelta}, " +
 					$"Duration: {(DateTime.UtcNow - startTime).TotalMilliseconds}ms " +
@@ -593,7 +593,7 @@ namespace ItemzApp.API.Services
 					return false;
 				}
 
-				_logger.LogInformation(
+				_logger.LogDebug(
 					$"UpdateRollUpEstimationsForRecordCopyAsync: Starting roll-up estimation update for record copy. " +
 					$"CopiedRecordId: {copiedRecordId}");
 
@@ -624,7 +624,7 @@ namespace ItemzApp.API.Services
 				// Early exit if no estimation to add
 				if (copiedRecord.RolledUpEstimation == 0)
 				{
-					_logger.LogInformation(
+					_logger.LogDebug(
 						$"UpdateRollUpEstimationsForRecordCopyAsync: Copied record {copiedRecordId} has zero estimation. " +
 						$"No roll-up estimation updates required.");
 					return true;
@@ -635,7 +635,7 @@ namespace ItemzApp.API.Services
 				// Check if record is in hierarchy (has parent)
 				if (copiedRecord.ItemzHierarchyId == null)
 				{
-					_logger.LogInformation(
+					_logger.LogDebug(
 						$"UpdateRollUpEstimationsForRecordCopyAsync: Copied record {copiedRecordId} is orphaned (not in hierarchy). " +
 						$"No roll-up estimation updates required.");
 					return true;
@@ -692,7 +692,7 @@ namespace ItemzApp.API.Services
 						$"to parent ancestry chain");
 				}
 
-				_logger.LogInformation(
+				_logger.LogDebug(
 					$"UpdateRollUpEstimationsForRecordCopyAsync: Successfully completed roll-up estimation update for record copy. " +
 					$"CopiedRecordId: {copiedRecordId} (Type: {copiedRecord.RecordType}), Delta: {rolledUpEstimationDelta}, " +
 					$"Duration: {(DateTime.UtcNow - startTime).TotalMilliseconds}ms");
@@ -751,13 +751,13 @@ namespace ItemzApp.API.Services
 
 				if (deletedRecordRolledUpEstimation == 0)
 				{
-					_logger.LogInformation(
+					_logger.LogDebug(
 						$"UpdateRollUpEstimationsForRecordDeletionAsync: Deleted record has zero estimation. " +
 						$"No roll-up estimation updates required.");
 					return true;
 				}
 
-				_logger.LogInformation(
+				_logger.LogDebug(
 					$"UpdateRollUpEstimationsForRecordDeletionAsync: Starting roll-up estimation update for record deletion. " +
 					$"ParentRecordId: {parentRecordId}, DeletedRecordEstimation: {deletedRecordRolledUpEstimation}");
 
@@ -813,7 +813,7 @@ namespace ItemzApp.API.Services
 						$"from parent ancestry chain");
 				}
 
-				_logger.LogInformation(
+				_logger.LogDebug(
 					$"UpdateRollUpEstimationsForRecordDeletionAsync: Successfully completed roll-up estimation update for record deletion. " +
 					$"ParentRecordId: {parentRecordId}, Delta: {deletedRecordRolledUpEstimation}, " +
 					$"Duration: {(DateTime.UtcNow - startTime).TotalMilliseconds}ms");

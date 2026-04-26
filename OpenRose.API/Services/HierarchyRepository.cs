@@ -841,7 +841,7 @@ namespace ItemzApp.API.Services
 					estimationUnitChanged = true;
 					hasChanged = true;
 
-					_logger.LogInformation(
+					_logger.LogDebug(
 						$"UpdateHierarchyEstimationFieldsAsync: EstimationUnit changed for Project {recordId} " +
 						$"from '{oldEstimationUnit ?? "NULL"}' to '{trimmedEstimationUnit ?? "NULL"}'");
 				}
@@ -887,7 +887,7 @@ namespace ItemzApp.API.Services
 				// Trigger optimized roll-up recalculation for ancestors using delta
 				if (hierarchyRecord.ItemzHierarchyId != null && estimationDelta != 0)
 				{
-					_logger.LogInformation(
+					_logger.LogDebug(
 						$"UpdateHierarchyEstimationFieldsAsync: Triggered optimized recalculation for record {recordId} with delta {estimationDelta}");
 
 					// Get parent and trigger optimized recalculation
@@ -899,7 +899,7 @@ namespace ItemzApp.API.Services
 
 						if (parentRecord != null)
 						{
-							_logger.LogInformation(
+							_logger.LogDebug(
 								$"UpdateHierarchyEstimationFieldsAsync: Propagating delta {estimationDelta} to ancestors starting from {parentRecord.Id}");
 							await _estimationRollupService.RecalculateSingleRecordRollUpOptimizedAsync(parentRecord.Id, estimationDelta);
 						}
@@ -914,7 +914,7 @@ namespace ItemzApp.API.Services
 				// 4. This includes updates to NULL/empty string (clearing operation)
 				if (estimationUnitChanged && string.Equals(hierarchyRecord.RecordType, "Project", StringComparison.OrdinalIgnoreCase))
 				{
-					_logger.LogInformation(
+					_logger.LogDebug(
 						$"UpdateHierarchyEstimationFieldsAsync: Synchronizing EstimationUnit to all descendants for Project {recordId}");
 
 					try
@@ -925,7 +925,7 @@ namespace ItemzApp.API.Services
 
 						if (syncResult)
 						{
-							_logger.LogInformation(
+							_logger.LogDebug(
 								$"UpdateHierarchyEstimationFieldsAsync: Successfully synchronized EstimationUnit " +
 								$"to all descendants of Project {recordId}");
 						}
@@ -1030,7 +1030,7 @@ namespace ItemzApp.API.Services
 					_context.ItemzHierarchy!.Update(hierarchyRecord);
 					await _context.SaveChangesAsync();
 
-					_logger.LogInformation(
+					_logger.LogDebug(
 						$"AddHierarchyRecordEstimationUnitAsync: Updated EstimationUnit for record {recordId} " +
 						$"from '{hierarchyRecord.EstimationUnit ?? "NULL"}' to '{parentEstimationUnit ?? "NULL"}' " +
 						$"(inherited from parent {parentRecord.Id})");

@@ -440,7 +440,7 @@ namespace ItemzApp.API.Controllers
 					return BadRequest("Invalid Project Hierarchy Record ID provided. Please provide a valid Project record ID.");
 				}
 
-				_logger.LogInformation($"Request received to recalculate roll-up estimations for Project ID: {projectHierarchyRecordId}");
+				_logger.LogDebug($"Request received to recalculate roll-up estimations for Project ID: {projectHierarchyRecordId}");
 
 				var result = await estimationRollupService.RecalculateProjectRollUpEstimationsAsync(projectHierarchyRecordId);
 
@@ -451,7 +451,7 @@ namespace ItemzApp.API.Controllers
 						success = true,
 						message = "Roll-up estimations recalculated successfully for the project"
 					};
-					_logger.LogInformation(successMessage.message);
+					_logger.LogDebug(successMessage.message);
 
 					// EXPLANATION :: After successful roll-up recalculation, we need to ensure that the estimation unit
 					// for all the records within the project is set correctly based on estimation units set at the project level.
@@ -519,7 +519,7 @@ namespace ItemzApp.API.Controllers
 					});
 				}
 
-				_logger.LogInformation($"Request to update estimation for hierarchy record ID: {updateHierarchyEstimationDTO.RecordId}");
+				_logger.LogDebug($"Request to update estimation for hierarchy record ID: {updateHierarchyEstimationDTO.RecordId}");
 
 				// Update the estimation fields
 				var updateResult = await hierarchyRepository.UpdateHierarchyEstimationFieldsAsync(
@@ -540,7 +540,7 @@ namespace ItemzApp.API.Controllers
 				// Retrieve and return updated record with new estimation values
 				var updatedRecord = await hierarchyRepository.GetHierarchyRecordDetailsByID(updateHierarchyEstimationDTO.RecordId);
 
-				_logger.LogInformation($"Successfully updated estimation for hierarchy record ID: {updateHierarchyEstimationDTO.RecordId}");
+				_logger.LogDebug($"Successfully updated estimation for hierarchy record ID: {updateHierarchyEstimationDTO.RecordId}");
 
 				return Ok(new
 				{

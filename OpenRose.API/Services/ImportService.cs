@@ -173,7 +173,7 @@ namespace ItemzApp.API.Services
 				// Process trace links
 				int traceCreated = await ProcessItemzTracesAsync(repositoryImportDto.ItemzTraces, idMap, result.Errors);
 
-				_logger.LogInformation("Imported {Count} Itemz records at depth {Depth}. Trace links created: {TraceCount}. Root ID: {RootId}",
+				_logger.LogDebug("Imported {Count} Itemz records at depth {Depth}. Trace links created: {TraceCount}. Root ID: {RootId}",
 					totalCreated, maxDepth, traceCreated, rootEntity.Id);
 
 				result.Success = true;
@@ -329,7 +329,7 @@ namespace ItemzApp.API.Services
 				// Process trace links
 				int traceCreated = await ProcessItemzTracesAsync(repositoryImportDto.ItemzTraces, idMap, result.Errors);
 
-				_logger.LogInformation("Imported 1 ItemzType '{Name}' with {Count} Itemz at depth {Depth}. Traces: {Traces}. Root ID: {RootId}",
+				_logger.LogDebug("Imported 1 ItemzType '{Name}' with {Count} Itemz at depth {Depth}. Traces: {Traces}. Root ID: {RootId}",
 					itemzTypeRecord.ItemzType.Name, totalCreated, maxDepth, traceCreated, itemzTypeId);
 
 				result.Success = true;
@@ -404,7 +404,7 @@ namespace ItemzApp.API.Services
 					}
 
 					// Log merge event
-					_logger.LogInformation("Merged imported Itemz into existing System 'Parking Lot' ItemzType with ID {Id}", systemParkingLot.Id);
+					_logger.LogDebug("Merged imported Itemz into existing System 'Parking Lot' ItemzType with ID {Id}", systemParkingLot.Id);
 
 					return (systemParkingLot.Id, totalCreated, maxDepth);
 				}
@@ -478,7 +478,7 @@ namespace ItemzApp.API.Services
 				// 📎 Process trace links across all Itemz in the project
 				int traceCreated = await ProcessItemzTracesAsync(repositoryImportDto.ItemzTraces, idMap, result.Errors);
 
-				_logger.LogInformation("Imported 1 Project '{Name}' with {Count} Itemz across {Types} ItemzTypes at depth {Depth}. Traces: {Traces}. Root ID: {RootId}",
+				_logger.LogDebug("Imported 1 Project '{Name}' with {Count} Itemz across {Types} ItemzTypes at depth {Depth}. Traces: {Traces}. Root ID: {RootId}",
 					projectRecord.Project.Name,
 					totalCreated,
 					projectRecord.ItemzTypes?.Count ?? 0,
@@ -870,7 +870,7 @@ namespace ItemzApp.API.Services
 		{
 			try
 			{
-				_logger.LogInformation("Starting post-import roll-up recalculation for imported {ImportType} with ID {RecordId}.", importType, importedRootId);
+				_logger.LogDebug("Starting post-import roll-up recalculation for imported {ImportType} with ID {RecordId}.", importType, importedRootId);
 
 				// Find the Project that contains this imported record
 				var (projectHierarchyRecordId, success) = await FindProjectHierarchyRecordIdAsync(importedRootId);
@@ -886,7 +886,7 @@ namespace ItemzApp.API.Services
 
 				if (recalculationSuccess)
 				{
-					_logger.LogInformation("Successfully recalculated roll-up estimations for Project {ProjectId} after importing {ImportType} {RecordId}.",
+					_logger.LogDebug("Successfully recalculated roll-up estimations for Project {ProjectId} after importing {ImportType} {RecordId}.",
 						projectHierarchyRecordId, importType, importedRootId);
 				}
 				else

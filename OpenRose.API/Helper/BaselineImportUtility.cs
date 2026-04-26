@@ -57,7 +57,7 @@ namespace ItemzApp.API.Helper
 				}
 			}
 
-			// ✅ 3. Filter BaselineItemz inside Baseline → BaselineItemzTypes → BaselineItemz
+			// 3. Filter BaselineItemz inside Baseline → BaselineItemzTypes → BaselineItemz
 			if (repositoryImportDto.Baselines != null)
 			{
 				foreach (var baselineDto in repositoryImportDto.Baselines)
@@ -79,7 +79,7 @@ namespace ItemzApp.API.Helper
 				repositoryImportDto.BaselineItemzTraces ?? new List<BaselineItemzTraceDTO>(),
 				allValidNodes);
 
-			logger.LogInformation("Filtered BaselineItemz globally across repository. Valid nodes retained: {Count}", allValidNodes.Count);
+			logger.LogDebug("Filtered BaselineItemz globally across repository. Valid nodes retained: {Count}", allValidNodes.Count);
 		}
 
 		private static List<BaselineItemzImportNode> FilterNodeList(

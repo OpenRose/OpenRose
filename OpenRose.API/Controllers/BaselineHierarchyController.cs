@@ -449,14 +449,14 @@ namespace ItemzApp.API.Controllers
 					return BadRequest(errorMessage);
 				}
 
-				_logger.LogInformation($"Request received to recalculate roll-up estimations for Baseline ID: {baselineHierarchyRecordId}");
+				_logger.LogDebug($"Request received to recalculate roll-up estimations for Baseline ID: {baselineHierarchyRecordId}");
 
 				var result = await estimationRollupService.RecalculateBaselineRollUpEstimationsAsync(baselineHierarchyRecordId);
 
 				if (result)
 				{
 					var successMessage = "Roll-up estimations recalculated successfully for the baseline";
-					_logger.LogInformation(successMessage);
+					_logger.LogDebug(successMessage);
 
 					return Ok(successMessage);
 				}

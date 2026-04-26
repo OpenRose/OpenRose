@@ -611,7 +611,7 @@ namespace ItemzApp.API.Controllers
 				// After successful move, trigger roll-up estimation update for moved ItemzType
 				if (movedItemzTypeHierarchyRecordId != Guid.Empty && estimationRollupService != null)
 				{
-					_logger.LogInformation(
+					_logger.LogDebug(
 						"Invoking OnHierarchyRecordMovedAsync after ItemzType move to another project. " +
 						"MovingItemzType: {MovingItemzTypeId}, PreviousParent: {previousParentHierarchyId}, TargetProject: {TargetProjectId}",
 						MovingItemzTypeId,
@@ -832,7 +832,7 @@ namespace ItemzApp.API.Controllers
 				// After successful move, trigger roll-up estimation update for moved ItemzType
 				if (movedItemzTypeHierarchyRecordId != Guid.Empty && estimationRollupService != null)
 				{
-					_logger.LogInformation(
+					_logger.LogDebug(
 						"Invoking roll-up estimation update after ItemzType move between existing ItemzTypes. " +
 						"MovingItemzType: {movingItemzTypeId}, PreviousParent: {previousParentHierarchyId}, CurrentParent: {currentParentHierarchyId}",
 						movingItemzTypeId,
@@ -1011,7 +1011,7 @@ namespace ItemzApp.API.Controllers
 				// After successful deletion, trigger roll-up estimation update
 				if (parentHierarchyRecordId != Guid.Empty && estimationRollupService != null)
 				{
-					_logger.LogInformation("Invoking roll-up estimation update after ItemzType deletion");
+					_logger.LogDebug("Invoking roll-up estimation update after ItemzType deletion");
 					var rollupResult = await estimationRollupService.UpdateRollUpEstimationsForRecordDeletionAsync(
 						parentHierarchyRecordId,
 						deletedRecordRolledUpEstimation);
@@ -1098,7 +1098,7 @@ namespace ItemzApp.API.Controllers
 			// After successful copy, trigger roll-up estimation update
 			if (copiedItemzTypeHierarchyRecordId != Guid.Empty && estimationRollupService != null)
 			{
-				_logger.LogInformation("Invoking roll-up estimation update after ItemzType copy");
+				_logger.LogDebug("Invoking roll-up estimation update after ItemzType copy");
 				var rollupResult = await estimationRollupService.UpdateRollUpEstimationsForRecordCopyAsync(copiedItemzTypeHierarchyRecordId);
 
 				if (!rollupResult)
