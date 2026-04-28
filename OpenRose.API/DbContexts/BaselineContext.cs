@@ -130,19 +130,26 @@ namespace ItemzApp.API.DbContexts
             modelBuilder.Entity<ItemzTypeJoinItemz>()
                 .HasKey(t => new { t.ItemzTypeId, t.ItemzId });
 
-            #endregion
+			#endregion
 
-            #region BaselineItemzHierarchy
+			#region BaselineItemzHierarchy
 
-            modelBuilder.Entity<BaselineItemzHierarchy>(entity =>
-            {
-                entity.Property(bih => bih.isIncluded)
-                    .HasDefaultValue(true);
-            });
+			modelBuilder.Entity<BaselineItemzHierarchy>(entity =>
+			{
+				entity.Property(bih => bih.isIncluded)
+					.HasDefaultValue(true);
 
-            #endregion
+				// Configure decimal precision for estimation properties
+				entity.Property(bih => bih.OwnEstimation)
+					.HasPrecision(18, 2);
 
-            base.OnModelCreating(modelBuilder);
+				entity.Property(bih => bih.RolledUpEstimation)
+					.HasPrecision(18, 2);
+			});
+
+			#endregion
+
+			base.OnModelCreating(modelBuilder);
         }
     }
 }
