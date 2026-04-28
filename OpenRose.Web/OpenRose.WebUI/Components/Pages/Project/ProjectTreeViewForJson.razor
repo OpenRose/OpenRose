@@ -161,6 +161,8 @@
     private const int RequiredClicks = 5;
     private const int ClickTimeoutMs = 700;
 
+    private bool showEstimation = true; // Toggle to show estimation in end text
+
     public class TreeItemPresenter : MudBlazor.TreeItemData<Guid>
     {
         public string RecordType { get; set; } = "";
@@ -170,8 +172,13 @@
         public string Icon { get; set; } = Icons.Material.Filled.Help;
         public TreeItemPresenter? Parent { get; set; }
 
+        public string? EstimationUnit { get; set; }
+        public decimal RolledUpEstimation { get; set; }
 
-        public TreeItemPresenter(Guid value, string text, string icon, string recordType, int level, bool expandable, string? hierarchyId)
+        public TreeItemPresenter(Guid value, string text, string icon, string recordType,
+            int level, bool expandable, string? hierarchyId,
+            string? estimationUnit = null,              
+            decimal rolledUpEstimation = 0)             
             : base(value)
         {
             Value = value;
@@ -181,6 +188,8 @@
             Level = level;
             Expandable = expandable;
             HierarchyId = hierarchyId;
+            EstimationUnit = estimationUnit;           
+            RolledUpEstimation = rolledUpEstimation;   
             Children = new List<TreeItemData<Guid>>();
         }
     }
@@ -210,7 +219,7 @@
         JsonFileDataSource.OnJsonChanged += HandleStateChangedAsync;
         DataSourceState.OnDataSourceChanged += HandleStateChangedAsync;
 
-       //  await ReloadTreeAsync();
+        //  await ReloadTreeAsync();
 
     }
 
@@ -248,8 +257,11 @@
                 return;
             }
 
-            // 1. Build the tree from JSON
-            InitialTreeItems = BuildTree(nested);
+            // 1. Build the tree from JSON 
+            InitialTreeItems = await BuildTreeAsync(nested);
+
+            // 1.1 USE SERVICE PROPERTY - Already determined during JSON load
+            showEstimation = JsonFileDataSource.HasEstimationData;
 
             // 2. Hide Parking Lot if empty (JSON view is always read-only)
             RemoveParkingLotIfEmpty(InitialTreeItems);
@@ -275,19 +287,6 @@
                 selectedItem = null;
                 _selectedValue = Guid.Empty;
             }
-
-            // // 7. Fix selection if Parking Lot was selected but removed
-            // if (selectedItem != null &&
-            //     selectedItem.RecordType.Equals("itemztype", StringComparison.OrdinalIgnoreCase) &&
-            //     selectedItem.Text.Equals("Parking Lot", StringComparison.OrdinalIgnoreCase))
-            // {
-            //     var root = InitialTreeItems.FirstOrDefault();
-            //     if (root != null)
-            //     {
-            //         _selectedValue = root.Value;
-            //         await UpdateSelectedItemAsync(root.Value);
-            //     }
-            // }
 
             // 7. Default selection to root if nothing selected
             if (InitialTreeItems.Count > 0 && _selectedValue == Guid.Empty)
@@ -319,22 +318,21 @@
 
 
 
-    private List<TreeItemData<Guid>> BuildTree(ICollection<NestedHierarchyIdRecordDetailsDTO> roots)
+    private async Task<List<TreeItemData<Guid>>> BuildTreeAsync(ICollection<NestedHierarchyIdRecordDetailsDTO> roots)
     {
         var list = new List<TreeItemData<Guid>>();
 
         foreach (var root in roots)
         {
-            var node = CreatePresenter(root);
+            var node = await CreatePresenterAsync(root);
             if (root.Children?.Count > 0)
-                AddChildren(node, root.Children);
+                await AddChildrenAsync(node, root.Children);
 
             list.Add(node);
         }
 
         return list;
     }
-
     private void BuildNodeLookup()
     {
         _nodeLookup = InitialTreeItems
@@ -343,19 +341,19 @@
             .ToDictionary(x => x.Value, x => x);
     }
 
-    private void AddChildren(TreeItemData<Guid> parent, ICollection<NestedHierarchyIdRecordDetailsDTO> children)
+    private async Task AddChildrenAsync(TreeItemData<Guid> parent, ICollection<NestedHierarchyIdRecordDetailsDTO> children)
     {
         foreach (var child in children)
         {
-            var node = CreatePresenter(child);
+            var node = await CreatePresenterAsync(child);
             if (child.Children?.Count > 0)
-                AddChildren(node, child.Children);
+                await AddChildrenAsync(node, child.Children);
 
             parent.Children.Add(node);
         }
     }
 
-    private TreeItemPresenter CreatePresenter(NestedHierarchyIdRecordDetailsDTO dto)
+    private async Task<TreeItemPresenter> CreatePresenterAsync(NestedHierarchyIdRecordDetailsDTO dto)
     {
         var icon = dto.RecordType?.ToLower() switch
         {
@@ -365,14 +363,16 @@
             _ => Icons.Material.Filled.Cancel
         };
 
-        return new TreeItemPresenter(
+            return new TreeItemPresenter(
             value: dto.RecordId,
             text: dto.Name ?? "(no name)",
             icon: icon,
             recordType: (dto.RecordType ?? "Unknown").ToLower(),
-            level: dto.Level ?? 0, // int? → int
+            level: dto.Level ?? 0,
             expandable: dto.Children != null && dto.Children.Count > 0,
-            hierarchyId: dto.HierarchyId
+            hierarchyId: dto.HierarchyId,
+            estimationUnit: dto.EstimationUnit,
+            rolledUpEstimation: dto.RolledUpEstimation
         );
     }
 
@@ -413,12 +413,30 @@
     private async Task ScrollToNodeAsync(string elementId)
         => await JS.InvokeVoidAsync("scrollToElementById", elementId);
 
-    private string GetEndText(TreeItemPresenter p)
+    private string GetEndText(TreeItemPresenter? presenter)
     {
-        var parts = new List<string>();
-        if (p.Children.Any()) parts.Add($"[C{p.Children.Count()}]");
-        if (p.Level > 0) parts.Add($"[L{p.Level}]");
-        return string.Join("", parts);
+        if (presenter == null)
+            return string.Empty;
+
+        // NEW: Show estimation in read-only view if available
+        if (showEstimation )
+        {
+            return $"[{presenter.EstimationUnit ?? "N/A"} {presenter.RolledUpEstimation:F2}]";
+        }
+        else
+        {
+            // FALLBACK: Show child count and level (original behavior for non-read-only or no estimation)
+            var text = "";
+            if (presenter.Children.Count() > 0)
+            {
+                text += $"[C{presenter.Children.Count()}]";
+            }
+            if (presenter.Level > 0)
+            {
+                text += $"[L{presenter.Level}]";
+            }
+            return text;
+        }
     }
 
     private void NavigateToTraceTarget(Guid id)

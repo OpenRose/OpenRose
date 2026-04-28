@@ -77,6 +77,7 @@ namespace OpenRose.WebUI.Client.Services.Export
 			Guid exportRecordId,
 			bool exportIncludedBaselineItemzOnly,
 			bool showTraceabilityOnly,
+			bool includeEstimations,
 			string baseUrl,
 			CancellationToken cancellationToken = default)
 		{
@@ -104,6 +105,11 @@ namespace OpenRose.WebUI.Client.Services.Export
 				if (showTraceabilityOnly)
 				{
 					urlBuilder_.Append("&showTraceabilityOnly=true");
+				}
+
+				if (includeEstimations)
+				{
+					urlBuilder_.Append("&includeEstimations=true");
 				}
 
 				// urlBuilder_.Length--; // cleanup if trailing ? or & is left

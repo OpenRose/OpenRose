@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace OpenRose.WebUI.Client.Services.JsonFile
 {
@@ -36,6 +37,8 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 	/// - Exposes hierarchy DTOs for TreeView
 	/// - Exposes record DTOs for read-only detail components
 	/// - Exposes traceability data for Itemz / BaselineItemz
+	/// 
+	/// PHASE 5: Uses Export DTOs to automatically load estimation data from JSON
 	/// </summary>
 	/// 
 	public class JsonFileDataSourceService
@@ -79,6 +82,12 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 		private Dictionary<Guid, bool> _baselineItemzIncluded = new();
 
 		public JsonViewerMetadata? CurrentMetadata { get; private set; }
+
+		/// <summary>
+		/// Indicates whether the currently loaded JSON export contains ANY estimation data.
+		/// This flag is set during JSON loading and can be used to control UI display of estimation information.
+		/// </summary>
+		public bool HasEstimationData { get; private set; } = false;
 
 
 		public void SetJsonViewerMetadata(JsonViewerMetadata metadata)
@@ -126,6 +135,14 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 			BuildIndexes();
 			_isLoaded = true;
 
+			//// Analyze loaded data for estimation availability
+			//DetectEstimationDataInLoadedNodes();
+
+			// Analyze loaded data for estimation availability
+			// Check all nodes in _hierarchyById
+			HasEstimationData = _hierarchyById.Values
+				   .Any(node => !string.IsNullOrWhiteSpace(node.EstimationUnit) 
+						|| node.RolledUpEstimation != 0);
 
 			await NotifyJsonChanged();
 
@@ -148,6 +165,7 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 			_baselineItemzTraces.Clear();
 			_baselineItemzIncluded.Clear();
 			CurrentMetadata = null;
+			HasEstimationData = false;
 
 
 			// NotifyStateChanged();
@@ -220,6 +238,9 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 				Level = rootMeta.Level,
 				RecordType = rootMeta.RecordType,
 				Name = rootMeta.Name,
+				EstimationUnit = rootMeta.EstimationUnit,
+				OwnEstimation = rootMeta.OwnEstimation,
+				RolledUpEstimation = rootMeta.RolledUpEstimation,
 				Children = new List<NestedHierarchyIdRecordDetailsDTO>()
 			};
 
@@ -246,6 +267,9 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 					Level = meta.Level,
 					RecordType = meta.RecordType,
 					Name = meta.Name,
+					EstimationUnit = meta.EstimationUnit,
+					OwnEstimation = meta.OwnEstimation,
+					RolledUpEstimation = meta.RolledUpEstimation,
 					Children = new List<NestedHierarchyIdRecordDetailsDTO>()
 				};
 
@@ -258,7 +282,11 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 
 		#region Record details (LIVE)
 
-		public Task<GetProjectDTO> GetProjectDetailsAsync(Guid projectId)
+		/// <summary>
+		/// PHASE 5: Returns GetProjectExportDTO which includes estimation fields.
+		/// Uses Export DTO to automatically deserialize estimation data from JSON if present.
+		/// </summary>
+		public Task<GetProjectExportDTO> GetProjectDetailsAsync(Guid projectId)
 		{
 			EnsureLoaded();
 			if (_exportKind != RepositoryExportKind.Live)
@@ -268,11 +296,16 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 				throw new KeyNotFoundException($"Project with Id {projectId} not found in JSON.");
 
 			var projectToken = node["Project"] ?? node;
-			var dto = projectToken.ToObject<GetProjectDTO>() ?? new GetProjectDTO();
-			return Task.FromResult(dto);
+			// PHASE 5: Use GetProjectExportDTO to load estimation fields automatically
+			var dto = projectToken.ToObject<GetProjectExportDTO>() ?? new GetProjectExportDTO();
+			return Task.FromResult<GetProjectExportDTO>(dto);
 		}
 
-		public Task<GetItemzTypeDTO> GetItemzTypeDetailsAsync(Guid itemzTypeId)
+		/// <summary>
+		/// PHASE 5: Returns GetItemzTypeExportDTO which includes estimation fields.
+		/// Uses Export DTO to automatically deserialize estimation data from JSON if present.
+		/// </summary>
+		public Task<GetItemzTypeExportDTO> GetItemzTypeDetailsAsync(Guid itemzTypeId)
 		{
 			EnsureLoaded();
 			if (_exportKind != RepositoryExportKind.Live)
@@ -282,11 +315,16 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 				throw new KeyNotFoundException($"ItemzType with Id {itemzTypeId} not found in JSON.");
 
 			var token = node["ItemzType"] ?? node;
-			var dto = token.ToObject<GetItemzTypeDTO>() ?? new GetItemzTypeDTO();
-			return Task.FromResult(dto);
+			// PHASE 5: Use GetItemzTypeExportDTO to load estimation fields automatically
+			var dto = token.ToObject<GetItemzTypeExportDTO>() ?? new GetItemzTypeExportDTO();
+			return Task.FromResult<GetItemzTypeExportDTO>(dto);
 		}
 
-		public Task<GetItemzDTO> GetItemzDetailsAsync(Guid itemzId)
+		/// <summary>
+		/// PHASE 5: Returns GetItemzExportDTO which includes estimation fields.
+		/// Uses Export DTO to automatically deserialize estimation data from JSON if present.
+		/// </summary>
+		public Task<GetItemzExportDTO> GetItemzDetailsAsync(Guid itemzId)
 		{
 			EnsureLoaded();
 			if (_exportKind != RepositoryExportKind.Live)
@@ -296,8 +334,9 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 				throw new KeyNotFoundException($"Itemz with Id {itemzId} not found in JSON.");
 
 			var token = node["Itemz"] ?? node;
-			var dto = token.ToObject<GetItemzDTO>() ?? new GetItemzDTO();
-			return Task.FromResult(dto);
+			// PHASE 5: Use GetItemzExportDTO to load estimation fields automatically
+			var dto = token.ToObject<GetItemzExportDTO>() ?? new GetItemzExportDTO();
+			return Task.FromResult<GetItemzExportDTO>(dto);
 		}
 
 		#endregion
@@ -444,7 +483,7 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 			_itemzTraces.Clear();
 			_baselineItemzTraces.Clear();
 			_baselineItemzIncluded.Clear();
-		    _exportKind = RepositoryExportKind.Unknown;
+			_exportKind = RepositoryExportKind.Unknown;
 
 			if (_root == null)
 				return;
@@ -593,7 +632,13 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 
 		}
 
-		private void RegisterNode(Guid id, JToken wrapperNode, Guid? parentId, int level, string recordType, string name, bool isRoot)
+		#endregion
+
+		private void RegisterNode(Guid id, JToken wrapperNode, Guid? parentId, int level,
+				string recordType, string name, bool isRoot,
+				string? estimationUnit = null,
+				decimal ownEstimation = 0,
+				decimal rolledUpEstimation = 0)
 		{
 			_nodeById[id] = wrapperNode;
 			_parentById[id] = parentId;
@@ -617,7 +662,10 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 				Name = name,
 				RecordType = recordType,
 				Level = level,
-				ParentRecordId = parentId ?? Guid.Empty
+				ParentRecordId = parentId ?? Guid.Empty,
+				EstimationUnit = estimationUnit,
+				OwnEstimation = ownEstimation,
+				RolledUpEstimation = rolledUpEstimation
 			};
 		}
 
@@ -625,147 +673,184 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 
 		private void ProcessProjectExportNode(JToken projNode, int level, Guid? parentId)
 		{
-			var projectToken = projNode["Project"];
-			if (projectToken == null)
+			var projectData = projNode["Project"]?.ToObject<GetProjectExportDTO>();
+			if (projectData == null)
 				return;
 
-			var id = ParseGuid(projectToken, "Id");
-			if (id == Guid.Empty)
-				return;
-
-			var name = projectToken.Value<string>("Name") ?? string.Empty;
-
-			RegisterNode(id, projNode, parentId, level, "Project", name, isRoot: parentId == null);
+			RegisterNode(
+				id: projectData.Id,
+				wrapperNode: projNode,
+				parentId: parentId,
+				level: level,
+				recordType: "Project",
+				name: projectData.Name,
+				isRoot: level == 0,
+				estimationUnit: projectData.EstimationUnit,
+				ownEstimation: projectData.OwnEstimation,
+				rolledUpEstimation: projectData.RolledUpEstimation
+			);
 
 			var itemzTypes = projNode["ItemzTypes"] as JArray;
 			if (itemzTypes != null)
 			{
 				foreach (var itNode in itemzTypes)
-					ProcessItemzTypeExportNode(itNode, level + 1, id, isRoot: false);
+					ProcessItemzTypeExportNode(itNode, level + 1, projectData.Id, isRoot: false);
 			}
 		}
 
 
 		private void ProcessItemzTypeExportNode(JToken itNode, int level, Guid? parentId, bool isRoot)
 		{
-			var itemzTypeToken = itNode["ItemzType"];
-			if (itemzTypeToken == null)
+
+			var itemzTypeData = itNode["ItemzType"]?.ToObject<GetItemzTypeExportDTO>();
+			if (itemzTypeData == null)
 				return;
 
-			var id = ParseGuid(itemzTypeToken, "Id");
-			if (id == Guid.Empty)
-				return;
+			RegisterNode(
+				id: itemzTypeData.Id,
+				wrapperNode: itNode,
+				parentId: parentId,
+				level: level,
+				recordType: "ItemzType",
+				name: itemzTypeData.Name,
+				isRoot: isRoot,
+				estimationUnit: itemzTypeData.EstimationUnit,
+				ownEstimation: itemzTypeData.OwnEstimation,
+				rolledUpEstimation: itemzTypeData.RolledUpEstimation
+			);
 
-			var name = itemzTypeToken.Value<string>("Name") ?? string.Empty;
-
-			RegisterNode(id, itNode, parentId, level, "ItemzType", name, isRoot);
 
 			var itemzArray = itNode["Itemz"] as JArray;
 			if (itemzArray != null)
 			{
 				foreach (var itemNode in itemzArray)
-					ProcessItemzExportNode(itemNode, level + 1, id, isRoot: false, recordType: "Itemz");
+					ProcessItemzExportNode(itemNode, level + 1, itemzTypeData.Id, isRoot: false, recordType: "Itemz");
 			}
 		}
 
 		private void ProcessItemzExportNode(JToken itemNode, int level, Guid? parentId, bool isRoot, string recordType)
 		{
-			var itemToken = itemNode["Itemz"];
-			if (itemToken == null)
+
+			var itemzData = itemNode["Itemz"]?.ToObject<GetItemzExportDTO>();
+			if (itemzData == null)
 				return;
 
-			var id = ParseGuid(itemToken, "Id");
-			if (id == Guid.Empty)
-				return;
+			RegisterNode(
+				id: itemzData.Id,
+				wrapperNode: itemNode,
+				parentId: parentId,
+				level: level,
+				recordType: "Itemz",
+				name: itemzData.Name,
+				isRoot: isRoot,
+				estimationUnit: itemzData.EstimationUnit,
+				ownEstimation: itemzData.OwnEstimation,
+				rolledUpEstimation: itemzData.RolledUpEstimation
+			);
 
-			var name = itemToken.Value<string>("Name") ?? string.Empty;
-
-			RegisterNode(id, itemNode, parentId, level, recordType, name, isRoot);
 
 			var subItemz = itemNode["SubItemz"] as JArray;
 			if (subItemz != null)
 			{
 				foreach (var subNode in subItemz)
-					ProcessItemzExportNode(subNode, level + 1, id, isRoot: false, recordType: "Itemz");
+					ProcessItemzExportNode(subNode, level + 1, itemzData.Id, isRoot: false, recordType: "Itemz");
 			}
 		}
 
 		#endregion
 
+		
 		#region BASELINE processors
 
 		private void ProcessBaselineExportNode(JToken baselineNode, int level, Guid? parentId)
 		{
-			var baselineToken = baselineNode["Baseline"];
-			if (baselineToken == null)
+
+			var baselineData = baselineNode["Baseline"]?.ToObject<GetBaselineExportDTO>();
+			if (baselineData == null)
 				return;
 
-			var id = ParseGuid(baselineToken, "Id");
-			if (id == Guid.Empty)
-				return;
-
-			var name = baselineToken.Value<string>("Name") ?? string.Empty;
-
-			RegisterNode(id, baselineNode, parentId, level, "Baseline", name, isRoot: parentId == null);
+			RegisterNode(
+				id: baselineData.Id,
+				wrapperNode: baselineNode,
+				parentId: parentId,
+				level: level,
+				recordType: "Baseline",
+				name: baselineData.Name,
+				isRoot: level == 0,
+				estimationUnit: baselineData.EstimationUnit,          
+				ownEstimation: baselineData.OwnEstimation,           
+				rolledUpEstimation: baselineData.RolledUpEstimation   
+			);
 
 			var baselineItemzTypes = baselineNode["BaselineItemzTypes"] as JArray;
 			if (baselineItemzTypes != null)
 			{
 				foreach (var bitNode in baselineItemzTypes)
-					ProcessBaselineItemzTypeExportNode(bitNode, level + 1, id, isRoot: false);
+					ProcessBaselineItemzTypeExportNode(bitNode, level + 1, baselineData.Id, isRoot: false);
 			}
 		}
 
 
 		private void ProcessBaselineItemzTypeExportNode(JToken bitNode, int level, Guid? parentId, bool isRoot)
 		{
-			var bitToken = bitNode["BaselineItemzType"];
-			if (bitToken == null)
+
+			var baselineItemzTypeData = bitNode["BaselineItemzType"]?.ToObject<GetBaselineItemzTypeExportDTO>();
+			if (baselineItemzTypeData == null)
 				return;
 
-			var id = ParseGuid(bitToken, "Id");
-			if (id == Guid.Empty)
-				return;
-
-			var name = bitToken.Value<string>("Name") ?? string.Empty;
-
-			RegisterNode(id, bitNode, parentId, level, "BaselineItemzType", name, isRoot);
+			RegisterNode(
+				id: baselineItemzTypeData.Id,
+				wrapperNode: bitNode,
+				parentId: parentId,
+				level: level,
+				recordType: "BaselineItemzType",
+				name: baselineItemzTypeData.Name,
+				isRoot: isRoot,
+				estimationUnit: baselineItemzTypeData.EstimationUnit,
+				ownEstimation: baselineItemzTypeData.OwnEstimation,
+				rolledUpEstimation: baselineItemzTypeData.RolledUpEstimation
+			);
 
 			var baselineItemz = bitNode["BaselineItemz"] as JArray;
 			if (baselineItemz != null)
 			{
 				foreach (var biNode in baselineItemz)
-					ProcessBaselineItemzExportNode(biNode, level + 1, id, isRoot: false, recordType: "BaselineItemz");
+					ProcessBaselineItemzExportNode(biNode, level + 1, baselineItemzTypeData.Id, isRoot: false, recordType: "BaselineItemz");
 			}
 		}
 
 
 		private void ProcessBaselineItemzExportNode(JToken biNode, int level, Guid? parentId, bool isRoot, string recordType)
 		{
-			var biToken = biNode["BaselineItemz"];
-			if (biToken == null)
+
+			var baselineItemzData = biNode["BaselineItemz"]?.ToObject<GetBaselineItemzExportDTO>();
+			if (baselineItemzData == null)
 				return;
 
-			var id = ParseGuid(biToken, "Id");
-			if (id == Guid.Empty)
-				return;
-
-			var name = biToken.Value<string>("Name") ?? string.Empty;
-
-			RegisterNode(id, biNode, parentId, level, recordType, name, isRoot);
+			RegisterNode(
+				id: baselineItemzData.Id,
+				wrapperNode: biNode,
+				parentId: parentId,
+				level: level,
+				recordType: "BaselineItemz",
+				name: baselineItemzData.Name,
+				isRoot: isRoot,
+				estimationUnit: baselineItemzData.EstimationUnit,
+				ownEstimation: baselineItemzData.OwnEstimation,
+				rolledUpEstimation: baselineItemzData.RolledUpEstimation
+			);
 
 			var baselineSubItemz = biNode["BaselineSubItemz"] as JArray;
 			if (baselineSubItemz != null)
 			{
 				foreach (var subNode in baselineSubItemz)
-					ProcessBaselineItemzExportNode(subNode, level + 1, id, isRoot: false, recordType: "BaselineItemz");
+					ProcessBaselineItemzExportNode(subNode, level + 1, baselineItemzData.Id, isRoot: false, recordType: "BaselineItemz");
 			}
 		}
 
 
 		#endregion
 
-		#endregion
 
 		public JsonExportKind DetectExportKind()
 		{
@@ -847,17 +932,9 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 						 ?.Value;
 		}
 
-		private static Guid ParseGuid(JToken? token, string propertyName)
-		{
-			var value = token?[propertyName]?.ToString();
-			return Guid.TryParse(value, out var guid)
-				? guid
-				: Guid.Empty;
-		}
-
 		#region Record details (BASELINE)
 
-		public Task<GetBaselineDTO> GetBaselineDetailsAsync(Guid baselineId)
+		public Task<GetBaselineExportDTO> GetBaselineDetailsAsync(Guid baselineId)
 		{
 			EnsureLoaded();
 			if (_exportKind != RepositoryExportKind.Baseline)
@@ -867,11 +944,11 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 				throw new KeyNotFoundException($"Baseline with Id {baselineId} not found in JSON.");
 
 			var token = node["Baseline"] ?? node;
-			var dto = token.ToObject<GetBaselineDTO>() ?? new GetBaselineDTO();
-			return Task.FromResult(dto);
+			var dto = token.ToObject<GetBaselineExportDTO>() ?? new GetBaselineExportDTO();
+			return Task.FromResult<GetBaselineExportDTO>(dto);
 		}
 
-		public Task<GetBaselineItemzTypeDTO> GetBaselineItemzTypeDetailsAsync(Guid baselineItemzTypeId)
+		public Task<GetBaselineItemzTypeExportDTO> GetBaselineItemzTypeDetailsAsync(Guid baselineItemzTypeId)
 		{
 			EnsureLoaded();
 			if (_exportKind != RepositoryExportKind.Baseline)
@@ -881,11 +958,11 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 				throw new KeyNotFoundException($"BaselineItemzType with Id {baselineItemzTypeId} not found in JSON.");
 
 			var token = node["BaselineItemzType"] ?? node;
-			var dto = token.ToObject<GetBaselineItemzTypeDTO>() ?? new GetBaselineItemzTypeDTO();
-			return Task.FromResult(dto);
+			var dto = token.ToObject<GetBaselineItemzTypeExportDTO>() ?? new GetBaselineItemzTypeExportDTO();
+			return Task.FromResult<GetBaselineItemzTypeExportDTO>(dto);
 		}
 
-		public Task<GetBaselineItemzDTO> GetBaselineItemzDetailsAsync(Guid baselineItemzId)
+		public Task<GetBaselineItemzExportDTO> GetBaselineItemzDetailsAsync(Guid baselineItemzId)
 		{
 			EnsureLoaded();
 			if (_exportKind != RepositoryExportKind.Baseline)
@@ -895,8 +972,8 @@ namespace OpenRose.WebUI.Client.Services.JsonFile
 				throw new KeyNotFoundException($"BaselineItemz with Id {baselineItemzId} not found in JSON.");
 
 			var token = node["BaselineItemz"] ?? node;
-			var dto = token.ToObject<GetBaselineItemzDTO>() ?? new GetBaselineItemzDTO();
-			return Task.FromResult(dto);
+			var dto = token.ToObject<GetBaselineItemzExportDTO>() ?? new GetBaselineItemzExportDTO();
+			return Task.FromResult<GetBaselineItemzExportDTO>(dto);
 		}
 
 		#endregion

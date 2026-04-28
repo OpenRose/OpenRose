@@ -6,8 +6,9 @@ using ItemzApp.API.DbContexts;
 using ItemzApp.API.DbContexts.Extensions;
 using ItemzApp.API.DbContexts.SQLHelper;
 using ItemzApp.API.Entities;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,15 +19,23 @@ namespace ItemzApp.API.Services
 {
     public class BaselineRepository : IBaselineRepository, IDisposable
     {
-        private readonly BaselineContext _baselineContext;
-        private readonly ItemzContext _itemzContext;
+		private readonly BaselineContext _baselineContext;
+		private readonly ItemzContext _itemzContext;
+		private readonly EstimationRollupService _estimationRollupService;
+		private readonly ILogger<BaselineRepository> _logger;
 
-        public BaselineRepository(BaselineContext baselineContext, ItemzContext itemzContext)
-        {
-            _baselineContext = baselineContext ?? throw new ArgumentNullException(nameof(baselineContext));
-            _itemzContext = itemzContext ?? throw new ArgumentNullException(nameof(itemzContext));
-        }
-        public async Task<Baseline?> GetBaselineAsync(Guid BaselineId)
+		public BaselineRepository(BaselineContext baselineContext
+            , ItemzContext itemzContext
+            , EstimationRollupService estimationRollupService
+			, ILogger<BaselineRepository> logger)
+		{
+			_baselineContext = baselineContext;
+			_itemzContext = itemzContext;
+			_estimationRollupService = estimationRollupService;
+			_logger = logger;
+		}
+
+		public async Task<Baseline?> GetBaselineAsync(Guid BaselineId)
         {
             if (BaselineId == Guid.Empty)
             {
@@ -187,7 +196,20 @@ namespace ItemzApp.API.Services
                 var _ = await _baselineContext.Database.ExecuteSqlRawAsync(sql: "EXEC userProcCreateBaselineByItemzTypeID  @ProjectId, @ItemzTypeID, @Name, @Description, @OUTPUT_Id  = @OUTPUT_Id OUT", parameters: sqlParameters);
                 returnValue = (Guid)OUTPUT_ID.Value;
             }
-            return returnValue;
+
+			// Recalculate roll-up estimations with graceful error handling
+			try
+			{
+				await _estimationRollupService.RecalculateBaselineRollUpEstimationsAsync(returnValue);
+			}
+			catch (Exception ex)
+			{
+				// Log the error but don't throw - roll-up calculation is non-critical
+				// The baseline was created successfully, so we should still return the ID
+				_logger.LogWarning($"Failed to recalculate roll-up estimations for Baseline ID {returnValue}: {ex.Message}");
+			}
+
+			return returnValue;
         }
 
         public async Task<Guid> CloneBaselineAsync(NonEntity_CloneBaseline cloneBaseline)
@@ -253,7 +275,19 @@ namespace ItemzApp.API.Services
             var _ = await _baselineContext.Database.ExecuteSqlRawAsync(sql: "EXEC userProcCreateBaselineByExistingBaselineID  @BaselineId, @Name, @Description, @OUTPUT_Id = @OUTPUT_Id OUT", parameters: sqlParameters);
             returnValue = (Guid)OUTPUT_ID.Value;
 
-            return returnValue;
+			// Recalculate roll-up estimations with graceful error handling
+			try
+			{
+				await _estimationRollupService.RecalculateBaselineRollUpEstimationsAsync(returnValue);
+			}
+			catch (Exception ex)
+			{
+				// Log the error but don't throw - roll-up calculation is non-critical
+				// The baseline was created successfully, so we should still return the ID
+				_logger.LogWarning($"Failed to recalculate roll-up estimations for Baseline ID {returnValue}: {ex.Message}");
+			}
+
+			return returnValue;
         }
 
         public async Task DeleteOrphanedBaselineItemzAsync()

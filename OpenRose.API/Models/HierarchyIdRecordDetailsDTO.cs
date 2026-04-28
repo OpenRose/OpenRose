@@ -6,27 +6,27 @@ using System;
 
 namespace ItemzApp.API.Models
 {
-    public class HierarchyIdRecordDetailsDTO
-    {
-        /// <summary>
-        /// Record ID representated by a GUID.
-        /// </summary>
-        public Guid RecordId { get; set; }
+	public class HierarchyIdRecordDetailsDTO
+	{
+		/// <summary>
+		/// Record ID representated by a GUID.
+		/// </summary>
+		public Guid RecordId { get; set; }
 
-        /// <summary>
-        /// Hierarchy ID in string format for RecordId e.g. "/3/2/1"
-        /// </summary>
-        public string? HierarchyId { get; set; }
+		/// <summary>
+		/// Hierarchy ID in string format for RecordId e.g. "/3/2/1"
+		/// </summary>
+		public string? HierarchyId { get; set; }
 
-        /// <summary>
-        /// Hierarchy Level for RecordId
-        /// </summary>
-        public int? Level { get; set; }
+		/// <summary>
+		/// Hierarchy Level for RecordId
+		/// </summary>
+		public int? Level { get; set; }
 
-        /// <summary>
-        /// Record Type within Hierarchy for RecordId
-        /// </summary>
-        public string? RecordType { get; set; }
+		/// <summary>
+		/// Record Type within Hierarchy for RecordId
+		/// </summary>
+		public string? RecordType { get; set; }
 
 		/// <summary>
 		/// Name of the Hierarchy Record
@@ -38,39 +38,55 @@ namespace ItemzApp.API.Models
 		/// </summary>
 		public string? TopChildHierarchyId { get; set; } = "";
 
-        /// <summary>
-        /// Hierarchy Id for the BOTTOM Hierarchy Record within a given Parent Hierarchy Record
-        /// </summary>
-        public string? BottomChildHierarchyId { get; set; } = "";
+		/// <summary>
+		/// Hierarchy Id for the BOTTOM Hierarchy Record within a given Parent Hierarchy Record
+		/// </summary>
+		public string? BottomChildHierarchyId { get; set; } = "";
 
-        /// <summary>
-        /// Total Number of Child nodes under RecordId
-        /// </summary>
-        public int? NumberOfChildNodes { get; set; } = 0;
+		/// <summary>
+		/// Total Number of Child nodes under RecordId
+		/// </summary>
+		public int? NumberOfChildNodes { get; set; } = 0;
 
 		/// <summary>
 		/// Parent Record ID representated by a GUID.
 		/// </summary>
 		public Guid ParentRecordId { get; set; }
 
-        /// <summary>
-        /// Hierarchy ID in string format for ParentRecordId e.g. "/3/2/1"
-        /// </summary>
-        public string? ParentHierarchyId { get; set; } = "";
+		/// <summary>
+		/// Hierarchy ID in string format for ParentRecordId e.g. "/3/2/1"
+		/// </summary>
+		public string? ParentHierarchyId { get; set; } = "";
 
-        /// <summary>
-        /// Hierarchy Level for ParentRecordId
-        /// </summary>
-        public int? ParentLevel { get; set; } = 0;
+		/// <summary>
+		/// Hierarchy Level for ParentRecordId
+		/// </summary>
+		public int? ParentLevel { get; set; } = 0;
 
-        /// <summary>
-        /// Record Type within Hierarchy for ParentRecordId
-        /// </summary>
-        public string? ParentRecordType { get; set; } = "";
+		/// <summary>
+		/// Record Type within Hierarchy for ParentRecordId
+		/// </summary>
+		public string? ParentRecordType { get; set; } = "";
 
 		/// <summary>
 		/// Parent Name of the Hierarchy Record
 		/// </summary>
 		public string? ParentName { get; set; }
+
+		/// <summary>
+		/// Estimation Unit (e.g., "Days", "Hours", "Story Points", "$", "GBP")
+		/// Consistent across entire project hierarchy
+		/// </summary>
+		public string? EstimationUnit { get; set; }
+
+		/// <summary>
+		/// Own Estimation value for this hierarchy record
+		/// </summary>
+		public decimal OwnEstimation { get; set; } = 0;
+
+		/// <summary>
+		/// Roll-up Estimation - sum of own estimation plus all child estimations
+		/// </summary>
+		public decimal RolledUpEstimation { get; set; } = 0;
 	}
 }

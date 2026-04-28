@@ -13,6 +13,7 @@
 @using OpenRose.WebUI.Components.FindServices
 @using OpenRose.WebUI.Components.Pages.Common
 @using System.Globalization
+@using OpenRose.WebUI.Components.Pages.SharedComponents
 @inject NavigationManager NavManager
 @inject BaselineTreeNodeItemzSelectionService BaselineItemzSelectionService
 @inject IFindProjectAndBaselineIdsByBaselineItemzIdService FindBaselineParents
@@ -38,6 +39,10 @@
 	else
 	{
  		<MudItem xs="12" sm="12">
+		<MudTabs Outlined="true" Position="Position.Top" Rounded="true" Border="true" 
+					 IconColor="Color.Secondary" ScrollIconColor="Color.Secondary" SliderColor = "Color.Secondary"
+					 ApplyEffectsToContainer="true" PanelClass="pa-2" MinimumTabWidth="200px" >
+			<MudTabPanel Text="Details" Icon="@Icons.Material.Filled.EditNote" >
 			<MudCard style="background-color : #FABBBB;" >
 				<MudCardContent>
 				<MudItem Class="align-start d-flex" Style="width: auto" Outlined="false">
@@ -70,6 +75,7 @@
 						</MudStack>
 						<MudText><strong> || Status      : </strong> @singleIBaselineItemzType.Status</MudText>
 						<MudText><strong> || Is System?  : </strong> @(singleIBaselineItemzType.IsSystem ? "Yes" : "No")</MudText>
+						|| <BaselineEstimationReadOnlyComponent RecordId="BaselineItemzTypeId" />
 					</MudStack>
 
 @* 					<MudStack Row="true" Spacing="2">
@@ -94,6 +100,17 @@
 					</div>
 				</MudCardContent>
 			</MudCard>
+			</MudTabPanel>
+			<MudTabPanel Icon="@Icons.Material.Filled.Money" Text="Estimation">
+				<MudPaper Class="pa-0 mud-height-full"
+							Width="100%"
+							Outlined="false"
+							Elevation="0">
+                    <BaselineEstimationComponent RecordId="@BaselineItemzTypeId"
+												RecordType="BaselineItemzType" />
+				</MudPaper>
+			</MudTabPanel>
+		</MudTabs>
 		</MudItem>
 	}
 </MudGrid>

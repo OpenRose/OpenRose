@@ -10,6 +10,7 @@
 @using OpenRose.WebUI.Client.Services.ItemzType
 @using OpenRose.WebUI.Client.SharedModels
 @using OpenRose.WebUI.Components.Pages.Common
+@using OpenRose.WebUI.Components.Pages.SharedComponents
 @using OpenRose.WebUI.Services
 @using Microsoft.AspNetCore.Components.Forms
 @inject NavigationManager NavManager
@@ -60,9 +61,10 @@
 						<MudText><strong> </strong> </MudText>
 						<MudStack Row="true" Spacing="2">
 						<MudText><strong>ID          : </strong></MudText>
-						<CopyableText TextToCopy="@singleProject.Id.ToString()" />
+						<CopyableText TextToCopy="@singleProject.Id.ToString()" DisplayLength="8" />
+						|| <EstimationReadOnlyComponent RecordId="@ProjectId" />
 						</MudStack>
-						<MudText><strong>Status      : </strong> @singleProject.Status</MudText>
+						<MudText><strong>Status      : </strong> @singleProject.Status 	</MudText>
 						<MudText><strong>Description : </strong> </MudText> 
 						<br />
 						<div class="custom-markdown-editor">

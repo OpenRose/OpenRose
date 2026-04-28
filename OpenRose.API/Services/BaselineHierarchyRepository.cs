@@ -67,13 +67,19 @@ namespace ItemzApp.API.Services
             baselineHierarchyIdRecordDetails.Name = foundBaselineHierarchyRecord.FirstOrDefault()!.Name ?? "";
             baselineHierarchyIdRecordDetails.Level = foundBaselineHierarchyRecord.FirstOrDefault()!.BaselineItemzHierarchyId!.GetLevel();
             baselineHierarchyIdRecordDetails.IsIncluded = foundBaselineHierarchyRecord.FirstOrDefault()!.isIncluded;
+			baselineHierarchyIdRecordDetails.EstimationUnit = foundBaselineHierarchyRecord.FirstOrDefault()!.EstimationUnit;
+			baselineHierarchyIdRecordDetails.OwnEstimation = foundBaselineHierarchyRecord.FirstOrDefault()!.OwnEstimation;
+			// If record is excluded, return 0 for RolledUpEstimation
+			baselineHierarchyIdRecordDetails.RolledUpEstimation = foundBaselineHierarchyRecord.FirstOrDefault()!.isIncluded
+				? foundBaselineHierarchyRecord.FirstOrDefault()!.RolledUpEstimation
+				: 0;
 
-            // EXPLANATION : We are using SQL Server HierarchyID field type. Now we can use EF Core special
-            // methods to query for all Decendents as per below. We are actually finding all Decendents by saying
-            // First find the BaselineItemzHierarchy record where ID matches RootItemz ID. This is expected to be the
-            // repository ID itself which is the root. then we find all desendents of Repository which is nothing but Project(s). 
+			// EXPLANATION : We are using SQL Server HierarchyID field type. Now we can use EF Core special
+			// methods to query for all Decendents as per below. We are actually finding all Decendents by saying
+			// First find the BaselineItemzHierarchy record where ID matches RootItemz ID. This is expected to be the
+			// repository ID itself which is the root. then we find all desendents of Repository which is nothing but Project(s). 
 
-            var parentBaselineItemzHierarchyRecord = await _context.BaselineItemzHierarchy!
+			var parentBaselineItemzHierarchyRecord = await _context.BaselineItemzHierarchy!
                     .AsNoTracking()
                     .Where(bih => bih.BaselineItemzHierarchyId!.GetAncestor(1) == foundBaselineHierarchyRecord.FirstOrDefault()!.BaselineItemzHierarchyId!)
                     .OrderBy(bih => bih.BaselineItemzHierarchyId!)
@@ -177,6 +183,12 @@ namespace ItemzApp.API.Services
 																							? baselineItemzTypeHierarchyItemzs[i].SourceItemzHierarchyId!.ToString()
 																							: "";
 						baselineHierarchyIdRecordDetails.IsIncluded = baselineItemzTypeHierarchyItemzs[i].isIncluded;
+						baselineHierarchyIdRecordDetails.EstimationUnit = baselineItemzTypeHierarchyItemzs[i].EstimationUnit;
+						baselineHierarchyIdRecordDetails.OwnEstimation = baselineItemzTypeHierarchyItemzs[i].OwnEstimation;
+						// If record is excluded, return 0 for RolledUpEstimation
+						baselineHierarchyIdRecordDetails.RolledUpEstimation = baselineItemzTypeHierarchyItemzs[i].isIncluded
+							? baselineItemzTypeHierarchyItemzs[i].RolledUpEstimation
+							: 0;
 
 						// EXPLANATION :: Now add Parent Details which is nothing but foundHierarchyRecord
 						baselineHierarchyIdRecordDetails.ParentRecordId = foundBaselineHierarchyRecord.FirstOrDefault()!.Id;
@@ -215,6 +227,12 @@ namespace ItemzApp.API.Services
 
 
 						baselineHierarchyIdRecordDetails.IsIncluded = baselineItemzTypeHierarchyItemzs[i].isIncluded;
+						baselineHierarchyIdRecordDetails.EstimationUnit = baselineItemzTypeHierarchyItemzs[i].EstimationUnit;
+						baselineHierarchyIdRecordDetails.OwnEstimation = baselineItemzTypeHierarchyItemzs[i].OwnEstimation;
+						// If record is excluded, return 0 for RolledUpEstimation
+						baselineHierarchyIdRecordDetails.RolledUpEstimation = baselineItemzTypeHierarchyItemzs[i].isIncluded
+							? baselineItemzTypeHierarchyItemzs[i].RolledUpEstimation
+							: 0;
 
 
 						// EXPLANATION :: Now add Parent Details which is nothing but foundHierarchyRecord
@@ -335,6 +353,11 @@ namespace ItemzApp.API.Services
 						RecordType = baselineAllHierarchyItemzs[i].RecordType,
 						Name = baselineAllHierarchyItemzs[i].Name ?? "",
 						isIncluded = baselineAllHierarchyItemzs[i].isIncluded,
+						EstimationUnit = baselineAllHierarchyItemzs[i].EstimationUnit,
+						OwnEstimation = baselineAllHierarchyItemzs[i].OwnEstimation,
+						// If record is excluded, return 0 for RolledUpEstimation
+						RolledUpEstimation = baselineAllHierarchyItemzs[i].isIncluded 
+											? baselineAllHierarchyItemzs[i].RolledUpEstimation : 0,
 						Children = new List<NestedBaselineHierarchyIdRecordDetailsDTO>()
 					});
 				}
@@ -357,6 +380,11 @@ namespace ItemzApp.API.Services
 							RecordType = baselineAllHierarchyItemzs[i].RecordType,
 							Name = baselineAllHierarchyItemzs[i].Name ?? "",
 							isIncluded = baselineAllHierarchyItemzs[i].isIncluded,
+							EstimationUnit = baselineAllHierarchyItemzs[i].EstimationUnit,
+							OwnEstimation = baselineAllHierarchyItemzs[i].OwnEstimation,
+							// If record is excluded, return 0 for RolledUpEstimation
+							RolledUpEstimation = baselineAllHierarchyItemzs[i].isIncluded
+											? baselineAllHierarchyItemzs[i].RolledUpEstimation : 0,
 							Children = new List<NestedBaselineHierarchyIdRecordDetailsDTO>()
 						});
 					}
@@ -428,6 +456,10 @@ namespace ItemzApp.API.Services
 						RecordType = current.RecordType,
 						Name = current.Name ?? "",
 						isIncluded = current.isIncluded,
+						EstimationUnit = current.EstimationUnit,
+						OwnEstimation = current.OwnEstimation,
+						// If record is excluded, return 0 for RolledUpEstimation
+						RolledUpEstimation = current.isIncluded ? current.RolledUpEstimation : 0,
 						Children = new List<NestedBaselineHierarchyIdRecordDetailsDTO>()
 					});
 				}
@@ -449,6 +481,10 @@ namespace ItemzApp.API.Services
 							RecordType = current.RecordType,
 							Name = current.Name ?? "",
 							isIncluded = current.isIncluded,
+							EstimationUnit = current.EstimationUnit,
+							OwnEstimation = current.OwnEstimation,
+							// If record is excluded, return 0 for RolledUpEstimation
+							RolledUpEstimation = current.isIncluded ? current.RolledUpEstimation : 0,
 							Children = new List<NestedBaselineHierarchyIdRecordDetailsDTO>()
 						});
 					}

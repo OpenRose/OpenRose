@@ -36,12 +36,13 @@ namespace ItemzApp.API.Helper
 		public static string Generate(NestedHierarchyIdRecordDetailsDTO root,
 							  IEnumerable<ItemzTraceDTO> traces,
 							  Guid rootId,
-							  string? baseUrl)
+							  string? baseUrl,
+							  bool includeEstimations = false)
 		{
 			var sb = new StringBuilder();
 			EmitOpenRoseHeader(sb);
 
-			EmitHierarchyInline(root, sb, rootId, 1, baseUrl);
+			EmitHierarchyInline(root, sb, rootId, 1, baseUrl, includeEstimations);
 
 			// Build lookup dictionary from hierarchy
 			var idToName = BuildIdToNameMap(root);
@@ -95,12 +96,13 @@ namespace ItemzApp.API.Helper
 			NestedBaselineHierarchyIdRecordDetailsDTO root,
 			IEnumerable<BaselineItemzTraceDTO> traces,
 			Guid rootId,
-			string? baseUrl = null)
+			string? baseUrl = null,
+			bool includeEstimations = false)
 		{
 			var sb = new StringBuilder();
 			EmitOpenRoseHeader(sb);
 
-			EmitBaselineHierarchyInline(root, sb, rootId, 1, baseUrl);
+			EmitBaselineHierarchyInline(root, sb, rootId, 1, baseUrl, includeEstimations);
 
 			// Build lookup dictionary from baseline hierarchy
 			var idToName = BuildBaselineIdToNameMap(root);
@@ -143,9 +145,21 @@ namespace ItemzApp.API.Helper
 												StringBuilder sb,
 												Guid rootId,
 												int indentLevel,
-												string? baseUrl = null)
+												string? baseUrl = null,
+												bool includeEstimations = false)
 		{
-			string parent = RenderNode(node.RecordId, node.RecordType, node.Name, node.RecordId == rootId);
+			string parent = string.Empty;
+			
+			if (includeEstimations)
+			{
+				 parent = RenderNodeWithEstimation(node.RecordId, node.RecordType, node.Name, node.RecordId == rootId
+					, node.EstimationUnit, node.RolledUpEstimation);
+			}
+			else
+			{
+				parent = RenderNode(node.RecordId, node.RecordType, node.Name, node.RecordId == rootId);
+			}
+
 			string indent = new string(' ', indentLevel * 4);
 
 			if (node.RecordId == rootId)
@@ -163,7 +177,18 @@ namespace ItemzApp.API.Helper
 			{
 				foreach (var child in node.Children)
 				{
-					string childText = RenderNode(child.RecordId, child.RecordType, child.Name, child.RecordId == rootId);
+					string childText = string.Empty;
+
+					if (includeEstimations)
+					{
+						childText = RenderNodeWithEstimation(child.RecordId, child.RecordType, child.Name, child.RecordId == rootId
+						, child.EstimationUnit, child.RolledUpEstimation);
+					}
+					else
+					{
+						childText = RenderNode(child.RecordId, child.RecordType, child.Name, child.RecordId == rootId);
+					}
+
 					sb.AppendLine($"{indent}{parent} --> {childText}");
 
 					// Add click directive if baseUrl is provided
@@ -174,7 +199,7 @@ namespace ItemzApp.API.Helper
 						sb.AppendLine($"{indent}click {child.RecordId} href \"{gotoUrl}\"");
 					}
 
-					EmitHierarchyInline(child, sb, rootId, indentLevel + 1, baseUrl);
+					EmitHierarchyInline(child, sb, rootId, indentLevel + 1, baseUrl, includeEstimations);
 				}
 			}
 		}
@@ -186,9 +211,21 @@ namespace ItemzApp.API.Helper
 														StringBuilder sb,
 														Guid rootId,
 														int indentLevel,
-														string? baseUrl = null)
+														string? baseUrl = null,
+														bool includeEstimations = false)
 		{
-			string parent = RenderNode(node.RecordId, node.RecordType, node.Name, node.RecordId == rootId);
+			string parent = string.Empty;
+
+			if (includeEstimations)
+			{
+				parent = RenderNodeWithEstimation(node.RecordId, node.RecordType, node.Name, node.RecordId == rootId
+								, node.EstimationUnit, node.RolledUpEstimation);
+			}
+			else 
+			{
+				parent = RenderNode(node.RecordId, node.RecordType, node.Name, node.RecordId == rootId);
+
+			}
 			string indent = new string(' ', indentLevel * 4);
 
 			// Root node
@@ -208,7 +245,19 @@ namespace ItemzApp.API.Helper
 			{
 				foreach (var child in node.Children)
 				{
-					string childText = RenderNode(child.RecordId, child.RecordType, child.Name, child.RecordId == rootId);
+
+					string childText = string.Empty;
+
+					if(includeEstimations)
+					{
+						childText = RenderNodeWithEstimation(child.RecordId, child.RecordType, child.Name, child.RecordId == rootId
+						, child.EstimationUnit, child.RolledUpEstimation);
+					}
+					else
+					{
+						 childText = RenderNode(child.RecordId, child.RecordType, child.Name, child.RecordId == rootId);
+					}
+					
 					sb.AppendLine($"{indent}{parent} --> {childText}");
 
 					if (!string.IsNullOrWhiteSpace(baseUrl))
@@ -217,7 +266,7 @@ namespace ItemzApp.API.Helper
 						sb.AppendLine($"{indent}click {child.RecordId} href \"{gotoUrl}\"");
 					}
 
-					EmitBaselineHierarchyInline(child, sb, rootId, indentLevel + 1, baseUrl);
+					EmitBaselineHierarchyInline(child, sb, rootId, indentLevel + 1, baseUrl, includeEstimations);
 				}
 			}
 		}
@@ -251,9 +300,52 @@ namespace ItemzApp.API.Helper
 		}
 
 		/// <summary>
+		/// Renders a node into Mermaid syntax with appropriate shape and label.
+		/// Includes estimation unit and rolled-up estimation when available.
+		/// </summary>
+		/// <param name="id">Unique Guid identifier of the node.</param>
+		/// <param name="recordType">Type of record (e.g., Project, ItemzType, Baseline).</param>
+		/// <param name="name">Display name of the node.</param>
+		/// <param name="isRoot">True if this node is the root, otherwise false.</param>
+		/// <param name="estimationUnit">Estimation Unit (e.g., "GBP", "Hours"). If null, "N/A" is used.</param>
+		/// <param name="rolledUpEstimation">Rolled-up estimation value for the node.</param>
+		/// <returns>
+		/// Mermaid syntax string for the node. Root nodes are circles, others are rectangles.
+		/// Estimation information is appended on a new line using HTML line break.
+		/// </returns>
+		private static string RenderNodeWithEstimation(Guid id, string? recordType, string? name, bool isRoot,
+			string? estimationUnit = null,
+			decimal rolledUpEstimation = 0)
+		{
+			// Format estimation unit with fallback to "N/A"
+			string estimationDisplay = string.IsNullOrWhiteSpace(estimationUnit)
+				? "N/A"
+				: estimationUnit;
+
+			// Format the estimation line
+			string estimationLine = $"<br/>{estimationDisplay} {rolledUpEstimation:F2}";
+
+			string label = recordType?.ToLowerInvariant() switch
+			{
+				"project" => TransformLabelForMermaid($"Project :: {name}{estimationLine}"),
+				"itemztype" => TransformLabelForMermaid($"ItemzType :: {name}{estimationLine}"),
+				"baseline" => TransformLabelForMermaid($"Baseline :: {name}{estimationLine}"),
+				"baselineitemztype" => TransformLabelForMermaid($"BaselineItemzType :: {name}{estimationLine}"),
+				"itemz" => TransformLabelForMermaid($"{name}{estimationLine}"),
+				"baselineitemz" => TransformLabelForMermaid($"{name}{estimationLine}"),
+				_ => TransformLabelForMermaid($"{name}{estimationLine}")
+			};
+
+			return isRoot
+				? $"{id}(({label}))"   // circle for root
+				: $"{id}[{label}]";    // rectangle for others
+		}
+
+		/// <summary>
 		/// Transforms a raw label string into a Mermaid-safe format.
 		/// Mermaid diagrams break if labels contain certain special characters,
 		/// so we sanitize them by replacing or escaping problematic symbols.
+		/// Preserves HTML line breaks (&lt;br/&gt;) for multi-line labels.
 		/// </summary>
 		/// <param name="input">The raw label text to be transformed.</param>
 		/// <returns>A sanitized label string wrapped in double quotes.</returns>
@@ -265,13 +357,17 @@ namespace ItemzApp.API.Helper
 				.Replace("\"", "'")   // replace double quotes with single quotes
 				.Replace("&", "and")  // replace ampersand with 'and'
 				.Replace("<", "(")    // replace < with (
-				.Replace(">", ")")   // replace > with )
+				.Replace(">", ")")    // replace > with )
 				.Replace("%", "percent") // percent sign → word "percent"
 				.Replace("end", "END")   // lowercase "end" → uppercase
 				.Replace("[", "(")       // square bracket → parenthesis
 				.Replace("]", ")")       // square bracket → parenthesis
 				.Replace("{", "(")       // curly brace → parenthesis
 				.Replace("}", ")");      // curly brace → parenthesis
+
+			// Restore the <br/> tag for line breaks (was converted to "(br/)" above)
+			// Mermaid requires <br/> for HTML line breaks in labels
+			transformed = transformed.Replace("(br/)", "<br/>");
 
 			// Wrap the whole label in double quotes
 			return $"\"{transformed}\"";

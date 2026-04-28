@@ -26,6 +26,8 @@ namespace ItemzApp.API.Profiles
                 .ForMember(dto => dto.Severity, i => i.MapFrom(o => o.Severity));    // Used for creating GetItemzWithBasePropertiesDTO based on Custom Itemz object mainly used for Sorting Paginated Orphand Itemz.
 			CreateMap<Models.GetItemzDTO, Models.CreateItemzDTO>()
 				.ForMember(dest => dest.Severity, opt => opt.MapFrom(src => src.Severity)); // Used for importing Itemz Data into OpenRose Repository from JSON via ImportService
+			CreateMap<Models.GetItemzExportDTO, Models.CreateItemzDTO>()
+				.ForMember(dest => dest.Severity, opt => opt.MapFrom(src => src.Severity)); // Used for importing Itemz Data into OpenRose Repository from JSON via ImportService
 		}
 	}
 }

@@ -271,27 +271,27 @@ namespace ItemzApp.API.Controllers
             return Ok(foundNumberOfOrphanItemz);
         }
 
-        /// <summary>
-        /// Used for creating new Itemz record in the database
-        /// </summary>
-        /// <param name="createItemzDTO">Used for populating information in the newly created itemz in the database</param>
-        /// <param name="parentId">Used as parent for adding new Itemz as children</param>
-        /// <param name="AtBottomOfChildNodes">Indicates if we should add new Itemz at TOP or BOTTOM of child Itemz nodes list</param>
-        /// <returns>Newly created Itemz property details</returns>
-        /// <response code="201">Returns newly created itemzs property details</response>
-        /// <response code="404">Expected Parent Itemz not found</response>
-        [HttpPost(Name = "__POST_Create_Itemz__")]
-        [ProducesResponseType(StatusCodes.Status201Created)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesDefaultResponseType]
-        public async Task<ActionResult<GetItemzDTO>> CreateItemzAsync(
-                    [FromBody] CreateItemzDTO createItemzDTO
-                    , [FromQuery] Guid parentId
-                    , [FromQuery] bool AtBottomOfChildNodes = true)
-        {
-            Itemz itemzEntity;
-            try
-            {
+		/// <summary>
+		/// Used for creating new Itemz record in the database
+		/// </summary>
+		/// <param name="createItemzDTO">Used for populating information in the newly created itemz in the database</param>
+		/// <param name="parentId">Used as parent for adding new Itemz as children</param>
+		/// <param name="AtBottomOfChildNodes">Indicates if we should add new Itemz at TOP or BOTTOM of child Itemz nodes list</param>
+		/// <returns>Newly created Itemz property details</returns>
+		/// <response code="201">Returns newly created itemzs property details</response>
+		/// <response code="404">Expected Parent Itemz not found</response>
+		[HttpPost(Name = "__POST_Create_Itemz__")]
+		[ProducesResponseType(StatusCodes.Status201Created)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		[ProducesDefaultResponseType]
+		public async Task<ActionResult<GetItemzDTO>> CreateItemzAsync(
+					[FromBody] CreateItemzDTO createItemzDTO
+					, [FromQuery] Guid parentId
+					, [FromQuery] bool AtBottomOfChildNodes = true)
+		{
+			Itemz itemzEntity;
+			try
+			{
 				itemzEntity = _mapper.Map<Entities.Itemz>(createItemzDTO);
 
 				// Normalize tags
@@ -301,74 +301,114 @@ namespace ItemzApp.API.Controllers
 
 			}
 			catch (AutoMapper.AutoMapperMappingException amm_ex)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Could not create new Itemz due to issue with value provided for {fieldname}",
-                        ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                        amm_ex.MemberMap.DestinationName);
-                return ValidationProblem();
-            }
-            _itemzRepository.AddItemz(itemzEntity);
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Could not create new Itemz due to issue with value provided for {fieldname}",
+						ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+						amm_ex.MemberMap.DestinationName);
+				return ValidationProblem();
+			}
+			_itemzRepository.AddItemz(itemzEntity);
 
-            if (!(parentId.Equals(Guid.Empty)))
-            {
-                //var itemzFromRepo = await _itemzRepository.GetItemzAsync(parentId);
+			// Track the hierarchy record ID for trigger events
+			Guid createdHierarchyRecordId = Guid.Empty;
 
-                //if (itemzFromRepo == null)
-                if (!((await _itemzRepository.ItemzExistsAsync(parentId)) || (await _itemzRepository.ItemzTypeExistsAsync(parentId))))
-                {
-                    _logger.LogDebug("{FormattedControllerAndActionNames}Target ID {parentId} could not be found for either 'ItemzType' or 'Itemz'",
-                        ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                        parentId);
-                    return NotFound();
-                }
+			if (!(parentId.Equals(Guid.Empty)))
+			{
+				if (!((await _itemzRepository.ItemzExistsAsync(parentId)) || (await _itemzRepository.ItemzTypeExistsAsync(parentId))))
+				{
+					_logger.LogDebug("{FormattedControllerAndActionNames}Target ID {parentId} could not be found for either 'ItemzType' or 'Itemz'",
+						ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+						parentId);
+					return NotFound();
+				}
 
-                //await _itemzRepository.AddNewItemzHierarchyAsync(parentItemzId, itemzEntity.Id, atBottomOfChildNodes: AtBottomOfChildNodes);
-                await _itemzRepository.MoveItemzHierarchyAsync(itemzEntity.Id, parentId
-                    , atBottomOfChildNodes: AtBottomOfChildNodes
-                    , movingItemzName: itemzEntity.Name);
-            }
-            await _itemzRepository.SaveAsync();
+				// Capture the hierarchy record ID returned from MoveItemzHierarchyAsync
+				createdHierarchyRecordId = await _itemzRepository.MoveItemzHierarchyAsync(itemzEntity.Id, parentId
+					, atBottomOfChildNodes: AtBottomOfChildNodes
+					, movingItemzName: itemzEntity.Name);
+			}
 
-            _logger.LogDebug("{FormattedControllerAndActionNames}Created new Itemz with ID {ItemzId}",
-                ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                itemzEntity.Id);
-            return CreatedAtRoute("__Single_Itemz_By_GUID_ID__", new { ItemzId = itemzEntity.Id }, 
-                _mapper.Map<GetItemzDTO>(itemzEntity) // Converting to DTO as this is going out to the consumer
-                );
-        }
+			await _itemzRepository.SaveAsync();
 
-        /// <summary>
-        /// Used for creating new Itemz record in the database
-        /// </summary>
-        /// <param name="createItemzDTO">Used for populating information in the newly created itemz in the database</param>
-        /// <param name="firstItemzId">Used as first Itemz for adding new Itemz between existing two Itemz</param>
-        /// <param name="secondItemzId">Used as second Itemz for adding new Itemz between existing two Itemz</param>
-        /// <returns>Newly created Itemz property details</returns>
-        /// <response code="201">Returns newly created itemzs property details</response>
-        /// <response code="404">Expected first or second from between Itemz not found</response>
-        [HttpPost("CreateItemzBetweenExistingItemz/", Name = "__POST_Create_Itemz_Between_Existing_Itemz__")]
-        [ProducesResponseType(StatusCodes.Status201Created)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesDefaultResponseType]
-        public async Task<ActionResult<GetItemzDTO>> CreateItemzBetweenExistingItemzAsync([FromBody] CreateItemzDTO createItemzDTO, [FromQuery] Guid firstItemzId, [FromQuery] Guid secondItemzId)
-        {
-            if (firstItemzId == Guid.Empty)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}First ItemzID from between two Itemz is an empty ID.",
-                        ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext));
-                return NotFound();
-            }
-            if (secondItemzId == Guid.Empty)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Second ItemzID from between two Itemz is an empty ID.",
-                        ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext));
-                return NotFound();
-            }
+			// Add EstimationUnit from parent to newly created Itemz
+			if (!parentId.Equals(Guid.Empty))
+			{
+				_logger.LogDebug(
+					"{FormattedControllerAndActionNames}Adding EstimationUnit to newly created Itemz {ItemzId} from parent {parentId}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					itemzEntity.Id,
+					parentId);
 
-            Itemz itemzEntity;
+				try
+				{
+					bool estimationUnitAddSuccess = await _hierarchyRepository.AddHierarchyRecordEstimationUnitAsync(itemzEntity.Id);
 
-            try
-            {
+					if (!estimationUnitAddSuccess)
+					{
+						_logger.LogWarning(
+							"{FormattedControllerAndActionNames}Failed to add EstimationUnit for newly created Itemz {ItemzId}",
+							ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+							itemzEntity.Id);
+						// Non-fatal error - Itemz was created successfully, but EstimationUnit sync failed
+					}
+					else
+					{
+						_logger.LogDebug(
+							"{FormattedControllerAndActionNames}Successfully added EstimationUnit to newly created Itemz {ItemzId}",
+							ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+							itemzEntity.Id);
+					}
+				}
+				catch (Exception ex)
+				{
+					_logger.LogError(
+						"{FormattedControllerAndActionNames}Exception occurred while adding EstimationUnit for newly created Itemz {ItemzId}: {ExceptionMessage}",
+						ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+						itemzEntity.Id,
+						ex.Message);
+					// Non-fatal error - continue
+				}
+			}
+
+			_logger.LogDebug("{FormattedControllerAndActionNames}Created new Itemz with ID {ItemzId}",
+				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+				itemzEntity.Id);
+			return CreatedAtRoute("__Single_Itemz_By_GUID_ID__", new { ItemzId = itemzEntity.Id },
+				_mapper.Map<GetItemzDTO>(itemzEntity) // Converting to DTO as this is going out to the consumer
+				);
+		}
+		/// <summary>
+		/// Used for creating new Itemz record in the database between two existing Itemz
+		/// </summary>
+		/// <param name="createItemzDTO">Used for populating information in the newly created itemz in the database</param>
+		/// <param name="firstItemzId">Used as first Itemz for adding new Itemz between existing two Itemz</param>
+		/// <param name="secondItemzId">Used as second Itemz for adding new Itemz between existing two Itemz</param>
+		/// <returns>Newly created Itemz property details</returns>
+		/// <response code="201">Returns newly created itemzs property details</response>
+		/// <response code="404">Expected first or second from between Itemz not found</response>
+		[HttpPost("CreateItemzBetweenExistingItemz/", Name = "__POST_Create_Itemz_Between_Existing_Itemz__")]
+		[ProducesResponseType(StatusCodes.Status201Created)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		[ProducesDefaultResponseType]
+		public async Task<ActionResult<GetItemzDTO>> CreateItemzBetweenExistingItemzAsync([FromBody] CreateItemzDTO createItemzDTO, [FromQuery] Guid firstItemzId, [FromQuery] Guid secondItemzId)
+		{
+			if (firstItemzId == Guid.Empty)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}First ItemzID from between two Itemz is an empty ID.",
+						ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext));
+				return NotFound();
+			}
+			if (secondItemzId == Guid.Empty)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Second ItemzID from between two Itemz is an empty ID.",
+						ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext));
+				return NotFound();
+			}
+
+			Itemz itemzEntity;
+
+			try
+			{
 				itemzEntity = _mapper.Map<Entities.Itemz>(createItemzDTO);
 
 				// Normalize tags
@@ -378,199 +418,319 @@ namespace ItemzApp.API.Controllers
 
 			}
 			catch (AutoMapper.AutoMapperMappingException amm_ex)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Could not create new Itemz due to issue with value provided for {fieldname}",
-                        ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                        amm_ex.MemberMap.DestinationName);
-                return ValidationProblem();
-            }
-            _itemzRepository.AddItemz(itemzEntity);
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Could not create new Itemz due to issue with value provided for {fieldname}",
+						ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+						amm_ex.MemberMap.DestinationName);
+				return ValidationProblem();
+			}
+			_itemzRepository.AddItemz(itemzEntity);
 
-            var firstItemz = await _itemzRepository.GetItemzAsync(firstItemzId);
+			var firstItemz = await _itemzRepository.GetItemzAsync(firstItemzId);
 
-            if (firstItemz == null)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Expected first Itemz with ID {firstItemzId} could not be found",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    firstItemzId);
-                return NotFound();
-            }
+			if (firstItemz == null)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Expected first Itemz with ID {firstItemzId} could not be found",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					firstItemzId);
+				return NotFound();
+			}
 
-            var secondItemz = await _itemzRepository.GetItemzAsync(secondItemzId);
+			var secondItemz = await _itemzRepository.GetItemzAsync(secondItemzId);
 
-            if (secondItemz == null)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Expected second Itemz with ID {secondItemzId} could not be found",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    secondItemzId);
-                return NotFound();
-            }
+			if (secondItemz == null)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Expected second Itemz with ID {secondItemzId} could not be found",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					secondItemzId);
+				return NotFound();
+			}
 
-            try { 
-            await _itemzRepository.AddOrMoveItemzBetweenTwoHierarchyRecordsAsync(firstItemzId, secondItemzId, itemzEntity.Id, itemzEntity.Name!);
-            await _itemzRepository.SaveAsync();
-            }
-            catch (ApplicationException appException)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to add Itemz between two existing Itemz :" + appException.Message,
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
-                    );
-                var tempMessage = $"Could not create new Itemz between Itemz '{firstItemzId}' " +
-                    $"and '{secondItemzId}'. " +
-                    $":: InnerException :: {appException.Message} ";
-                return BadRequest(tempMessage);
-            }
-            catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}DBUpdateException Occured while trying to add Itemz between two existing Itemz :" + dbUpdateException.Message,
-                ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
-                    );
-                return Conflict( $"DBUpdateException : Could not create new Itemz between Itemz " +
-                    $"'{firstItemzId}' and '{secondItemzId}'. DB Error reported, check the log file. " +
-                    $":: InnerException :: '{dbUpdateException.Message}' ");
-            }
-            catch(Microsoft.SqlServer.Types.HierarchyIdException hierarchyIDException)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}HierarchyIdException Occured while trying to add Itemz between two existing Itemz :" + hierarchyIDException.Message,
-                ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
-                    );
-                return Conflict($"HierarchyIdException : Could not create new Itemz between Itemz " +
-                    $"'{firstItemzId}' and '{secondItemzId}'. DB Error reported, check the log file. " +
-                    $":: InnerException :: '{hierarchyIDException.Message}' ");
-            }
+			try
+			{
+				await _itemzRepository.AddOrMoveItemzBetweenTwoHierarchyRecordsAsync(firstItemzId, secondItemzId, itemzEntity.Id, itemzEntity.Name!);
+				await _itemzRepository.SaveAsync();
+			}
+			catch (ApplicationException appException)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to add Itemz between two existing Itemz :" + appException.Message,
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
+					);
+				var tempMessage = $"Could not create new Itemz between Itemz '{firstItemzId}' " +
+					$"and '{secondItemzId}'. " +
+					$":: InnerException :: {appException.Message} ";
+				return BadRequest(tempMessage);
+			}
+			catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}DBUpdateException Occured while trying to add Itemz between two existing Itemz :" + dbUpdateException.Message,
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
+					);
+				return Conflict($"DBUpdateException : Could not create new Itemz between Itemz " +
+					$"'{firstItemzId}' and '{secondItemzId}'. DB Error reported, check the log file. " +
+					$":: InnerException :: '{dbUpdateException.Message}' ");
+			}
+			catch (Microsoft.SqlServer.Types.HierarchyIdException hierarchyIDException)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}HierarchyIdException Occured while trying to add Itemz between two existing Itemz :" + hierarchyIDException.Message,
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
+					);
+				return Conflict($"HierarchyIdException : Could not create new Itemz between Itemz " +
+					$"'{firstItemzId}' and '{secondItemzId}'. DB Error reported, check the log file. " +
+					$":: InnerException :: '{hierarchyIDException.Message}' ");
+			}
 
-            _logger.LogDebug("{FormattedControllerAndActionNames}Created new Itemz with ID {ItemzId}",
-                ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                itemzEntity.Id);
-            return CreatedAtRoute("__Single_Itemz_By_GUID_ID__", new { ItemzId = itemzEntity.Id },
-                _mapper.Map<GetItemzDTO>(itemzEntity) // Converting to DTO as this is going out to the consumer
-                );
-        }
+			// Add EstimationUnit from parent to newly created Itemz
+			_logger.LogDebug(
+				"{FormattedControllerAndActionNames}Adding EstimationUnit to newly created Itemz {ItemzId} from its parent",
+				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+				itemzEntity.Id);
 
-        /// <summary>
-        /// Used for moving Itemz record between two existing Itemz records
-        /// </summary>
-        /// <param name="movingItemzId">Source moving Itemz ID that will be moved to new location</param>
-        /// <param name="firstItemzId">Used as first Itemz for moving Itemz between existing two Itemz</param>
-        /// <param name="secondItemzId">Used as second Itemz for moving Itemz between existing two Itemz</param>
-        /// <returns>No Content</returns>
-        /// <response code="204">No Content</response>
-        /// <response code="404">Expected moveing OR target between Itemz could not found</response>
-        [HttpPost("MoveItemzBetweenExistingItemz/", Name = "__POST_Move_Itemz_Between_Existing_Itemz__")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesDefaultResponseType]
-        public async Task<ActionResult> MoveItemzBetweenExistingItemzAsync( [FromQuery, BindRequired] Guid movingItemzId
-            , [FromQuery, BindRequired] Guid firstItemzId
-            , [FromQuery, BindRequired] Guid secondItemzId)
-        {
-            if (movingItemzId == Guid.Empty)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Source moving ItemzID is an empty ID.",
-                        ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext));
-                return NotFound();
-            }
-            if (firstItemzId == Guid.Empty)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}First ItemzID from between two Itemz is an empty ID.",
-                        ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext));
-                return NotFound();
-            }
-            if (secondItemzId == Guid.Empty)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Second ItemzID from between two Itemz is an empty ID.",
-                        ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext));
-                return NotFound();
-            }
+			try
+			{
+				bool estimationUnitAddSuccess = await _hierarchyRepository.AddHierarchyRecordEstimationUnitAsync(itemzEntity.Id);
 
-            //Itemz itemzEntity;
+				if (!estimationUnitAddSuccess)
+				{
+					_logger.LogWarning(
+						"{FormattedControllerAndActionNames}Failed to add EstimationUnit for newly created Itemz {ItemzId}",
+						ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+						itemzEntity.Id);
+					// Non-fatal error - Itemz was created successfully, but EstimationUnit sync failed
+				}
+				else
+				{
+					_logger.LogDebug(
+						"{FormattedControllerAndActionNames}Successfully added EstimationUnit to newly created Itemz {ItemzId}",
+						ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+						itemzEntity.Id);
+				}
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(
+					"{FormattedControllerAndActionNames}Exception occurred while adding EstimationUnit for newly created Itemz {ItemzId}: {ExceptionMessage}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					itemzEntity.Id,
+					ex.Message);
+				// Non-fatal error - continue
+			}
 
-            //try
-            //{
-            //    itemzEntity = _mapper.Map<Entities.Itemz>(createItemzDTO);
-            //}
-            //catch (AutoMapper.AutoMapperMappingException amm_ex)
-            //{
-            //    _logger.LogDebug("{FormattedControllerAndActionNames}Could not create new Itemz due to issue with value provided for {fieldname}",
-            //            ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-            //            amm_ex.MemberMap.DestinationName);
-            //    return ValidationProblem();
-            //}
-            //_itemzRepository.AddItemz(itemzEntity);
+			_logger.LogDebug("{FormattedControllerAndActionNames}Created new Itemz with ID {ItemzId}",
+				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+				itemzEntity.Id);
+			return CreatedAtRoute("__Single_Itemz_By_GUID_ID__", new { ItemzId = itemzEntity.Id },
+				_mapper.Map<GetItemzDTO>(itemzEntity) // Converting to DTO as this is going out to the consumer
+				);
+		}
+		/// <summary>
+		/// Used for moving Itemz record between two existing Itemz records
+		/// </summary>
+		/// <param name="movingItemzId">Source moving Itemz ID that will be moved to new location</param>
+		/// <param name="firstItemzId">Used as first Itemz for moving Itemz between existing two Itemz</param>
+		/// <param name="secondItemzId">Used as second Itemz for moving Itemz between existing two Itemz</param>
+		/// <param name="estimationRollupService">Service for updating roll-up estimations after move</param>
+		/// <returns>No Content</returns>
+		/// <response code="204">No Content</response>
+		/// <response code="404">Expected moving OR target between Itemz could not found</response>
+		[HttpPost("MoveItemzBetweenExistingItemz/", Name = "__POST_Move_Itemz_Between_Existing_Itemz__")]
+		[ProducesResponseType(StatusCodes.Status204NoContent)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		[ProducesDefaultResponseType]
+		public async Task<ActionResult> MoveItemzBetweenExistingItemzAsync(
+			[FromQuery, BindRequired] Guid movingItemzId,
+			[FromQuery, BindRequired] Guid firstItemzId,
+			[FromQuery, BindRequired] Guid secondItemzId,
+			[FromServices] EstimationRollupService estimationRollupService = null)
+		{
+			if (movingItemzId == Guid.Empty)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Source moving ItemzID is an empty ID.",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext));
+				return NotFound();
+			}
 
+			if (firstItemzId == Guid.Empty)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}First ItemzID from between two Itemz is an empty ID.",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext));
+				return NotFound();
+			}
 
-            var movingItemz = await _itemzRepository.GetItemzAsync(movingItemzId);
+			if (secondItemzId == Guid.Empty)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Second ItemzID from between two Itemz is an empty ID.",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext));
+				return NotFound();
+			}
 
-            if (movingItemz == null)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Expected moving Itemz with ID {movingItemzId} could not be found",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    movingItemzId);
-                return NotFound();
-            }
+			// Validate moving Itemz exists
+			var movingItemz = await _itemzRepository.GetItemzAsync(movingItemzId);
+			if (movingItemz == null)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Expected moving Itemz with ID {movingItemzId} could not be found",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					movingItemzId);
+				return NotFound();
+			}
 
-            var firstItemz = await _itemzRepository.GetItemzAsync(firstItemzId);
+			// Validate first Itemz exists
+			var firstItemz = await _itemzRepository.GetItemzAsync(firstItemzId);
+			if (firstItemz == null)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Expected first Itemz with ID {firstItemzId} could not be found",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					firstItemzId);
+				return NotFound();
+			}
 
-            if (firstItemz == null)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Expected first Itemz with ID {firstItemzId} could not be found",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    firstItemzId);
-                return NotFound();
-            }
+			// Validate second Itemz exists
+			var secondItemz = await _itemzRepository.GetItemzAsync(secondItemzId);
+			if (secondItemz == null)
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Expected second Itemz with ID {secondItemzId} could not be found",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					secondItemzId);
+				return NotFound();
+			}
 
-            var secondItemz = await _itemzRepository.GetItemzAsync(secondItemzId);
+			try
+			{
+				// Capture the previous parent hierarchy record ID before the move
+				// The parent of firstItemzId IS the parent of the entire group (firstItemzId, movingItemzId, secondItemzId)
+				Guid previousParentHierarchyId = Guid.Empty;
+				var movingHierarchyRecord = await _hierarchyRepository.GetHierarchyRecordForUpdateAsync(movingItemzId);
 
-            if (secondItemz == null)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Expected second Itemz with ID {secondItemzId} could not be found",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    secondItemzId);
-                return NotFound();
-            }
+				if (movingHierarchyRecord != null && movingHierarchyRecord.ItemzHierarchyId != null)
+				{
+					// Get the parent HierarchyId by going up one level
+					var previousParentHierarchyIdPath = movingHierarchyRecord.ItemzHierarchyId.GetAncestor(1);
 
-            try
-            {
-                await _itemzRepository.AddOrMoveItemzBetweenTwoHierarchyRecordsAsync(firstItemzId, secondItemzId, movingItemzId, movingItemz.Name!);
-                await _itemzRepository.SaveAsync();
-            }
-            catch (ApplicationException appException)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to add Itemz between two existing Itemz :" + appException.Message,
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
-                    );
-                var tempMessage = $"Could not create new Itemz between Itemz '{firstItemzId}' " +
-                    $"and '{secondItemzId}'. " +
-                    $":: InnerException :: {appException.Message} ";
-                return BadRequest(tempMessage);
-            }
-            catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}DBUpdateException Occured while trying to add Itemz between two existing Itemz :" + dbUpdateException.Message,
-                ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
-                    );
-                return Conflict($"DBUpdateException : Could not create new Itemz between Itemz " +
-                    $"'{firstItemzId}' and '{secondItemzId}'. DB Error reported, check the log file. " +
-                    $":: InnerException :: '{dbUpdateException.Message}' ");
-            }
-            catch (Microsoft.SqlServer.Types.HierarchyIdException hierarchyIDException)
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}HierarchyIdException Occured while trying to add Itemz between two existing Itemz :" + hierarchyIDException.Message,
-                ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
-                    );
-                return Conflict($"HierarchyIdException : Could not create new Itemz between Itemz " +
-                    $"'{firstItemzId}' and '{secondItemzId}'. DB Error reported, check the log file. " +
-                    $":: InnerException :: '{hierarchyIDException.Message}' ");
-            }
+					if (previousParentHierarchyIdPath != null)
+					{
+						// Use repository method to get parent record details
+						var previousParentRecord = await _hierarchyRepository.GetHierarchyRecordDetailsByHierarchyIdPath(previousParentHierarchyIdPath);
+						if (previousParentRecord != null)
+						{
+							previousParentHierarchyId = previousParentRecord.RecordId;
+						}
+					}
+				}
 
-            return NoContent();
-            //_logger.LogDebug("{FormattedControllerAndActionNames}Created new Itemz with ID {ItemzId}",
-            //    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-            //    itemzEntity.Id);
-            //return CreatedAtRoute("__Single_Itemz_By_GUID_ID__", new { ItemzId = itemzEntity.Id },
-            //    _mapper.Map<GetItemzDTO>(itemzEntity) // Converting to DTO as this is going out to the consumer
-            //    );
-        }
+				// Perform the actual move between existing Itemz records
+				await _itemzRepository.AddOrMoveItemzBetweenTwoHierarchyRecordsAsync(
+					firstItemzId,
+					secondItemzId,
+					movingItemzId,
+					movingItemz.Name!);
+
+				await _itemzRepository.SaveAsync();
+
+				_logger.LogDebug(
+					"{FormattedControllerAndActionNames}Moving Itemz ID {movingItemzId} moved between {firstItemzId} and {secondItemzId}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					movingItemzId,
+					firstItemzId,
+					secondItemzId);
+
+				// Get the hierarchy record ID of the moved Itemz for trigger events
+				var movedHierarchyRecord = await _hierarchyRepository.GetHierarchyRecordForUpdateAsync(movingItemzId);
+				Guid movedItemzHierarchyRecordId = movedHierarchyRecord?.Id ?? Guid.Empty;
+
+				// Determine the current (new) parent after the move
+				// When moving between existing Itemz records, the parent is the parent of those Itemz
+				Guid currentParentHierarchyId = previousParentHierarchyId; // Same parent when moving between siblings
+				if (movedHierarchyRecord != null && movedHierarchyRecord.ItemzHierarchyId != null)
+				{
+					// Verify current parent by getting it from the moved record's hierarchy path
+					var currentParentHierarchyIdPath = movedHierarchyRecord.ItemzHierarchyId.GetAncestor(1);
+
+					if (currentParentHierarchyIdPath != null)
+					{
+						var currentParentRecord = await _hierarchyRepository.GetHierarchyRecordDetailsByHierarchyIdPath(currentParentHierarchyIdPath);
+						if (currentParentRecord != null)
+						{
+							currentParentHierarchyId = currentParentRecord.RecordId;
+						}
+					}
+				}
+
+				// After successful move, trigger roll-up estimation update for moved Itemz
+				if (movedItemzHierarchyRecordId != Guid.Empty && estimationRollupService != null)
+				{
+					_logger.LogDebug(
+						"Invoking roll-up estimation update after Itemz move between existing Itemz. " +
+						"MovingItemz: {movingItemzId}, PreviousParent: {previousParentHierarchyId}, CurrentParent: {currentParentHierarchyId}",
+						movingItemzId,
+						previousParentHierarchyId,
+						currentParentHierarchyId);
+
+					var rollupResult = await estimationRollupService.UpdateRollUpEstimationsForRecordMoveAsync(
+						movedItemzHierarchyRecordId,
+						previousParentHierarchyId,
+						currentParentHierarchyId);
+
+					if (!rollupResult)
+					{
+						_logger.LogWarning(
+							"Roll-up estimation update failed for moved Itemz ID {movingItemzId} " +
+							"between existing Itemz {firstItemzId} and {secondItemzId}",
+							movingItemzId,
+							firstItemzId,
+							secondItemzId);
+					}
+				}
+
+				_logger.LogDebug(
+					"{FormattedControllerAndActionNames}Itemz ID {movingItemzId} successfully moved between {firstItemzId} and {secondItemzId}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					movingItemzId,
+					firstItemzId,
+					secondItemzId);
+			}
+			catch (ApplicationException appException)
+			{
+				_logger.LogDebug(
+					"{FormattedControllerAndActionNames}ApplicationException occurred while trying to move Itemz between two existing Itemz: {Exception}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					appException.Message);
+
+				var tempMessage = $"Could not move Itemz between Itemz '{firstItemzId}' and '{secondItemzId}'. " +
+					$":: InnerException :: {appException.Message}";
+				return BadRequest(tempMessage);
+			}
+			catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
+			{
+				_logger.LogDebug(
+					"{FormattedControllerAndActionNames}DBUpdateException occurred while trying to move Itemz between two existing Itemz: {Exception}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					dbUpdateException.Message);
+
+				return Conflict($"DBUpdateException: Could not move Itemz between Itemz " +
+					$"'{firstItemzId}' and '{secondItemzId}'. DB Error reported, check the log file. " +
+					$":: InnerException :: '{dbUpdateException.Message}'");
+			}
+			catch (Microsoft.SqlServer.Types.HierarchyIdException hierarchyIDException)
+			{
+				_logger.LogDebug(
+					"{FormattedControllerAndActionNames}HierarchyIdException occurred while trying to move Itemz between two existing Itemz: {Exception}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					hierarchyIDException.Message);
+
+				return Conflict($"HierarchyIdException: Could not move Itemz between Itemz " +
+					$"'{firstItemzId}' and '{secondItemzId}'. DB Error reported, check the log file. " +
+					$":: InnerException :: '{hierarchyIDException.Message}'");
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(
+					"Unexpected exception occurred during MoveItemzBetweenExistingItemzAsync: {Exception}",
+					ex.Message);
+				throw;
+			}
+
+			return NoContent();
+		}
 
 
 		/// <summary>
@@ -811,103 +971,180 @@ namespace ItemzApp.API.Controllers
             return (ActionResult)options.Value.InvalidModelStateResponseFactory(ControllerContext);
         }
 
-        /// <summary>
-        /// Move Itemz and it's sub-Itemz to a new location in the repository
-        /// </summary>
-        /// <param name="MovingItemzId">GUID representing an unique ID of the moving Itemz</param>
-        /// <param name="TargetId">Details about target ID under which Itemz will be moving</param>
-        /// <param name="AtBottomOfChildNodes">Boolean value where by true means at the bottom of the existing nodes and false means at the top</param>
-        /// <returns>No contents are returned when Itemz gets moved to its new desired location</returns>
-        /// <response code="200">Itemz to Parent Itemz association was either found or added successfully</response>
-        /// <response code="204">No content are returned but status of 204 indicating that Itemz has successfully moved to its desired location</response>
-        /// <response code="404">Either Itemz or ItemzType was not found</response>
-        [HttpPost("{MovingItemzId}", Name = "__POST_Move_Itemz__")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesDefaultResponseType]
-        public async Task<ActionResult> MoveItemzAsync([FromRoute] Guid MovingItemzId
-            , [FromQuery, BindRequired] Guid TargetId
-            , [FromQuery] bool AtBottomOfChildNodes = true)
-        {
-            if (!(await _itemzRepository.ItemzExistsAsync(MovingItemzId)))// Check if Itemz exists
+		/// <summary>
+		/// Move Itemz and it's sub-Itemz to a new location in the repository
+		/// </summary>
+		[HttpPost("{MovingItemzId}", Name = "__POST_Move_Itemz__")]
+		[ProducesResponseType(StatusCodes.Status204NoContent)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		[ProducesDefaultResponseType]
+		public async Task<ActionResult> MoveItemzAsync(
+			[FromRoute] Guid MovingItemzId,
+			[FromQuery, BindRequired] Guid TargetId,
+			[FromQuery] bool AtBottomOfChildNodes = true,
+			[FromServices] EstimationRollupService estimationRollupService = null)
+		{
+			if (!(await _itemzRepository.ItemzExistsAsync(MovingItemzId)))
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Itemz for ID {MovingItemzId} could not be found",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					MovingItemzId);
+				return NotFound();
+			}
 
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Itemz for ID {MovingItemzId} could not be found",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    MovingItemzId);
-                return NotFound();
-            }
+			if (!((await _itemzRepository.ItemzTypeExistsAsync(TargetId)) || (await _itemzRepository.ItemzExistsAsync(TargetId))))
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Target ID {TargetId} could not be found for either 'ItemzType' or 'Itemz'",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					TargetId);
+				return NotFound();
+			}
 
-            // TODO :: WE HAVE TO ALSO CHECK IN THE HIERARCHY TABLE IF TARGET EXISTITS OTHERWISE THERE IS NO
-            // POINT IN MOVING ITEMZ UNDER AN ORPHANED ITEMZ.
+			try
+			{
+				// Capture the previous parent hierarchy record ID before the move
+				Guid previousParentHierarchyId = Guid.Empty;
+				var movingHierarchyRecord = await _hierarchyRepository.GetHierarchyRecordForUpdateAsync(MovingItemzId);
 
-            if (!((await _itemzRepository.ItemzTypeExistsAsync(TargetId)) || (await _itemzRepository.ItemzExistsAsync(TargetId))))  // Check if Target ItemzType or Itemz Exists
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Target ID {TargetId} could not be found for either 'ItemzType' or 'Itemz'",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    TargetId);
-                return NotFound();
-            }
+				if (movingHierarchyRecord != null && movingHierarchyRecord.ItemzHierarchyId != null)
+				{
+					var previousParentHierarchyIdPath = movingHierarchyRecord.ItemzHierarchyId.GetAncestor(1);
+					if (previousParentHierarchyIdPath != null)
+					{
+						var previousParentRecord = await _hierarchyRepository.GetHierarchyRecordDetailsByHierarchyIdPath(previousParentHierarchyIdPath);
+						if (previousParentRecord != null)
+						{
+							previousParentHierarchyId = previousParentRecord.RecordId;
+						}
+					}
+				}
 
-            try
-            {
+				// Perform the actual move
+				var movingItemzHierarchyRecordId = await _itemzRepository.MoveItemzHierarchyAsync(
+					MovingItemzId,
+					TargetId,
+					atBottomOfChildNodes: AtBottomOfChildNodes);
 
-                await _itemzRepository.MoveItemzHierarchyAsync(MovingItemzId, TargetId, atBottomOfChildNodes: AtBottomOfChildNodes);
-                await _itemzRepository.SaveAsync();
-            }
-            catch (Exception ex)
-            {
-                throw;
-            }
+				await _itemzRepository.SaveAsync();
 
-            _logger.LogDebug("{FormattedControllerAndActionNames}Itemz ID {MovingItemzId} successfully moved under Target ID {TargetId}",
-                ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                MovingItemzId,
-                TargetId);
+				// Get the current (new) parent after move
+				Guid currentParentHierarchyId = Guid.Empty;
+				if (movingItemzHierarchyRecordId != Guid.Empty)
+				{
+					var movedHierarchyRecord = await _hierarchyRepository.GetHierarchyRecordForUpdateAsync(MovingItemzId);
+					if (movedHierarchyRecord != null && movedHierarchyRecord.ItemzHierarchyId != null)
+					{
+						var currentParentHierarchyIdPath = movedHierarchyRecord.ItemzHierarchyId.GetAncestor(1);
+						if (currentParentHierarchyIdPath != null)
+						{
+							var currentParentRecord = await _hierarchyRepository.GetHierarchyRecordDetailsByHierarchyIdPath(currentParentHierarchyIdPath);
+							if (currentParentRecord != null)
+							{
+								currentParentHierarchyId = currentParentRecord.RecordId;
+							}
+						}
+					}
+				}
 
-            return RedirectToRoute("__Single_Itemz_By_GUID_ID__", new { Controller = "Itemzs", ItemzId = MovingItemzId });
-            // return NoContent(); // This indicates that update was successfully saved in the DB.
-        }
+				// After successful save, trigger roll-up estimation update
+				if (movingItemzHierarchyRecordId != Guid.Empty && estimationRollupService != null)
+				{
+					_logger.LogDebug("Invoking roll-up estimation update after Itemz move");
+					var rollupResult = await estimationRollupService.UpdateRollUpEstimationsForRecordMoveAsync(
+						movingItemzHierarchyRecordId,
+						previousParentHierarchyId,
+						currentParentHierarchyId);
 
-        /// <summary>
-        /// Deleting a specific Itemz
-        /// </summary>
-        /// <param name="itemzId">GUID representing an unique ID of the Itemz that you want to get</param>
-        /// <returns>Status code 204 is returned without any content indicating that deletion of the specified Itemz was successful</returns>
-        /// <response code="404">Itemz based on itemzId was not found</response>
-        [HttpDelete("{itemzId}",Name ="__DELETE_Itemz_By_GUID_ID__")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesDefaultResponseType]
-        public async Task<ActionResult> DeleteItemzAsync(Guid itemzId)
-        {
-            if (!(await _itemzRepository.ItemzExistsAsync(itemzId)))
-            {
-                _logger.LogDebug("{FormattedControllerAndActionNames}Cannot Delete Itemz with ID {ItemzId} as it could not be found",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    itemzId);
-                return NotFound($"Cannot Delete Itemz with ID {itemzId} as it could not be found");
-            }
+					if (!rollupResult)
+					{
+						_logger.LogWarning("Roll-up estimation update failed for moved Itemz ID {MovingItemzId}",
+							MovingItemzId);
+					}
+				}
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError("Exception occurred during ItemzMove: {Exception}", ex.Message);
+				throw;
+			}
 
-            //var itemzFromRepo = await _itemzRepository.ItemzExistsAsync(itemzId);
+			_logger.LogDebug("{FormattedControllerAndActionNames}Itemz ID {MovingItemzId} successfully moved under Target ID {TargetId}",
+				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+				MovingItemzId,
+				TargetId);
 
-            //if (itemzFromRepo == false)
-            //{
-            //    _logger.LogDebug("{FormattedControllerAndActionNames}Cannot Delete Itemz with ID {ItemzId} as it could not be found in the Repository",
-            //        ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-            //        itemzId);
-            //    return NotFound();
-            //}
+			return RedirectToRoute("__Single_Itemz_By_GUID_ID__", new { Controller = "Itemzs", ItemzId = MovingItemzId });
+		}
+		/// <summary>
+		/// Deleting a specific Itemz
+		/// </summary>
+		[HttpDelete("{itemzId}", Name = "__DELETE_Itemz_By_GUID_ID__")]
+		[ProducesResponseType(StatusCodes.Status204NoContent)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		[ProducesDefaultResponseType]
+		public async Task<ActionResult> DeleteItemzAsync(
+			Guid itemzId,
+			[FromServices] EstimationRollupService estimationRollupService = null)
+		{
+			if (!(await _itemzRepository.ItemzExistsAsync(itemzId)))
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Cannot Delete Itemz with ID {ItemzId} as it could not be found",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					itemzId);
+				return NotFound($"Cannot Delete Itemz with ID {itemzId} as it could not be found");
+			}
 
-            await _itemzRepository.DeleteItemzAsync(itemzId);
-            // await _itemzRepository.SaveAsync();
+			try
+			{
+				// Capture deleted record's rolled-up estimation and parent before deletion
+				decimal deletedRecordRolledUpEstimation = 0;
+				Guid parentHierarchyRecordId = Guid.Empty;
 
-            _logger.LogDebug("{FormattedControllerAndActionNames}Delete request for Itemz with ID {ItemzId} processed successfully",
-                    ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
-                    itemzId);
-            return NoContent();
-        }
+				var hierarchyRecordToDelete = await _hierarchyRepository.GetHierarchyRecordForUpdateAsync(itemzId);
+
+				if (hierarchyRecordToDelete != null && hierarchyRecordToDelete.ItemzHierarchyId != null)
+				{
+					deletedRecordRolledUpEstimation = hierarchyRecordToDelete.RolledUpEstimation;
+
+					var parentHierarchyIdPath = hierarchyRecordToDelete.ItemzHierarchyId.GetAncestor(1);
+					if (parentHierarchyIdPath != null)
+					{
+						var parentRecord = await _hierarchyRepository.GetHierarchyRecordDetailsByHierarchyIdPath(parentHierarchyIdPath);
+						if (parentRecord != null)
+						{
+							parentHierarchyRecordId = parentRecord.RecordId;
+						}
+					}
+				}
+
+				// Proceed with deletion
+				await _itemzRepository.DeleteItemzAsync(itemzId);
+
+				// After successful deletion, trigger roll-up estimation update
+				if (parentHierarchyRecordId != Guid.Empty && estimationRollupService != null)
+				{
+					_logger.LogDebug("Invoking roll-up estimation update after Itemz deletion");
+					var rollupResult = await estimationRollupService.UpdateRollUpEstimationsForRecordDeletionAsync(
+						parentHierarchyRecordId,
+						deletedRecordRolledUpEstimation);
+
+					if (!rollupResult)
+					{
+						_logger.LogWarning("Roll-up estimation update failed after Itemz deletion");
+					}
+				}
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError("Exception occurred during ItemzDelete: {Exception}", ex.Message);
+				throw;
+			}
+
+			_logger.LogDebug("{FormattedControllerAndActionNames}Delete request for Itemz with ID {ItemzId} processed successfully",
+				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+				itemzId);
+			return NoContent();
+		}
 
 		/// <summary>
 		/// Delete All Orphan Itemz
@@ -937,18 +1174,14 @@ namespace ItemzApp.API.Controllers
 		/// <summary>
 		/// Copy Itemz including all it's child Itemz
 		/// </summary>
-		/// <param name="itemzId">GUID representing an unique ID of the Itemz that you want copy</param>
-		/// <returns>Newly created Itemz property details</returns>		
-		/// <response code="201">Returns newly created itemz property details</response>
-		/// <response code="404">Expected source Itemz with ID was not found in the repository</response>
-		/// <response code="409">Conflicts encountered while creating a copy from existing Itemz</response>
-
 		[HttpPost("CopyItemz", Name = "__Copy_Itemz_By_GUID_ID__")]
 		[ProducesResponseType(StatusCodes.Status201Created)]
 		[ProducesResponseType(StatusCodes.Status404NotFound)]
 		[ProducesResponseType(StatusCodes.Status409Conflict)]
 		[ProducesDefaultResponseType]
-		public async Task<ActionResult<GetItemzDTO>> CopyItemzAsync(CopyItemzDTO copyItemzDTO)
+		public async Task<ActionResult<GetItemzDTO>> CopyItemzAsync(
+			CopyItemzDTO copyItemzDTO,
+			[FromServices] EstimationRollupService estimationRollupService = null)
 		{
 			if (!(await _itemzRepository.ItemzExistsAsync(copyItemzDTO.ItemzId)))
 			{
@@ -958,37 +1191,57 @@ namespace ItemzApp.API.Controllers
 				return NotFound($"Cannot Copy Itemz with ID {copyItemzDTO.ItemzId} as it could not be found");
 			}
 
-			Guid newlyCopiedItemzId;
+			Guid newlyCopiedItemzId = Guid.Empty;
+			Guid copiedItemzHierarchyRecordId = Guid.Empty;
 
 			try
-            {
-				// EXPLANATION: Because copy is created via User Defined Stored Procedure,
-				// We therefor do not call SaveAsync() method on the _itemzRepository. 
-
+			{
 				newlyCopiedItemzId = await _itemzRepository.CopyItemzAsync(copyItemzDTO.ItemzId);
-				// await _itemzRepository.SaveAsync();
+
+				// After copy is created, get the hierarchy record ID of the newly copied Itemz
+				if (newlyCopiedItemzId != Guid.Empty)
+				{
+					var copiedHierarchyRecord = await _hierarchyRepository.GetHierarchyRecordForUpdateAsync(newlyCopiedItemzId);
+					if (copiedHierarchyRecord != null)
+					{
+						copiedItemzHierarchyRecordId = copiedHierarchyRecord.Id;
+					}
+				}
 			}
 			catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
 			{
-				_logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to copy existing Itemz:" + dbUpdateException.InnerException,
-					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
-					);
+				_logger.LogDebug("{FormattedControllerAndActionNames}DbUpdateException occurred while trying to copy existing Itemz: {Exception}",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					dbUpdateException.InnerException);
 				return Conflict($"Failed to create Itemz Copy for '{copyItemzDTO.ItemzId}'. DB Error reported, check the log file.");
 			}
+			catch (Exception ex)
+			{
+				_logger.LogError("Exception occurred during ItemzCopy: {Exception}", ex.Message);
+				throw;
+			}
 
-			_logger.LogDebug("{FormattedControllerAndActionNames}Created new Itemz with ID {newlyCopiedItemzId} by copying from Itemz ID {copyItemzDTO.ItemzId}",
+			_logger.LogDebug("{FormattedControllerAndActionNames}Created new Itemz with ID {newlyCopiedItemzId} by copying from Itemz ID {SourceItemzId}",
 				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
 				newlyCopiedItemzId,
 				copyItemzDTO.ItemzId);
 
-			// EXPLANATION: Because we are creating new Itemz by copying existing Itemz by using custom user defined stored procedure
-			// we do not have access to the underlying Entity. That's why we have to call _itemzRepository.GetItemzAsync
-			// and then use Automapper to convert it into DTO that is returned back to the user of the API.
+			// After successful copy, trigger roll-up estimation update
+			if (copiedItemzHierarchyRecordId != Guid.Empty && estimationRollupService != null)
+			{
+				_logger.LogDebug("Invoking roll-up estimation update after Itemz copy");
+				var rollupResult = await estimationRollupService.UpdateRollUpEstimationsForRecordCopyAsync(copiedItemzHierarchyRecordId);
+
+				if (!rollupResult)
+				{
+					_logger.LogWarning("Roll-up estimation update failed for copied Itemz ID {copiedItemzHierarchyRecordId}",
+						copiedItemzHierarchyRecordId);
+				}
+			}
 
 			return CreatedAtRoute("__Single_Itemz_By_GUID_ID__", new { ItemzId = newlyCopiedItemzId },
-				 _mapper.Map<GetItemzDTO>(await _itemzRepository.GetItemzAsync(newlyCopiedItemzId)) // Converting to DTO as this is going out to the consumer 
+				 _mapper.Map<GetItemzDTO>(await _itemzRepository.GetItemzAsync(newlyCopiedItemzId))
 				);
-
 		}
 
 		/// <summary>

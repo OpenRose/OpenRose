@@ -72,5 +72,22 @@ namespace OpenRose.WebUI.Client.SharedModels
 		/// Parent Name of the Hierarchy Record
 		/// </summary>
 		public string? ParentName { get; set; }
+
+		// PHASE 1: Estimation fields for roll-up calculations
+		/// <summary>
+		/// Estimation Unit (e.g., "Days", "Hours", "Story Points", "$", "GBP")
+		/// Consistent across entire project hierarchy
+		/// </summary>
+		public string? EstimationUnit { get; set; }
+
+		/// <summary>
+		/// Own Estimation value for this hierarchy record
+		/// </summary>
+		public decimal OwnEstimation { get; set; } = 0;
+
+		/// <summary>
+		/// Roll-up Estimation - sum of own estimation plus all child estimations
+		/// </summary>
+		public decimal RolledUpEstimation { get; set; } = 0;
 	}
 }

@@ -517,94 +517,111 @@ namespace ItemzApp.API.DbContexts
                 .WithMany(bit => bit!.BaselineItemzTypeJoinBaselineItemz)
                 .HasForeignKey(bitjbi => bitjbi.BaselineItemzId);
 
-            #endregion
+			#endregion
 
-            #region ItemzHierarchy
+			#region ItemzHierarchy
 
-            //modelBuilder.Entity<ItemzHierarchy>(eb =>
-            //{
-            //    eb.HasNoKey();
-            //});
+			modelBuilder.Entity<ItemzHierarchy>(entity =>
+			{
+				// Configure decimal precision for estimation properties
+				entity.Property(ih => ih.OwnEstimation)
+					.HasPrecision(18, 2);
 
+				entity.Property(ih => ih.RolledUpEstimation)
+					.HasPrecision(18, 2);
+			});
 
-
-
-
-            ////////modelBuilder.Entity<ItemzHierarchy>().HasData(
-            ////////    new ItemzHierarchy()
-            ////////    {
-            ////////        Id = Guid.Parse("18B014C8-6C31-408F-B8F3-3A4F342ABBB1"),
-            ////////        RecordType = "Repository",
-            ////////        ItemzHierarchyId = HierarchyId.Parse("/")
-            ////////    },
-            ////////    new ItemzHierarchy()
-            ////////    {
-            ////////        Id = Guid.Parse("42f62a6c-fcda-4dac-a06c-406ac1c17770"),
-            ////////        RecordType = "Project",
-            ////////        ItemzHierarchyId = HierarchyId.Parse("/1/")
-            ////////    },
-            ////////    new ItemzHierarchy()
-            ////////    {
-            ////////        Id = Guid.Parse("473fe535-1420-42cf-8a40-224388b8df24"),
-            ////////        RecordType = "ItemzType",
-            ////////        ItemzHierarchyId = HierarchyId.Parse("/1/1/")
-            ////////    },
-            ////////    new ItemzHierarchy()
-            ////////    {
-            ////////        Id = Guid.Parse("611639db-577a-48f6-9b08-f6aef477368f"),
-            ////////        RecordType = "ItemzType",
-            ////////        ItemzHierarchyId = HierarchyId.Parse("/1/2/")
-            ////////    },
-            ////////    new ItemzHierarchy()
-            ////////    {
-            ////////        Id = Guid.Parse("9153a516-d69e-4364-b17e-03b87442e21c"),
-            ////////        RecordType = "Itemz",
-            ////////        ItemzHierarchyId = HierarchyId.Parse("/1/2/1/")
-            ////////    },
-            ////////    new ItemzHierarchy()
-            ////////    {
-            ////////        Id = Guid.Parse("b69cf0d7-70ad-4f73-aa4a-8daad5181e1e"),
-            ////////        RecordType = "Project",
-            ////////        ItemzHierarchyId = HierarchyId.Parse("/2/")
-            ////////    },
-            ////////    new ItemzHierarchy()
-            ////////    {
-            ////////        Id = Guid.Parse("1a069648-6ad6-4c8a-be05-be747bdeb8da"),
-            ////////        RecordType = "ItemzType",
-            ////////        ItemzHierarchyId = HierarchyId.Parse("/2/1/")
-            ////////    },
-            ////////    new ItemzHierarchy()
-            ////////    {
-            ////////        Id = Guid.Parse("8414bf58-6331-4b3e-bbf0-f780950a337b"),
-            ////////        RecordType = "ItemzType",
-            ////////        ItemzHierarchyId = HierarchyId.Parse("/2/2/")
-            ////////    },
-            ////////    new ItemzHierarchy()
-            ////////    {
-            ////////        Id = Guid.Parse("5e76f8e8-d3e7-41db-b084-f64c107c6783"),
-            ////////        RecordType = "Itemz",
-            ////////        ItemzHierarchyId = HierarchyId.Parse("/2/2/1/")
-            ////////    },
-            ////////    new ItemzHierarchy()
-            ////////    {
-            ////////        Id = Guid.Parse("52ca1dfc-b187-47fc-a379-57af33404b34"),
-            ////////        RecordType = "ItemzType",
-            ////////        ItemzHierarchyId = HierarchyId.Parse("/2/3/")
-            ////////    }
-            ////////);
-            #endregion
+			//modelBuilder.Entity<ItemzHierarchy>(eb =>
+			//{
+			//    eb.HasNoKey();
+			//});
 
 
-            #region BaselineItemzHierarchy
 
-            modelBuilder.Entity<BaselineItemzHierarchy>(entity =>
-            {
-                entity.Property(bih => bih.isIncluded)
-                    .HasDefaultValue(true);
-            });
 
-            #endregion
-            base.OnModelCreating(modelBuilder);
+
+			////////modelBuilder.Entity<ItemzHierarchy>().HasData(
+			////////    new ItemzHierarchy()
+			////////    {
+			////////        Id = Guid.Parse("18B014C8-6C31-408F-B8F3-3A4F342ABBB1"),
+			////////        RecordType = "Repository",
+			////////        ItemzHierarchyId = HierarchyId.Parse("/")
+			////////    },
+			////////    new ItemzHierarchy()
+			////////    {
+			////////        Id = Guid.Parse("42f62a6c-fcda-4dac-a06c-406ac1c17770"),
+			////////        RecordType = "Project",
+			////////        ItemzHierarchyId = HierarchyId.Parse("/1/")
+			////////    },
+			////////    new ItemzHierarchy()
+			////////    {
+			////////        Id = Guid.Parse("473fe535-1420-42cf-8a40-224388b8df24"),
+			////////        RecordType = "ItemzType",
+			////////        ItemzHierarchyId = HierarchyId.Parse("/1/1/")
+			////////    },
+			////////    new ItemzHierarchy()
+			////////    {
+			////////        Id = Guid.Parse("611639db-577a-48f6-9b08-f6aef477368f"),
+			////////        RecordType = "ItemzType",
+			////////        ItemzHierarchyId = HierarchyId.Parse("/1/2/")
+			////////    },
+			////////    new ItemzHierarchy()
+			////////    {
+			////////        Id = Guid.Parse("9153a516-d69e-4364-b17e-03b87442e21c"),
+			////////        RecordType = "Itemz",
+			////////        ItemzHierarchyId = HierarchyId.Parse("/1/2/1/")
+			////////    },
+			////////    new ItemzHierarchy()
+			////////    {
+			////////        Id = Guid.Parse("b69cf0d7-70ad-4f73-aa4a-8daad5181e1e"),
+			////////        RecordType = "Project",
+			////////        ItemzHierarchyId = HierarchyId.Parse("/2/")
+			////////    },
+			////////    new ItemzHierarchy()
+			////////    {
+			////////        Id = Guid.Parse("1a069648-6ad6-4c8a-be05-be747bdeb8da"),
+			////////        RecordType = "ItemzType",
+			////////        ItemzHierarchyId = HierarchyId.Parse("/2/1/")
+			////////    },
+			////////    new ItemzHierarchy()
+			////////    {
+			////////        Id = Guid.Parse("8414bf58-6331-4b3e-bbf0-f780950a337b"),
+			////////        RecordType = "ItemzType",
+			////////        ItemzHierarchyId = HierarchyId.Parse("/2/2/")
+			////////    },
+			////////    new ItemzHierarchy()
+			////////    {
+			////////        Id = Guid.Parse("5e76f8e8-d3e7-41db-b084-f64c107c6783"),
+			////////        RecordType = "Itemz",
+			////////        ItemzHierarchyId = HierarchyId.Parse("/2/2/1/")
+			////////    },
+			////////    new ItemzHierarchy()
+			////////    {
+			////////        Id = Guid.Parse("52ca1dfc-b187-47fc-a379-57af33404b34"),
+			////////        RecordType = "ItemzType",
+			////////        ItemzHierarchyId = HierarchyId.Parse("/2/3/")
+			////////    }
+			////////);
+			#endregion
+
+
+			#region BaselineItemzHierarchy
+
+			modelBuilder.Entity<BaselineItemzHierarchy>(entity =>
+			{
+				entity.Property(bih => bih.isIncluded)
+					.HasDefaultValue(true);
+
+				// Configure decimal precision for estimation properties
+				entity.Property(bih => bih.OwnEstimation)
+					.HasPrecision(18, 2);
+
+				entity.Property(bih => bih.RolledUpEstimation)
+					.HasPrecision(18, 2);
+			});
+
+			#endregion
+			base.OnModelCreating(modelBuilder);
         }
     }
 }

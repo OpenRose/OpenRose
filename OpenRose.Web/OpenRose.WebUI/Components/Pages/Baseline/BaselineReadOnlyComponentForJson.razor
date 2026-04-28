@@ -64,6 +64,14 @@
                         <MudTooltip Text="Show in Tree View">
                             <MudIcon Icon="@Icons.Material.Filled.Park" Size="Size.Small" Class="mouse-pointer-icon" @onclick="async () => await findAndShowInTreeViewAsync()" />
                         </MudTooltip>
+                        @if (!string.IsNullOrEmpty(_baseline.EstimationUnit))
+                        {
+                            <MudText Variant="Variant.H6">|| <b>Estimation [@_baseline.EstimationUnit] : </b> @_baseline.OwnEstimation <b>|| Roll-Up</b> :@_baseline.RolledUpEstimation </MudText>
+                        }
+                        else
+                        {
+                            <MudText Variant="Variant.H6">|| <b>Estimation : </b> @_baseline.OwnEstimation <b>|| Roll-Up</b> :@_baseline.RolledUpEstimation </MudText>
+                        }
                     </MudStack>
 
                     <br />
@@ -83,7 +91,7 @@
     [Parameter] public EventCallback<Guid> OnNavigateNext { get; set; }
 
     private bool initializingPage = true;
-    private GetBaselineDTO _baseline = new();
+    private GetBaselineExportDTO _baseline = new();
     private MarkupString _convertedMarkdown;
     private bool _needsRender = false;
 

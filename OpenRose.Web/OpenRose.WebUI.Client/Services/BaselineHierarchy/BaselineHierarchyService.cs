@@ -12,14 +12,14 @@ using System.Threading;
 
 namespace OpenRose.WebUI.Client.Services.BaselineHierarchy
 {
-    public class BaselineHierarchyService : IBaselineHierarchyService
+	public class BaselineHierarchyService : IBaselineHierarchyService
 	{
-        private readonly HttpClient _httpClient;
+		private readonly HttpClient _httpClient;
 
-        public BaselineHierarchyService(HttpClient httpClient)
-        {
-            _httpClient = httpClient;
-        }
+		public BaselineHierarchyService(HttpClient httpClient)
+		{
+			_httpClient = httpClient;
+		}
 
 		#region __Get_BaselineHierarchy_Record_Details_By_GUID__Async
 		public async Task<BaselineHierarchyIdRecordDetailsDTO> __Get_BaselineHierarchy_Record_Details_By_GUID__Async(Guid recordId)
@@ -49,9 +49,9 @@ namespace OpenRose.WebUI.Client.Services.BaselineHierarchy
 			}
 			catch (Exception)
 			{
-                throw new NotImplementedException();
-            }
-            return default;
+				throw new NotImplementedException();
+			}
+			return default;
 		}
 		#endregion
 
@@ -127,74 +127,74 @@ namespace OpenRose.WebUI.Client.Services.BaselineHierarchy
 			}
 
 			catch (HttpRequestException httpEx)
-			{ 
+			{
 				// Handle HTTP-specific exceptions (e.g., 404, 500) 
 				// You could log this exception or display an appropriate message to the user
-				throw new Exception($"HTTP error occurred: {httpEx.Message}"); 
-			} 
+				throw new Exception($"HTTP error occurred: {httpEx.Message}");
+			}
 			catch (Exception ex)
 			{
 				// Handle other exceptions
 				// You could log this exception or display an appropriate message to the user 
 				throw new Exception($"An error occurred: {ex.Message}");
-			
+
 			}
 			return default;
 
 		}
-        #endregion
+		#endregion
 
 
-        #region __Get_All_Children_Baseline_Hierarchy_By_GUID__Async
-        public async Task<ICollection<NestedBaselineHierarchyIdRecordDetailsDTO>> __Get_All_Children_Baseline_Hierarchy_By_GUID__Async(Guid recordId)
-        {
-            return await __Get_All_Children_Baseline_Hierarchy_By_GUID__Async(recordId, CancellationToken.None);
-        }
+		#region __Get_All_Children_Baseline_Hierarchy_By_GUID__Async
+		public async Task<ICollection<NestedBaselineHierarchyIdRecordDetailsDTO>> __Get_All_Children_Baseline_Hierarchy_By_GUID__Async(Guid recordId)
+		{
+			return await __Get_All_Children_Baseline_Hierarchy_By_GUID__Async(recordId, CancellationToken.None);
+		}
 
-        public async Task<ICollection<NestedBaselineHierarchyIdRecordDetailsDTO>> __Get_All_Children_Baseline_Hierarchy_By_GUID__Async(Guid recordId, CancellationToken cancellationToken)
-        {
+		public async Task<ICollection<NestedBaselineHierarchyIdRecordDetailsDTO>> __Get_All_Children_Baseline_Hierarchy_By_GUID__Async(Guid recordId, CancellationToken cancellationToken)
+		{
 
-            try
-            {
-                var response = await _httpClient.GetFromJsonAsync<ICollection<NestedBaselineHierarchyIdRecordDetailsDTO>>($"/api/BaselineHierarchy/GetAllChildren/{recordId}", cancellationToken);
+			try
+			{
+				var response = await _httpClient.GetFromJsonAsync<ICollection<NestedBaselineHierarchyIdRecordDetailsDTO>>($"/api/BaselineHierarchy/GetAllChildren/{recordId}", cancellationToken);
 
-                return response!;
-            }
-            catch (Exception)
-            {
-                throw new NotImplementedException();
-            }
-            return default;
-
-        }
-        #endregion
-
-        #region __Get_All_Children_Baseline_Hierarchy_Count_By_GUID__Async
-        public async Task<int> __Get_All_Children_Baseline_Hierarchy_Count_By_GUID__Async(Guid recordId)
-        {
-            return await __Get_All_Children_Baseline_Hierarchy_Count_By_GUID__Async(recordId, CancellationToken.None);
-        }
-
-        public async Task<int> __Get_All_Children_Baseline_Hierarchy_Count_By_GUID__Async(Guid recordId, CancellationToken cancellationToken)
-        {
-
-            try
-            {
-                var response = await _httpClient.GetFromJsonAsync<int>($"/api/BaselineHierarchy/GetAllChildrenCount/{recordId}", cancellationToken);
-
-                return response!;
-            }
-            catch (Exception)
-            {
+				return response!;
+			}
+			catch (Exception)
+			{
 				throw new NotImplementedException();
-            }
-            return default;
+			}
+			return default;
 
-        }
-        #endregion
+		}
+		#endregion
 
-        #region __Get_All_Parents_Baseline_Hierarchy_By_GUID__
-        public async Task<ICollection<NestedBaselineHierarchyIdRecordDetailsDTO>> __Get_All_Parents_Baseline_Hierarchy_By_GUID__Async(Guid recordId)
+		#region __Get_All_Children_Baseline_Hierarchy_Count_By_GUID__Async
+		public async Task<int> __Get_All_Children_Baseline_Hierarchy_Count_By_GUID__Async(Guid recordId)
+		{
+			return await __Get_All_Children_Baseline_Hierarchy_Count_By_GUID__Async(recordId, CancellationToken.None);
+		}
+
+		public async Task<int> __Get_All_Children_Baseline_Hierarchy_Count_By_GUID__Async(Guid recordId, CancellationToken cancellationToken)
+		{
+
+			try
+			{
+				var response = await _httpClient.GetFromJsonAsync<int>($"/api/BaselineHierarchy/GetAllChildrenCount/{recordId}", cancellationToken);
+
+				return response!;
+			}
+			catch (Exception)
+			{
+				throw new NotImplementedException();
+			}
+			return default;
+
+		}
+		#endregion
+
+		#region __Get_All_Parents_Baseline_Hierarchy_By_GUID__
+		public async Task<ICollection<NestedBaselineHierarchyIdRecordDetailsDTO>> __Get_All_Parents_Baseline_Hierarchy_By_GUID__Async(Guid recordId)
 		{
 			return await __Get_All_Parents_Baseline_Hierarchy_By_GUID__Async(recordId, CancellationToken.None);
 		}
@@ -210,10 +210,86 @@ namespace OpenRose.WebUI.Client.Services.BaselineHierarchy
 			}
 			catch (Exception)
 			{
-                throw new NotImplementedException();
-            }
-            return default;
+				throw new NotImplementedException();
+			}
+			return default;
 
+		}
+		#endregion
+
+		#region __POST_Recalculate_Baseline_RollUpEstimations__Async
+		/// <summary>
+		/// Recalculates all roll-up estimations for a specific baseline on-demand.
+		/// Respects isIncluded flag for each BaselineItemz record:
+		/// - EXCLUDED items: RolledUpEstimation = 0
+		/// - INCLUDED items: RolledUpEstimation = OwnEstimation + SUM(INCLUDED descendants' OwnEstimation)
+		/// </summary>
+		public async Task<string> __POST_Recalculate_Baseline_RollUpEstimations__Async(Guid baselineHierarchyRecordId)
+		{
+			return await __POST_Recalculate_Baseline_RollUpEstimations__Async(baselineHierarchyRecordId, CancellationToken.None);
+		}
+
+		/// <summary>
+		/// Recalculates all roll-up estimations for a specific baseline on-demand with cancellation support.
+		/// Respects isIncluded flag for each BaselineItemz record:
+		/// - EXCLUDED items: RolledUpEstimation = 0
+		/// - INCLUDED items: RolledUpEstimation = OwnEstimation + SUM(INCLUDED descendants' OwnEstimation)
+		/// </summary>
+		public async Task<string> __POST_Recalculate_Baseline_RollUpEstimations__Async(Guid baselineHierarchyRecordId, CancellationToken cancellationToken)
+		{
+			try
+			{
+				if (baselineHierarchyRecordId == Guid.Empty)
+				{
+					throw new ArgumentNullException(nameof(baselineHierarchyRecordId),
+						"Baseline hierarchy record ID cannot be empty.");
+				}
+
+				// Build URL exactly like your existing pattern for Project
+				var url = $"/api/BaselineHierarchy/RecalculateBaselineRollUpEstimations/{baselineHierarchyRecordId}";
+
+				// POST with no body (API expects no body)
+				var httpResponseMessage = await _httpClient.PostAsync(url, content: null, cancellationToken);
+
+				// Handle 404 NotFound explicitly (Baseline record not found)
+				if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.NotFound)
+				{
+					var errorContent = await httpResponseMessage.Content.ReadAsStringAsync();
+					throw new ApplicationException($"BASELINE NOT FOUND: {errorContent}");
+				}
+
+				// Handle 400 BadRequest explicitly (same pattern as your CreateItemz method)
+				if (httpResponseMessage.StatusCode == System.Net.HttpStatusCode.BadRequest)
+				{
+					var errorContent = await httpResponseMessage.Content.ReadAsStringAsync();
+					throw new ApplicationException($"FAILED: {errorContent}");
+				}
+
+				httpResponseMessage.EnsureSuccessStatusCode();
+
+				// Read plain string response
+				string responseContent = await httpResponseMessage.Content.ReadAsStringAsync(cancellationToken);
+
+				// If API returns empty content, treat as failure message
+				if (string.IsNullOrWhiteSpace(responseContent))
+				{
+					return "No response received from server.";
+				}
+
+				return responseContent; // <-- Return the actual API message
+			}
+			catch (HttpRequestException httpEx)
+			{
+				throw new Exception($"HTTP error occurred: {httpEx.Message}");
+			}
+			catch (ArgumentNullException argEx)
+			{
+				throw new Exception($"Argument Null Exception: {argEx.Message}");
+			}
+			catch (Exception)
+			{
+				throw;
+			}
 		}
 		#endregion
 	}

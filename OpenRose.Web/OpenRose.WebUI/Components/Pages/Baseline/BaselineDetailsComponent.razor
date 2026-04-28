@@ -8,10 +8,12 @@
 @using OpenRose.WebUI.Client.Services.Baselines
 @using OpenRose.WebUI.Client.SharedModels
 @using OpenRose.WebUI.Client.SharedModels.BetweenPagesAndComponent
+@using OpenRose.WebUI.Components.Dialogs
 @using OpenRose.WebUI.Components.Pages.Breadcrums
 @using OpenRose.WebUI.Components.EventServices
 @using OpenRose.WebUI.Components.Pages.Common
 @using Microsoft.AspNetCore.Components.Forms
+@using OpenRose.WebUI.Components.Pages.SharedComponents
 @using PSC.Blazor.Components.MarkdownEditor
 @using PSC.Blazor.Components.MarkdownEditor.EventsArgs
 @inject NavigationManager NavManager
@@ -132,6 +134,7 @@
 									Class="mouse-pointer-icon"
 									@onclick="async _ => await gotoBaselineProjectRecord(BaselineId.ToString())" />
 						</MudTooltip>
+						|| <BaselineEstimationReadOnlyComponent RecordId="BaselineId" />
 					</MudStack>
 					<br />
 					<MudTextField T="string" Label="Name" Required="true" RequiredError="Name is required!"
@@ -171,6 +174,56 @@
 
 			</MudForm>
 			</MudPaper>
+			</MudTabPanel>
+
+
+
+			<MudTabPanel Icon="@Icons.Material.Filled.Money" Text="Estimation">
+				<MudPaper Class="pa-0 mud-height-full"
+							Width="100%"
+							Outlined="false"
+							Elevation="0">
+                    <BaselineEstimationComponent @ref="baselineEstimationComponent"
+                                                    RecordId="@BaselineId"
+                                                    RecordType="Baseline" />
+				</MudPaper>
+				<br />
+
+				<MudExpansionPanels Elevation="10" style="margin-left : 15px">
+					<MudExpansionPanel Text="Recalculate Roll-Up Estimations"
+										MaxHeight="150"
+										Expanded="false"
+										Style="background-color: #DFF6DD; color: #2E7D32;">
+
+
+						<TitleContent>
+							<div class="d-flex">
+								<MudIcon Icon="@Icons.Material.Filled.Calculate" Color="Color.Success" Size="Size.Medium" class="mr-3"></MudIcon>
+								<MudText Color="Color.Success"><strong>Recalculate Roll-Up Estimations</strong></MudText>
+							</div>
+						</TitleContent>
+
+						<ChildContent>
+							<MudText Typo="Typo.body1" Color="Color.Success">
+                                This will recalculate <strong>all roll-up estimations</strong> for the entire Baseline hierarchy.
+							</MudText>
+							<MudText Typo="Typo.body1" Color="Color.Success">
+								This operation may take a few seconds depending on project size.
+							</MudText>
+
+							<MudButton Variant="Variant.Filled"
+										Color="Color.Success"
+										Size="Size.Large"
+										Style="align-items: center; margin-top : 10px"
+										Disabled="@isRecalculatingRollUpEstimations"
+										OnClick="OpenRecalculateConfirmationDialogAsync">
+								Recalculate Roll-Up Estimations
+							</MudButton>
+						</ChildContent>
+
+					</MudExpansionPanel>
+				</MudExpansionPanels>
+
 			</MudTabPanel>
 
 
@@ -275,6 +328,10 @@
 			ContentChanged.InvokeAsync(value);
 		}
 	}
+
+	private BaselineEstimationComponent? baselineEstimationComponent;
+
+	private bool isRecalculatingRollUpEstimations = false;
 
 	private async Task ConvertMarkdownToHtml(string markdown)
 	{
@@ -528,6 +585,77 @@
 	{
 
 		BaselineItemzSelectionService.ScrollToTreeViewNode(BaselineId);
+	}
+
+	private async Task OpenRecalculateConfirmationDialogAsync()
+	{
+		var options = new DialogOptions
+		{
+			CloseButton = true,
+			CloseOnEscapeKey = true,
+			Position = DialogPosition.Center
+		};
+
+		var dialogParameters = new DialogParameters
+	{
+		{
+			"DialogMarkupMessage",
+			new MarkupString(
+				"<p style=\"color: green;\">Are you sure you want to recalculate all roll-up estimations for this baseline? " +
+				"This operation may take a few seconds.</p>"
+			)
+		}
+	};
+
+		var dialogRef = await DialogService.ShowAsync<YesNoDialog>(
+			title: "CONFIRM",
+			parameters: dialogParameters,
+			options: options
+		);
+
+		var dialogResult = await dialogRef.Result;
+
+		if (!dialogResult!.Canceled)
+		{
+			await PerformRollUpRecalculationAsync();
+		}
+	}
+
+	private async Task PerformRollUpRecalculationAsync()
+	{
+		try
+		{
+			isRecalculatingRollUpEstimations = true;
+			StateHasChanged();
+
+			string resultMessage = await baselineHierarchyService.__POST_Recalculate_Baseline_RollUpEstimations__Async(BaselineId);
+
+			// Refresh the estimation component
+			if (baselineEstimationComponent is not null)
+			{
+				await baselineEstimationComponent.RefreshDataAsync();
+			}
+
+			await DialogService.ShowMessageBox(
+				"SUCCESS",
+				new MarkupString($"<p style=\"color: green;\"><b>{resultMessage}</b></p>"),
+				yesText: "OK"
+			);
+		}
+		catch (Exception ex)
+		{
+			// Show error dialog
+			await DialogService.ShowMessageBox(
+				"ERROR",
+				new MarkupString($"<p style=\"color: red;\"><b>{ex.Message}</b></p>"),
+				yesText: "OK"
+			);
+		}
+		finally
+		{
+			isRecalculatingRollUpEstimations = false;
+			StateHasChanged();
+		}
 	}
 
 }

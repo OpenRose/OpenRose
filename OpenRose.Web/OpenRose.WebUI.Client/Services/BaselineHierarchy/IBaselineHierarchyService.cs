@@ -8,8 +8,8 @@ using OpenRose.WebUI.Client.SharedModels;
 
 namespace OpenRose.WebUI.Client.Services.BaselineHierarchy
 {
-    public interface IBaselineHierarchyService
-	{ 
+	public interface IBaselineHierarchyService
+	{
 		public Task<BaselineHierarchyIdRecordDetailsDTO> __Get_BaselineHierarchy_Record_Details_By_GUID__Async(Guid recordId);
 
 		public Task<ICollection<BaselineHierarchyIdRecordDetailsDTO>> __Get_Immediate_Children_Baseline_Hierarchy_By_GUID__Async(Guid recordId);
@@ -20,7 +20,9 @@ namespace OpenRose.WebUI.Client.Services.BaselineHierarchy
 
 		public Task<ICollection<NestedBaselineHierarchyIdRecordDetailsDTO>> __Get_All_Parents_Baseline_Hierarchy_By_GUID__Async(Guid recordId);
 
-        public Task<int> __Get_All_Children_Baseline_Hierarchy_Count_By_GUID__Async(Guid recordId);
+		public Task<int> __Get_All_Children_Baseline_Hierarchy_Count_By_GUID__Async(Guid recordId);
 
-    }
+		public Task<string> __POST_Recalculate_Baseline_RollUpEstimations__Async(Guid baselineHierarchyRecordId);
+		
+	}
 }

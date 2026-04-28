@@ -88,5 +88,21 @@ namespace ItemzApp.API.Models
         /// Is Parent Baseline Hierarchy Record Included or Excluded?
         /// </summary>
         public bool ParentIsIncluded { get; set; }
+
+		/// <summary>
+		/// Estimation Unit (e.g., "Days", "Hours", "Story Points", "$", "GBP")
+		/// </summary>
+		public string? EstimationUnit { get; set; }
+
+		/// <summary>
+		/// Own Estimation value for this baseline hierarchy record
+		/// </summary>
+		public decimal OwnEstimation { get; set; } = 0;
+
+		/// <summary>
+		/// Roll-up Estimation value
+		/// If IsIncluded = false, this will be 0 in the API response
+		/// </summary>
+		public decimal RolledUpEstimation { get; set; } = 0;
 	}
 }

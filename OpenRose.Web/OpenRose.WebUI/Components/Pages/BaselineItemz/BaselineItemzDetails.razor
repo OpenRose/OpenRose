@@ -13,6 +13,7 @@
 @using OpenRose.WebUI.Components.Pages.Common
 @using OpenRose.WebUI.Client.SharedModels
 @using OpenRose.WebUI.Client.SharedModels.BetweenPagesAndComponent
+@using OpenRose.WebUI.Components.Pages.SharedComponents
 @using OpenRose.WebUI.Components.Utilities
 @using OpenRose.WebUI.Services
 @using Microsoft.AspNetCore.Components.Forms
@@ -107,9 +108,10 @@
 				</MudStack>
 				<MudStack Row="true" Spacing="2">
 					<MudText><strong>Baseline Itemz Id: </strong></MudText>
-					<CopyableText TextToCopy="@BaselineItemzId.ToString()" />
+					<CopyableText TextToCopy="@BaselineItemzId.ToString()" DisplayLength="8"/>
 					<GoToOriginalItemzButton BaselineItemzId="@singleBaselineItemz.Id" UseTreeView="false" />
 					<ShowHierarchyTreeButton RecordId="@singleBaselineItemz.Id" />
+					|| <BaselineEstimationReadOnlyComponent RecordId="BaselineItemzId" />
 				</MudStack>
 				<br />
 				<MudTextField T="string" Label="Name" Required="true" RequiredError="Name is required!"
@@ -143,6 +145,17 @@
 				</MudCardContent>
 		</MudForm>
 	</MudPaper>
+			</MudTabPanel>
+
+			<MudTabPanel Icon="@Icons.Material.Filled.Money" Text="Estimation">
+				<MudPaper Class="pa-0 mud-height-full"
+							Width="100%"
+							Outlined="false"
+							Elevation="0">
+                    <BaselineEstimationComponent @ref="baselineEstimationComponent"
+                                                    RecordId="@BaselineItemzId"
+                                                    RecordType="BaselineItemz" />
+				</MudPaper>
 			</MudTabPanel>
 			<MudTabPanel Icon="@Icons.Material.Filled.Hub" Text="Treaceability">
 				<BaselineTraceabilityComponent BaselineItemzId="@BaselineItemzId" />
@@ -180,6 +193,8 @@
 	private MarkupString convertedMarkdown;
 
 	private List<string>? tagsList = new List<string>();
+
+	private BaselineEstimationComponent? baselineEstimationComponent;
 
 	protected override async Task OnAfterRenderAsync(bool firstRender)
 	{

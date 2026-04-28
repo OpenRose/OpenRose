@@ -22,5 +22,18 @@ namespace OpenRose.WebUI.Client.Services.Hierarchy
 
         public Task<int> __Get_All_Children_Hierarchy_Count_By_GUID__Async(Guid recordId);
 
-    }
+		/// <summary>
+		/// PHASE 1: Updates estimation fields for a hierarchy record
+		/// </summary>
+		public Task<bool> __Update_Hierarchy_Estimation_Async__(Guid recordId, UpdateHierarchyEstimationDTO updateEstimationDTO);
+
+		///// <summary>
+		///// PHASE 1: Gets hierarchy record with all estimation details
+		///// </summary>
+		//public Task<HierarchyIdRecordDetailsDTO> __Get_Hierarchy_Record_With_Estimations_Async__(Guid recordId);
+
+		public Task<string> __POST_Recalculate_Project_RollUpEstimations__Async(Guid projectHierarchyRecordId);
+
+
+	}
 }

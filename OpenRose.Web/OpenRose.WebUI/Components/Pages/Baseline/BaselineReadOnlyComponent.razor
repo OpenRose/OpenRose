@@ -9,6 +9,7 @@
 @using OpenRose.WebUI.Client.SharedModels
 @using OpenRose.WebUI.Components.EventServices
 @using OpenRose.WebUI.Components.Pages.Common
+@using OpenRose.WebUI.Components.Pages.SharedComponents
 @using OpenRose.WebUI.Services
 @using Microsoft.AspNetCore.Components.Forms
 @inject IDialogService DialogService
@@ -82,6 +83,7 @@
 								Class="mouse-pointer-icon"
 								@onclick="async _ => await gotoBaselineProjectRecord(singleBaseline.Id.ToString())" />
 							</MudTooltip>
+							|| <BaselineEstimationReadOnlyComponent RecordId="BaselineId" />
 						</MudStack>
 					</MudStack>
 					}

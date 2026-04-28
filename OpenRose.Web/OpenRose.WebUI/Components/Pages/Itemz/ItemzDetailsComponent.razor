@@ -17,6 +17,7 @@
 @using OpenRose.WebUI.Components.Pages.Common
 @using OpenRose.WebUI.Components.Pages.Project
 @using Microsoft.AspNetCore.Components.Forms
+@using OpenRose.WebUI.Components.Pages.SharedComponents
 @using OpenRose.WebUI.Components.Utilities
 @using PSC.Blazor.Components.MarkdownEditor
 @using PSC.Blazor.Components.MarkdownEditor.EventsArgs
@@ -202,9 +203,8 @@
 
 				</MudStack>
 
-
-
-
+				<!-- PHASE 1: Estimation Management Section -->
+@* 				<EstimationManagementComponent RecordId="@ItemzId" RecordType="Itemz" /> *@
 
 
 
@@ -214,7 +214,7 @@
 
 				<MudStack Row="true" Spacing="2" Class="mt-2">
 					<MudText><strong>Itemz Id: </strong></MudText>
-					<CopyableText TextToCopy="@ItemzId.ToString()" />
+					<CopyableText TextToCopy="@ItemzId.ToString()" DisplayLength="8" />
 					@if (CalledFrom == nameof(ProjectTreeView))
 					{
 						<MudTooltip Text="Show in Tree View" Placement="Placement.Top">
@@ -222,6 +222,7 @@
 						</MudTooltip>
 					}
 					<ShowHierarchyTreeButton RecordId="@singleItemz.Id" />
+					|| <EstimationReadOnlyComponent RecordId="@ItemzId" />
 				</MudStack>
 				<br />
 				<MudTextField T="string" Label="Name" Required="true" RequiredError="Name is required!"
@@ -303,6 +304,15 @@
 						<TraceabilityComponent ItemzId="@ItemzId" CalledFrom="@CalledFrom" /> @* // TODO :: Perhaps we can change @nameof with Cascading Parameter in future *@
 				 	</MudPaper> 
 				</MudItem>
+			</MudTabPanel>
+			<MudTabPanel Icon="@Icons.Material.Filled.Money" Text="Estimation">
+				<MudPaper Class="pa-0 mud-height-full"
+							Width="100%"
+							Outlined="false"
+							Elevation="0">
+					@* <ItemzEstimationComponent ItemzId="@ItemzId" /> *@
+					<EstimationManagementComponent RecordId="@ItemzId" RecordType="Itemz" />
+				</MudPaper>
 			</MudTabPanel>
 			}
 			<MudTabPanel Icon="@Icons.Material.Filled.ChangeHistory" Text="Change History">

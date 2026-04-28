@@ -9,6 +9,7 @@
 @using OpenRose.WebUI.Client.SharedModels
 @using OpenRose.WebUI.Components.EventServices
 @using OpenRose.WebUI.Components.Pages.Common
+@using OpenRose.WebUI.Components.Pages.SharedComponents
 @using OpenRose.WebUI.Services
 @using Microsoft.AspNetCore.Components.Forms
 @inject NavigationBlockerService NavigationBlocker
@@ -74,7 +75,8 @@
 								<MudIcon Icon="@Icons.Material.Filled.Park" Size="Size.Small" Class="mouse-pointer-icon" @onclick="findAndShowInTreeView" />
 							</MudTooltip>
 						</MudStack>
-						<MudText><strong> || Status      : </strong> @singleProject.Status</MudText>
+						<MudText><strong> || Status      : </strong> @singleProject.Status </MudText>
+						|| <EstimationReadOnlyComponent RecordId="@ProjectId" />
 					</MudStack>
 					}
 

@@ -161,12 +161,15 @@
         },
         "Name": { "type": "string" },
         "Status": { "type": "string" },
-        "Description": { "type": "string" },
+        "Description": { "type": [ "string", "null" ] },
         "CreatedBy": { "type": "string" },
         "CreatedDate": {
           "type": "string",
           "format": "date-time"
-        }
+        },
+        "EstimationUnit": { "type": [ "string", "null" ] },
+        "OwnEstimation": { "type": "number" },
+        "RolledUpEstimation": { "type": "number" }
       },
       "required": [ "Id", "Name", "Status", "CreatedBy", "CreatedDate" ],
       "additionalProperties": false
@@ -192,13 +195,16 @@
         },
         "Name": { "type": "string" },
         "Status": { "type": "string" },
-        "Description": { "type": "string" },
+        "Description": { "type": [ "string", "null" ] },
         "CreatedBy": { "type": "string" },
         "CreatedDate": {
           "type": "string",
           "format": "date-time"
         },
-        "IsSystem": { "type": "boolean" }
+        "IsSystem": { "type": "boolean" },
+        "EstimationUnit": { "type": [ "string", "null" ] },
+        "OwnEstimation": { "type": "number" },
+        "RolledUpEstimation": { "type": "number" }
       },
       "required": [ "Id", "Name", "Status", "CreatedBy", "CreatedDate", "IsSystem" ],
       "additionalProperties": false
@@ -225,7 +231,7 @@
         "Name": { "type": "string" },
         "Status": { "type": "string" },
         "Priority": { "type": "string" },
-        "Description": { "type": "string" },
+        "Description": { "type": [ "string", "null" ] },
         "CreatedBy": { "type": "string" },
         "CreatedDate": {
           "type": "string",
@@ -235,11 +241,14 @@
         "Tags": {
           "type": [ "string", "null" ],
           "maxLength": 512
-        }
+        },
+        "EstimationUnit": { "type": [ "string", "null" ] },
+        "OwnEstimation": { "type": "number" },
+        "RolledUpEstimation": { "type": "number" }
       },
-        "required": [ "Id", "Name", "Status", "Priority", "CreatedBy", "CreatedDate", "Severity" ],
-        "additionalProperties": false
-     },
+      "required": [ "Id", "Name", "Status", "Priority", "CreatedBy", "CreatedDate", "Severity" ],
+      "additionalProperties": false
+    },
     "ItemzTraceExportNode": {
       "type": "object",
       "properties": {
@@ -282,7 +291,7 @@
           "format": "uuid"
         },
         "Name": { "type": "string" },
-        "Description": { "type": "string" },
+        "Description": { "type": [ "string", "null" ] },
         "CreatedBy": { "type": "string" },
         "CreatedDate": {
           "type": "string",
@@ -291,9 +300,12 @@
         "ProjectId": {
           "type": "string",
           "format": "uuid"
-        }
+        },
+        "EstimationUnit": { "type": [ "string", "null" ] },
+        "OwnEstimation": { "type": "number" },
+        "RolledUpEstimation": { "type": "number" }
       },
-      "required": [ "Id", "Name", "Description", "CreatedBy", "CreatedDate" ],
+      "required": [ "Id", "Name", "CreatedBy", "CreatedDate" ],
       "additionalProperties": false
     },
     "BaselineItemzTypeExportNode": {
@@ -325,13 +337,16 @@
         },
         "Name": { "type": "string" },
         "Status": { "type": "string" },
-        "Description": { "type": "string" },
+        "Description": { "type": [ "string", "null" ] },
         "CreatedBy": { "type": "string" },
         "CreatedDate": {
           "type": "string",
           "format": "date-time"
         },
-        "IsSystem": { "type": "boolean" }
+        "IsSystem": { "type": "boolean" },
+        "EstimationUnit": { "type": [ "string", "null" ] },
+        "OwnEstimation": { "type": "number" },
+        "RolledUpEstimation": { "type": "number" }
       },
       "required": [
         "Id",
@@ -339,7 +354,6 @@
         "BaselineId",
         "Name",
         "Status",
-        "Description",
         "CreatedBy",
         "CreatedDate",
         "IsSystem"
@@ -372,7 +386,7 @@
         "Name": { "type": "string" },
         "Status": { "type": "string" },
         "Priority": { "type": "string" },
-        "Description": { "type": "string" },
+        "Description": { "type": [ "string", "null" ] },
         "CreatedBy": { "type": "string" },
         "CreatedDate": {
           "type": "string",
@@ -383,22 +397,24 @@
         "Tags": {
           "type": [ "string", "null" ],
           "maxLength": 512
-        }
         },
-        "required": [
-          "Id",
-          "ItemzId",
-          "Name",
-          "Status",
-          "Priority",
-          "Description",
-          "CreatedBy",
-          "CreatedDate",
-          "Severity",
-          "isIncluded"
-        ],
-        "additionalProperties": false
+        "EstimationUnit": { "type": [ "string", "null" ] },
+        "OwnEstimation": { "type": "number" },
+        "RolledUpEstimation": { "type": "number" }
       },
+      "required": [
+        "Id",
+        "ItemzId",
+        "Name",
+        "Status",
+        "Priority",
+        "CreatedBy",
+        "CreatedDate",
+        "Severity",
+        "isIncluded"
+      ],
+      "additionalProperties": false
+    },
     "BaselineItemzTraceExportNode": {
       "type": "object",
       "properties": {

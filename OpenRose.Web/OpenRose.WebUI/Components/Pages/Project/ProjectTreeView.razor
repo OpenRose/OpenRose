@@ -61,7 +61,7 @@
             </MudPaper>
 
             }
-            <MudTreeView @ref="projectMudTreeView"
+           <MudTreeView @ref="projectMudTreeView"
                          Items="@InitialTreeItems"
                          Color="Color.Secondary"
                          Hover="true"
@@ -75,15 +75,14 @@
                     }
                     <MudTreeViewItem Value="@context.Value"
                                      Id="@($"tree-node-{context.Value}")"
-                                        Text="@context.Text"
-                                        @bind-Selected="presenter.IsSelected"
-                                        Icon="@context.Icon"
-                                        Expandable="@( @context.Children.Count() > 0 ? true : false )"
-                                        LoadingIconColor="Color.Info"
-                                        Items="@context.Children"
-                                        EndText="@( (@presenter.Children.Count() > 0 ? ("[C" + @presenter.Children.Count().ToString() + "]") : "") +
-                                            (@presenter.Level > 0 ? ("[L" + @presenter.Level.ToString() + "]") : "") )" 
-                                        @onclick="async () => await OnItemClick(context)" />
+                                     Text="@context.Text"
+                                     @bind-Selected="presenter.IsSelected"
+                                     Icon="@context.Icon"
+                                     Expandable="@( @context.Children.Count() > 0 ? true : false )"
+                                     LoadingIconColor="Color.Info"
+                                     Items="@context.Children"
+                                     EndText="@GetEndText(presenter)"
+                                     @onclick="async () => await OnItemClick(context)" />
                 </ItemTemplate>
             </MudTreeView>
         </MudPaper>
@@ -269,15 +268,32 @@
         public string RecordType { get; set; }
         public int? Level { get; set; }
         public bool IsSelected { get; set; }
+        public string? EstimationUnit { get; set; }
+        public decimal RolledUpEstimation { get; set; } = 0;
 
-        public TreeItemPresenter(Guid value, string text, string icon, string recordType, int? level, bool expandable) : base(value)
+        // public TreeItemPresenter(Guid value, string text, string icon, string recordType, int? level, bool expandable) : base(value)
+        // {
+        //     Value = value;
+        //     Text = text;
+        //     Icon = icon;
+        //     RecordType = recordType;
+        //     Level = level ?? 0;
+        //     Expandable = expandable;
+        //     Children = new List<TreeItemData<Guid>>();
+        // }
+
+        // PHASE 5: Constructor overload to include estimation fields
+        public TreeItemPresenter(Guid value, string text, string icon, string recordType, int? level, bool expandable,
+            string? estimationUnit, decimal rolledUpEstimation) : base(value)
         {
             Value = value;
             Text = text;
             Icon = icon;
             RecordType = recordType;
-            Level = level ?? 0 ;
+            Level = level ?? 0;
             Expandable = expandable;
+            EstimationUnit = estimationUnit;
+            RolledUpEstimation = rolledUpEstimation;
             Children = new List<TreeItemData<Guid>>();
         }
     }
@@ -295,7 +311,7 @@
 
     private async Task OnItemClick(TreeItemPresenter presenter)
     {
-        
+
         // Detect root node click (Level == 0)
         if (presenter.Level == 1)
         {
@@ -358,6 +374,8 @@
                                                    child.RecordType!.ToLower() == "itemz" ? @Icons.Material.Filled.Stream : @Icons.Material.Filled.Cancel)
                     , recordType: child.RecordType
                     , level: child.Level
+                    , estimationUnit: child.EstimationUnit
+                    , rolledUpEstimation: child.RolledUpEstimation
                     , expandable: (child.Children.Count() > 0 ? true : false)
                 );
 
@@ -389,6 +407,8 @@
                  , icon: @Icons.Material.Filled.LocalFlorist
                  , recordType: singleProject.RecordType
                  , level: singleProject.Level
+                 , estimationUnit: singleProject.EstimationUnit
+                 , rolledUpEstimation: singleProject.RolledUpEstimation
                  , expandable: true
              );
 
@@ -410,6 +430,8 @@
                                                              _itemzType.RecordType!.ToLower() == "itemz" ? @Icons.Material.Filled.Stream : @Icons.Material.Filled.Cancel
                 , recordType: _itemzType.RecordType
                 , level: _itemzType.Level
+                , estimationUnit: _itemzType.EstimationUnit
+                , rolledUpEstimation: _itemzType.RolledUpEstimation
                 , expandable: true
                 ));
 
@@ -450,6 +472,8 @@
                 , icon: @Icons.Material.Filled.LocalFlorist
                 , recordType: singleProject.RecordType
                 , level: singleProject.Level
+                , estimationUnit: singleProject.EstimationUnit
+                , rolledUpEstimation: singleProject.RolledUpEstimation
                 , expandable: true
             );
 
@@ -471,6 +495,8 @@
                                             singleHierarchyDataFromAPI.RecordType!.ToLower() == "itemz" ? @Icons.Material.Filled.Stream : @Icons.Material.Filled.Cancel)
                         , recordType: singleHierarchyDataFromAPI.RecordType
                         , level: singleHierarchyDataFromAPI.Level
+                        , estimationUnit: singleHierarchyDataFromAPI.EstimationUnit
+                        , rolledUpEstimation: singleHierarchyDataFromAPI.RolledUpEstimation
                         , expandable: (singleHierarchyDataFromAPI.Children.Count() > 0 ? true : false)
                     );
 
@@ -652,6 +678,8 @@
                     , icon: @Icons.Material.Filled.Stream
                     , recordType: "Itemz" // TODO :: Use Constants
                     , level: item.Level + 1
+                    , estimationUnit: null
+                    , rolledUpEstimation: 0
                     , expandable: true
                 );
 
@@ -691,6 +719,8 @@
             icon: Icons.Material.Filled.Pix,
             recordType: "ItemzType", // TODO: replace with constant
             level: parentItem.Level + 1,
+            estimationUnit: null,
+            rolledUpEstimation: 0,
             expandable: true
         );
 
@@ -860,7 +890,50 @@
         StateHasChanged();
     }
 
+    // PHASE 5: Generate EndText for tree node display
+    // Shows child count, level, and estimation (if in Read-Only mode)
+    // an nothing when in Kiosk mode to keep it extra clean.
+    private string GetEndText(TreeItemPresenter presenter)
+    {
+        if (presenter == null)
+            return string.Empty;
 
+        string endText = string.Empty;
+
+        if (ViewSettings.IsKioskMode)
+        {
+            return endText;
+        }
+
+        // PHASE 5: Add estimation info only if in Read-Only view
+        if (ViewSettings.ReadOnlyView)
+        {
+            // I want to return empty string if estimation unit is null or whitespace to avoid showing [N/A 0] for items without estimation
+            if (string.IsNullOrWhiteSpace(presenter.EstimationUnit) && presenter.RolledUpEstimation == 0)
+            {
+                return endText;
+            }
+
+            string estimationUnit = string.IsNullOrWhiteSpace(presenter.EstimationUnit) ? "N/A" : presenter.EstimationUnit;
+            endText += $"[{estimationUnit} {presenter.RolledUpEstimation:F2}]";
+        }
+        else
+        {
+            // Add child count if present
+            if (presenter.Children.Count() > 0)
+            {
+                endText += "[C" + presenter.Children.Count().ToString() + "]";
+            }
+
+            // Add level if not root
+            if (presenter.Level > 0)
+            {
+                endText += "[L" + presenter.Level.ToString() + "]";
+            }
+        }
+
+        return endText;
+    }
     public void Dispose()
     {
         // Always unsubscribe to avoid memory leaks

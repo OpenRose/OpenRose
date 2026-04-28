@@ -1,0 +1,276 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+
+@using OpenRose.WebUI.Client.Services.Hierarchy
+@using OpenRose.WebUI.Client.SharedModels
+@using MudBlazor
+@using OpenRose.WebUI.Components.Dialogs
+@inject IHierarchyService HierarchyService
+@inject IDialogService DialogService
+
+@if (IsLoading)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else if (HierarchyData != null)
+{
+    @if (errors.Length > 0)
+    {
+        <MudPaper Class="pa-4 mud-height-full mud-width-full">
+            <MudText Typo="Typo.subtitle2" Color="@Color.Error">@($"Validation Errors ({errors.Length})")</MudText>
+            @foreach (var error in errors)
+            {
+                <MudText Color="@Color.Error">@error</MudText>
+            }
+        </MudPaper>
+    }
+    <MudStack Row="true" Spacing="2" Class="mt-2">
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   Disabled="@(disableButtons)"
+                   OnClick="SaveEstimation">
+            Save
+        </MudButton>
+
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Warning"
+                   Disabled="@(disableButtons)"
+                   OnClick="CancelEdit">
+            Cancel
+        </MudButton>
+    </MudStack>
+    <MudForm Model="@HierarchyData" @ref="form" @bind-IsValid="@success" @bind-Errors="@errors" FieldChanged="formFieldChanged">
+
+        <MudGrid Class="mt-2">
+
+            @if (RecordType == "Project")
+            {
+                <MudItem xs="12" md="2">
+                    <div class="text-end">
+                    <MudTextField T="string"
+                                  Label="Estimation Unit"
+                                  @bind-Value="HierarchyData.EstimationUnit"
+                                  Placeholder="Not Available"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Immediate="true"
+                                  MaxLength="16" />
+                    </div>
+
+                </MudItem>
+            }
+            else
+            {
+                <MudItem xs="12" md="2">
+                    <div class="text-end">
+                    <MudTextField T="string"
+                                  Label="Estimation Unit"
+                                  @bind-Value="HierarchyData.EstimationUnit"
+                                  Placeholder="Not Available"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  ReadOnly="true"
+                                  Immediate="true" />
+                    </div>
+                </MudItem>
+            }
+
+            <MudItem xs="12" md="2">
+                    <div class="text-end">
+                <MudTextField T="string"
+                              Label="Own Estimation"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Dense="true"
+                              @bind-Value="OwnEstimationText"
+                              Immediate="true" />
+                </div>
+
+            </MudItem>
+
+            <MudItem xs="12" md="2">
+                @* Always ReadOnly because Roll-Ups are always calculated *@
+                <div class="text-end">
+                <MudTextField T="decimal"
+                              Label="Rolled-up Estimation"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Dense="true"
+                              Value="@HierarchyData.RolledUpEstimation"
+                              ReadOnly="true"
+                              Disabled="true" />
+                </div>
+
+            </MudItem>
+        </MudGrid>
+    </MudForm>
+}
+else
+{
+    <MudText Color="Color.Warning">No hierarchy and estimation data available</MudText>
+}
+
+<style>
+    .text-end input {
+        text-align: right !important;
+    }
+</style>
+
+@code {
+    [Parameter] public Guid RecordId { get; set; }
+    [Parameter] public string? RecordType { get; set; }
+
+    private HierarchyIdRecordDetailsDTO? HierarchyData;
+    private string OwnEstimationText = "";
+    private string OriginalEstimationUnit = ""; // To track changes for Project estimation unit
+
+    private bool IsLoading;
+
+    //MudForm related fields
+    bool success = true;
+    string[] errors = { };
+    bool disableButtons = true;
+    MudForm form;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadHierarchyData();
+    }
+
+    private async Task LoadHierarchyData()
+    {
+        IsLoading = true;
+        try
+        {
+            HierarchyData = await HierarchyService.__Get_Hierarchy_Record_Details_By_GUID__Async(RecordId);
+            OwnEstimationText = (HierarchyData?.OwnEstimation)?.ToString() ?? "";
+            OriginalEstimationUnit = HierarchyData?.EstimationUnit ?? "";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task SaveEstimation()
+    {
+        if (!decimal.TryParse(OwnEstimationText, out var parsedValue))
+        {
+            var parameters = new DialogParameters { ["Message"] = "Please enter a valid decimal number for estimation." };
+            var options = new DialogOptions
+            {
+                CloseButton = false,
+                MaxWidth = MaxWidth.Small,
+                FullWidth = true
+            };
+
+            // Use ShowAsync instead of Show
+            await DialogService.ShowAsync<ErrorDialog>("Invalid Input", parameters, options);
+
+            return; // invalid input, stop saving
+        }
+
+        decimal? parsed = parsedValue;
+
+        try
+        {
+            var updateDTO = new UpdateHierarchyEstimationDTO();
+
+            if (HierarchyData == null)
+            {
+
+                var parameters = new DialogParameters { ["Message"] = "Hierarchy data is not available. Cannot save estimation." };
+                var options = new DialogOptions
+                {
+                    CloseButton = false,
+                    MaxWidth = MaxWidth.Small,
+                    FullWidth = true
+                };
+
+                // Use ShowAsync instead of Show
+                await DialogService.ShowAsync<ErrorDialog>("ERROR", parameters, options);
+                return;
+            }
+
+            if (string.Compare(OriginalEstimationUnit, HierarchyData.EstimationUnit) != 0
+                  && string.Compare(RecordType, "Project", StringComparison.OrdinalIgnoreCase) == 0)
+            {
+                updateDTO = new UpdateHierarchyEstimationDTO
+                {
+                    RecordId = RecordId,
+                    EstimationUnit = (string.Compare(RecordType, "Project", StringComparison.OrdinalIgnoreCase) == 0) ? HierarchyData?.EstimationUnit : null, // Only allow updating estimation unit for Projects)
+                    OwnEstimation = parsed
+
+                };
+            }
+            else
+            {
+                updateDTO = new UpdateHierarchyEstimationDTO
+                {
+                    RecordId = RecordId,
+                    OwnEstimation = parsed
+
+                };
+            }
+
+            var result = await HierarchyService.__Update_Hierarchy_Estimation_Async__(RecordId, updateDTO);
+
+            if (result)
+            {
+                await LoadHierarchyData();
+                disableButtons = true;
+            }
+            else
+            {
+                await DialogService.ShowMessageBox(
+                    "ERROR",
+                    markupMessage: new MarkupString($"<p style=\"color: red;\"> Failed to update estimation </p>"),
+                    yesText: "OK");
+            }
+        }
+        catch (Exception ex)
+        {
+            await DialogService.ShowMessageBox(
+                "ERROR",
+                markupMessage: new MarkupString($"<p style=\"color: red;\"> {ex.Message} </p>"),
+                yesText: "OK");
+        }
+    }
+
+
+    private void CancelEdit()
+    {
+        OwnEstimationText = (HierarchyData?.OwnEstimation)?.ToString() ?? "";
+        HierarchyData!.EstimationUnit = OriginalEstimationUnit;
+        disableButtons = true;
+    }
+
+
+    private async Task formFieldChanged()
+    {
+        if (form != null)
+        {
+            await form.Validate();
+            if (form.IsValid)
+            {
+                disableButtons = false;
+            }
+            else
+            {
+                disableButtons = true;
+            }
+        }
+
+    }
+
+    public async Task RefreshDataAsync()
+    {
+        await LoadHierarchyData();
+        StateHasChanged();
+    }
+
+}

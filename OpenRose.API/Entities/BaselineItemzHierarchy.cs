@@ -28,5 +28,29 @@ namespace ItemzApp.API.Entities
 
         [DatabaseGenerated(DatabaseGeneratedOption.None)]
         public bool isIncluded { get; set; } = true;
-    }
+
+		/// <summary>
+		/// Estimation Unit (e.g., "Days", "Hours", "Story Points", "$", "GBP")
+		/// Maximum 16 characters for consistency across hierarchy
+		/// Copied from ItemzHierarchy at baseline creation time
+		/// </summary>
+		[MaxLength(16)]
+		public string? EstimationUnit { get; set; }
+
+		/// <summary>
+		/// Own Estimation value for this baseline hierarchy record
+		/// Decimal for precision (e.g., 10.5 days)
+		/// Copied from ItemzHierarchy at baseline creation time
+		/// Never changes during baseline lifecycle (baseline is immutable)
+		/// </summary>
+		public decimal OwnEstimation { get; set; } = 0;
+
+		/// <summary>
+		/// Roll-up Estimation - sum of own estimation plus all child estimations
+		/// Calculated based on isIncluded flag of child records
+		/// Updated when inclusion/exclusion status changes
+		/// When isIncluded = false, this is set to 0 for read operations
+		/// </summary>
+		public decimal RolledUpEstimation { get; set; } = 0;
+	}
 }

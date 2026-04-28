@@ -33,34 +33,34 @@ namespace ItemzApp.API.Models
 	// Project hierarchy
 	public class ProjectExportNode
 	{
-		public GetProjectDTO Project { get; set; }
+		public GetProjectExportDTO Project { get; set; }
 		public List<ItemzTypeExportNode>? ItemzTypes { get; set; }
 	}
 	public class ItemzTypeExportNode
 	{
-		public GetItemzTypeDTO ItemzType { get; set; }
+		public GetItemzTypeExportDTO ItemzType { get; set; }
 		public List<ItemzExportNode>? Itemz { get; set; }
 	}
 	public class ItemzExportNode
 	{
-		public GetItemzDTO Itemz { get; set; }
+		public GetItemzExportDTO Itemz { get; set; }
 		public List<ItemzExportNode>? SubItemz { get; set; }
 	}
 
 	// Baseline hierarchy (parallel to Project)
 	public class BaselineExportNode
 	{
-		public GetBaselineDTO Baseline { get; set; }
+		public GetBaselineExportDTO Baseline { get; set; }
 		public List<BaselineItemzTypeExportNode>? BaselineItemzTypes { get; set; }
 	}
 	public class BaselineItemzTypeExportNode
 	{
-		public GetBaselineItemzTypeDTO BaselineItemzType { get; set; }
+		public GetBaselineItemzTypeExportDTO BaselineItemzType { get; set; }
 		public List<BaselineItemzExportNode>? BaselineItemz { get; set; }
 	}
 	public class BaselineItemzExportNode
 	{
-		public GetBaselineItemzDTO BaselineItemz { get; set; }
+		public GetBaselineItemzExportDTO BaselineItemz { get; set; }
 		public List<BaselineItemzExportNode>? BaselineSubItemz { get; set; }
 	}
 }

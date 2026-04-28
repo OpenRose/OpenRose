@@ -2,18 +2,21 @@
 // Licensed under the Apache License, Version 2.0. 
 // See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using ItemzApp.API.Entities;
 using ItemzApp.API.Models;
 using ItemzApp.API.Models.BetweenControllerAndRepository;
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace ItemzApp.API.Services
 {
     public interface IHierarchyRepository
     {
         public Task<HierarchyIdRecordDetailsDTO?> GetHierarchyRecordDetailsByID(Guid recordId);
+
+		public Task<HierarchyIdRecordDetailsDTO?> GetHierarchyRecordDetailsByHierarchyIdPath(HierarchyId hierarchyIdPath);
 
 		public Task<HierarchyIdRecordDetailsDTO?> GetNextSiblingHierarchyRecordDetailsByID(Guid recordId);
 
@@ -31,5 +34,11 @@ namespace ItemzApp.API.Services
 
 		public Task<bool> UpdateHierarchyRecordNameByID(Guid recordId, string name);
 
+		public Task<bool> UpdateHierarchyEstimationFieldsAsync(
+			Guid recordId,
+			string? estimationUnit = null,
+			decimal? ownEstimation = null);
+
+		public Task<bool> AddHierarchyRecordEstimationUnitAsync(Guid recordId);
 	}
 }

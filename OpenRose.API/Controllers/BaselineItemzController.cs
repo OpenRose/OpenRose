@@ -184,40 +184,140 @@ namespace ItemzApp.API.Controllers
 
                     var detailsOfUpdateBaselineItemz = _mapper.Map<Entities.UpdateBaselineItemz>(baselineItemzsToBeUpdated);
 
-                    // EXPLANATION : First check if the immediate parent Itemz is included in the baseline and 
-                    // also verify that BaselineID and BaselineItemzIDs belongs to a single Breakdown Structure within a single target Baseline. 
+					// EXPLANATION : First check if the immediate parent Itemz is included in the baseline and 
+					// also verify that BaselineID and BaselineItemzIDs belongs to a single Breakdown Structure within a single target Baseline. 
 
-                    //if (detailsOfUpdateBaselineItemz.ShouldBeIncluded == true)
-                    //{
-                    //    if (await _baselineItemzRepository.NOT_IN_USE_CheckBaselineitemzForInclusionBeforeImplementingAsync(detailsOfUpdateBaselineItemz) == false)
-                    //    {
-                    //        return BadRequest("Unable to include BaselineItemz in the baseline due to validation and check errors encounted.");
-                    //    }
-                    //}
+					//if (detailsOfUpdateBaselineItemz.ShouldBeIncluded == true)
+					//{
+					//    if (await _baselineItemzRepository.NOT_IN_USE_CheckBaselineitemzForInclusionBeforeImplementingAsync(detailsOfUpdateBaselineItemz) == false)
+					//    {
+					//        return BadRequest("Unable to include BaselineItemz in the baseline due to validation and check errors encounted.");
+					//    }
+					//}
 
 
-                    try
-                    {
-                        // EXPLANATION: Because baselineItemzs are updated via User Defined Stored Procedure,
-                        // We therefor do not call SaveAsync() method on the _baselineRepository. 
+					try
+					{
+						_logger.LogDebug(
+							"{FormattedControllerAndActionNames}Updating BaselineItemzs. BaselineId: {BaselineId}, " +
+							"ShouldBeIncluded: {ShouldBeIncluded}, SingleNodeInclusion: {SingleNodeInclusion}, ItemCount: {ItemCount}",
+							ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+							baselineItemzsToBeUpdated.BaselineId,
+							baselineItemzsToBeUpdated.ShouldBeIncluded,
+							baselineItemzsToBeUpdated.SingleNodeInclusion,
+							baselineItemzsToBeUpdated.BaselineItemzIds.Count());
 
-                        var isSuccessful = await _baselineItemzRepository.UpdateBaselineItemzsAsync(detailsOfUpdateBaselineItemz);
-                    }
-                    catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
-                    {
-                        _logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to update BaselineItemzs for inclusion or exclusion :" + dbUpdateException.InnerException,
-                            ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
-                            );
-                        return Conflict($"Could not update BaselineItemzs for BaselineID'{baselineItemzsToBeUpdated.BaselineId}'. DB Error reported, check the log file.");
-                    }
-                    catch (Microsoft.Data.SqlClient.SqlException sqlException)
-                    {
-                        _logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to update BaselineItemzs for inclusion or exclusion :" + sqlException.Message,
-                            ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
-                            );
-                        return BadRequest($"Could not update BaselineItemzs for BaselineID '{baselineItemzsToBeUpdated.BaselineId}'. DB Error reported, check the log file.");
-                    }
-                    _logger.LogDebug("{FormattedControllerAndActionNames}Request to update BaselineItemzs for BaselineID {BaselineId} was successful",
+						// EXPLANATION: Because baselineItemzs are updated via User Defined Stored Procedure,
+						// We therefor do not call SaveAsync() method on the _baselineRepository. 
+
+						var isSuccessful = await _baselineItemzRepository.UpdateBaselineItemzsAsync(detailsOfUpdateBaselineItemz);
+
+						//If EXCLUDING, handle roll-up estimation deduction
+						if (isSuccessful && baselineItemzsToBeUpdated.ShouldBeIncluded == false)
+						{
+							_logger.LogDebug(
+								"{FormattedControllerAndActionNames} EXCLUSION with roll-up deduction for {ItemCount} items",
+								ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+								baselineItemzsToBeUpdated.BaselineItemzIds.Count());
+
+							foreach (var baselineItemzId in baselineItemzsToBeUpdated.BaselineItemzIds)
+							{
+								var deductionSuccess = await _baselineItemzRepository.DeductRollUpFromAncestryChainAsync(
+									baselineItemzId);
+
+								if (!deductionSuccess)
+								{
+									_logger.LogWarning(
+										"{FormattedControllerAndActionNames}Failed to deduct roll-up for BaselineItemz {baselineItemzId}",
+										ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+										baselineItemzId);
+								}
+							}
+						}
+
+						// If INCLUDING (single record only), handle roll-up estimation addition
+						if (isSuccessful && baselineItemzsToBeUpdated.ShouldBeIncluded == true && baselineItemzsToBeUpdated.SingleNodeInclusion == true)
+						{
+							_logger.LogDebug(
+								"{FormattedControllerAndActionNames}INCLUSION (single record) with roll-up addition for {ItemCount} items",
+								ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+								baselineItemzsToBeUpdated.BaselineItemzIds.Count());
+
+							foreach (var baselineItemzId in baselineItemzsToBeUpdated.BaselineItemzIds)
+							{
+								var additionSuccess = await _baselineItemzRepository.AddRollUpToAncestryChainAsync(
+									baselineItemzId);
+
+								if (!additionSuccess)
+								{
+									_logger.LogWarning(
+										"{FormattedControllerAndActionNames}Failed to add roll-up for BaselineItemz {baselineItemzId}",
+										ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+										baselineItemzId);
+								}
+							}
+						}
+
+						// If INCLUDING (all children), handle descendants recalculation and ancestor propagation
+						if (isSuccessful && baselineItemzsToBeUpdated.ShouldBeIncluded == true && baselineItemzsToBeUpdated.SingleNodeInclusion == false)
+						{
+							_logger.LogDebug(
+								"{FormattedControllerAndActionNames}INCLUSION (all children) with descendants recalculation for {ItemCount} items",
+								ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+								baselineItemzsToBeUpdated.BaselineItemzIds.Count());
+
+							foreach (var baselineItemzId in baselineItemzsToBeUpdated.BaselineItemzIds)
+							{
+								var scenario3Success = await _baselineItemzRepository.AddRollUpToAncestryChainForIncludeAllChildBaselineItemzAsync(
+									baselineItemzId);
+
+								if (!scenario3Success)
+								{
+									_logger.LogWarning(
+										"{FormattedControllerAndActionNames}Failed to process Scenario 3 for BaselineItemz {baselineItemzId}",
+										ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+										baselineItemzId);
+								}
+							}
+						}
+
+						_logger.LogDebug("{FormattedControllerAndActionNames}Request to update BaselineItemzs for BaselineID {BaselineId} was successful",
+							ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+							baselineItemzsToBeUpdated.BaselineId);
+
+						return NoContent();
+					}
+					catch (Microsoft.EntityFrameworkCore.DbUpdateException dbUpdateException)
+					{
+						_logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to update BaselineItemzs for inclusion or exclusion :" + dbUpdateException.InnerException,
+							ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
+							);
+						return Conflict($"Could not update BaselineItemzs for BaselineID'{baselineItemzsToBeUpdated.BaselineId}'. DB Error reported, check the log file.");
+					}
+					catch (Microsoft.Data.SqlClient.SqlException sqlException)
+					{
+						_logger.LogDebug("{FormattedControllerAndActionNames}Exception Occured while trying to update BaselineItemzs for inclusion or exclusion :" + sqlException.Message,
+							ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext)
+							);
+						return BadRequest($"Could not update BaselineItemzs for BaselineID '{baselineItemzsToBeUpdated.BaselineId}'. DB Error reported, check the log file.");
+					}
+					catch (ApplicationException appEx)
+					{
+						_logger.LogError(
+							"{FormattedControllerAndActionNames}Application exception during roll-up processing: {Message}",
+							ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+							appEx.Message);
+						return BadRequest(appEx.Message);
+					}
+					catch (Exception ex)
+					{
+						_logger.LogError(
+							"{FormattedControllerAndActionNames}Unexpected exception during BaselineItemz update: {Message}",
+							ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+							ex.Message);
+						return BadRequest($"Error: {ex.Message}");
+					}
+					_logger.LogDebug("{FormattedControllerAndActionNames}Request to update BaselineItemzs for BaselineID {BaselineId} was successful",
                         ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
                         baselineItemzsToBeUpdated.BaselineId);
 

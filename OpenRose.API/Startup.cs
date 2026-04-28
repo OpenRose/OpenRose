@@ -166,6 +166,7 @@ namespace ItemzApp.API
 			services.AddScoped<IItemzTraceExportService, ItemzTraceExportService>();
             services.AddScoped<IBaselineItemzTraceExportService, BaselineItemzTraceExportService>();
 			services.AddScoped<IImportService, ImportService>();
+			services.AddScoped<EstimationRollupService>(); // Register Estimation Rollup Service for calculating roll-up estimations
 
 			// EXPLANATION: As described in the Blog Article, https://purple.telstra.com/blog/a-better-way-of-resolving-ef-core-interceptors-with-dependency-injection
 			// we are now registering ItemzContextInterceptor in the DI Container as Singleton service 

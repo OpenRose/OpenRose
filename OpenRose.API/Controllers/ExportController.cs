@@ -16,6 +16,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+// using System.Xml.Linq;
 
 namespace ItemzApp.API.Controllers
 {
@@ -98,6 +99,9 @@ namespace ItemzApp.API.Controllers
 							Level = parentHierarchyRecord.Level,
 							RecordType = parentHierarchyRecord.RecordType,
 							Name = parentHierarchyRecord.Name,
+							EstimationUnit = parentHierarchyRecord.EstimationUnit,
+							OwnEstimation = parentHierarchyRecord.OwnEstimation,
+							RolledUpEstimation = parentHierarchyRecord.RolledUpEstimation,
 							Children = (List<NestedHierarchyIdRecordDetailsDTO>)hierarchyTree.AllRecords
 						};
 						recordType = parentHierarchyRecord.RecordType?.ToLowerInvariant();
@@ -199,6 +203,11 @@ namespace ItemzApp.API.Controllers
 								RecordType = baselineHierarchyRecord.RecordType,
 								Name = baselineHierarchyRecord.Name,
 								isIncluded = baselineHierarchyRecord.IsIncluded,
+								// Include estimation fields for JSON export with estimation data
+								EstimationUnit = baselineHierarchyRecord.EstimationUnit,
+								OwnEstimation = baselineHierarchyRecord.OwnEstimation,
+								// If record is excluded, return 0 for RolledUpEstimation
+								RolledUpEstimation = baselineHierarchyRecord.IsIncluded ? baselineHierarchyRecord.RolledUpEstimation : 0,
 								Children = (List<NestedBaselineHierarchyIdRecordDetailsDTO>)baselineHierarchyTree.AllRecords
 							};
 							recordType = baselineHierarchyRecord.RecordType?.ToLowerInvariant();
@@ -433,7 +442,8 @@ namespace ItemzApp.API.Controllers
 		public async Task<IActionResult> ExportMermaidFlowChart([FromQuery] Guid exportRecordId,
 																[FromQuery] bool exportIncludedBaselineItemzOnly = false,
 																[FromQuery] string? baseUrl = null,
-																[FromQuery] bool showTraceabilityOnly = false)
+																[FromQuery] bool showTraceabilityOnly = false,
+																[FromQuery] bool includeEstimations = false)
 		{
 			if (exportRecordId == Guid.Empty)
 			{
@@ -470,6 +480,9 @@ namespace ItemzApp.API.Controllers
 						Level = parentHierarchyRecord.Level,
 						RecordType = parentHierarchyRecord.RecordType,
 						Name = parentHierarchyRecord.Name,
+						EstimationUnit = parentHierarchyRecord.EstimationUnit,
+						OwnEstimation = parentHierarchyRecord.OwnEstimation,
+						RolledUpEstimation = parentHierarchyRecord.RolledUpEstimation,
 						Children = (List<NestedHierarchyIdRecordDetailsDTO>)hierarchyTree.AllRecords
 					};
 
@@ -521,6 +534,9 @@ namespace ItemzApp.API.Controllers
 								Level = rootNode.Level,
 								RecordType = rootNode.RecordType,
 								Name = rootNode.Name,
+								EstimationUnit = rootNode.EstimationUnit,
+								OwnEstimation = rootNode.OwnEstimation,
+								RolledUpEstimation = rootNode.RolledUpEstimation,
 								Children = new List<NestedHierarchyIdRecordDetailsDTO>() // empty
 							};
 						}
@@ -541,7 +557,7 @@ namespace ItemzApp.API.Controllers
 							.ToList();
 					}
 
-					var mermaidText = MermaidExporter.Generate(rootNodeToExport, itemzTraces, exportRecordId, baseUrl);
+					var mermaidText = MermaidExporter.Generate(rootNodeToExport, itemzTraces, exportRecordId, baseUrl, includeEstimations);
 
 					// var mermaidText = MermaidExporter.Generate(rootNode, itemzTraces, exportRecordId, baseUrl);
 					return Content(mermaidText, "text/plain");
@@ -581,6 +597,10 @@ namespace ItemzApp.API.Controllers
 						RecordType = baselineHierarchyRecord.RecordType,
 						Name = baselineHierarchyRecord.Name,
 						isIncluded = baselineHierarchyRecord.IsIncluded,
+						EstimationUnit = baselineHierarchyRecord.EstimationUnit,
+						OwnEstimation = baselineHierarchyRecord.OwnEstimation,
+						// If record is excluded, return 0 for RolledUpEstimation
+						RolledUpEstimation = baselineHierarchyRecord.IsIncluded ? baselineHierarchyRecord.RolledUpEstimation : 0,
 						Children = (List<NestedBaselineHierarchyIdRecordDetailsDTO>)baselineHierarchyTree.AllRecords
 					};
 
@@ -626,6 +646,10 @@ namespace ItemzApp.API.Controllers
 								RecordType = rootNode.RecordType,
 								Name = rootNode.Name,
 								isIncluded = rootNode.isIncluded,
+								EstimationUnit = rootNode.EstimationUnit,
+								OwnEstimation = rootNode.OwnEstimation,
+								// If record is excluded, return 0 for RolledUpEstimation
+								RolledUpEstimation = rootNode.isIncluded ? rootNode.RolledUpEstimation : 0,
 								Children = new List<NestedBaselineHierarchyIdRecordDetailsDTO>() // empty
 							};
 						}
@@ -646,7 +670,7 @@ namespace ItemzApp.API.Controllers
 							.ToList();
 					}
 
-					var mermaidText = MermaidExporter.GenerateBaseline(rootNodeToExport, baselineItemzTraces, exportRecordId, baseUrl);
+					var mermaidText = MermaidExporter.GenerateBaseline(rootNodeToExport, baselineItemzTraces, exportRecordId, baseUrl, includeEstimations);
 
 
 					//var mermaidText = MermaidExporter.GenerateBaseline(rootNode, baselineItemzTraces, exportRecordId, baseUrl);
@@ -724,6 +748,9 @@ namespace ItemzApp.API.Controllers
 					Level = node.Level,
 					RecordType = node.RecordType,
 					Name = node.Name,
+					EstimationUnit = node.EstimationUnit,
+					OwnEstimation = node.OwnEstimation,
+					RolledUpEstimation = node.RolledUpEstimation,
 					Children = keptChildren
 				};
 			}
@@ -794,6 +821,10 @@ namespace ItemzApp.API.Controllers
 					RecordType = node.RecordType,
 					Name = node.Name,
 					isIncluded = node.isIncluded,
+					EstimationUnit = node.EstimationUnit,
+					OwnEstimation = node.OwnEstimation,
+					// If record is excluded, return 0 for RolledUpEstimation
+					RolledUpEstimation = node.isIncluded ? node.RolledUpEstimation : 0,
 					Children = keptChildren
 				};
 			}

@@ -93,6 +93,14 @@
                         <MudText><strong> || Status      : </strong> @_itemz.Status</MudText>
                         <MudText><strong> || Priority    : </strong> @_itemz.Priority</MudText>
                         <MudText><strong> || Severity    : </strong> @_itemz.Severity</MudText>
+                        @if (!string.IsNullOrEmpty(_itemz.EstimationUnit))
+                        {
+                            <MudText Variant="Variant.H6">|| <b>Estimation [@_itemz.EstimationUnit] : </b> @_itemz.OwnEstimation <b>|| Roll-Up</b> :@_itemz.RolledUpEstimation </MudText>
+                        }
+                        else
+                        {
+                            <MudText Variant="Variant.H6">|| <b>Estimation : </b> @_itemz.OwnEstimation <b>|| Roll-Up</b> :@_itemz.RolledUpEstimation </MudText>
+                        }
                     </MudStack>
                     <br />
                      }
@@ -119,7 +127,7 @@
     [Parameter] public EventCallback<Guid> OnOpenTraceTarget { get; set; }
 
     private bool initializingPage = true;
-    private GetItemzDTO _itemz = new();
+    private GetItemzExportDTO _itemz = new();
     private MarkupString _convertedMarkdown;
 
     private List<string>? tagsList = new List<string>();

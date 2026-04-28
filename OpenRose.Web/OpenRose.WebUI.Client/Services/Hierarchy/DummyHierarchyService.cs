@@ -37,5 +37,24 @@ namespace OpenRose.WebUI.Client.Services.Hierarchy
         {
             throw new NotImplementedException();
         }
-    }
+
+        public async Task<bool> __Update_Hierarchy_Estimation_Async__(Guid recordId, UpdateHierarchyEstimationDTO updateEstimationDTO)
+        {
+            throw new NotImplementedException();
+        }
+
+
+        //public async Task<HierarchyIdRecordDetailsDTO> __Get_Hierarchy_Record_With_Estimations_Async__(Guid recordId)
+        //{
+        //    throw new NotImplementedException();
+        //}
+
+		public async Task<string> __POST_Recalculate_Project_RollUpEstimations__Async(Guid projectHierarchyRecordId)
+        {             
+            throw new NotImplementedException();
+		}
+
+
+	}
+
 }

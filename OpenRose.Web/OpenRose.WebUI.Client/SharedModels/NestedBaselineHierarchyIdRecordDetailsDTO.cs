@@ -39,7 +39,24 @@ namespace OpenRose.WebUI.Client.SharedModels
 		/// </summary>
 		public bool isIncluded { get; set; }
 
+		// PHASE 1: Estimation fields
+		/// <summary>
+		/// Estimation Unit (e.g., "Days", "Hours", "Story Points", "$", "GBP")
+		/// </summary>
+		public string? EstimationUnit { get; set; }
+
+		/// <summary>
+		/// Own Estimation value for this baseline hierarchy record
+		/// </summary>
+		public decimal OwnEstimation { get; set; } = 0;
+
+		/// <summary>
+		/// Roll-up Estimation value
+		/// If isIncluded = false, this will be 0 in the API response
+		/// </summary>
+		public decimal RolledUpEstimation { get; set; } = 0;
 
 		public List<NestedBaselineHierarchyIdRecordDetailsDTO>? Children { get; set; }
+
 	}
 }

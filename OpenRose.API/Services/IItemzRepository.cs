@@ -53,9 +53,15 @@ namespace ItemzApp.API.Services
 
         public Task DeleteItemzAsync(Guid itemzId);
 
-        public Task MoveItemzHierarchyAsync(Guid movingItemzId, Guid targetId, bool atBottomOfChildNodes = true,  string? movingItemzName = null );
+		public Task<Guid> MoveItemzHierarchyAsync(Guid movingItemzId, Guid targetId, bool atBottomOfChildNodes = true, string? movingItemzName = null);
 
-        public Task DeleteAllOrphanItemz();
+		public Task ImportServiceUpdateItemzEstimationInHierarchyAsync(
+            Guid itemzId,
+			string? estimationUnit = null,
+			decimal? ownEstimation = 0,
+			decimal? rolledUpEstimation = 0);
+
+		public Task DeleteAllOrphanItemz();
 
         public Task<Guid> CopyItemzAsync(Guid ItemzId);
 

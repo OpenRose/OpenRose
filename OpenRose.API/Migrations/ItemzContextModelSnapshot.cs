@@ -121,14 +121,24 @@ namespace OpenRose.API.Migrations
                     b.Property<SqlHierarchyId?>("BaselineItemzHierarchyId")
                         .HasColumnType("hierarchyid");
 
+                    b.Property<string>("EstimationUnit")
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
                     b.Property<string>("Name")
                         .HasMaxLength(128)
                         .HasColumnType("nvarchar(128)");
+
+                    b.Property<decimal>("OwnEstimation")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("RecordType")
                         .IsRequired()
                         .HasMaxLength(128)
                         .HasColumnType("nvarchar(128)");
+
+                    b.Property<decimal>("RolledUpEstimation")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<SqlHierarchyId?>("SourceItemzHierarchyId")
                         .HasColumnType("hierarchyid");
@@ -312,6 +322,10 @@ namespace OpenRose.API.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("EstimationUnit")
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
                     b.Property<SqlHierarchyId?>("ItemzHierarchyId")
                         .HasColumnType("hierarchyid");
 
@@ -319,10 +333,16 @@ namespace OpenRose.API.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("nvarchar(128)");
 
+                    b.Property<decimal>("OwnEstimation")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<string>("RecordType")
                         .IsRequired()
                         .HasMaxLength(128)
                         .HasColumnType("nvarchar(128)");
+
+                    b.Property<decimal>("RolledUpEstimation")
+                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
 

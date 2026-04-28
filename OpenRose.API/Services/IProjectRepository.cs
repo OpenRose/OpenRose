@@ -9,39 +9,45 @@ using ItemzApp.API.Entities;
 
 namespace ItemzApp.API.Services
 {
-    public interface IProjectRepository
-    {
-        public Task<Project?> GetProjectAsync(Guid ProjectId);
+	public interface IProjectRepository
+	{
+		public Task<Project?> GetProjectAsync(Guid ProjectId);
 
-        public Task<Project?> GetProjectForUpdateAsync(Guid ProjectId);
+		public Task<Project?> GetProjectForUpdateAsync(Guid ProjectId);
 
-        public Task<IEnumerable<Project>?> GetProjectsAsync();
-        
-        public Task<IEnumerable<ItemzType>?> GetItemzTypesAsync(Guid ProjectId);
-        
-        public Task<IEnumerable<Project>> GetProjectsAsync(IEnumerable<Guid> projectIds);
+		public Task<IEnumerable<Project>?> GetProjectsAsync();
 
-        public void AddProject(Project project);
+		public Task<IEnumerable<ItemzType>?> GetItemzTypesAsync(Guid ProjectId);
 
-        public Task AddNewProjectHierarchyAsync(Project project);
+		public Task<IEnumerable<Project>> GetProjectsAsync(IEnumerable<Guid> projectIds);
 
-        public Task<bool> SaveAsync();
-        
-        public Task<bool> ProjectExistsAsync(Guid projectId);
+		public void AddProject(Project project);
 
-        public void UpdateProject(Project project);
+		public Task AddNewProjectHierarchyAsync(Project project);
 
-        public void DeleteProject(Project project);
+		public Task ImportServicesAddNewProjectHierarchyAsync(
+			Project project,
+			string? estimationUnit = null,
+			decimal? ownEstimation = null,
+			decimal? rolledUpEstimation = null);
 
-        public Task DeleteOrphanedBaselineItemzAsync();
+		public Task<bool> SaveAsync();
 
-        Task<int> GetItemzCountByProjectAsync(Guid ProjectId);
+		public Task<bool> ProjectExistsAsync(Guid projectId);
 
-        public Task<bool> HasProjectWithNameAsync(string projectName);
-        
-        public Task<bool> DeleteProjectItemzHierarchyAsync(Guid projectId);
+		public void UpdateProject(Project project);
 
-        public Task<string?> GetLastProjectHierarchyID();
+		public void DeleteProject(Project project);
+
+		public Task DeleteOrphanedBaselineItemzAsync();
+
+		Task<int> GetItemzCountByProjectAsync(Guid ProjectId);
+
+		public Task<bool> HasProjectWithNameAsync(string projectName);
+
+		public Task<bool> DeleteProjectItemzHierarchyAsync(Guid projectId);
+
+		public Task<string?> GetLastProjectHierarchyID();
 
 		public Task<Guid> CopyProjectAsync(Guid ProjectId);
 	}

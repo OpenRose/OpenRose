@@ -5,44 +5,52 @@
 using ItemzApp.API.DbContexts;
 using ItemzApp.API.Entities;
 using ItemzApp.API.Helper;
+using ItemzApp.API.Models;
+using ItemzApp.API.Models.BetweenControllerAndRepository;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion.Internal;
+using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.SqlServer.Types;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Linq.Dynamic.Core;
-using ItemzApp.API.Models;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion.Internal;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using ItemzApp.API.Models.BetweenControllerAndRepository;
-using Microsoft.SqlServer.Types;
-using Microsoft.IdentityModel.Tokens;
+using System.Threading.Tasks;
 
 namespace ItemzApp.API.Services
 {
-    public class HierarchyRepository : IHierarchyRepository, IDisposable
-    {
-        private readonly ItemzContext _context;
+	public class HierarchyRepository : IHierarchyRepository
+	{
+		private readonly ItemzContext _context;
+		private readonly ILogger<HierarchyRepository> _logger;
+		private readonly EstimationRollupService _estimationRollupService;  // ADD THIS
 
-        public HierarchyRepository(ItemzContext context)
-        {
-            _context = context ?? throw new ArgumentNullException(nameof(context));
-        }
+		public HierarchyRepository(
+			ItemzContext context,
+			ILogger<HierarchyRepository> logger,
+			EstimationRollupService estimationRollupService)  // ADD THIS
+		{
+			_context = context ?? throw new ArgumentNullException(nameof(context));
+			_logger = logger ?? throw new ArgumentNullException(nameof(logger));
+			_estimationRollupService = estimationRollupService ?? throw new ArgumentNullException(nameof(estimationRollupService));  // ADD THIS
+		}
 
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
+		public void Dispose()
+		{
+			Dispose(true);
+			GC.SuppressFinalize(this);
+		}
 
-        protected virtual void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                // dispose resources when needed
-            }
-        }
+		protected virtual void Dispose(bool disposing)
+		{
+			if (disposing)
+			{
+				// dispose resources when needed
+			}
+		}
 
 		//public async Task<HierarchyIdRecordDetailsDTO> GetNextSiblingHierarchyRecordDetailsByID(Guid recordId)
 		//{
@@ -139,79 +147,106 @@ namespace ItemzApp.API.Services
 
 
 
+		// Get hierarchy record details by HierarchyId path value
+		public async Task<HierarchyIdRecordDetailsDTO?> GetHierarchyRecordDetailsByHierarchyIdPath(HierarchyId hierarchyIdPath)
+		{
+			if (hierarchyIdPath == null)
+			{
+				throw new ArgumentNullException(nameof(hierarchyIdPath));
+			}
+
+			// Find the record with this HierarchyId path
+			var foundHierarchyRecord = await _context.ItemzHierarchy!
+				.AsNoTracking()
+				.Where(ih => ih.ItemzHierarchyId == hierarchyIdPath)
+				.ToListAsync();
+
+			if (foundHierarchyRecord.Count() != 1)
+			{
+				return null; // Record not found or multiple records found
+			}
+
+			// Use existing GetHierarchyRecordDetailsByID method to return DTO
+			return await GetHierarchyRecordDetailsByID(foundHierarchyRecord.FirstOrDefault()!.Id);
+		}
 
 
 		public async Task<HierarchyIdRecordDetailsDTO?> GetHierarchyRecordDetailsByID(Guid recordId)
-        {
-            if (recordId == Guid.Empty)
-            {
-                throw new ArgumentNullException(nameof(recordId));
-            }
+		{
+			if (recordId == Guid.Empty)
+			{
+				throw new ArgumentNullException(nameof(recordId));
+			}
 
-            var foundHierarchyRecord = _context.ItemzHierarchy!.AsNoTracking()
-                            .Where(ih => ih.Id == recordId);
+			var foundHierarchyRecord = _context.ItemzHierarchy!.AsNoTracking()
+							.Where(ih => ih.Id == recordId);
 
-            if (foundHierarchyRecord.Count() != 1)
-            {
-                throw new ApplicationException($"Expected 1 Hierarchy record to be found " +
-                    $"but instead found {foundHierarchyRecord.Count()} records for ID {recordId} " +
-                    "Please contact your System Administrator.");
-            }
+			if (foundHierarchyRecord.Count() != 1)
+			{
+				throw new ApplicationException($"Expected 1 Hierarchy record to be found " +
+					$"but instead found {foundHierarchyRecord.Count()} records for ID {recordId} " +
+					"Please contact your System Administrator.");
+			}
 			var hierarchyIdRecordDetails = new HierarchyIdRecordDetailsDTO();
-            hierarchyIdRecordDetails.RecordId = recordId;
-            hierarchyIdRecordDetails.Name = foundHierarchyRecord.FirstOrDefault()!.Name ?? "";
+			hierarchyIdRecordDetails.RecordId = recordId;
+			hierarchyIdRecordDetails.Name = foundHierarchyRecord.FirstOrDefault()!.Name ?? "";
 			hierarchyIdRecordDetails.HierarchyId = foundHierarchyRecord.FirstOrDefault()!.ItemzHierarchyId!.ToString();
-            hierarchyIdRecordDetails.RecordType = foundHierarchyRecord.FirstOrDefault()!.RecordType;
-            hierarchyIdRecordDetails.Level = foundHierarchyRecord.FirstOrDefault()!.ItemzHierarchyId!.GetLevel();
+			hierarchyIdRecordDetails.RecordType = foundHierarchyRecord.FirstOrDefault()!.RecordType;
+			hierarchyIdRecordDetails.Level = foundHierarchyRecord.FirstOrDefault()!.ItemzHierarchyId!.GetLevel();
 
-            // EXPLANATION : We are using SQL Server HierarchyID field type. Now we can use EF Core special
-            // methods to query for all Decendents as per below. We are actually finding all Decendents by saying
-            // First find the ItemzHierarchy record where ID matches RootItemz ID. This is expected to be the
-            // repository ID itself which is the root. then we find all desendents of Repository which is nothing but Project(s). 
+			// Adding estimation fields
+			hierarchyIdRecordDetails.EstimationUnit = foundHierarchyRecord.FirstOrDefault()!.EstimationUnit ?? "";
+			hierarchyIdRecordDetails.OwnEstimation = foundHierarchyRecord.FirstOrDefault()!.OwnEstimation;
+			hierarchyIdRecordDetails.RolledUpEstimation = foundHierarchyRecord.FirstOrDefault()!.RolledUpEstimation;
 
-            var itemzTypeHierarchyItemz = await _context.ItemzHierarchy!
-                    .AsNoTracking()
-                    .Where(ih => ih.ItemzHierarchyId!.GetAncestor(1) == foundHierarchyRecord.FirstOrDefault()!.ItemzHierarchyId!)
-                    .OrderBy(ih => ih.ItemzHierarchyId!)
-                    .ToListAsync();
+			// EXPLANATION : We are using SQL Server HierarchyID field type. Now we can use EF Core special
+			// methods to query for all Decendents as per below. We are actually finding all Decendents by saying
+			// First find the ItemzHierarchy record where ID matches RootItemz ID. This is expected to be the
+			// repository ID itself which is the root. then we find all desendents of Repository which is nothing but Project(s). 
 
-            if (itemzTypeHierarchyItemz.Count != 0)
-            {
-                hierarchyIdRecordDetails.TopChildHierarchyId = itemzTypeHierarchyItemz.FirstOrDefault()!.ItemzHierarchyId!.ToString();
-                hierarchyIdRecordDetails.BottomChildHierarchyId = itemzTypeHierarchyItemz.LastOrDefault()!.ItemzHierarchyId!.ToString();
-                hierarchyIdRecordDetails.NumberOfChildNodes = itemzTypeHierarchyItemz.Count;
+			var itemzTypeHierarchyItemz = await _context.ItemzHierarchy!
+					.AsNoTracking()
+					.Where(ih => ih.ItemzHierarchyId!.GetAncestor(1) == foundHierarchyRecord.FirstOrDefault()!.ItemzHierarchyId!)
+					.OrderBy(ih => ih.ItemzHierarchyId!)
+					.ToListAsync();
 
-            }
+			if (itemzTypeHierarchyItemz.Count != 0)
+			{
+				hierarchyIdRecordDetails.TopChildHierarchyId = itemzTypeHierarchyItemz.FirstOrDefault()!.ItemzHierarchyId!.ToString();
+				hierarchyIdRecordDetails.BottomChildHierarchyId = itemzTypeHierarchyItemz.LastOrDefault()!.ItemzHierarchyId!.ToString();
+				hierarchyIdRecordDetails.NumberOfChildNodes = itemzTypeHierarchyItemz.Count;
+
+			}
 
 			// EXPLANATION : Here we are getting record where Hierarchy ID is equal to the Hierarchy Id of immediate parent. 
-            // We find immediate parent by using GetAncestor(1) method on found hierarchy record.
+			// We find immediate parent by using GetAncestor(1) method on found hierarchy record.
 
 			var parentHierarchyRecord = _context.ItemzHierarchy!
 				.AsNoTracking()
 				.Where(ih => ih.ItemzHierarchyId == foundHierarchyRecord.FirstOrDefault()!.ItemzHierarchyId!.GetAncestor(1))
 				.FirstOrDefault();
 
-            if (parentHierarchyRecord != null)
-            {
+			if (parentHierarchyRecord != null)
+			{
 				hierarchyIdRecordDetails.ParentRecordId = parentHierarchyRecord.Id;
 				hierarchyIdRecordDetails.ParentRecordType = parentHierarchyRecord.RecordType;
 				hierarchyIdRecordDetails.ParentHierarchyId = parentHierarchyRecord.ItemzHierarchyId!.ToString();
-                hierarchyIdRecordDetails.ParentLevel = parentHierarchyRecord.ItemzHierarchyId!.GetLevel();
-                hierarchyIdRecordDetails.ParentName = parentHierarchyRecord.Name ?? "";
+				hierarchyIdRecordDetails.ParentLevel = parentHierarchyRecord.ItemzHierarchyId!.GetLevel();
+				hierarchyIdRecordDetails.ParentName = parentHierarchyRecord.Name ?? "";
 			}
 			return hierarchyIdRecordDetails;
-           
-        }
+
+		}
 
 
 		public async Task<IEnumerable<HierarchyIdRecordDetailsDTO?>> GetImmediateChildrenOfItemzHierarchy(Guid recordId)
-        {
+		{
 			if (recordId == Guid.Empty)
 			{
 				throw new ArgumentNullException(nameof(recordId));
 			}
 
-			var foundHierarchyRecord =  _context.ItemzHierarchy!.AsNoTracking()
+			var foundHierarchyRecord = _context.ItemzHierarchy!.AsNoTracking()
 							.Where(ih => ih.Id == recordId);
 
 			if (foundHierarchyRecord.Count() != 1)
@@ -221,7 +256,7 @@ namespace ItemzApp.API.Services
 					"Please contact your System Administrator.");
 			}
 
-            var foundHierarchyRecordLevel = foundHierarchyRecord.FirstOrDefault()!.ItemzHierarchyId.GetLevel();
+			var foundHierarchyRecordLevel = foundHierarchyRecord.FirstOrDefault()!.ItemzHierarchyId.GetLevel();
 
 			// EXPLANATION : We are using SQL Server HierarchyID field type. Now we can use EF Core special
 			// methods to query for all Decendents as per below. By adding clause to check for GetLevel which is less then
@@ -231,14 +266,14 @@ namespace ItemzApp.API.Services
 
 			var itemzTypeHierarchyItemzs = await _context.ItemzHierarchy!
 					.AsNoTracking()
-					.Where(ih => ih.ItemzHierarchyId!.IsDescendantOf(foundHierarchyRecord.FirstOrDefault()!.ItemzHierarchyId!) 
-						&& ih.ItemzHierarchyId.GetLevel() < (foundHierarchyRecordLevel+3))
+					.Where(ih => ih.ItemzHierarchyId!.IsDescendantOf(foundHierarchyRecord.FirstOrDefault()!.ItemzHierarchyId!)
+						&& ih.ItemzHierarchyId.GetLevel() < (foundHierarchyRecordLevel + 3))
 					.OrderBy(ih => ih.ItemzHierarchyId!)
 					.ToListAsync();
 
 			List<HierarchyIdRecordDetailsDTO> returningRecords = [];
 			HierarchyIdRecordDetailsDTO hierarchyIdRecordDetails = new();
-			string? _localTopChildHierarchyId = null ;
+			string? _localTopChildHierarchyId = null;
 			int _localNumerOfChildNodes = 0;
 
 			if (itemzTypeHierarchyItemzs.Count() < 2) // Less then 2 because we may have project entry but no ItemzType below it.
@@ -246,8 +281,8 @@ namespace ItemzApp.API.Services
 				return default;
 			}
 
-			for (var i = 0; i< itemzTypeHierarchyItemzs.Count(); i++ )
-			{ 
+			for (var i = 0; i < itemzTypeHierarchyItemzs.Count(); i++)
+			{
 				if (itemzTypeHierarchyItemzs[i].ItemzHierarchyId!.GetLevel() == (foundHierarchyRecordLevel + 1))
 				{
 					if (i == 1) // Because i = 0 is the hierarchy record for passed in recordId parameter itself. So we check for i == 1 as first child record.
@@ -311,7 +346,7 @@ namespace ItemzApp.API.Services
 			// ADD FINAL hierarchyIdRecordDetails TO THE COLLECTION.
 			if (_localNumerOfChildNodes > 0)
 			{
-				hierarchyIdRecordDetails.BottomChildHierarchyId = itemzTypeHierarchyItemzs[(itemzTypeHierarchyItemzs.Count()-1)].ItemzHierarchyId!.ToString();
+				hierarchyIdRecordDetails.BottomChildHierarchyId = itemzTypeHierarchyItemzs[(itemzTypeHierarchyItemzs.Count() - 1)].ItemzHierarchyId!.ToString();
 				hierarchyIdRecordDetails.NumberOfChildNodes = _localNumerOfChildNodes;
 			}
 			returningRecords.Add(hierarchyIdRecordDetails);
@@ -341,6 +376,9 @@ namespace ItemzApp.API.Services
 				Level = foundRepositoryRecord.ItemzHierarchyId.GetLevel(),
 				RecordType = foundRepositoryRecord.RecordType,
 				Name = foundRepositoryRecord.Name ?? "",
+				EstimationUnit = foundRepositoryRecord.EstimationUnit ?? "",
+				OwnEstimation = foundRepositoryRecord.OwnEstimation,
+				RolledUpEstimation = foundRepositoryRecord.RolledUpEstimation,
 				Children = new List<NestedHierarchyIdRecordDetailsDTO>()
 			};
 
@@ -412,6 +450,9 @@ namespace ItemzApp.API.Services
 						Level = allHierarchyItemzs[i].ItemzHierarchyId!.GetLevel(),
 						RecordType = allHierarchyItemzs[i].RecordType,
 						Name = allHierarchyItemzs[i].Name ?? "",
+						EstimationUnit = allHierarchyItemzs[i].EstimationUnit ?? "",
+						OwnEstimation = allHierarchyItemzs[i].OwnEstimation,
+						RolledUpEstimation = allHierarchyItemzs[i].RolledUpEstimation,
 						Children = new List<NestedHierarchyIdRecordDetailsDTO>()
 					});
 				}
@@ -433,6 +474,9 @@ namespace ItemzApp.API.Services
 							Level = allHierarchyItemzs[i].ItemzHierarchyId!.GetLevel(),
 							RecordType = allHierarchyItemzs[i].RecordType,
 							Name = allHierarchyItemzs[i].Name ?? "",
+							EstimationUnit = allHierarchyItemzs[i].EstimationUnit ?? "",
+							OwnEstimation = allHierarchyItemzs[i].OwnEstimation,
+							RolledUpEstimation = allHierarchyItemzs[i].RolledUpEstimation,
 							Children = new List<NestedHierarchyIdRecordDetailsDTO>()
 						});
 					}
@@ -484,7 +528,7 @@ namespace ItemzApp.API.Services
 			var itemzHierarchyRecords = await _context.ItemzHierarchy!
 					.AsNoTracking()
 					.Where(ih => ih.ItemzHierarchyId!.IsDescendantOf(foundHierarchyRecord.FirstOrDefault()!.ItemzHierarchyId!))
-						// && ih.ItemzHierarchyId.GetLevel() < (foundHierarchyRecordLevel + 3))
+					// && ih.ItemzHierarchyId.GetLevel() < (foundHierarchyRecordLevel + 3))
 					.OrderBy(ih => ih.ItemzHierarchyId!)
 					.ToListAsync();
 
@@ -521,6 +565,9 @@ namespace ItemzApp.API.Services
 						Level = itemzHierarchyRecords[i].ItemzHierarchyId!.GetLevel(),
 						RecordType = itemzHierarchyRecords[i].RecordType,
 						Name = itemzHierarchyRecords[i].Name ?? "",
+						EstimationUnit = itemzHierarchyRecords[i].EstimationUnit ?? "",
+						OwnEstimation = itemzHierarchyRecords[i].OwnEstimation,
+						RolledUpEstimation = itemzHierarchyRecords[i].RolledUpEstimation,
 						Children = new List<NestedHierarchyIdRecordDetailsDTO>()
 					});
 				}
@@ -542,6 +589,9 @@ namespace ItemzApp.API.Services
 							Level = itemzHierarchyRecords[i].ItemzHierarchyId!.GetLevel(),
 							RecordType = itemzHierarchyRecords[i].RecordType,
 							Name = itemzHierarchyRecords[i].Name ?? "",
+							EstimationUnit = itemzHierarchyRecords[i].EstimationUnit ?? "",
+							OwnEstimation = itemzHierarchyRecords[i].OwnEstimation,
+							RolledUpEstimation = itemzHierarchyRecords[i].RolledUpEstimation,
 							Children = new List<NestedHierarchyIdRecordDetailsDTO>()
 						});
 
@@ -577,25 +627,25 @@ namespace ItemzApp.API.Services
 			return recordCountAndEnumerable;
 		}
 
-        public async Task<int> GetAllChildrenCountOfItemzHierarchy(Guid recordId)
-        {
-            if (recordId == Guid.Empty)
-            {
-                throw new ArgumentNullException(nameof(recordId));
-            }
+		public async Task<int> GetAllChildrenCountOfItemzHierarchy(Guid recordId)
+		{
+			if (recordId == Guid.Empty)
+			{
+				throw new ArgumentNullException(nameof(recordId));
+			}
 
-            var foundHierarchyRecord = _context.ItemzHierarchy!.AsNoTracking()
-                            .Where(ih => ih.Id == recordId);
+			var foundHierarchyRecord = _context.ItemzHierarchy!.AsNoTracking()
+							.Where(ih => ih.Id == recordId);
 
-            if (foundHierarchyRecord.Count() != 1 )
-            {
-                throw new ApplicationException($"Expected 1 Hierarchy record to be found " +
-                    $"but instead found {foundHierarchyRecord.Count()} records for ID {recordId}. " +
-                    "Please contact your System Administrator."); // We dont expect multiple records for a single recordId anyways.
-            }
+			if (foundHierarchyRecord.Count() != 1)
+			{
+				throw new ApplicationException($"Expected 1 Hierarchy record to be found " +
+					$"but instead found {foundHierarchyRecord.Count()} records for ID {recordId}. " +
+					"Please contact your System Administrator."); // We dont expect multiple records for a single recordId anyways.
+			}
 
-            // EXPLANATION : We are using SQL Server HierarchyID field type. Now we can use EF Core special
-            // methods to query for all Decendents as per below. 
+			// EXPLANATION : We are using SQL Server HierarchyID field type. Now we can use EF Core special
+			// methods to query for all Decendents as per below. 
 
 			return (
 						await _context.ItemzHierarchy!
@@ -604,19 +654,19 @@ namespace ItemzApp.API.Services
 						.OrderBy(ih => ih.ItemzHierarchyId!)
 						.CountAsync()
 					) - 1; // reducing it by 1 because it will include record for supplied recordId as well.
-        }
+		}
 
-        public static NestedHierarchyIdRecordDetailsDTO? FindParentRecord(List<NestedHierarchyIdRecordDetailsDTO> records, ItemzHierarchy childRecordToBeInserted)
+		public static NestedHierarchyIdRecordDetailsDTO? FindParentRecord(List<NestedHierarchyIdRecordDetailsDTO> records, ItemzHierarchy childRecordToBeInserted)
 		{
 			NestedHierarchyIdRecordDetailsDTO? lastRecord = null;
 
 			foreach (var record in records)
 			{
-				if ((record.Level == (childRecordToBeInserted.ItemzHierarchyId!.GetLevel() -1) ) 
-					&& (childRecordToBeInserted.ItemzHierarchyId.ToString().StartsWith(record.HierarchyId!.ToString()))  )
+				if ((record.Level == (childRecordToBeInserted.ItemzHierarchyId!.GetLevel() - 1))
+					&& (childRecordToBeInserted.ItemzHierarchyId.ToString().StartsWith(record.HierarchyId!.ToString())))
 				{
-					lastRecord = record; 
-					break; 
+					lastRecord = record;
+					break;
 				}
 
 				var childRecord = FindParentRecord(record.Children, childRecordToBeInserted);
@@ -697,7 +747,7 @@ namespace ItemzApp.API.Services
 				throw new ArgumentNullException(nameof(recordId));
 			}
 
-			if(string.IsNullOrWhiteSpace(newItemzName))
+			if (string.IsNullOrWhiteSpace(newItemzName))
 			{
 				throw new ArgumentNullException(nameof(newItemzName));
 			}
@@ -725,5 +775,284 @@ namespace ItemzApp.API.Services
 
 			return (await _context.SaveChangesAsync() >= 0);
 		}
+
+
+		/// <summary>
+		/// Updates estimation fields (EstimationUnit and/or OwnEstimation) for a hierarchy record
+		/// 
+		/// When EstimationUnit is updated for a Project record, automatically synchronizes
+		/// the new value to all descendant records (ItemzType, Itemz, etc.) via stored procedure.
+		/// Supports setting EstimationUnit to NULL or empty string as valid updates.
+		/// </summary>
+		/// <param name="recordId">The ID of the hierarchy record to update</param>
+		/// <param name="estimationUnit">New estimation unit (optional, can be NULL or empty)</param>
+		/// <param name="ownEstimation">New own estimation value (optional)</param>
+		/// <returns>True if update successful, False otherwise</returns>
+		public async Task<bool> UpdateHierarchyEstimationFieldsAsync(
+			Guid recordId,
+			string? estimationUnit = null,
+			decimal? ownEstimation = null)
+		{
+			if (recordId == Guid.Empty)
+			{
+				throw new ArgumentNullException(nameof(recordId));
+			}
+
+			var hierarchyRecord = await _context.ItemzHierarchy!
+				.FirstOrDefaultAsync(ih => ih.Id == recordId);
+
+			if (hierarchyRecord == null)
+			{
+				return false;
+			}
+
+			bool hasChanged = false;
+			bool estimationUnitChanged = false;
+			decimal estimationDelta = 0;
+			string? oldEstimationUnit = null;
+
+			// EXPLANATION: Check if EstimationUnit has been provided (even if NULL or empty)
+			// We use a sentinel value approach: Only process if the parameter was explicitly provided
+			// However, since we can't distinguish between "not provided" and "provided as null" in optional params,
+			// we check: if estimationUnit parameter is not null OR if it's explicitly null (user wants to clear it)
+			// 
+			// Key change: We now allow NULL/empty string as valid updates for Project EstimationUnit
+			// This enables users to clear the EstimationUnit field via the UI
+
+			if (string.Equals(hierarchyRecord.RecordType, "Project", StringComparison.OrdinalIgnoreCase)
+				&& !(string.IsNullOrEmpty(estimationUnit)))
+			{
+				// EXPLANATION: For Project records, we need to detect if EstimationUnit should be updated
+				// We check for actual changes by comparing:
+				// 1. If provided value (estimationUnit param) is not null: trim and compare (case-sensitive)
+				// 2. If provided value is null: check if current value is not null (clearing operation)
+
+				string? trimmedEstimationUnit = estimationUnit?.Trim();
+
+				// Case-sensitive comparison to detect changes
+				// This handles three scenarios:
+				// A) User provides a non-empty value different from current → Update
+				// B) User provides empty/null when current has value → Clear (update to null)
+				// C) User provides same value as current (case-sensitive) → No change
+				if (!string.Equals(hierarchyRecord.EstimationUnit ?? "", trimmedEstimationUnit ?? "", StringComparison.Ordinal))
+				{
+					oldEstimationUnit = hierarchyRecord.EstimationUnit;
+					hierarchyRecord.EstimationUnit = trimmedEstimationUnit; // Store trimmed value (which could be null)
+					estimationUnitChanged = true;
+					hasChanged = true;
+
+					_logger.LogDebug(
+						$"UpdateHierarchyEstimationFieldsAsync: EstimationUnit changed for Project {recordId} " +
+						$"from '{oldEstimationUnit ?? "NULL"}' to '{trimmedEstimationUnit ?? "NULL"}'");
+				}
+			}
+
+			// Update own estimation and calculate delta
+			if (ownEstimation.HasValue && hierarchyRecord.OwnEstimation != ownEstimation.Value)
+			{
+				var oldEstimationValue = hierarchyRecord.OwnEstimation;
+				estimationDelta = ownEstimation.Value - oldEstimationValue;
+
+				hierarchyRecord.OwnEstimation = ownEstimation.Value;
+				hierarchyRecord.RolledUpEstimation += estimationDelta; // Update current node
+
+				hasChanged = true;
+
+				// Log change to ItemzChangeHistory
+				if (string.Equals(hierarchyRecord.RecordType, "Itemz", StringComparison.OrdinalIgnoreCase))
+				{
+					try
+					{
+						var changeHistoryEntry = new ItemzChangeHistory
+						{
+							ItemzId = recordId,
+							CreatedDate = DateTimeOffset.Now,
+							OldValues = oldEstimationValue.ToString(),
+							NewValues = ownEstimation.Value.ToString(),
+							ChangeEvent = "OwnEstimationChanged"
+						};
+						_context.ItemzChangeHistory!.Add(changeHistoryEntry);
+					}
+					catch (Exception ex)
+					{
+						_logger.LogWarning($"Could not log estimation change for record {recordId}: {ex.Message}");
+					}
+				}
+			}
+
+			if (hasChanged)
+			{
+				await _context.SaveChangesAsync();
+
+				// Trigger optimized roll-up recalculation for ancestors using delta
+				if (hierarchyRecord.ItemzHierarchyId != null && estimationDelta != 0)
+				{
+					_logger.LogDebug(
+						$"UpdateHierarchyEstimationFieldsAsync: Triggered optimized recalculation for record {recordId} with delta {estimationDelta}");
+
+					// Get parent and trigger optimized recalculation
+					var parentHierarchyId = hierarchyRecord.ItemzHierarchyId.GetAncestor(1);
+					if (parentHierarchyId != null)
+					{
+						var parentRecord = await _context.ItemzHierarchy!
+							.FirstOrDefaultAsync(ih => ih.ItemzHierarchyId == parentHierarchyId);
+
+						if (parentRecord != null)
+						{
+							_logger.LogDebug(
+								$"UpdateHierarchyEstimationFieldsAsync: Propagating delta {estimationDelta} to ancestors starting from {parentRecord.Id}");
+							await _estimationRollupService.RecalculateSingleRecordRollUpAsync(parentRecord.Id, estimationDelta);
+						}
+					}
+				}
+
+				// Synchronize EstimationUnit to all child records if it changed for Project
+				// EXPLANATION: Only trigger if:
+				// 1. EstimationUnit was actually updated (not just provided but unchanged)
+				// 2. The record type is 'Project' (business rule: only Projects can update EstimationUnit)
+				// 3. The old value differs from new value (case-sensitive comparison already done above)
+				// 4. This includes updates to NULL/empty string (clearing operation)
+				if (estimationUnitChanged && string.Equals(hierarchyRecord.RecordType, "Project", StringComparison.OrdinalIgnoreCase))
+				{
+					_logger.LogDebug(
+						$"UpdateHierarchyEstimationFieldsAsync: Synchronizing EstimationUnit to all descendants for Project {recordId}");
+
+					try
+					{
+						// Call stored procedure to update all child records with new EstimationUnit
+						// The stored procedure handles both setting values and clearing (NULL) values
+						var syncResult = await _estimationRollupService.SetEstimationUnitForProjectAsync(recordId);
+
+						if (syncResult)
+						{
+							_logger.LogDebug(
+								$"UpdateHierarchyEstimationFieldsAsync: Successfully synchronized EstimationUnit " +
+								$"to all descendants of Project {recordId}");
+						}
+						else
+						{
+							_logger.LogWarning(
+								$"UpdateHierarchyEstimationFieldsAsync: Failed to synchronize EstimationUnit " +
+								$"to descendants of Project {recordId}");
+							// Non-fatal: Project record was updated, but sync failed
+							// Log the failure but continue
+						}
+					}
+					catch (Exception ex)
+					{
+						_logger.LogError(
+							$"UpdateHierarchyEstimationFieldsAsync: Exception occurred while synchronizing EstimationUnit " +
+							$"for Project {recordId}: {ex.Message}", ex);
+						// Non-fatal error: Project was updated but sync failed
+					}
+				}
+
+				return true;
+			}
+
+			return true;
+		}
+
+		/// <summary>
+		/// Adds EstimationUnit to a hierarchy record by copying it from its immediate parent.
+		/// This ensures new records (Itemz, ItemzType) inherit the EstimationUnit from their parent.
+		/// Used during record creation to maintain EstimationUnit integrity across the hierarchy.
+		/// 
+		/// Ensures all child records have consistent EstimationUnit with their parent
+		/// </summary>
+		/// <param name="recordId">The ID of the hierarchy record to update (newly created Itemz or ItemzType)</param>
+		/// <returns>True if update successful, False if record or parent not found</returns>
+		public async Task<bool> AddHierarchyRecordEstimationUnitAsync(Guid recordId)
+		{
+			if (recordId == Guid.Empty)
+			{
+				throw new ArgumentNullException(nameof(recordId));
+			}
+
+			try
+			{
+				// STEP 1: Get the newly created record
+				var hierarchyRecord = await _context.ItemzHierarchy!
+					.FirstOrDefaultAsync(ih => ih.Id == recordId);
+
+				if (hierarchyRecord == null)
+				{
+					_logger.LogWarning(
+						$"AddHierarchyRecordEstimationUnitAsync: Hierarchy record not found for ID: {recordId}");
+					return false;
+				}
+
+				// STEP 2: Verify the record has a valid HierarchyId path
+				if (hierarchyRecord.ItemzHierarchyId == null)
+				{
+					_logger.LogWarning(
+						$"AddHierarchyRecordEstimationUnitAsync: Record {recordId} has no ItemzHierarchyId path");
+					return false;
+				}
+
+				_logger.LogDebug(
+					$"AddHierarchyRecordEstimationUnitAsync: Processing record {recordId} " +
+					$"(Type: {hierarchyRecord.RecordType}, Current EstimationUnit: {hierarchyRecord.EstimationUnit ?? "NULL"})");
+
+				// STEP 3: Get the immediate parent HierarchyId path
+				var parentHierarchyIdPath = hierarchyRecord.ItemzHierarchyId.GetAncestor(1);
+
+				if (parentHierarchyIdPath == null)
+				{
+					_logger.LogWarning(
+						$"AddHierarchyRecordEstimationUnitAsync: Could not determine parent HierarchyId path for record {recordId}");
+					return false;
+				}
+
+				// STEP 4: Find the parent record
+				var parentRecord = await _context.ItemzHierarchy!
+					.FirstOrDefaultAsync(ih => ih.ItemzHierarchyId == parentHierarchyIdPath);
+
+				if (parentRecord == null)
+				{
+					_logger.LogWarning(
+						$"AddHierarchyRecordEstimationUnitAsync: Parent record not found for HierarchyId path: {parentHierarchyIdPath}");
+					return false;
+				}
+
+				_logger.LogDebug(
+					$"AddHierarchyRecordEstimationUnitAsync: Found parent record {parentRecord.Id} " +
+					$"(Type: {parentRecord.RecordType}, EstimationUnit: {parentRecord.EstimationUnit ?? "NULL"})");
+
+				// STEP 5: Copy EstimationUnit from parent to child record
+				// No null/empty checks needed - just copy whatever value parent has
+				string? parentEstimationUnit = parentRecord.EstimationUnit;
+
+				// Only update if the child's EstimationUnit differs from parent's
+				if (!string.Equals(hierarchyRecord.EstimationUnit ?? "", parentEstimationUnit ?? "", StringComparison.Ordinal))
+				{
+					hierarchyRecord.EstimationUnit = parentEstimationUnit;
+					_context.ItemzHierarchy!.Update(hierarchyRecord);
+					await _context.SaveChangesAsync();
+
+					_logger.LogDebug(
+						$"AddHierarchyRecordEstimationUnitAsync: Updated EstimationUnit for record {recordId} " +
+						$"from '{hierarchyRecord.EstimationUnit ?? "NULL"}' to '{parentEstimationUnit ?? "NULL"}' " +
+						$"(inherited from parent {parentRecord.Id})");
+
+					return true;
+				}
+				else
+				{
+					_logger.LogDebug(
+						$"AddHierarchyRecordEstimationUnitAsync: Record {recordId} already has matching EstimationUnit from parent. " +
+						$"No update needed.");
+					return true;
+				}
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(
+					$"AddHierarchyRecordEstimationUnitAsync: Exception occurred while adding EstimationUnit for record {recordId}: {ex.Message}",
+					ex);
+				return false;
+			}
+		}
 	}
 }
+

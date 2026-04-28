@@ -64,6 +64,14 @@
                         </MudTooltip>
                         </MudStack>
                         <MudText><strong> || Status      : </strong> @_project.Status</MudText>
+                        @if (!string.IsNullOrEmpty(_project.EstimationUnit))
+                        {
+                            <MudText Variant="Variant.H6">|| <b>Estimation [@_project.EstimationUnit] : </b> @_project.OwnEstimation <b>|| Roll-Up</b> :@_project.RolledUpEstimation </MudText>
+                        }
+                        else
+                        {
+                            <MudText Variant="Variant.H6">|| <b>Estimation : </b> @_project.OwnEstimation <b>|| Roll-Up</b> :@_project.RolledUpEstimation </MudText>
+                        }
                     </MudStack>
                     <br />
                     }
@@ -85,7 +93,7 @@
     [Parameter] public EventCallback<Guid> OnNavigateNext { get; set; }
 
     private bool initializingPage = true;
-    private GetProjectDTO _project = new();
+    private GetProjectExportDTO _project = new();
     private MarkupString _convertedMarkdown;
     private bool _needsRender = false;
 

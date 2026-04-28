@@ -410,6 +410,165 @@ namespace ItemzApp.API.Controllers
             }
         }
 
+		/// <summary>
+		/// Recalculates all roll-up estimations for a specific project on-demand
+		/// </summary>
+		/// <param name="projectHierarchyRecordId">The GUID of the Project hierarchy record</param>
+		/// <returns>Success or failure status with message</returns>
+		/// <response code="200">Roll-up recalculation completed successfully</response>
+		/// <response code="400">Recalculation failed or timed out</response>
+		[HttpPost("RecalculateProjectRollUpEstimations/{projectHierarchyRecordId:Guid}",
+			Name = "__Post_Recalculate_Project_RollUp_Estimations_By_GUID__")]
+		[ProducesResponseType(StatusCodes.Status200OK)]
+		[ProducesResponseType(StatusCodes.Status400BadRequest)]
+		public async Task<IActionResult> RecalculateProjectRollUpEstimations(
+			Guid projectHierarchyRecordId,
+			[FromServices] EstimationRollupService estimationRollupService)
+		{
+			try
+			{
+				var hierarchyIdRecordDetailsDTO = await _hierarchyRepository.GetHierarchyRecordDetailsByID(projectHierarchyRecordId);
+				
+				if (hierarchyIdRecordDetailsDTO == null || hierarchyIdRecordDetailsDTO.RecordType != "Project")
+				{
+					var errorMessage = new
+					{
+						success = false,
+						message = "Invalid Project Hierarchy Record ID provided. Please provide a valid Project record ID."
+					};
+					_logger.LogWarning(errorMessage.message);
+					return BadRequest("Invalid Project Hierarchy Record ID provided. Please provide a valid Project record ID.");
+				}
+
+				_logger.LogDebug($"Request received to recalculate roll-up estimations for Project ID: {projectHierarchyRecordId}");
+
+				var result = await estimationRollupService.RecalculateProjectRollUpEstimationsAsync(projectHierarchyRecordId);
+
+				if (result)
+				{
+					var successMessage = new
+					{
+						success = true,
+						message = "Roll-up estimations recalculated successfully for the project"
+					};
+					_logger.LogDebug(successMessage.message);
+
+					// EXPLANATION :: After successful roll-up recalculation, we need to ensure that the estimation unit
+					// for all the records within the project is set correctly based on estimation units set at the project level.
+
+					try
+					{
+						var resultSetEstimationUni = await estimationRollupService.SetEstimationUnitForProjectAsync(projectHierarchyRecordId);
+						if (!resultSetEstimationUni)
+						{
+							_logger.LogWarning($"Failed to set estimation unit for project ID: {projectHierarchyRecordId} after successful roll-up recalculation.");
+						}
+					}
+					catch (Exception ex)
+					{
+						_logger.LogError($"Exception occurred while setting estimation unit for project ID: {projectHierarchyRecordId} :: {ex.Message}", ex);
+					}
+
+					return Ok("Roll-up estimations recalculated successfully for the project");
+				}
+				else
+				{
+					var errorMessage = new
+					{
+						success = false,
+						message = "Roll-up estimation recalculation failed or exceeded maximum execution time (2 seconds). Please try again."
+					};
+					_logger.LogWarning(errorMessage.message);
+					return BadRequest("Roll-up estimation recalculation failed or exceeded maximum execution time (2 seconds). Please try again.");
+				}
+
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Exception occurred during roll-up recalculation: {ex.Message}", ex);
+				return BadRequest($"Exception occurred during roll-up recalculation: {ex.Message}");
+			}
+		}
+
+		/// <summary>
+		/// Updates estimation fields (own estimation and/or estimation unit) for a hierarchy record
+		/// </summary>
+		/// <param name="updateHierarchyEstimationDTO">Contains record ID and updated estimation fields</param>
+		/// <param name="hierarchyRepository">Repository for hierarchy data</param>
+		/// <param name="estimationRollupService">Service for roll-up calculations</param>
+		/// <returns>Updated estimation data or error message</returns>
+		/// <response code="200">Estimation fields updated successfully</response>
+		/// <response code="400">Bad Request or update failed</response>
+		/// <response code="404">Hierarchy record not found</response>
+		[HttpPut("UpdateEstimation", Name = "__Update_Hierarchy_Estimation__")]
+		[ProducesResponseType(StatusCodes.Status200OK)]
+		[ProducesResponseType(StatusCodes.Status400BadRequest)]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		public async Task<ActionResult<dynamic>> UpdateHierarchyEstimation(
+			[FromBody] UpdateHierarchyEstimationDTO updateHierarchyEstimationDTO,
+			[FromServices] IHierarchyRepository hierarchyRepository)
+		{
+			try
+			{
+				if (updateHierarchyEstimationDTO == null || updateHierarchyEstimationDTO.RecordId == Guid.Empty)
+				{
+					return BadRequest(new
+					{
+						success = false,
+						message = "Valid Record ID is required"
+					});
+				}
+
+				_logger.LogDebug($"Request to update estimation for hierarchy record ID: {updateHierarchyEstimationDTO.RecordId}");
+
+				// Update the estimation fields
+				var updateResult = await hierarchyRepository.UpdateHierarchyEstimationFieldsAsync(
+					updateHierarchyEstimationDTO.RecordId,
+					updateHierarchyEstimationDTO.EstimationUnit,
+					updateHierarchyEstimationDTO.OwnEstimation);
+
+				if (!updateResult)
+				{
+					_logger.LogWarning($"Failed to update estimation for record ID: {updateHierarchyEstimationDTO.RecordId}");
+					return NotFound(new
+					{
+						success = false,
+						message = "Hierarchy record not found"
+					});
+				}
+
+				// Retrieve and return updated record with new estimation values
+				var updatedRecord = await hierarchyRepository.GetHierarchyRecordDetailsByID(updateHierarchyEstimationDTO.RecordId);
+
+				_logger.LogDebug($"Successfully updated estimation for hierarchy record ID: {updateHierarchyEstimationDTO.RecordId}");
+
+				return Ok(new
+				{
+					success = true,
+					message = "Estimation fields updated successfully",
+					data = updatedRecord
+				});
+			}
+			catch (ArgumentNullException argEx)
+			{
+				_logger.LogWarning($"Argument validation failed: {argEx.Message}");
+				return BadRequest(new
+				{
+					success = false,
+					message = argEx.Message
+				});
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Exception occurred while updating estimation: {ex.Message}", ex);
+				return BadRequest(new
+				{
+					success = false,
+					message = $"An error occurred: {ex.Message}"
+				});
+			}
+		}
+
 		// We have configured in startup class our own custom implementation of 
 		// problem Details. Now we are overriding ValidationProblem method that is defined in ControllerBase
 		// class to make sure that we use that custom problem details builder. 

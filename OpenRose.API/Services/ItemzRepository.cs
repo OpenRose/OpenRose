@@ -393,9 +393,36 @@ namespace ItemzApp.API.Services
                 throw new ArgumentNullException(nameof(itemz));
             }
             _context.Itemzs!.Add(itemz);
+
         }
 
-        public async Task AddOrMoveItemzBetweenTwoHierarchyRecordsAsync(Guid between1stItemzId, Guid between2ndItemzId, Guid addingOrMovingItemzId, string? itemzName)
+		public async Task ImportServiceUpdateItemzEstimationInHierarchyAsync(
+			Guid itemzId,
+			string? estimationUnit = null,
+			decimal? ownEstimation = 0,
+			decimal? rolledUpEstimation = 0)
+        {
+			if (itemzId == Guid.Empty)
+            {
+                throw new ArgumentNullException(nameof(itemzId));
+            }
+            var itemzHierarchyRecordList = _context.ItemzHierarchy!
+                .Where(ih => ih.Id == itemzId);
+            var foundItemzHierarchyRecordCount = itemzHierarchyRecordList.Count();
+            if (foundItemzHierarchyRecordCount != 1)
+            {
+                throw new ApplicationException($"{itemzHierarchyRecordList.Count()} records found for the " +
+                    $"Itemz Id {itemzId} in the system. " +
+                    $"Expected 1 record but instead found {itemzHierarchyRecordList.Count()}");
+            }
+            var itemzHierarchyRecord = await itemzHierarchyRecordList.FirstOrDefaultAsync();
+            itemzHierarchyRecord!.EstimationUnit = estimationUnit;
+            itemzHierarchyRecord!.OwnEstimation = ownEstimation ?? 0;
+            itemzHierarchyRecord.RolledUpEstimation = rolledUpEstimation ?? 0;
+             _context.ItemzHierarchy!.Update(itemzHierarchyRecord);
+		}
+
+		public async Task AddOrMoveItemzBetweenTwoHierarchyRecordsAsync(Guid between1stItemzId, Guid between2ndItemzId, Guid addingOrMovingItemzId, string? itemzName)
         {
             if (between1stItemzId == Guid.Empty)
             {
@@ -616,9 +643,11 @@ namespace ItemzApp.API.Services
             AddItemzTypeJoinItemzRecord(itemzTypeId, itemz.Id);
 
         }
-
-        public async Task MoveItemzHierarchyAsync(Guid movingItemzId, Guid targetId, bool atBottomOfChildNodes = true, string? movingItemzName = null)
-        {
+            
+		//public async Task MoveItemzHierarchyAsync(Guid movingItemzId, Guid targetId, bool atBottomOfChildNodes = true, string? movingItemzName = null)
+        // Modified to return the hierarchy record ID for trigger event processing
+		public async Task<Guid> MoveItemzHierarchyAsync(Guid movingItemzId, Guid targetId, bool atBottomOfChildNodes = true, string? movingItemzName = null)
+		{
             if (movingItemzId == Guid.Empty)
             {
                 throw new ArgumentNullException(nameof(movingItemzId));
@@ -788,12 +817,15 @@ namespace ItemzApp.API.Services
                     );
                 }
             }
-            else
-            {
-                //_context.ItemzHierarchy.Add()
-                _context.ItemzHierarchy!.Add(movingItemzHierarchyRecord);
-            }
-        }
+			else
+			{
+				//_context.ItemzHierarchy.Add()
+				_context.ItemzHierarchy!.Add(movingItemzHierarchyRecord);
+			}
+
+			// Return the hierarchy record ID for trigger event processing
+			return movingItemzHierarchyRecord.Id;
+		}
 
         public async Task<bool> ItemzExistsAsync(Guid itemzId)
         {
@@ -1065,6 +1097,50 @@ namespace ItemzApp.API.Services
 			returnValue = (Guid)OUTPUT_ID.Value;
 
 			return returnValue;
+		}
+
+		// Add this method to handle estimation change logging
+		// Logs when OwnEstimation value changes for auditing purposes
+
+		/// <summary>
+		/// Creates a change history entry when Own Estimation value changes for an Itemz record
+		/// Logs only own estimation changes, not roll-up value changes
+		/// </summary>
+		/// <param name="itemzId">The ID of the Itemz record</param>
+		/// <param name="oldEstimation">Previous own estimation value</param>
+		/// <param name="newEstimation">New own estimation value</param>
+		/// <returns>True if successfully logged, False otherwise</returns>
+		public async Task<bool> LogEstimationChangeAsync(Guid itemzId, decimal oldEstimation, decimal newEstimation)
+		{
+			try
+			{
+				// Only log if values actually changed
+				if (oldEstimation == newEstimation)
+				{
+					return true;
+				}
+
+				var changeHistoryEntry = new ItemzChangeHistory
+				{
+					ItemzId = itemzId,
+					CreatedDate = DateTimeOffset.Now,
+					OldValues = oldEstimation.ToString(),
+					NewValues = newEstimation.ToString(),
+					ChangeEvent = "OwnEstimationChanged" // Specific event for estimation changes
+				};
+
+				_context.ItemzChangeHistory!.Add(changeHistoryEntry);
+				await _context.SaveChangesAsync();
+
+				// _logger.LogDebug($"Logged estimation change for Itemz ID {itemzId}: {oldEstimation} -> {newEstimation}");
+				return true;
+			}
+			catch (Exception ex)
+			{
+				// _logger.LogError($"Exception occurred while logging estimation change for Itemz ID {itemzId}: {ex.Message}", ex);
+				// Gentle error handling - don't crash if change log fails
+				return false;
+			}
 		}
 
 		#region NOT USED ANYMORE CODE 

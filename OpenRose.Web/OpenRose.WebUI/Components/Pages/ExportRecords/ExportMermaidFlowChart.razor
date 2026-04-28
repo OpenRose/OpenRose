@@ -57,6 +57,10 @@
                          Value="showTraceabilityOnly"
                          ValueChanged="@((bool x) => OnTraceabilityOnlyChanged(x))" />
 
+            <MudCheckBox Label="Include Estimations"
+                         Value="includeEstimations"
+                         ValueChanged="@((bool x) => OnIncludeEstimationsChanged(x))" />
+
             <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
                 <MudButton Variant="Variant.Filled"
                            Size="Size.Medium"
@@ -115,7 +119,6 @@
                     </MudText>
                 </MudPaper>
 
-
             </MudStack>
         </MudPaper>
     </MudItem>
@@ -148,6 +151,7 @@
     private string targetGuidText { get; set; } = string.Empty;
     private bool exportIncludedBaselineItemzOnly { get; set; } = false;
     private bool showTraceabilityOnly { get; set; } = false;
+    private bool includeEstimations { get; set; } = false;
     private string mermaidText { get; set; } = string.Empty;
     private bool loading { get; set; } = false;
 
@@ -178,6 +182,7 @@
                                                 guid, 
                                                 exportIncludedBaselineItemzOnly,
                                                 showTraceabilityOnly,
+                                                includeEstimations,
                                                 clientBaseUrl);
 
             loading = false;
@@ -236,6 +241,11 @@
         mermaidText = string.Empty;  // clear old flowchart text
     }
 
+    private void OnIncludeEstimationsChanged(bool newValue)
+    {
+        includeEstimations = newValue;
+        mermaidText = string.Empty;  // clear old flowchart text
+    }
 
     private async Task ShowErrorMessage(string message)
     {
