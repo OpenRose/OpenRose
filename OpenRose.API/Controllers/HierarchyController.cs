@@ -469,7 +469,7 @@ namespace ItemzApp.API.Controllers
 						_logger.LogError($"Exception occurred while setting estimation unit for project ID: {projectHierarchyRecordId} :: {ex.Message}", ex);
 					}
 
-					return Ok("Roll-up estimations recalculated successfully for the project");
+					return Content(successMessage.message, "text/plain");
 				}
 				else
 				{
