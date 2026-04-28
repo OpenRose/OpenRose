@@ -218,15 +218,11 @@
 
 						<ChildContent>
 							<MudText Typo="Typo.body1" Color="Color.Success">
-                                This will recalculate <strong>all roll-up estimations</strong> for the entire project hierarchy.
+                                This action recalculates <strong>roll-up estimations</strong> across the entire project and <strong>synchronizes the estimation unit</strong> from the Project record to all associated child records.
 							</MudText>
                             <MudText Typo="Typo.body1" Color="Color.Success">
-                                And <strong>synchronize estimation unit </strong> from Project in all records in it.
-                            </MudText>
-							<MudText Typo="Typo.body1" Color="Color.Success">
 								This operation may take a few seconds depending on project size.
 							</MudText>
-
 							<MudButton Variant="Variant.Filled"
 										Color="Color.Success"
 										Size="Size.Large"
@@ -673,7 +669,7 @@
         {
             "DialogMarkupMessage",
             new MarkupString(
-                "<p style=\"color: green;\">Are you sure you want to recalculate all roll-up estimations for this project? " +
+                "<p style=\"color: green;\">Are you sure you want to recalculate roll-up estimations for this project? " +
                 "This operation may take a few seconds.</p>"
             )
         }
@@ -693,38 +689,39 @@
         }
     }
 
-	private async Task PerformRollUpRecalculationAsync()
-	{
-		try
-		{
-			isRecalculatingRollUpEstimations = true;
-			StateHasChanged();
+    private async Task PerformRollUpRecalculationAsync()
+    {
+        try
+        {
+            isRecalculatingRollUpEstimations = true;
+            StateHasChanged();
 
-			string resultMessage = await HierarchyService.__POST_Recalculate_Project_RollUpEstimations__Async(ProjectId);
-
+            string resultMessage = await HierarchyService.__POST_Recalculate_Project_RollUpEstimations__Async(ProjectId);
             // Refresh the estimation component
             if (estimationComponent is not null)
             {
                 await estimationComponent.RefreshDataAsync();
             }
 
-			// Show success message
-			// Snackbar.Add(resultMessage, Severity.Success);
+            var dialogPara = new DialogParameters();
+            dialogPara.Add("DialogMessage", resultMessage);
 
-			await DialogService.ShowMessageBox(
-				"SUCCESS",
-				new MarkupString($"<p style=\"color: green;\"><b>{resultMessage}</b></p>"),
-				yesText: "OK"
-			);
+            var dialogRef = await DialogService.ShowAsync<OkDialog>("SUCCESS", dialogPara);
 		}
 		catch (Exception ex)
 		{
 			// Show error dialog
-			await DialogService.ShowMessageBox(
-				"ERROR",
-				new MarkupString($"<p style=\"color: red;\"><b>{ex.Message}</b></p>"),
-				yesText: "OK"
-			);
+
+            var dialogPara = new DialogParameters();
+            dialogPara.Add("DialogMessage", ex.Message);
+
+            var dialogRef = await DialogService.ShowAsync<OkDialog>("ERROR", dialogPara);
+
+			// await DialogService.ShowMessageBox(
+			// 	"ERROR",
+			// 	new MarkupString($"<p style=\"color: red;\"><b>{ex.Message}</b></p>"),
+			// 	yesText: "OK"
+			// );
 		}
 		finally
 		{

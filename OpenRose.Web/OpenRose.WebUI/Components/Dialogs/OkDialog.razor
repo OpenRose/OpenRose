@@ -1,0 +1,31 @@
+﻿@*
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0.
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+<MudDialog>
+    <TitleContent>
+        <MudText>@MudDialog.Title</MudText>
+    </TitleContent>
+    <DialogContent>    
+        <MudText Dense="true">@DialogMessage</MudText>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="Submit">OK</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; }
+    
+    [Parameter] public string DialogMessage { get; set; } = ""; 
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(true));
+
+    private void HandleKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter") Submit();
+    }
+ }

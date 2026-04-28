@@ -205,10 +205,10 @@
 
 						<ChildContent>
 							<MudText Typo="Typo.body1" Color="Color.Success">
-                                This will recalculate <strong>all roll-up estimations</strong> for the entire Baseline hierarchy.
+								This action recalculates <strong>roll-up estimations</strong> across the entire Baseline
 							</MudText>
 							<MudText Typo="Typo.body1" Color="Color.Success">
-								This operation may take a few seconds depending on project size.
+								This operation may take a few seconds depending on Baseline size.
 							</MudText>
 
 							<MudButton Variant="Variant.Filled"
@@ -601,7 +601,7 @@
 		{
 			"DialogMarkupMessage",
 			new MarkupString(
-				"<p style=\"color: green;\">Are you sure you want to recalculate all roll-up estimations for this baseline? " +
+				"<p style=\"color: green;\">Are you sure you want to recalculate roll-up estimations for this baseline? " +
 				"This operation may take a few seconds.</p>"
 			)
 		}
@@ -630,26 +630,18 @@
 
 			string resultMessage = await baselineHierarchyService.__POST_Recalculate_Baseline_RollUpEstimations__Async(BaselineId);
 
-			// Refresh the estimation component
-			if (baselineEstimationComponent is not null)
-			{
-				await baselineEstimationComponent.RefreshDataAsync();
-			}
+			var dialogPara = new DialogParameters();
+			dialogPara.Add("DialogMessage", resultMessage);
 
-			await DialogService.ShowMessageBox(
-				"SUCCESS",
-				new MarkupString($"<p style=\"color: green;\"><b>{resultMessage}</b></p>"),
-				yesText: "OK"
-			);
+			var dialogRef = await DialogService.ShowAsync<OkDialog>("SUCCESS", dialogPara);
 		}
 		catch (Exception ex)
 		{
 			// Show error dialog
-			await DialogService.ShowMessageBox(
-				"ERROR",
-				new MarkupString($"<p style=\"color: red;\"><b>{ex.Message}</b></p>"),
-				yesText: "OK"
-			);
+			var dialogPara = new DialogParameters();
+			dialogPara.Add("DialogMessage", ex.Message);
+
+			var dialogRef = await DialogService.ShowAsync<OkDialog>("ERROR", dialogPara);
 		}
 		finally
 		{

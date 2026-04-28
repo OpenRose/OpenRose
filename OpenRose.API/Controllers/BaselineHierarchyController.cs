@@ -458,7 +458,9 @@ namespace ItemzApp.API.Controllers
 					var successMessage = "Roll-up estimations recalculated successfully for the baseline";
 					_logger.LogDebug(successMessage);
 
-					return Ok(successMessage);
+					// return Ok(successMessage);
+					return Content(successMessage, "text/plain");
+
 				}
 				else
 				{
