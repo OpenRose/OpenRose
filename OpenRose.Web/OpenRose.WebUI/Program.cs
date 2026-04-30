@@ -5,6 +5,7 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
 using MudBlazor.Services;
 using MudExtensions.Services;
 using OpenRose.WebUI.Client.Services.BaselineHierarchy;
@@ -107,6 +108,8 @@ if (startupCapabilities.ServerOfflineAvailable)
 	});
 }
 
+builder.Services.Configure<OpenRoseOptions>(
+	builder.Configuration.GetSection("OpenRose"));
 
 
 ////// EXPLANATION : Initialize the shared APIConfigurationService singleton.
@@ -366,6 +369,66 @@ else
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
 }
+
+#region User file Content Set-up
+
+// Add user files serving (IIS-compatible)
+var openRoseOptions = builder.Configuration
+	.GetSection("OpenRose")
+	.Get<OpenRoseOptions>();
+
+if (openRoseOptions?.UserFilesStorage.Enabled == true)
+{
+	var userFilesPath = openRoseOptions.UserFilesStorage.RootPath;
+
+	// If path is relative, make it relative to application base directory
+	if (!Path.IsPathRooted(userFilesPath))
+	{
+		userFilesPath = Path.Combine(
+			AppContext.BaseDirectory,
+			userFilesPath);
+	}
+
+	// Convert to absolute path
+	userFilesPath = Path.GetFullPath(userFilesPath);
+
+	// Only configure if directory exists
+	if (Directory.Exists(userFilesPath))
+	{
+		// Primary path
+		app.UseStaticFiles(new StaticFileOptions
+		{
+			FileProvider = new PhysicalFileProvider(userFilesPath),
+			RequestPath = "/userfiles"
+		});
+
+		// Alternative paths if needed
+		app.UseStaticFiles(new StaticFileOptions
+		{
+			FileProvider = new PhysicalFileProvider(userFilesPath),
+			RequestPath = "/media"
+		});
+
+		var logger = app.Services.GetRequiredService<ILogger<Program>>();
+		logger.LogInformation(
+			"User files storage enabled at: {UserFilesPath}. " +
+			"Accessible via: /userfiles, /media. " +
+			"Environment: {EnvironmentName}",
+			userFilesPath,
+			app.Environment.EnvironmentName);
+	}
+	else
+	{
+		var logger = app.Services.GetRequiredService<ILogger<Program>>();
+		logger.LogWarning(
+			"User files storage path does not exist: {UserFilesPath}. " +
+			"Create this directory and place your image files there, then restart OpenRose.WebUI. " +
+			"User files serving is DISABLED until the directory is created and the application is restarted.",
+			userFilesPath);
+	}
+}
+
+#endregion
 
 app.MapStaticAssets();
 app.UseAntiforgery();
