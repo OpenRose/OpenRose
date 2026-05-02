@@ -111,8 +111,8 @@ public class StartupConfigurationManager
 	/// Handles configuration when user files storage is enabled.
 	/// </summary>
 	private void ConfigureEnabledUserFilesStorage(
-		OpenRoseOptions openRoseOptions,
-		ConfigurationSourceTrackerService configSourceTracker)
+	OpenRoseOptions openRoseOptions,
+	ConfigurationSourceTrackerService configSourceTracker)
 	{
 		var userFilesPath = openRoseOptions.UserFilesStorage.RootPath;
 		var originalPath = userFilesPath;
@@ -130,27 +130,57 @@ public class StartupConfigurationManager
 
 		if (Directory.Exists(userFilesPath))
 		{
-			// Configure static file serving for user files
-			_app.UseStaticFiles(new StaticFileOptions
+			try
 			{
-				FileProvider = new PhysicalFileProvider(userFilesPath),
-				RequestPath = "/userfiles"
-			});
+				// Validate the directory is readable
+				var testFile = Path.Combine(userFilesPath, ".openrose-test");
+				File.WriteAllText(testFile, "test");
+				File.Delete(testFile);
+
+				// Configure static file serving for user files
+				_app.UseStaticFiles(new StaticFileOptions
+				{
+					FileProvider = new PhysicalFileProvider(userFilesPath),
+					RequestPath = "/userfiles",
+					OnPrepareResponse = context =>
+					{
+						// Add cache headers for static files
+						context.Context.Response.Headers.Add("Cache-Control", "public, max-age=3600");
+					}
+				});
 
 			// Alternative path
-			_app.UseStaticFiles(new StaticFileOptions
-			{
-				FileProvider = new PhysicalFileProvider(userFilesPath),
-				RequestPath = "/media"
-			});
+				_app.UseStaticFiles(new StaticFileOptions
+				{
+					FileProvider = new PhysicalFileProvider(userFilesPath),
+					RequestPath = "/media",
+					OnPrepareResponse = context =>
+					{
+						context.Context.Response.Headers.Add("Cache-Control", "public, max-age=3600");
+					}
+				});
 
-			// Log success configuration
-			userFilesLogger.LogUserFilesStorageConfigurationSuccess(
-				openRoseOptions.UserFilesStorage,
-				originalPath,
-				userFilesPath,
-				_app.Environment.EnvironmentName,
-				configSourceTracker);
+				// Log success configuration
+				userFilesLogger.LogUserFilesStorageConfigurationSuccess(
+					openRoseOptions.UserFilesStorage,
+					originalPath,
+					userFilesPath,
+					_app.Environment.EnvironmentName,
+					configSourceTracker);
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex,
+					"Failed to configure user files storage. " +
+					"Directory exists but is not accessible for reading/writing. " +
+					"Path: {Path}",
+					userFilesPath);
+
+				userFilesLogger.LogUserFilesStorageConfigurationWarning(
+					originalPath,
+					userFilesPath,
+					configSourceTracker);
+			}
 		}
 		else
 		{
