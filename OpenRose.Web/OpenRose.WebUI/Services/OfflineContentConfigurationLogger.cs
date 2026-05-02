@@ -8,6 +8,7 @@ using OpenRose.WebUI.Configuration;
 
 /// <summary>
 /// Logs offline content configuration details for debugging and auditing purposes.
+/// Consolidates output into single cohesive log messages to reduce clutter.
 /// </summary>
 public class OfflineContentConfigurationLogger
 {
@@ -29,8 +30,6 @@ public class OfflineContentConfigurationLogger
 	{
 		try
 		{
-			_logger.LogInformation("=== Offline Content Configuration ===");
-
 			// Track the configuration sources
 			configSourceTracker.TrackConfigurationSource(
 				"OfflineContent:StorageFolder",
@@ -40,66 +39,61 @@ public class OfflineContentConfigurationLogger
 				"OfflineContent:DefaultJsonFile",
 				offlineContentSettings.DefaultJsonFile);
 
-			// Log the settings as configured
-			_logger.LogInformation(
-				"Offline Content - StorageFolder Setting: {StorageFolder}",
-				offlineContentSettings.StorageFolder);
-
-			_logger.LogInformation(
-				"Offline Content - DefaultJsonFile Setting: {DefaultJsonFile}",
-				offlineContentSettings.DefaultJsonFile);
-
-			// Log the resolved path
-			_logger.LogInformation(
-				"Offline Content - Resolved Full Path: {ResolvedPath}",
+			// Build comprehensive status message
+			var statusMessage = BuildOfflineContentStatusMessage(
+				offlineContentSettings,
 				resolvedFolderPath);
 
-			// Check if directory exists
-			if (Directory.Exists(resolvedFolderPath))
-			{
-				var directoryInfo = new DirectoryInfo(resolvedFolderPath);
-				var fileCount = directoryInfo.GetFiles().Length;
-				var subdirCount = directoryInfo.GetDirectories().Length;
-
-				_logger.LogInformation(
-					"Offline Content - Directory Status: EXISTS | Files: {FileCount} | Subdirectories: {SubdirCount}",
-					fileCount,
-					subdirCount);
-
-				// Log files in the directory
-				var files = directoryInfo.GetFiles("*.json", SearchOption.TopDirectoryOnly);
-				if (files.Any())
-				{
-					_logger.LogInformation(
-						"Offline Content - JSON Files Found: {FileCount}",
-						files.Length);
-
-					foreach (var file in files)
-					{
-						_logger.LogDebug(
-							"Offline Content - JSON File: {FileName} | Size: {FileSizeKB} KB | Modified: {LastModified}",
-							file.Name,
-							file.Length / 1024,
-							file.LastWriteTime);
-					}
-				}
-			}
-			else
-			{
-				_logger.LogWarning(
-					"Offline Content - Directory Status: DOES NOT EXIST. " +
-					"Server-side offline JSON file loading is DISABLED. " +
-					"Create the directory or configure a different path.");
-			}
-
-			_logger.LogInformation("=== End Offline Content Configuration ===");
-
-			//// Log configuration sources
-			//configSourceTracker.LogAllTrackedConfigurations();
+			_logger.LogInformation(statusMessage);
 		}
 		catch (Exception ex)
 		{
 			_logger.LogError(ex, "Error logging offline content configuration");
 		}
+	}
+
+	/// <summary>
+	/// Builds a comprehensive single-message status of offline content configuration.
+	/// </summary>
+	private string BuildOfflineContentStatusMessage(
+		OfflineContentSettings offlineContentSettings,
+		string resolvedFolderPath)
+	{
+		var message = new System.Text.StringBuilder();
+
+		message.AppendLine("=== Offline Content Configuration ===");
+		message.AppendLine($"  StorageFolder Setting: {offlineContentSettings.StorageFolder}");
+		message.AppendLine($"  DefaultJsonFile Setting: {offlineContentSettings.DefaultJsonFile}");
+		message.AppendLine($"  Resolved Full Path: {resolvedFolderPath}");
+
+		// Check if directory exists and get details
+		if (Directory.Exists(resolvedFolderPath))
+		{
+			var directoryInfo = new DirectoryInfo(resolvedFolderPath);
+			var fileCount = directoryInfo.GetFiles().Length;
+			var subdirCount = directoryInfo.GetDirectories().Length;
+			var jsonFiles = directoryInfo.GetFiles("*.json", SearchOption.TopDirectoryOnly);
+
+			message.AppendLine($"  Directory Status: EXISTS | Files: {fileCount} | Subdirectories: {subdirCount}");
+
+			if (jsonFiles.Any())
+			{
+				message.AppendLine($"  JSON Files Found: {jsonFiles.Length}");
+				foreach (var file in jsonFiles)
+				{
+					var sizeKB = file.Length / 1024;
+					message.AppendLine($"    - {file.Name} ({sizeKB} KB)");
+				}
+			}
+		}
+		else
+		{
+			message.AppendLine($"  Directory Status: DOES NOT EXIST");
+			message.AppendLine($"  WARNING: Server-side offline JSON file loading is DISABLED.");
+		}
+
+		message.Append("=== End Offline Content Configuration ===");
+
+		return message.ToString();
 	}
 }

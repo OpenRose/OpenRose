@@ -218,7 +218,7 @@ public class ConfigurationSourceTrackerService
 
 	/// <summary>
 	/// Logs all tracked configurations for audit purposes.
-	/// Does NOT log the precedence order or provider list - keeps output clean.
+	/// Consolidates all settings into a single log message to reduce clutter.
 	/// </summary>
 	public void LogAllTrackedConfigurations()
 	{
@@ -227,12 +227,17 @@ public class ConfigurationSourceTrackerService
 			return;
 		}
 
-		_logger.LogInformation("=== Configuration Sources Audit Log ===");
+		var message = new System.Text.StringBuilder();
+		message.AppendLine("=== Configuration Sources Audit Log ===");
+
 		foreach (var config in _trackedConfigurations)
 		{
-			_logger.LogInformation(config.ToString());
+			message.AppendLine($"  {config.ToString()}");
 		}
-		_logger.LogInformation("=== End Configuration Sources Audit Log ===");
+
+		message.Append("=== End Configuration Sources Audit Log ===");
+
+		_logger.LogInformation(message.ToString());
 	}
 
 	/// <summary>
