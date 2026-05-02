@@ -54,7 +54,7 @@ public class ConfigurationSourceTracker
 
 	public override string ToString()
 	{
-		return $"Setting: {SettingName} | Value: {FinalValue} | Source: {Source} | Detail: {SourceDetail ?? "N/A"}";
+		return $"Setting: {SettingName} | Value: {FinalValue} | Detail: {SourceDetail ?? "N/A"}";
 	}
 }
 

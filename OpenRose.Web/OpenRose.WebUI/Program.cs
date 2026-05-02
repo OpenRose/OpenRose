@@ -372,193 +372,208 @@ else
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
 }
 
-#region Offline Content Configuration Logging
+//#region Offline Content Configuration Logging
 
-try
-{
-	if (startupCapabilities.ServerOfflineAvailable)
-	{
-		var logger = app.Services.GetRequiredService<ILogger<Program>>();
-		var offlineContentSettings = app.Configuration.GetSection("OfflineContent").Get<OfflineContentSettings>();
-		var offlineContentPathResolver = app.Services.GetRequiredService<OfflineContentPathResolver>();
-		var configSourceTracker = app.Services.GetRequiredService<ConfigurationSourceTrackerService>();
+//try
+//{
+//	if (startupCapabilities.ServerOfflineAvailable)
+//	{
+//		var logger = app.Services.GetRequiredService<ILogger<Program>>();
+//		var offlineContentSettings = app.Configuration.GetSection("OfflineContent").Get<OfflineContentSettings>();
+//		var offlineContentPathResolver = app.Services.GetRequiredService<OfflineContentPathResolver>();
+//		var configSourceTracker = app.Services.GetRequiredService<ConfigurationSourceTrackerService>();
 
-		if (offlineContentSettings != null)
-		{
-			// Get the resolved path from the OfflineContentPathResolver
-			var resolvedPath = offlineContentPathResolver.ResolvedStorageFolderPath ?? "[Not Configured]";
+//		if (offlineContentSettings != null)
+//		{
+//			// Get the resolved path from the OfflineContentPathResolver
+//			var resolvedPath = offlineContentPathResolver.ResolvedStorageFolderPath ?? "[Not Configured]";
 
-			// Create and use the offline content logger
-			var offlineContentLogger = new OfflineContentConfigurationLogger(logger);
-			offlineContentLogger.LogOfflineContentConfiguration(
-				offlineContentSettings,
-				resolvedPath,
-				configSourceTracker);
-		}
-	}
-}
-catch (Exception ex)
-{
-	var logger = app.Services.GetRequiredService<ILogger<Program>>();
-	logger.LogError(ex, "Error during offline content configuration logging");
-}
+//			// Create and use the offline content logger
+//			var offlineContentLogger = new OfflineContentConfigurationLogger(logger);
+//			offlineContentLogger.LogOfflineContentConfiguration(
+//				offlineContentSettings,
+//				resolvedPath,
+//				configSourceTracker);
+//		}
+//	}
+//}
+//catch (Exception ex)
+//{
+//	var logger = app.Services.GetRequiredService<ILogger<Program>>();
+//	logger.LogError(ex, "Error during offline content configuration logging");
+//}
+
+//#endregion
+
+//#region User Files Content Set-up
+
+//try
+//{
+//	// Add user files serving (IIS-compatible)
+//	var openRoseOptions = builder.Configuration
+//		.GetSection("OpenRose")
+//		.Get<OpenRoseOptions>();
+
+//	if (openRoseOptions?.UserFilesStorage.Enabled == true)
+//	{
+//		var userFilesPath = openRoseOptions.UserFilesStorage.RootPath;
+//		var originalPath = userFilesPath; // Store original for logging
+
+//		// If path is relative, make it relative to application base directory
+//		if (!Path.IsPathRooted(userFilesPath))
+//		{
+//			userFilesPath = Path.Combine(
+//				AppContext.BaseDirectory,
+//				userFilesPath);
+//		}
+
+//		// Convert to absolute path
+//		userFilesPath = Path.GetFullPath(userFilesPath);
+
+//		// Only configure if directory exists
+//		if (Directory.Exists(userFilesPath))
+//		{
+//			// Primary path
+//			app.UseStaticFiles(new StaticFileOptions
+//			{
+//				FileProvider = new PhysicalFileProvider(userFilesPath),
+//				RequestPath = "/userfiles"
+//			});
+
+//			// Alternative paths if needed
+//			app.UseStaticFiles(new StaticFileOptions
+//			{
+//				FileProvider = new PhysicalFileProvider(userFilesPath),
+//				RequestPath = "/media"
+//			});
+
+//			var logger = app.Services.GetRequiredService<ILogger<Program>>();
+//			var configSourceTracker = app.Services.GetRequiredService<ConfigurationSourceTrackerService>();
+
+//			// Track configuration sources
+//			configSourceTracker.TrackConfigurationSource(
+//				"OpenRose:UserFilesStorage:Enabled",
+//				openRoseOptions.UserFilesStorage.Enabled.ToString());
+
+//			configSourceTracker.TrackConfigurationSource(
+//				"OpenRose:UserFilesStorage:RootPath",
+//				originalPath);
+
+//			// Build and log consolidated user files status
+//			var statusMessage = BuildUserFilesStorageStatusMessage(
+//				openRoseOptions.UserFilesStorage,
+//				originalPath,
+//				userFilesPath,
+//				app.Environment.EnvironmentName);
+
+//			logger.LogInformation(statusMessage);
+
+//			// Log configuration sources
+//			configSourceTracker.LogAllTrackedConfigurations();
+//		}
+//		else
+//		{
+//			var logger = app.Services.GetRequiredService<ILogger<Program>>();
+//			var configSourceTracker = app.Services.GetRequiredService<ConfigurationSourceTrackerService>();
+
+//			// Track configuration sources
+//			configSourceTracker.TrackConfigurationSource(
+//				"OpenRose:UserFilesStorage:Enabled",
+//				openRoseOptions.UserFilesStorage.Enabled.ToString());
+
+//			configSourceTracker.TrackConfigurationSource(
+//				"OpenRose:UserFilesStorage:RootPath",
+//				originalPath);
+
+//			var warningMessage = BuildUserFilesStorageWarningMessage(
+//				originalPath,
+//				userFilesPath);
+
+//			logger.LogWarning(warningMessage);
+
+//			// Log configuration sources
+//			configSourceTracker.LogAllTrackedConfigurations();
+//		}
+//	}
+//	else
+//	{
+//		var logger = app.Services.GetRequiredService<ILogger<Program>>();
+//		logger.LogInformation("User files storage is DISABLED. (OpenRose:UserFilesStorage:Enabled = false)");
+//	}
+//}
+//catch (Exception ex)
+//{
+//	var logger = app.Services.GetRequiredService<ILogger<Program>>();
+//	logger.LogError(ex, "Error during user files storage configuration");
+//}
+
+//#endregion
+
+
+
+//// Helper methods (add at the end of Program.cs file, before app.Run())
+//static string BuildUserFilesStorageStatusMessage(
+//	OpenRose.WebUI.Configuration.UserFilesStorageOptions userFilesStorage,
+//	string originalPath,
+//	string resolvedPath,
+//	string environmentName)
+//{
+//	var message = new System.Text.StringBuilder();
+
+//	message.AppendLine("=== User Files Storage Configuration ===");
+//	message.AppendLine($"  Enabled Setting: {userFilesStorage.Enabled}");
+//	message.AppendLine($"  RootPath Setting: {originalPath}");
+//	message.AppendLine($"  Resolved Full Path: {resolvedPath}");
+
+//	// Check directory details
+//	if (Directory.Exists(resolvedPath))
+//	{
+//		var directoryInfo = new System.IO.DirectoryInfo(resolvedPath);
+//		var fileCount = directoryInfo.GetFiles().Length;
+//		var subdirCount = directoryInfo.GetDirectories().Length;
+
+//		message.AppendLine($"  Directory Status: EXISTS | Files: {fileCount} | Subdirectories: {subdirCount}");
+//		message.AppendLine($"  Accessible via: /userfiles, /media");
+//		message.AppendLine($"  Environment: {environmentName}");
+//	}
+
+//	message.Append("=== End User Files Storage Configuration ===");
+
+//	return message.ToString();
+//}
+
+//static string BuildUserFilesStorageWarningMessage(
+//	string originalPath,
+//	string resolvedPath)
+//{
+//	var message = new System.Text.StringBuilder();
+
+//	message.AppendLine("=== User Files Storage Configuration ===");
+//	message.AppendLine($"  RootPath Setting: {originalPath}");
+//	message.AppendLine($"  Resolved Full Path: {resolvedPath}");
+//	message.AppendLine($"  Directory Status: DOES NOT EXIST");
+//	message.AppendLine();
+//	message.AppendLine($"  ERROR: User files storage path does not exist.");
+//	message.AppendLine($"  ACTION REQUIRED: Create this directory and place your image files there,");
+//	message.AppendLine($"  then restart OpenRose.WebUI for the changes to take effect.");
+//	message.AppendLine($"  User files serving is DISABLED until the directory is created.");
+//	message.Append("=== End User Files Storage Configuration ===");
+
+//	return message.ToString();
+//}
+
+#region Startup Configuration
+
+// Configure and log all startup settings in one place
+var startupConfigurationManager = new StartupConfigurationManager(
+	app,
+	builder.Configuration,
+	app.Services.GetRequiredService<ILogger<Program>>(),
+	app.Services.GetRequiredService<StartupCapabilitiesService>());
+
+startupConfigurationManager.ConfigureAndLogStartupSettings();
 
 #endregion
-
-#region User Files Content Set-up
-
-try
-{
-	// Add user files serving (IIS-compatible)
-	var openRoseOptions = builder.Configuration
-		.GetSection("OpenRose")
-		.Get<OpenRoseOptions>();
-
-	if (openRoseOptions?.UserFilesStorage.Enabled == true)
-	{
-		var userFilesPath = openRoseOptions.UserFilesStorage.RootPath;
-		var originalPath = userFilesPath; // Store original for logging
-
-		// If path is relative, make it relative to application base directory
-		if (!Path.IsPathRooted(userFilesPath))
-		{
-			userFilesPath = Path.Combine(
-				AppContext.BaseDirectory,
-				userFilesPath);
-		}
-
-		// Convert to absolute path
-		userFilesPath = Path.GetFullPath(userFilesPath);
-
-		// Only configure if directory exists
-		if (Directory.Exists(userFilesPath))
-		{
-			// Primary path
-			app.UseStaticFiles(new StaticFileOptions
-			{
-				FileProvider = new PhysicalFileProvider(userFilesPath),
-				RequestPath = "/userfiles"
-			});
-
-			// Alternative paths if needed
-			app.UseStaticFiles(new StaticFileOptions
-			{
-				FileProvider = new PhysicalFileProvider(userFilesPath),
-				RequestPath = "/media"
-			});
-
-			var logger = app.Services.GetRequiredService<ILogger<Program>>();
-			var configSourceTracker = app.Services.GetRequiredService<ConfigurationSourceTrackerService>();
-
-			// Track configuration sources
-			configSourceTracker.TrackConfigurationSource(
-				"OpenRose:UserFilesStorage:Enabled",
-				openRoseOptions.UserFilesStorage.Enabled.ToString());
-
-			configSourceTracker.TrackConfigurationSource(
-				"OpenRose:UserFilesStorage:RootPath",
-				originalPath);
-
-			// Build and log consolidated user files status
-			var statusMessage = BuildUserFilesStorageStatusMessage(
-				openRoseOptions.UserFilesStorage,
-				originalPath,
-				userFilesPath,
-				app.Environment.EnvironmentName);
-
-			logger.LogInformation(statusMessage);
-
-			// Log configuration sources
-			configSourceTracker.LogAllTrackedConfigurations();
-		}
-		else
-		{
-			var logger = app.Services.GetRequiredService<ILogger<Program>>();
-			var configSourceTracker = app.Services.GetRequiredService<ConfigurationSourceTrackerService>();
-
-			// Track configuration sources
-			configSourceTracker.TrackConfigurationSource(
-				"OpenRose:UserFilesStorage:Enabled",
-				openRoseOptions.UserFilesStorage.Enabled.ToString());
-
-			configSourceTracker.TrackConfigurationSource(
-				"OpenRose:UserFilesStorage:RootPath",
-				originalPath);
-
-			var warningMessage = BuildUserFilesStorageWarningMessage(
-				originalPath,
-				userFilesPath);
-
-			logger.LogWarning(warningMessage);
-
-			// Log configuration sources
-			configSourceTracker.LogAllTrackedConfigurations();
-		}
-	}
-	else
-	{
-		var logger = app.Services.GetRequiredService<ILogger<Program>>();
-		logger.LogInformation("User files storage is DISABLED. (OpenRose:UserFilesStorage:Enabled = false)");
-	}
-}
-catch (Exception ex)
-{
-	var logger = app.Services.GetRequiredService<ILogger<Program>>();
-	logger.LogError(ex, "Error during user files storage configuration");
-}
-
-#endregion
-
-// Helper methods (add at the end of Program.cs file, before app.Run())
-static string BuildUserFilesStorageStatusMessage(
-	OpenRose.WebUI.Configuration.UserFilesStorageOptions userFilesStorage,
-	string originalPath,
-	string resolvedPath,
-	string environmentName)
-{
-	var message = new System.Text.StringBuilder();
-
-	message.AppendLine("=== User Files Storage Configuration ===");
-	message.AppendLine($"  Enabled Setting: {userFilesStorage.Enabled}");
-	message.AppendLine($"  RootPath Setting: {originalPath}");
-	message.AppendLine($"  Resolved Full Path: {resolvedPath}");
-
-	// Check directory details
-	if (Directory.Exists(resolvedPath))
-	{
-		var directoryInfo = new System.IO.DirectoryInfo(resolvedPath);
-		var fileCount = directoryInfo.GetFiles().Length;
-		var subdirCount = directoryInfo.GetDirectories().Length;
-
-		message.AppendLine($"  Directory Status: EXISTS | Files: {fileCount} | Subdirectories: {subdirCount}");
-		message.AppendLine($"  Accessible via: /userfiles, /media");
-		message.AppendLine($"  Environment: {environmentName}");
-	}
-
-	message.Append("=== End User Files Storage Configuration ===");
-
-	return message.ToString();
-}
-
-static string BuildUserFilesStorageWarningMessage(
-	string originalPath,
-	string resolvedPath)
-{
-	var message = new System.Text.StringBuilder();
-
-	message.AppendLine("=== User Files Storage Configuration ===");
-	message.AppendLine($"  RootPath Setting: {originalPath}");
-	message.AppendLine($"  Resolved Full Path: {resolvedPath}");
-	message.AppendLine($"  Directory Status: DOES NOT EXIST");
-	message.AppendLine();
-	message.AppendLine($"  ERROR: User files storage path does not exist.");
-	message.AppendLine($"  ACTION REQUIRED: Create this directory and place your image files there,");
-	message.AppendLine($"  then restart OpenRose.WebUI for the changes to take effect.");
-	message.AppendLine($"  User files serving is DISABLED until the directory is created.");
-	message.Append("=== End User Files Storage Configuration ===");
-
-	return message.ToString();
-}
 
 app.MapStaticAssets();
 app.UseAntiforgery();
