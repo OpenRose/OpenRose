@@ -68,6 +68,7 @@ public class ConfigurationSourceTrackerService
 	private readonly IConfigurationRoot _configurationRoot;
 	private readonly List<ConfigurationSourceTracker> _trackedConfigurations = new();
 	private readonly string _environmentName;
+	private readonly object _lockObject = new(); // Add lock for thread safety
 
 	public ConfigurationSourceTrackerService(
 		IConfiguration configuration,
@@ -115,7 +116,10 @@ public class ConfigurationSourceTrackerService
 				tracker.SourceDetail = source.SourceDetail;
 			}
 
-			_trackedConfigurations.Add(tracker);
+			lock (_lockObject) // Thread-safe add
+			{
+				_trackedConfigurations.Add(tracker);
+			}
 		}
 		catch (Exception ex)
 		{
@@ -222,29 +226,37 @@ public class ConfigurationSourceTrackerService
 	/// </summary>
 	public void LogAllTrackedConfigurations()
 	{
-		if (!_trackedConfigurations.Any())
+		lock (_lockObject) // Thread-safe read
 		{
-			return;
+			if (!_trackedConfigurations.Any())
+			{
+				return;
+			}
+
+			var message = new System.Text.StringBuilder();
+			message.AppendLine("=== Configuration Sources Audit Log ===");
+
+			foreach (var config in _trackedConfigurations)
+			{
+				message.AppendLine($"  {config.ToString()}");
+			}
+
+			message.Append("=== End Configuration Sources Audit Log ===");
+
+			_logger.LogInformation(message.ToString());
 		}
-
-		var message = new System.Text.StringBuilder();
-		message.AppendLine("=== Configuration Sources Audit Log ===");
-
-		foreach (var config in _trackedConfigurations)
-		{
-			message.AppendLine($"  {config.ToString()}");
-		}
-
-		message.Append("=== End Configuration Sources Audit Log ===");
-
-		_logger.LogInformation(message.ToString());
 	}
 
 	/// <summary>
 	/// Gets all tracked configurations.
 	/// </summary>
-	public IReadOnlyList<ConfigurationSourceTracker> GetTrackedConfigurations() => _trackedConfigurations.AsReadOnly();
-
+	public IReadOnlyList<ConfigurationSourceTracker> GetTrackedConfigurations()
+	{
+		lock (_lockObject)
+		{
+			return _trackedConfigurations.AsReadOnly();
+		}
+	}
 	/// <summary>
 	/// Debug helper: Lists all configuration providers at startup.
 	/// Only call this during debugging - not called by default.
