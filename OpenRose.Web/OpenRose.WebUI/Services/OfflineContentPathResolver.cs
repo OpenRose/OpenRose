@@ -69,56 +69,48 @@ namespace OpenRose.WebUI.Services
 
 		private void ResolveAndEnsureFolder()
 		{
-			// If no folder configured at all, we simply mark it unavailable.
 			if (string.IsNullOrWhiteSpace(_settings.StorageFolder))
 			{
-				_logger.LogInformation("OfflineContent.StorageFolder is not configured. Server-side JSON mode will be unavailable.");
+				_logger.LogInformation("OfflineContent.StorageFolder is not configured...");
 				ResolvedStorageFolderPath = null;
 				IsStorageFolderAvailable = false;
 				return;
 			}
 
 			string configuredPath = _settings.StorageFolder;
-
-			// EXPLANATION:
-			// If the configured path is absolute, we use it as-is.
-			// If it is relative, we resolve it under a cross-platform base folder.
 			string finalPath;
+
 			if (Path.IsPathRooted(configuredPath))
 			{
 				finalPath = configuredPath;
 			}
 			else
 			{
-				// EXPLANATION:
-				// Use a cross-platform application data folder as base.
-				// On Windows:  C:\Users\<User>\AppData\Roaming
-				// On Linux:    /home/<user>/.config
-				// On macOS:    /Users/<user>/Library/Application Support
 				var basePath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
 
 				if (string.IsNullOrWhiteSpace(basePath))
 				{
-					// Fallback: if for some reason ApplicationData is not available,
-					// use the current directory as a last resort.
 					basePath = AppContext.BaseDirectory;
-					_logger.LogWarning("Environment.SpecialFolder.ApplicationData returned empty. Falling back to AppContext.BaseDirectory: {BaseDirectory}", basePath);
+					_logger.LogWarning(
+						"Environment.SpecialFolder.ApplicationData returned empty. Falling back to AppContext.BaseDirectory: {BaseDirectory}",
+						basePath);
 				}
 
+				// Use Path.Combine instead of manual concatenation
 				finalPath = Path.Combine(basePath, configuredPath);
 			}
 
-			ResolvedStorageFolderPath = finalPath;
+			// Normalize the path to use OS-appropriate separators
+			ResolvedStorageFolderPath = Path.GetFullPath(finalPath);
 
 			try
 			{
-				if (!Directory.Exists(finalPath))
+				if (!Directory.Exists(ResolvedStorageFolderPath))
 				{
-					// EXPLANATION:
-					// Try to create the folder. If this fails, we log a warning
-					// and mark the folder as unavailable, but we do NOT throw.
-					Directory.CreateDirectory(finalPath);
-					_logger.LogInformation("Offline storage folder created or confirmed at: {Path}", finalPath);
+					Directory.CreateDirectory(ResolvedStorageFolderPath);
+					_logger.LogInformation(
+						"Offline storage folder created or confirmed at: {Path}",
+						ResolvedStorageFolderPath);
 				}
 
 				IsStorageFolderAvailable = true;
@@ -126,8 +118,8 @@ namespace OpenRose.WebUI.Services
 			catch (Exception ex)
 			{
 				_logger.LogWarning(ex,
-					"Offline storage folder could not be created or accessed at: {Path}. Server-side JSON files will not be available.",
-					finalPath);
+					"Offline storage folder could not be created or accessed at: {Path}...",
+					ResolvedStorageFolderPath);
 
 				IsStorageFolderAvailable = false;
 			}
