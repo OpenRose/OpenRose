@@ -5,6 +5,7 @@
 namespace OpenRose.WebUI.Services;
 
 using OpenRose.WebUI.Configuration;
+using OpenRose.WebUI.Services.StartUpConfiguration;
 
 /// <summary>
 /// Logs user files storage configuration details for debugging and auditing purposes.

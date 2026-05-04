@@ -31,6 +31,7 @@ using OpenRose.WebUI.Components.EventServices;
 using OpenRose.WebUI.Components.FindServices;
 using OpenRose.WebUI.Configuration;
 using OpenRose.WebUI.Services;
+using OpenRose.WebUI.Services.StartUpConfiguration;
 using System.Reflection;
 using System.Runtime.InteropServices;
 //using System.Reflection;

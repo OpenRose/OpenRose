@@ -5,6 +5,7 @@
 namespace OpenRose.WebUI.Services;
 
 using OpenRose.WebUI.Configuration;
+using OpenRose.WebUI.Services.StartUpConfiguration;
 
 /// <summary>
 /// Logs offline content configuration details for debugging and auditing purposes.

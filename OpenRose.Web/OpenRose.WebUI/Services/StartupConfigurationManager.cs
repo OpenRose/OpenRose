@@ -6,6 +6,7 @@ namespace OpenRose.WebUI.Services;
 
 using Microsoft.Extensions.FileProviders;
 using OpenRose.WebUI.Configuration;
+using OpenRose.WebUI.Services.StartUpConfiguration;
 
 /// <summary>
 /// Manages application startup configuration logging and offline content setup.

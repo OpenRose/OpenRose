@@ -2,7 +2,7 @@
 // Licensed under the Apache License, Version 2.0. 
 // See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 
-namespace OpenRose.WebUI.Services;
+namespace OpenRose.WebUI.Services.StartUpConfiguration;
 
 using Microsoft.Extensions.Configuration.CommandLine;
 using Microsoft.Extensions.Configuration.EnvironmentVariables;
