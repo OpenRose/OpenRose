@@ -4,6 +4,7 @@
 
 using Microsoft.Extensions.Options;
 using OpenRose.WebUI.Configuration;
+using OpenRose.WebUI.Services.StartUpConfiguration;
 using System.Text.Json;
 
 namespace OpenRose.WebUI.Services

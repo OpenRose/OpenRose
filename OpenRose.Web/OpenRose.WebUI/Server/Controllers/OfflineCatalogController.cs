@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using OpenRose.WebUI.Services;
+using OpenRose.WebUI.Services.StartUpConfiguration;
 
 namespace OpenRose.WebUI.Server.Controllers
 {

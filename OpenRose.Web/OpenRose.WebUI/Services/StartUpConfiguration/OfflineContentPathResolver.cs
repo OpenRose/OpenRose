@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OpenRose.WebUI.Configuration;
 
-namespace OpenRose.WebUI.Services
+namespace OpenRose.WebUI.Services.StartUpConfiguration
 {
 	/// <summary>
 	/// EXPLANATION:
