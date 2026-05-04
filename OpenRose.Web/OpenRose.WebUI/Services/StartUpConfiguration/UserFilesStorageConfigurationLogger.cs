@@ -2,10 +2,9 @@
 // Licensed under the Apache License, Version 2.0. 
 // See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 
-namespace OpenRose.WebUI.Services;
+namespace OpenRose.WebUI.Services.StartUpConfiguration;
 
 using OpenRose.WebUI.Configuration;
-using OpenRose.WebUI.Services.StartUpConfiguration;
 
 /// <summary>
 /// Logs user files storage configuration details for debugging and auditing purposes.
@@ -122,7 +121,7 @@ public class UserFilesStorageConfigurationLogger
 		// Check directory details
 		if (Directory.Exists(resolvedPath))
 		{
-			var directoryInfo = new System.IO.DirectoryInfo(resolvedPath);
+			var directoryInfo = new DirectoryInfo(resolvedPath);
 			var fileCount = directoryInfo.GetFiles().Length;
 			var subdirCount = directoryInfo.GetDirectories().Length;
 
