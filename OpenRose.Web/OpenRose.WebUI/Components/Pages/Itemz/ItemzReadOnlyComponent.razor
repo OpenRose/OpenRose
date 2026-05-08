@@ -36,17 +36,20 @@
         <MudItem xs="12" sm="12">
             <!-- Title Card made sticky -->
             <MudCard style="background-color:#FABBBB; position:sticky; top:0; z-index:10;">
-                <MudCardContent Style="padding : 6px">
-                    <MudGrid>
-                        <!-- Left side: Title -->
-                        <MudItem xs="12" sm="12" md="7" lg="7">
-                            <MudText Typo="Typo.h5" Align="Align.Left">
-                                <strong>@singleItemz.Name</strong>
-                            </MudText>
-                        </MudItem>
+                <MudCardContent Style="padding:6px">
 
-                        <!-- Right side: Circular Icon Buttons -->
-                        <MudItem xs="12" sm="12" md="5" lg="5" Class="d-flex justify-end align-center">
+                    <div class="d-flex align-start justify-space-between" style="gap:8px;">
+
+                        <!-- Title -->
+                        <MudText Typo="Typo.h5"
+                                 Align="Align.Left"
+                                 Class="flex-grow-1"
+                                 Style="white-space:normal; overflow-wrap:break-word;">
+                            <strong>@singleItemz.Name</strong>
+                        </MudText>
+
+                        <!-- Buttons -->
+                        <div class="d-flex align-center flex-shrink-0">
                             <MudIconButton Icon="@Icons.Material.Filled.ArrowCircleUp"
                                            Color="Color.Success"
                                            Size="Size.Medium"
@@ -62,11 +65,16 @@
                                            Variant="Variant.Filled"
                                            Class="mud-rounded-circle"
                                            OnClick="@(() => { if (OnNavigateNext.HasDelegate) OnNavigateNext.InvokeAsync(ItemzId); })" />
+                        </div>
 
-                        </MudItem>
-                    </MudGrid>
+                    </div>
+
                 </MudCardContent>
             </MudCard>
+
+
+
+
 
             <!-- Scrollable Content -->
             <MudCard Elevation="0" Outlined="false" Style="background-color:transparent; overflow-y:auto; max-height:calc(100vh - 200px);">
@@ -131,6 +139,11 @@
 		</MudOverlay>
 	</MudPaper>
 }
+<script>
+    .no-wrap-grid {
+        flex-wrap: nowrap;
+    }
+</script>
 @code {
 	[Parameter]
 	public Guid ItemzId { get; set; }
