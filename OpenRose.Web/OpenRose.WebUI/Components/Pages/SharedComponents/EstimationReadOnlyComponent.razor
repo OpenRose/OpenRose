@@ -14,12 +14,12 @@
 @if (HierarchyData != null)
 {
     @if (!string.IsNullOrEmpty(HierarchyData.EstimationUnit))
-    { 
-        <MudText Variant="Variant.H6"><b>Estimation [@HierarchyData.EstimationUnit] : </b> @HierarchyData.OwnEstimation <b>|| Roll-Up</b> :@HierarchyData.RolledUpEstimation </MudText>
+    {
+        <MudText Inline="true" Variant="Variant.H6"><b>Estimation [@HierarchyData.EstimationUnit] : </b> @HierarchyData.OwnEstimation <b>|| Roll-Up</b> :@HierarchyData.RolledUpEstimation </MudText>
     }
         else
     {
-        <MudText Variant="Variant.H6"><b>Estimation : </b> @HierarchyData.OwnEstimation <b>|| Roll-Up</b> :@HierarchyData.RolledUpEstimation </MudText>
+        <MudText Inline="true" Variant="Variant.H6"><b>Estimation : </b> @HierarchyData.OwnEstimation <b>|| Roll-Up</b> :@HierarchyData.RolledUpEstimation </MudText>
     }
 }
 
