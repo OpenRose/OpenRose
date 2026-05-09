@@ -31,32 +31,32 @@
         <MudItem xs="12" sm="12">
             <MudCard style="background-color:#FABBBB; top:0; z-index:10;">
                 <MudCardContent>
-                    <MudGrid>
-                        <MudItem xs="12" sm="12" md="7" lg="7">
-                            <MudText Typo="Typo.h5" Align="Align.Left">
-                                <strong>@_itemzType.Name</strong>
-                            </MudText>
-                        </MudItem>
+                    <div class="d-flex align-start justify-space-between" style="gap:8px;">
+                    <MudText Typo="Typo.h5" Align="Align.Left"
+                            Class="flex-grow-1"
+                            Style="white-space:normal; overflow-wrap:break-word;">
+                        <strong>@_itemzType.Name</strong>
+                    </MudText>
 
-                        <MudItem xs="12" sm="12" md="5" lg="5" Class="d-flex justify-end align-center">
-                            <MudIconButton Icon="@Icons.Material.Filled.ArrowCircleUp"
-                                           Color="Color.Success"
-                                           Size="Size.Medium"
-                                           IconSize="Size.Large"
-                                           Variant="Variant.Filled"
-                                           Class="mud-rounded-circle me-2"
-                                           OnClick="@(() => { if (OnNavigatePrevious.HasDelegate) OnNavigatePrevious.InvokeAsync(ItemzTypeId); })" />
+                    <div class="d-flex align-top flex-shrink-0">
+                        <MudIconButton Icon="@Icons.Material.Filled.ArrowCircleUp"
+                                        Color="Color.Success"
+                                        Size="Size.Medium"
+                                        IconSize="Size.Large"
+                                        Variant="Variant.Filled"
+                                        Class="mud-rounded-circle me-2"
+                                        OnClick="@(() => { if (OnNavigatePrevious.HasDelegate) OnNavigatePrevious.InvokeAsync(ItemzTypeId); })" />
 
-                            <MudIconButton Icon="@Icons.Material.Filled.ArrowCircleDown"
-                                           Color="Color.Success"
-                                           Size="Size.Medium"
-                                           IconSize="Size.Large"
-                                           Variant="Variant.Filled"
-                                           Class="mud-rounded-circle"
-                                           OnClick="@(() => { if (OnNavigateNext.HasDelegate) OnNavigateNext.InvokeAsync(ItemzTypeId); })" />
-                        </MudItem>
-                    </MudGrid>
-                </MudCardContent>
+                        <MudIconButton Icon="@Icons.Material.Filled.ArrowCircleDown"
+                                        Color="Color.Success"
+                                        Size="Size.Medium"
+                                        IconSize="Size.Large"
+                                        Variant="Variant.Filled"
+                                        Class="mud-rounded-circle"
+                                        OnClick="@(() => { if (OnNavigateNext.HasDelegate) OnNavigateNext.InvokeAsync(ItemzTypeId); })" />
+                        </div>
+                    </div>                
+                 </MudCardContent>
             </MudCard>
 
             <MudCard Elevation="0" Outlined="false" Style="background-color:transparent;">

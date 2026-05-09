@@ -36,16 +36,17 @@
  		<MudItem xs="12" sm="12">
 			<MudCard style="background-color:#FABBBB; position:sticky; top:0; z-index:10;">
 				<MudCardContent>
-					<MudGrid>
+                    <div class="d-flex align-start justify-space-between" style="gap:8px;">
+
 						<!-- Left side: Title -->
-						<MudItem xs="12" sm="12" md="7" lg="7">
-							<MudText Typo="Typo.h5" Align="Align.Left">
+							<MudText Typo="Typo.h5" Align="Align.Left"
+									 Class="flex-grow-1"
+									 Style="white-space:normal; overflow-wrap:break-word;">
 								<strong>@singleBaselineItemz.Name</strong>
 							</MudText>
-						</MudItem>
+                        <div class="d-flex align-top flex-shrink-0">
 
 						<!-- Right side: Up + Down buttons -->
-						<MudItem xs="12" sm="12" md="5" lg="5" Class="d-flex justify-end align-center">
 							@if (!IsIncluded)
 							{
 								<MudTooltip Text="Excluded from Baseline">
@@ -67,8 +68,8 @@
 										   Variant="Variant.Filled"
 										   Class="mud-rounded-circle"
 										   OnClick="@(() => { if (OnNavigateNext.HasDelegate) OnNavigateNext.InvokeAsync(BaselineItemzId); })" />
-						</MudItem>
-					</MudGrid>
+						</div>
+					</div>
 				</MudCardContent>
 			</MudCard>
 

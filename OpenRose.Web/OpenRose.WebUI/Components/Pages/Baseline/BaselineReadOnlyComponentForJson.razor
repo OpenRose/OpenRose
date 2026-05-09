@@ -33,24 +33,22 @@
             @* <MudCard style="background-color:#FABBBB; position:sticky; top:0; z-index:10;"> *@
             <MudCard style="background-color:#FABBBB; top:0; z-index:10;">
                 <MudCardContent>
-                    <MudGrid>
-                        <MudItem xs="12" sm="12" md="7" lg="7">
-                            <MudText Typo="Typo.h5" Align="Align.Left">
-                                <strong>@_baseline.Name</strong>
-                            </MudText>
-                        </MudItem>
-
-                        <MudItem xs="12" sm="12" md="5" lg="5" Class="d-flex justify-end align-center">
-                            <MudIconButton Icon="@Icons.Material.Filled.ArrowCircleDown"
-                                           Color="Color.Success"
-                                           Size="Size.Medium"
-                                           IconSize="Size.Large"
-                                           Variant="Variant.Filled"
-                                           Class="mud-rounded-circle"
-                                           OnClick="@(() => { if (OnNavigateNext.HasDelegate) OnNavigateNext.InvokeAsync(BaselineId); })" />
-                        </MudItem>
-                    </MudGrid>
-
+                    <div class="d-flex align-start justify-space-between" style="gap:8px;">
+                        <MudText Typo="Typo.h5" Align="Align.Left"
+                                Class="flex-grow-1"
+                                Style="white-space:normal; overflow-wrap:break-word;">
+                            <strong>@_baseline.Name</strong>
+                        </MudText>
+                    <div class="d-flex align-top flex-shrink-0">
+                        <MudIconButton Icon="@Icons.Material.Filled.ArrowCircleDown"
+                                        Color="Color.Success"
+                                        Size="Size.Medium"
+                                        IconSize="Size.Large"
+                                        Variant="Variant.Filled"
+                                        Class="mud-rounded-circle"
+                                        OnClick="@(() => { if (OnNavigateNext.HasDelegate) OnNavigateNext.InvokeAsync(BaselineId); })" />
+                        </div>
+                    </div>
                 </MudCardContent>
             </MudCard>
 
