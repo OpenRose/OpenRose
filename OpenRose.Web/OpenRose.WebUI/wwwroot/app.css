@@ -129,6 +129,25 @@ h1:focus {
             color: black !important; /* Set the color of the bullet markers */
         }
 
+/* START - Responsive Text for Titles */
+
+.text-responsive-title {
+    font-size: 1.75rem !important; /* default = h5 */
+}
+
+@media (max-width: 900px) { /* tablet */
+    .text-responsive-title {
+        font-size: 1.5rem !important;
+    }
+}
+
+@media (max-width: 600px) { /* mobile */
+    .text-responsive-title {
+        font-size: 1rem !important;
+    }
+}
+
+/* END - Responsive Text for Titles */
 
 /* Scroll bar for MudPaper mainly for displaying Description Content in Read-Only mode */
 /*.fixed-height-scroll {
