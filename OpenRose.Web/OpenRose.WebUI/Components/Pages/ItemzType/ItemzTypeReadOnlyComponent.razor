@@ -68,14 +68,6 @@
 
 			<MudCard Elevation="0" Outlined="false" Style="background-color:transparent;">
 				<MudCardContent Style="padding : 6px">
-@* 					<MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-						<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
-							<MudText><strong>ID :</strong></MudText>
-							<CopyableText TextToCopy="@singleItemzType.Id.ToString()" />
-						</MudStack>
-						<MudText><strong>Status :</strong> @singleItemzType.Status</MudText>
-					</MudStack> *@
-
 					@if (!ViewSettings.IsKioskMode)
 					{
                     <MudBreakpointProvider OnBreakpointChanged="b => bp = b">
@@ -117,8 +109,6 @@
 	<MudPaper Height="calc(100vh - 100px);" Width="100%">
 		<MudOverlay Visible="@_showOverlay" DarkBackground="true" Absolute="true">
 			<MudContainer Class="d-flex flex-column justify-center align-center" Style="height: 100%;">
-				@* <MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Inherit">Moving ... </MudText>
-			<br /> *@
 				<MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
 			</MudContainer>
 		</MudOverlay>
