@@ -57,23 +57,30 @@
                 <MudCardContent>
                 @if (!ViewSettings.IsKioskMode)
                 {
-                    <MudStack Row="true" Spacing="2">
-                        <MudText><strong>ID:</strong></MudText>
+                <MudBreakpointProvider OnBreakpointChanged="b => bp = b">
+                    <div style=" display:flex;
+                            gap: @(bp >= Breakpoint.Md ? "10px" : "2px") ;
+                            align-items:flex-start;
+                            flex-direction:@(bp >= Breakpoint.Md ? "row" : "column");
+                            flex-wrap:@(bp >= Breakpoint.Md ? "nowrap" : "wrap"); ">
+                        <div style="display:flex; align-items:center; gap:6px;">
+                        <strong>ID:</strong>
                         <CopyableText TextToCopy="@_baseline.Id.ToString()" DisplayLength="8" />
                         <MudTooltip Text="Show in Tree View">
                             <MudIcon Icon="@Icons.Material.Filled.Park" Size="Size.Small" Class="mouse-pointer-icon" @onclick="async () => await findAndShowInTreeViewAsync()" />
                         </MudTooltip>
+                        </div>
                         @if (!string.IsNullOrEmpty(_baseline.EstimationUnit))
                         {
-                            <MudText Variant="Variant.H6">|| <b>Estimation [@_baseline.EstimationUnit] : </b> @_baseline.OwnEstimation <b>|| Roll-Up</b> :@_baseline.RolledUpEstimation </MudText>
+                            <div><strong>@(bp >= Breakpoint.Md ? "||" : "") Estimation [@_baseline.EstimationUnit] : </strong> @_baseline.OwnEstimation <b>|| Roll-Up</b> :@_baseline.RolledUpEstimation </div>
                         }
                         else
                         {
-                            <MudText Variant="Variant.H6">|| <b>Estimation : </b> @_baseline.OwnEstimation <b>|| Roll-Up</b> :@_baseline.RolledUpEstimation </MudText>
+                            <div><strong>@(bp >= Breakpoint.Md ? "||" : "") Estimation : </strong> @_baseline.OwnEstimation <b>|| Roll-Up</b> :@_baseline.RolledUpEstimation </div>
                         }
-                    </MudStack>
-
-                    <br />
+                    </div>
+                </MudBreakpointProvider>
+                <br />
                 }
                 @if (!string.IsNullOrEmpty(_baseline.Description))
                 {
@@ -93,6 +100,8 @@
     private GetBaselineExportDTO _baseline = new();
     private MarkupString _convertedMarkdown;
     private bool _needsRender = false;
+
+    private Breakpoint bp;
 
     protected override async Task OnParametersSetAsync()
     {
