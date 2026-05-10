@@ -64,27 +64,33 @@
                 <MudCardContent>
                     @if (!ViewSettings.IsKioskMode)
                     {
-                    <MudStack Row="true" Spacing="2">
-                        <MudText><strong>ID:</strong></MudText>
+                    <MudBreakpointProvider OnBreakpointChanged="b => bp = b">
+                        <div style=" display:flex;
+                            gap: @(bp >= Breakpoint.Md ? "10px" : "2px") ;
+                            align-items:flex-start;
+                            flex-direction:@(bp >= Breakpoint.Md ? "row" : "column");
+                            flex-wrap:@(bp >= Breakpoint.Md ? "nowrap" : "wrap"); ">
+                        <div style="display:flex; align-items:center; gap:6px;">
+                        <strong>ID:</strong>
                         <CopyableText TextToCopy="@_baselineItemzType.Id.ToString()" DisplayLength="8" />
                         <MudTooltip Text="Show in Tree View">
                             <MudIcon Icon="@Icons.Material.Filled.Park" Size="Size.Small" Class="mouse-pointer-icon" @onclick="async () => await findAndShowInTreeViewAsync()" />
                         </MudTooltip>
-                        <MudText><strong> || Status:</strong> @_baselineItemzType.Status</MudText>
-                        <MudText><strong> || Is System?  : </strong> @(_baselineItemzType.IsSystem ? "Yes" : "No")</MudText>
+                        </div>
+                        <div><strong> @(bp >= Breakpoint.Md ? "||" : "") Status:</strong> @_baselineItemzType.Status</div>
+                        <div><strong> @(bp >= Breakpoint.Md ? "||" : "") Is System?  : </strong> @(_baselineItemzType.IsSystem ? "Yes" : "No")</div>
                         @if (!string.IsNullOrEmpty(_baselineItemzType.EstimationUnit))
                         {
-                            <MudText Variant="Variant.H6">|| <b>Estimation [@_baselineItemzType.EstimationUnit] : </b> @_baselineItemzType.OwnEstimation <b>|| Roll-Up</b> :@_baselineItemzType.RolledUpEstimation </MudText>
+                            <div><strong>@(bp >= Breakpoint.Md ? "||" : "")Estimation [@_baselineItemzType.EstimationUnit] : </strong> @_baselineItemzType.OwnEstimation <b>|| Roll-Up</b> :@_baselineItemzType.RolledUpEstimation </div>
                         }
                         else
                         {
-                            <MudText Variant="Variant.H6">|| <b>Estimation : </b> @_baselineItemzType.OwnEstimation <b>|| Roll-Up</b> :@_baselineItemzType.RolledUpEstimation </MudText>
+                            <div><strong>@(bp >= Breakpoint.Md ? "||" : "") Estimation : </strong> @_baselineItemzType.OwnEstimation <b>|| Roll-Up</b> :@_baselineItemzType.RolledUpEstimation </div>
                         }
-                    </MudStack>
+                        </div>
+                    </MudBreakpointProvider>
                     }
-
                     <br />
-
                     @if (!string.IsNullOrEmpty(_baselineItemzType.Description))
                     {
                         <div class="markdown-body">@((MarkupString)_convertedMarkdown)</div>
@@ -104,6 +110,8 @@
     private GetBaselineItemzTypeExportDTO _baselineItemzType = new();
     private MarkupString _convertedMarkdown;
     private bool _needsRender = false;
+
+    private Breakpoint bp;
 
     protected override async Task OnParametersSetAsync()
     {
