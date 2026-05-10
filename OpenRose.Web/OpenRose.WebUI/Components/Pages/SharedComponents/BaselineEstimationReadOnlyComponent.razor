@@ -15,11 +15,11 @@
 {
     @if (!string.IsNullOrEmpty(BaselineHierarchyData.EstimationUnit))
     { 
-        <MudText Variant="Variant.H6"><b>Estimation [@BaselineHierarchyData.EstimationUnit] : </b> @BaselineHierarchyData.OwnEstimation <b>|| Roll-Up</b> :@BaselineHierarchyData.RolledUpEstimation </MudText>
+        <MudText Inline="true" Variant="Variant.H6"><b>Estimation [@BaselineHierarchyData.EstimationUnit] : </b> @BaselineHierarchyData.OwnEstimation <b>|| Roll-Up</b> :@BaselineHierarchyData.RolledUpEstimation </MudText>
     }
         else
     {
-        <MudText Variant="Variant.H6"><b>Estimation : </b> @BaselineHierarchyData.OwnEstimation <b>|| Roll-Up</b> :@BaselineHierarchyData.RolledUpEstimation </MudText>
+        <MudText Inline="true" Variant="Variant.H6"><b>Estimation : </b> @BaselineHierarchyData.OwnEstimation <b>|| Roll-Up</b> :@BaselineHierarchyData.RolledUpEstimation </MudText>
     }
 }
 
