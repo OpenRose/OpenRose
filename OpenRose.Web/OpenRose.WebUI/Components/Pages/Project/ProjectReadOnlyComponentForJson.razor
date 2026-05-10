@@ -59,24 +59,34 @@
                 <MudCardContent>
                     @if (!ViewSettings.IsKioskMode)
                     {
-                    <MudStack Row="true" Spacing="2" StretchItems="StretchItems.None" AlignItems="AlignItems.Start" Class="w-100">
-                        <MudStack Row="true" Spacing="2">
-                        <MudText><strong>ID          : </strong></MudText>
-                        <CopyableText TextToCopy="@_project.Id.ToString()" DisplayLength="8" />
-                        <MudTooltip Text="Show in Tree View">
-                            <MudIcon Icon="@Icons.Material.Filled.Park" Size="Size.Small" Class="mouse-pointer-icon" @onclick="async () => await findAndShowInTreeViewAsync()" />
-                        </MudTooltip>
-                        </MudStack>
-                        <MudText><strong> || Status      : </strong> @_project.Status</MudText>
+                    
+                        
+                    <MudBreakpointProvider OnBreakpointChanged="b => bp = b">
+                        <div style=" display:flex;
+                                gap: @(bp >= Breakpoint.Md ? "10px" : "2px") ;
+                                align-items:flex-start;
+                                flex-direction:@(bp >= Breakpoint.Md ? "row" : "column");
+                                flex-wrap:@(bp >= Breakpoint.Md ? "nowrap" : "wrap"); ">
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <strong>ID : </strong>
+                                <CopyableText TextToCopy="@_project.Id.ToString()" DisplayLength="8" />
+                                <MudTooltip Text="Show in Tree View">
+                                    <MudIcon Icon="@Icons.Material.Filled.Park" Size="Size.Small" Class="mouse-pointer-icon" @onclick="async () => await findAndShowInTreeViewAsync()" />
+                                </MudTooltip>
+                            </div>
+                        <div><strong> @(bp >= Breakpoint.Md ? "||" : "")  Status      : </strong> @_project.Status</div>
                         @if (!string.IsNullOrEmpty(_project.EstimationUnit))
                         {
-                            <MudText Variant="Variant.H6">|| <b>Estimation [@_project.EstimationUnit] : </b> @_project.OwnEstimation <b>|| Roll-Up</b> :@_project.RolledUpEstimation </MudText>
+                            <div><strong>@(bp >= Breakpoint.Md ? "||" : "") Estimation [@_project.EstimationUnit] : </strong>  @_project.OwnEstimation <b>|| Roll-Up</b> :@_project.RolledUpEstimation </div>
                         }
                         else
                         {
-                            <MudText Variant="Variant.H6">|| <b>Estimation : </b> @_project.OwnEstimation <b>|| Roll-Up</b> :@_project.RolledUpEstimation </MudText>
+                            <div><strong>@(bp >= Breakpoint.Md ? "||" : "") Estimation : </strong>  @_project.OwnEstimation <b>|| Roll-Up</b> :@_project.RolledUpEstimation </div>
                         }
-                    </MudStack>
+                        </div>
+                    </MudBreakpointProvider>
+
+
                     <br />
                     }
                     <div class="custom-markdown-editor">
@@ -100,6 +110,8 @@
     private GetProjectExportDTO _project = new();
     private MarkupString _convertedMarkdown;
     private bool _needsRender = false;
+
+    private Breakpoint bp;
 
     protected override async Task OnParametersSetAsync()
     {

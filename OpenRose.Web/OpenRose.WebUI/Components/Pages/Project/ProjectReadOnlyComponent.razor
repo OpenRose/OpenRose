@@ -72,17 +72,25 @@
 					</MudStack> *@
 					@if (!ViewSettings.IsKioskMode)
 					{
-					<MudStack Row="true" Spacing="2" StretchItems="StretchItems.None" AlignItems="AlignItems.Start" Class="w-100">
-						<MudStack Row="true" Spacing="2">
-							<MudText><strong>ID          : </strong></MudText>
-							<CopyableText TextToCopy="@singleProject.Id.ToString()" DisplayLength="8" />
-							<MudTooltip Text="Show in Tree View" Placement="Placement.Top">
-								<MudIcon Icon="@Icons.Material.Filled.Park" Size="Size.Small" Class="mouse-pointer-icon" @onclick="findAndShowInTreeView" />
-							</MudTooltip>
-						</MudStack>
-						<MudText><strong> || Status      : </strong> @singleProject.Status </MudText>
-						|| <EstimationReadOnlyComponent RecordId="@ProjectId" />
-					</MudStack>
+                    <MudBreakpointProvider OnBreakpointChanged="b => bp = b">
+                        <div style="
+                                    display:flex;
+                                    gap: @(bp >= Breakpoint.Md ? "10px" : "2px") ;
+                                    align-items:flex-start;
+                                    flex-direction:@(bp >= Breakpoint.Md ? "row" : "column");
+                                    flex-wrap:@(bp >= Breakpoint.Md ? "nowrap" : "wrap");
+                                    ">
+                            <div style="display:flex; align-items:center; gap:6px;">
+								<strong>ID : </strong>
+								<CopyableText TextToCopy="@singleProject.Id.ToString()" DisplayLength="8" />
+								<MudTooltip Text="Show in Tree View" Placement="Placement.Top">
+									<MudIcon Icon="@Icons.Material.Filled.Park" Size="Size.Small" Class="mouse-pointer-icon" @onclick="findAndShowInTreeView" />
+								</MudTooltip>
+							</div>
+							<div><strong> @(bp >= Breakpoint.Md ? "||" : "") Status      : </strong> @singleProject.Status </div>
+							<div><strong> @(bp >= Breakpoint.Md ? "||" : "")</strong>  <EstimationReadOnlyComponent RecordId="@ProjectId" /> </div>
+						</div>
+					</MudBreakpointProvider>
 					}
 
 					<br />
@@ -124,6 +132,8 @@
 	public bool _showOverlay { get; set; } = false;
 
 	private MarkupString convertedMarkdown;
+
+	private Breakpoint bp;
 
 	protected override async Task OnAfterRenderAsync(bool firstRender)
 	{
