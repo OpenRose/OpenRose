@@ -79,12 +79,23 @@
 			</MudCard>
 			<MudCard>
 				<MudCardContent>
-				<MudStack Row="true" Spacing="2">
-					<MudText><strong>ID          : </strong></MudText>
-					<CopyableText TextToCopy="@singleItemzType.Id.ToString()" DisplayLength="8" />
-					<ShowHierarchyTreeButton RecordId="@singleItemzType.Id" />
-					|| <EstimationReadOnlyComponent RecordId="@ItemzTypeId" />
-				</MudStack>
+                <MudBreakpointProvider OnBreakpointChanged="b => bp = b">
+                    <div style="
+                                display:flex;
+                                gap: @(bp >= Breakpoint.Md ? "10px" : "2px") ;
+                                align-items:flex-start;
+                                flex-direction:@(bp >= Breakpoint.Md ? "row" : "column");
+                                flex-wrap:@(bp >= Breakpoint.Md ? "nowrap" : "wrap");
+                                ">
+                        <div style="display:flex; align-items:center; gap:6px;">
+							<strong>ID : </strong>
+							<CopyableText TextToCopy="@singleItemzType.Id.ToString()" DisplayLength="8" />
+							<ShowHierarchyTreeButton RecordId="@singleItemzType.Id" />
+						</div>
+						<div><strong> @(bp >= Breakpoint.Md ? "||" : "")</strong> <EstimationReadOnlyComponent RecordId="@ItemzTypeId" /> </div>
+                    </div>
+                </MudBreakpointProvider>
+
 				<MudText><strong>Status      : </strong> @singleItemzType.Status</MudText>
 				<MudText><strong>Description : </strong> </MudText>
 					<br />
@@ -185,6 +196,8 @@
 	public bool _showOverlay { get; set; } = false;
 
 	private MarkupString convertedMarkdown;
+
+	private Breakpoint bp;
 
 	protected override async Task OnInitializedAsync()
 	{

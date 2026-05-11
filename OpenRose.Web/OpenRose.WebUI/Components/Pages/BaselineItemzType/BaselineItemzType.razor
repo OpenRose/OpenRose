@@ -70,17 +70,25 @@
 				<MudCard>
 					<MudCardContent>
 
-					<MudStack Row="true" Spacing="2" StretchItems="StretchItems.None" AlignItems="AlignItems.Start" Class="w-100">
-						<MudStack Row="true" Spacing="2">
-							<MudText><strong>ID          : </strong></MudText>
+					<MudBreakpointProvider OnBreakpointChanged="b => bp = b">
+						<div style="
+	                                display:flex;
+	                                gap: @(bp >= Breakpoint.Md ? "10px" : "2px") ;
+	                                align-items:flex-start;
+	                                flex-direction:@(bp >= Breakpoint.Md ? "row" : "column");
+	                                flex-wrap:@(bp >= Breakpoint.Md ? "nowrap" : "wrap");
+	                                ">
+							<div style="display:flex; align-items:center; gap:6px;">
+							<strong>ID : </strong>
 							<CopyableText TextToCopy="@singleIBaselineItemzType.Id.ToString()" DisplayLength="8" />
 							<GoToOriginalItemzTypeButton BaselineItemzTypeId="@singleIBaselineItemzType.Id" />
 							<ShowHierarchyTreeButton RecordId="@singleIBaselineItemzType.Id" />
-						</MudStack>
-						<MudText><strong> || Status      : </strong> @singleIBaselineItemzType.Status</MudText>
-						<MudText><strong> || Is System?  : </strong> @(singleIBaselineItemzType.IsSystem ? "Yes" : "No")</MudText>
-						|| <BaselineEstimationReadOnlyComponent RecordId="BaselineItemzTypeId" />
-					</MudStack>
+							</div>
+							<div><strong> @(bp >= Breakpoint.Md ? "||" : "") Status      : </strong> @singleIBaselineItemzType.Status</div>
+							<div><strong> @(bp >= Breakpoint.Md ? "||" : "") Is System?  : </strong> @(singleIBaselineItemzType.IsSystem ? "Yes" : "No")</div>
+							<div><strong> @(bp >= Breakpoint.Md ? "||" : "")</strong> <BaselineEstimationReadOnlyComponent RecordId="BaselineItemzTypeId" /></div>
+						</div>
+					</MudBreakpointProvider>
 
 @* 					<MudStack Row="true" Spacing="2">
 						<MudText><strong>ID           : </strong></MudText>
@@ -174,6 +182,8 @@
 	public bool initializingPage { get; set; } = true;
 
 	private MarkupString convertedMarkdown;
+
+	private Breakpoint bp;
 
 	protected override async Task OnAfterRenderAsync(bool firstRender)
 	{

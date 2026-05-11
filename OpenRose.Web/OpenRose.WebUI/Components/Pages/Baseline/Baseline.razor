@@ -65,17 +65,27 @@
 			</MudCard>
 			<MudCard>
 				<MudCardContent>
-					<MudStack Row="true" Spacing="2">
-					<MudText><strong>ID          : </strong></MudText>
-					<CopyableText TextToCopy="@singleBaseline.Id.ToString()" DisplayLength="8"/>
-					<MudTooltip Text="GoTo Project" Placement="Placement.Top">
-						<MudIcon Icon="@Icons.Material.Filled.SportsBaseball"
-									Size="Size.Small"
-									Class="mouse-pointer-icon"
-									@onclick="async _ => await gotoBaselineProjectRecord(singleBaseline.Id.ToString())" />
-					</MudTooltip>
-					|| <BaselineEstimationReadOnlyComponent RecordId="BaselineId" />
-					</MudStack>
+                <MudBreakpointProvider OnBreakpointChanged="b => bp = b">
+                    <div style="
+                                display:flex;
+                                gap: @(bp >= Breakpoint.Md ? "10px" : "2px") ;
+                                align-items:flex-start;
+                                flex-direction:@(bp >= Breakpoint.Md ? "row" : "column");
+                                flex-wrap:@(bp >= Breakpoint.Md ? "nowrap" : "wrap");
+                                ">
+                        <div style="display:flex; align-items:center; gap:6px;">
+						<strong>ID : </strong>
+						<CopyableText TextToCopy="@singleBaseline.Id.ToString()" DisplayLength="8"/>
+						<MudTooltip Text="GoTo Project" Placement="Placement.Top">
+							<MudIcon Icon="@Icons.Material.Filled.SportsBaseball"
+										Size="Size.Small"
+										Class="mouse-pointer-icon"
+										@onclick="async _ => await gotoBaselineProjectRecord(singleBaseline.Id.ToString())" />
+						</MudTooltip>
+						</div>
+						<div><strong> @(bp >= Breakpoint.Md ? "||" : "")</strong> <BaselineEstimationReadOnlyComponent RecordId="BaselineId" /></div>
+					</div>
+				</MudBreakpointProvider>
 					<MudText><strong>Description : </strong></MudText>
 					<br />
 					<div class="custom-markdown-editor">
@@ -147,6 +157,8 @@
 	public bool initializingPage { get; set; } = true;
 
 	private MarkupString convertedMarkdown;
+
+	private Breakpoint bp;
 
 	protected override async Task OnAfterRenderAsync(bool firstRender)
 	{
