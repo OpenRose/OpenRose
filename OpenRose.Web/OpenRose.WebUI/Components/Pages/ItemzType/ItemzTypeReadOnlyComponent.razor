@@ -34,16 +34,18 @@
  		<MudItem xs="12" sm="12">
 			<MudCard style="background-color:#FABBBB; position:sticky; top:0; z-index:10;">
 				<MudCardContent Style="padding : 6px">
-					<MudGrid>
+                    <div class="d-flex align-start justify-space-between" style="gap:8px;">
 						<!-- Left side: Title -->
-						<MudItem xs="12" sm="12" md="7" lg="7">
-							<MudText Typo="Typo.h5" Align="Align.Left">
-								<strong>@singleItemzType.Name</strong>
-							</MudText>
-						</MudItem>
+						<MudText Typo="Typo.inherit"
+								 Class="flex-grow-1 text-responsive-title"
+								 Align="Align.Left"
+								 Style="white-space:normal; overflow-wrap:break-word;">
+							<strong>@singleItemzType.Name</strong>
+						</MudText>
 
 						<!-- Right side: Circular Icon Buttons -->
-						<MudItem xs="12" sm="12" md="5" lg="5" Class="d-flex justify-end align-center">
+                        <div class="d-flex align-top flex-shrink-0">
+
 							<MudIconButton Icon="@Icons.Material.Filled.ArrowCircleUp"
 										   Color="Color.Success"
 										   Size="Size.Medium"
@@ -59,37 +61,36 @@
 										   Variant="Variant.Filled"
 										   Class="mud-rounded-circle"
 										   OnClick="@(() => { if (OnNavigateNext.HasDelegate) OnNavigateNext.InvokeAsync(ItemzTypeId); })" />
-						</MudItem>
-					</MudGrid>
+						</div>
+					</div>
 				</MudCardContent>
 			</MudCard>
 
 			<MudCard Elevation="0" Outlined="false" Style="background-color:transparent;">
 				<MudCardContent Style="padding : 6px">
-@* 					<MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
-						<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
-							<MudText><strong>ID :</strong></MudText>
-							<CopyableText TextToCopy="@singleItemzType.Id.ToString()" />
-						</MudStack>
-						<MudText><strong>Status :</strong> @singleItemzType.Status</MudText>
-					</MudStack> *@
-
 					@if (!ViewSettings.IsKioskMode)
 					{
-					<MudStack Row="true" Spacing="2" StretchItems="StretchItems.None" AlignItems="AlignItems.Start" Class="w-100">
-						<MudStack Row="true" Spacing="2">
-							<MudText><strong>ID          : </strong></MudText>
+                    <MudBreakpointProvider OnBreakpointChanged="b => bp = b">
+                        <div style="
+                                    display:flex;
+                                    gap: @(bp >= Breakpoint.Md ? "10px" : "2px") ;
+                                    align-items:flex-start;
+                                    flex-direction:@(bp >= Breakpoint.Md ? "row" : "column");
+                                    flex-wrap:@(bp >= Breakpoint.Md ? "nowrap" : "wrap");
+                                    ">
+							<div style="display:flex; align-items:center; gap:6px;">
+							<strong>ID : </strong>
 							<CopyableText TextToCopy="@singleItemzType.Id.ToString()" DisplayLength="8" />
 							<MudTooltip Text="Show in Tree View" Placement="Placement.Top">
 								<MudIcon Icon="@Icons.Material.Filled.Park" Size="Size.Small" Class="mouse-pointer-icon" @onclick="findAndShowInTreeView" />
 							</MudTooltip>
 							<ShowHierarchyTreeButton RecordId="@singleItemzType.Id" />
-						</MudStack>
-						<MudText><strong> || Status      : </strong> @singleItemzType.Status</MudText>
-						|| <EstimationReadOnlyComponent RecordId="@ItemzTypeId" />
-					</MudStack>
+							</div>
+							<div><strong> @(bp >= Breakpoint.Md ? "||" : "")Status : </strong> @singleItemzType.Status</div>
+							<div><strong> @(bp >= Breakpoint.Md ? "||" : "")</strong> <EstimationReadOnlyComponent RecordId="@ItemzTypeId" /> </div>
+						</div>
+					</MudBreakpointProvider>
 					}
-
 					<br />
 					<div class="custom-markdown-editor">
 						@if (!string.IsNullOrEmpty(singleItemzType.Description))
@@ -108,8 +109,6 @@
 	<MudPaper Height="calc(100vh - 100px);" Width="100%">
 		<MudOverlay Visible="@_showOverlay" DarkBackground="true" Absolute="true">
 			<MudContainer Class="d-flex flex-column justify-center align-center" Style="height: 100%;">
-				@* <MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Inherit">Moving ... </MudText>
-			<br /> *@
 				<MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
 			</MudContainer>
 		</MudOverlay>
@@ -130,6 +129,8 @@
 	public bool _showOverlay { get; set; } = false;
 
 	private MarkupString convertedMarkdown;
+
+	private Breakpoint bp;
 
 	protected override async Task OnAfterRenderAsync(bool firstRender)
 	{

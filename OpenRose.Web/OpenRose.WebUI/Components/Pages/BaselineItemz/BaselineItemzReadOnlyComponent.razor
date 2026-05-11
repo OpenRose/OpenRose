@@ -36,16 +36,18 @@
  		<MudItem xs="12" sm="12">
 			<MudCard style="background-color:#FABBBB; position:sticky; top:0; z-index:10;">
 				<MudCardContent>
-					<MudGrid>
+                    <div class="d-flex align-start justify-space-between" style="gap:8px;">
+
 						<!-- Left side: Title -->
-						<MudItem xs="12" sm="12" md="7" lg="7">
-							<MudText Typo="Typo.h5" Align="Align.Left">
-								<strong>@singleBaselineItemz.Name</strong>
-							</MudText>
-						</MudItem>
+						<MudText Typo="Typo.inherit"
+								 Class="flex-grow-1 text-responsive-title"
+								 Align="Align.Left"
+								 Style="white-space:normal; overflow-wrap:break-word;">
+							<strong>@singleBaselineItemz.Name</strong>
+						</MudText>
+                        <div class="d-flex align-top flex-shrink-0">
 
 						<!-- Right side: Up + Down buttons -->
-						<MudItem xs="12" sm="12" md="5" lg="5" Class="d-flex justify-end align-center">
 							@if (!IsIncluded)
 							{
 								<MudTooltip Text="Excluded from Baseline">
@@ -67,8 +69,8 @@
 										   Variant="Variant.Filled"
 										   Class="mud-rounded-circle"
 										   OnClick="@(() => { if (OnNavigateNext.HasDelegate) OnNavigateNext.InvokeAsync(BaselineItemzId); })" />
-						</MudItem>
-					</MudGrid>
+						</div>
+					</div>
 				</MudCardContent>
 			</MudCard>
 
@@ -90,9 +92,16 @@
 
 					@if (!ViewSettings.IsKioskMode)
 					{
-					<MudStack Row="true" Spacing="2" StretchItems="StretchItems.None" AlignItems="AlignItems.Start" Class="w-100">
-						<MudStack Row="true" Spacing="2">
-							<MudText><strong>ID          : </strong></MudText>
+                    <MudBreakpointProvider OnBreakpointChanged="b => bp = b">
+                        <div style="
+                                    display:flex;
+                                    gap: @(bp >= Breakpoint.Md ? "10px" : "2px") ;
+                                    align-items:flex-start;
+                                    flex-direction:@(bp >= Breakpoint.Md ? "row" : "column");
+                                    flex-wrap:@(bp >= Breakpoint.Md ? "nowrap" : "wrap");
+                                    ">
+							<div style="display:flex; align-items:center; gap:6px;">
+							<strong>ID : </strong>
 							<CopyableText TextToCopy="@singleBaselineItemz.Id.ToString()" DisplayLength="8" />
 							<MudTooltip Text="Show in Tree View" Placement="Placement.Top">
 								<MudIcon Icon="@Icons.Material.Filled.Park" Size="Size.Small"
@@ -102,12 +111,13 @@
 							</MudTooltip>
 							<GoToOriginalItemzButton BaselineItemzId="@singleBaselineItemz.Id" UseTreeView="true" />
 							<ShowHierarchyTreeButton RecordId="@singleBaselineItemz.Id" />
-						</MudStack>
-						<MudText><strong> || Status      : </strong> @singleBaselineItemz.Status</MudText>
-						<MudText><strong> || Priority    : </strong> @singleBaselineItemz.Priority</MudText>
-						<MudText><strong> || Severity    : </strong> @singleBaselineItemz.Severity</MudText>
-						|| <BaselineEstimationReadOnlyComponent RecordId="BaselineItemzId" />
-					</MudStack>
+							</div>
+							<div><strong> @(bp >= Breakpoint.Md ? "||" : "") Status      : </strong> @singleBaselineItemz.Status</div>
+							<div><strong> @(bp >= Breakpoint.Md ? "||" : "") Priority    : </strong> @singleBaselineItemz.Priority</div>
+							<div><strong> @(bp >= Breakpoint.Md ? "||" : "") Severity    : </strong> @singleBaselineItemz.Severity</div>
+							<div><strong> @(bp >= Breakpoint.Md ? "||" : "")</strong> <BaselineEstimationReadOnlyComponent RecordId="BaselineItemzId" /></div>
+						</div>
+					</MudBreakpointProvider>
 					}
 					
 					<br />
@@ -156,6 +166,8 @@
 	private MarkupString convertedMarkdown;
 
 	private List<string>? tagsList = new List<string>();
+
+	private Breakpoint bp;
 
 	protected override async Task OnAfterRenderAsync(bool firstRender)
 	{
