@@ -46,21 +46,36 @@
  		<MudItem xs="12" sm="12">
 			<MudPaper Class="pa-2 mb-2">
 			<MudCard style="background-color : #FABBBB;" >
-				<MudCardContent>
-				<MudItem Class="align-start d-flex" Style="width: auto" Outlined="false">
-					<MudGrid>
-						<MudItem xs="12" sm="12" md="7" lg="7">
-							<MudText Typo="Typo.h5" Align="Align.Left"><strong>@singleBaseline.Name </strong></MudText>
-						</MudItem>
-						<MudItem xs="12" sm="12" md="5" lg="5">
-							<MudStack Row="true" Spacing="2" AlignItems="AlignItems.End" Justify="Justify.FlexEnd" Class="w-100">
-								<MudButton OnClick="async _ => await editBaselineDetails(BaselineId.ToString())" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Success"> Edit Baseline </MudButton>
-								<MudButton OnClick="async _ => await openBaselineTreeView(BaselineId.ToString())" Variant="@Variant.Filled" Size="@Size.Medium" Color="@Color.Success" Target="_blank"> TreeView </MudButton>
-								<MudButton OnClick="goBackToParentProject" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Warning" style="gap: 10px; margin-left : 10px"> Go Back </MudButton>
-							</MudStack>
-						</MudItem>
-					</MudGrid>
-				</MudItem>
+				<MudCardContent Style="padding:6px">
+ 				<div class="d-flex align-start justify-space-between" style="gap:8px;">
+					<MudText Typo="Typo.inherit"
+								Class="flex-grow-1 text-responsive-title"
+								Align="Align.Left">
+						<strong>@singleBaseline.Name </strong>
+					</MudText>
+					<div class="d-flex align-top flex-shrink-0" style="gap:8px;">
+					<MudButton OnClick="async _ => await editBaselineDetails(BaselineId.ToString())" 
+						Variant="Variant.Filled"
+						Size="@(bp >= Breakpoint.Sm ? Size.Medium : Size.Small)"
+						Color="Color.Success">
+							@(bp >= Breakpoint.Sm ? "Edit Baseline" : "E")
+					</MudButton>
+					<MudButton OnClick="async _ => await openBaselineTreeView(BaselineId.ToString())" 
+						Variant="@Variant.Filled"
+						Size="@(bp >= Breakpoint.Sm ? Size.Medium : Size.Small)"
+						Color="@Color.Success" 
+						Target="_blank">
+							@(bp >= Breakpoint.Sm ? "Tree View" : "T")
+					</MudButton>
+					<MudButton OnClick="goBackToParentProject" 
+						Variant="Variant.Filled"
+						Size="@(bp >= Breakpoint.Sm ? Size.Medium : Size.Small)"
+						Color="Color.Warning" 
+						style="gap: 10px; margin-left : 10px">
+							@(bp >= Breakpoint.Sm ? "Go Back" : "<-")
+					</MudButton>
+					</div>
+				</div>
 				</MudCardContent>
 			</MudCard>
 			<MudCard>
@@ -89,7 +104,7 @@
 					<MudText><strong>Description : </strong></MudText>
 					<br />
 					<div class="custom-markdown-editor">
-							<MudPaper Class="pa-2" Elevation="0" Outlined="false">
+						<MudPaper Class="pa-2" Elevation="0" Outlined="false">
 							@if (!string.IsNullOrEmpty(singleBaseline.Description))
 							{
 								<div class="markdown-body">@((MarkupString)convertedMarkdown)</div>
