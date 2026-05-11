@@ -51,30 +51,37 @@
 	{
  		<MudItem xs="12" sm="12">
 			<MudCard style="background-color : #FABBBB;" >
-				<MudCardContent>
-				<MudItem Class="align-start d-flex" Style="width: auto" Outlined="false">
-					<MudGrid>
-						<MudItem xs="12" sm="12" md="7" lg="7">
-							<MudText Typo="Typo.h5" Align="Align.Left"><strong>@singleItemzType.Name </strong></MudText>
-						</MudItem>
-						<MudItem xs="12" sm="12" md="5" lg="5">
-							<MudStack Row="true" Spacing="2" AlignItems="AlignItems.End" Justify="Justify.FlexEnd" Class="w-100">
-								<MudButton OnClick="async _ => await editItemzTypeDetails(ItemzTypeId.ToString())" Variant="Variant.Filled" Disabled="singleItemzType.IsSystem" Size="Size.Medium" Color="Color.Success"> Edit ItemzType </MudButton>
+				<MudCardContent Style="padding:6px">
+					<div class="d-flex align-start justify-space-between" style="gap:8px;">
+						<MudText Typo="Typo.inherit"
+								 Class="flex-grow-1 text-responsive-title"
+								 Align="Align.Left">
+							<strong>@singleItemzType.Name </strong>
+						</MudText>
+						<div class="d-flex align-top flex-shrink-0" style="gap:8px;">
+							<MudButton OnClick="async _ => await editItemzTypeDetails(ItemzTypeId.ToString())" 
+								Variant="Variant.Filled" 
+								Disabled="singleItemzType.IsSystem"
+								Size="@(bp >= Breakpoint.Sm ? Size.Medium : Size.Small)"
+								Color="Color.Success">
+								@(bp >= Breakpoint.Sm ? "Edit ItemzType" : "E")
+							</MudButton>
 								@if (!(breadcrumsService.RequestIsOrphanStatus()))
 								{
 									<MudButton Variant="Variant.Filled"
-												Size="Size.Medium"
-												Color="Color.Success"
-												OnClick="(() => HandleGoToTreeView())">
-										TREE VIEW
+										Size="@(bp >= Breakpoint.Sm ? Size.Medium : Size.Small)"
+										Color="Color.Success"
+										OnClick="(() => HandleGoToTreeView())">
+										@(bp >= Breakpoint.Sm ? "Tree View" : "T")
 									</MudButton>
 								}
-								<MudButton OnClick="goBackToProject" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Warning"> Go Back </MudButton>
-							</MudStack>
-						</MudItem>
-					</MudGrid>
-				</MudItem>
-			@*<MudDivider Style="color: darkgray background-color: white; border-width: 2px; border-color: black; height: 2px; " /> *@
+								<MudButton OnClick="goBackToProject" Variant="Variant.Filled"
+									Size="@(bp >= Breakpoint.Sm ? Size.Medium : Size.Small)"
+									Color="Color.Warning">
+									@(bp >= Breakpoint.Sm ? "Go Back" : "<-")
+								</MudButton>
+						</div>
+					</div>
 				</MudCardContent>
 			</MudCard>
 			<MudCard>
