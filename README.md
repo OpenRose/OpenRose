@@ -45,10 +45,15 @@ BUT primarily, **Itemz** is nothing but Requirements / Needs / Wants / Notes / F
 
 ## Overview of Current State
 
-Latest release [version 0.2.0-393](https://github.com/OpenRose/OpenRose/releases/tag/v0.2.0-393)
+Latest release [version 0.2.0-478](https://github.com/OpenRose/OpenRose/releases/tag/v0.2.0-478)
 
 Main New Feature
 
+- Adding support for Tagging in Requirements Items and Baseline Requirement Items [Demo](https://www.youtube.com/watch?v=ev8CE9Lv5qo)
+- Introducing Server Side JSON Data file based ReadOnly TreeViews [Demo](https://www.youtube.com/watch?v=cRm--ATHAUQ)
+- Enhanced startup mode supporting API, Server and Client JSON Data files [Demo](https://www.youtube.com/watch?v=8GuntjlFKuc)
+
+version v0.2.0-393
 - Supporting Client Off-Line Read Only JSON Data file Views based on Exported Data from Open Rose [Demo](https://www.youtube.com/watch?v=3Wl6xnN3ba0)
 
 version v0.2.0-334
