@@ -94,16 +94,26 @@ if (startupCapabilities.ServerOfflineAvailable)
 	// This config controls where server-side JSON files are stored and how offline mode behaves.
 	builder.Services.Configure<OfflineContentSettings>(builder.Configuration.GetSection("OfflineContent"));
 
-	builder.Services.AddHttpClient("WebUIInternal", (sp, client) =>
-	{
-		var context = sp.GetRequiredService<IHttpContextAccessor>().HttpContext;
-		if (context is not null)
-		{
-			var request = context.Request;
-			var baseUri = $"{request.Scheme}://{request.Host}";
-			client.BaseAddress = new Uri(baseUri);
-		}
-	});
+	// EXPLANATION: Register HttpClient for internal API calls.
+	// Don't configure BaseAddress here - it's null at startup
+	// The actual BaseAddress will be determined dynamically in the services that use this client,
+	// WebUIInternal is a named client that services can use when they need to
+	// make internal API calls to the same server,
+	// regardless of whether we're in API mode or Offline JSON mode.
+	// Just register the client
+
+	builder.Services.AddHttpClient("WebUIInternal");
+
+	//builder.Services.AddHttpClient("WebUIInternal", (sp, client) =>
+	//{
+	//	var context = sp.GetRequiredService<IHttpContextAccessor>().HttpContext;
+	//	if (context is not null)
+	//	{
+	//		var request = context.Request;
+	//		var baseUri = $"{request.Scheme}://{request.Host}";
+	//		client.BaseAddress = new Uri(baseUri);
+	//	}
+	//});
 }
 
 builder.Services.Configure<OpenRoseOptions>(

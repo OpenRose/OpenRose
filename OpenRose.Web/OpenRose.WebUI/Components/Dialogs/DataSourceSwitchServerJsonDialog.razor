@@ -70,17 +70,29 @@
     private string? loadError;
     private List<string> availableFiles = new();
     private string? selectedFile;
+    private HttpClient? httpClient;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            var http = ClientFactory.CreateClient("WebUIInternal");
+            httpClient = ClientFactory.CreateClient("WebUIInternal");
+
+            // EXPLANATION: Setting BaseAddress here ensures we dynamically
+            // set this value as we decided not to initiate BaseAddress in Program.cs.
+            // This was an important decision we had to take because otherwise
+            // host like Azure App Services would have issues with the API calls
+            // as the Context lifecycle is different depending on the hosting environment.
+            // We noticed that hosting application in IIS would work as context is created
+            // early on while it would not work for Azure App Services as context 
+            // is created later on in the lifecycle, which would cause the 
+            // BaseAddress to be null when HttpClient is created in Program.cs.
+
+            httpClient.BaseAddress = new Uri(NavManager.BaseUri);  
 
             // NEW: Expect structured response
             // var result = await http.GetFromJsonAsync<ServerFilesResponse>("offline/files");
-            var result = await http.GetFromJsonAsync<ServerFilesResponse>("offline/files");
-
+            var result = await httpClient.GetFromJsonAsync<ServerFilesResponse>("offline/files");
 
             if (result is null)
             {
@@ -124,11 +136,15 @@
             return;
 
         try
-        {
-            var http = ClientFactory.CreateClient("WebUIInternal");
+        {   
+            if (httpClient == null)
+            {
+                httpClient = ClientFactory.CreateClient("WebUIInternal");
+                httpClient.BaseAddress = new Uri(NavManager.BaseUri);
+            }
 
             // NEW: Expect file CONTENT instead of file PATH
-            var response = await http.PostAsJsonAsync("offline/select", new
+            var response = await httpClient.PostAsJsonAsync("offline/select", new
             {
                 fileName = selectedFile
             });
