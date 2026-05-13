@@ -418,6 +418,11 @@
         if (presenter == null)
             return string.Empty;
 
+        if (ViewSettings.IsKioskMode)
+        {
+            return string.Empty;
+        }
+
         // NEW: Show estimation in read-only view if available
         if (showEstimation )
         {
