@@ -442,24 +442,24 @@
 
 	}
 
-	private async Task ShowDataSourceSwitchDialogForSelectingServerJsonFileAsync()
-	{
-		var dialogOptions = new DialogOptions
-		{
-			CloseOnEscapeKey = true,
-			BackdropClick = true,
-			MaxWidth = MaxWidth.Small,
-			FullWidth = true
-		};
+	// private async Task ShowDataSourceSwitchDialogForSelectingServerJsonFileAsync()
+	// {
+	// 	var dialogOptions = new DialogOptions
+	// 	{
+	// 		CloseOnEscapeKey = true,
+	// 		BackdropClick = true,
+	// 		MaxWidth = MaxWidth.Small,
+	// 		FullWidth = true
+	// 	};
 
-		var dialog = await DialogServiceForShowingDialogs.ShowAsync<DataSourceSwitchServerJsonDialog>(
-			"Select Server JSON File",
-			new DialogParameters(),
-			dialogOptions
-		);
+	// 	var dialog = await DialogServiceForShowingDialogs.ShowAsync<DataSourceSwitchServerJsonDialog>(
+	// 		"Select Server JSON File",
+	// 		new DialogParameters(),
+	// 		dialogOptions
+	// 	);
 
-		await dialog.Result;
-	}
+	// 	await dialog.Result;
+	// }
 
 
 	/// <summary>
@@ -646,8 +646,8 @@
 		bool canProceed = await FormStateService.ConfirmDiscardAllChangesAsync();
 		if (!canProceed)
 			return;
-
-		await ShowDataSourceSwitchDialogForSelectingServerJsonFileAsync();
+        NavManager.NavigateTo("/serverdatafiles", true);
+		//await ShowDataSourceSwitchDialogForSelectingServerJsonFileAsync();
 	}
 
 	private async Task SwitchToClientJsonModeAsync()

@@ -311,6 +311,20 @@ namespace OpenRose.WebUI.Components.EventServices
 			NotifyStateChanged();
 		}
 
+		//public void SwitchToNone()
+		//{
+		//	_currentDataSourceState = new DataSourceState
+		//	{
+		//		CurrentDataSourceType = DataSourceType.None,
+		//		IsReadOnlyMode = false,
+		//		//JsonFilePathForDataSource = null,
+		//		JsonFileNameForDisplay = null,
+		//		LastErrorMessage = null,
+		//		LastErrorDetails = null
+		//	};
+
+		//	NotifyStateChanged();
+		//}
 
 		/// <summary>
 		/// Switches the data source back to API Server mode.

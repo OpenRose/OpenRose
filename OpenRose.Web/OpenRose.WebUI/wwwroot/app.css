@@ -147,7 +147,38 @@ h1:focus {
     }
 }
 
+
 /* END - Responsive Text for Titles */
+
+/* START - Server Card Styles used in ServerDataFiles.razor */
+
+.clickable-card {
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+    .clickable-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+}
+
+/* Light mode defaults */
+:root {
+    --server-card-bg: #f3f6ff; /* pastel blue */
+    --server-card-border: #d9e2ff;
+    --server-card-text: #1a1a1a;
+}
+
+/* Dark mode overrides */
+.mud-theme-dark {
+    --server-card-bg: #1e1f26; /* soft dark slate */
+    --server-card-border: #3a3d4d;
+    --server-card-text: #e6e6e6;
+}
+
+/* END - Server Card Styles used in ServerDataFiles.razor */
+
+
 
 /* Scroll bar for MudPaper mainly for displaying Description Content in Read-Only mode */
 /*.fixed-height-scroll {
