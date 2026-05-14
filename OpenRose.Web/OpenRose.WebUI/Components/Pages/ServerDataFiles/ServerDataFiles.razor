@@ -1,0 +1,205 @@
+﻿@page "/serverdatafiles"
+
+@using OpenRose.WebUI.Client.Services.JsonFile
+@using OpenRose.WebUI.Client.SharedModels.ClientSideUIOnlyModel
+@using OpenRose.WebUI.Components.EventServices
+@using OpenRose.WebUI.Services
+@inject IHttpClientFactory ClientFactory
+@inject NavigationManager NavManager
+@inject JsonFileDataSourceService JsonDataSource
+@inject DataSourceStateService DataSourceStateService
+@inject ViewSettingsService ViewSettingsService
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
+
+    <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Justify="Justify.Center" >
+        <MudImage Src="icons/OpenRose_01.png" Width="45" Height="45" />
+        <MudText Typo="Typo.h4" Align="Align.Left">
+            Welcome to <b>OpenRose</b>
+        </MudText>
+    </MudStack>
+
+    <br />
+
+    @if (isLoading)
+    {
+        <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (folderUnavailable)
+    {
+        <MudAlert Severity="Severity.Warning">
+            The server's offline storage folder is unavailable.
+        </MudAlert>
+    }
+    else if (loadError != null)
+    {
+        <MudAlert Severity="Severity.Error">@loadError</MudAlert>
+    }
+    else
+    {
+        <MudGrid Gutter="9px">
+            @foreach (var file in availableFiles)
+            {
+                <MudItem xs="12">
+                    <MudCard Class="server-file-card clickable-card" @onclick="() => LoadFileAsync(file)">
+                        <MudCardContent>
+                            <MudText Typo="Typo.subtitle1" Class="card-text-wrap">
+                                @ToFriendlyName(file)
+                            </MudText>
+                        </MudCardContent>
+                    </MudCard>
+
+                </MudItem>
+            }
+        </MudGrid>
+
+    }
+</MudContainer>
+<style>
+.server-file-card {
+    background: var(--server-card-bg);
+    border-radius: 10px;
+    padding: 14px;
+    border: 1px solid var(--server-card-border);
+    color: var(--server-card-text);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+    .server-file-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+    }
+
+.card-text-wrap {
+    white-space: normal;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+</style>
+
+
+@code {
+    private bool isLoading = true;
+    private bool folderUnavailable = false;
+    private string? loadError;
+    private List<string> availableFiles = new();
+    private HttpClient? httpClient;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            httpClient = ClientFactory.CreateClient("WebUIInternal");
+            httpClient.BaseAddress = new Uri(NavManager.BaseUri);
+
+            var result = await httpClient.GetFromJsonAsync<ServerFilesResponse>("offline/files");
+
+            if (result is null)
+                loadError = "Unexpected server response.";
+            else if (!result.folderAvailable)
+                folderUnavailable = true;
+            else if (result.files is null || result.files.Count == 0)
+                loadError = "No JSON files found on the server.";
+            else
+                availableFiles = result.files;
+
+        }
+        catch (Exception ex)
+        {
+            loadError = $"Failed to load server JSON files: {ex.Message}";
+        }
+
+        isLoading = false;
+    }
+
+    private async Task LoadFileAsync(string fileName)
+    {
+        try
+        {
+            if (httpClient == null)
+            {
+                httpClient = ClientFactory.CreateClient("WebUIInternal");
+                httpClient.BaseAddress = new Uri(NavManager.BaseUri);
+            }
+
+            var response = await httpClient.PostAsJsonAsync("offline/select", new { fileName });
+
+            if (!response.IsSuccessStatusCode)
+            {
+                loadError = $"Server rejected selection: {response.StatusCode}";
+                return;
+            }
+
+            var result = await response.Content.ReadFromJsonAsync<ServerSelectResponse>();
+
+            if (result is null || !result.success)
+            {
+                loadError = "Failed to activate JSON file.";
+                return;
+            }
+
+            await JsonDataSource.LoadJsonFileDataFromStringAsync(result.jsonContent);
+
+            DataSourceStateService.SwitchToServerSideJsonFile(result.fileName);
+
+            JsonDataSource.SetJsonViewerMetadata(new JsonViewerMetadata
+            {
+                FileName = result.fileName,
+                FullPath = null,
+                FileSizeBytes = result.jsonContent.Length,
+                LoadedAt = DateTime.Now,
+                IsServerSide = true
+            });
+
+            ViewSettingsService.IsOperatingInJsonFileDataSourceMode = true;
+
+            NavManager.NavigateTo("/jsonviewer");
+        }
+        catch (Exception ex)
+        {
+            loadError = $"Failed to activate JSON file: {ex.Message}";
+        }
+    }
+
+    private class ServerFilesResponse
+    {
+        public bool folderAvailable { get; set; }
+        public List<string>? files { get; set; }
+    }
+
+    private class ServerSelectResponse
+    {
+        public bool success { get; set; }
+        public string fileName { get; set; }
+        public string jsonContent { get; set; }
+    }
+
+    private string ToFriendlyName(string fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName))
+            return fileName;
+
+        // 1. Remove extension
+        var name = fileName.Replace(".json", "", StringComparison.OrdinalIgnoreCase);
+
+        // 2. Replace underscores and hyphens with spaces
+        name = name.Replace("_", " ").Replace("-", " ");
+
+        // 3. Insert spaces between:
+        //    - lower → upper (camelCase)
+        //    - acronym → normal word (ACCCompany → ACC Company)
+        //    - normal word → acronym (WorkWithACC → Work With ACC)
+        name = System.Text.RegularExpressions.Regex.Replace(
+            name,
+            "(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])",
+            " "
+        );
+
+        // 4. Remove double spaces
+        while (name.Contains("  "))
+            name = name.Replace("  ", " ");
+
+        return name.Trim();
+    }
+
+}
