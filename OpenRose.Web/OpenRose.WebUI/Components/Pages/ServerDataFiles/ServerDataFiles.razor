@@ -43,7 +43,7 @@
                 <MudItem xs="12">
                     <MudCard Class="server-file-card clickable-card" @onclick="() => LoadFileAsync(file)">
                         <MudCardContent>
-                            <MudText Typo="Typo.subtitle1" Class="card-text-wrap">
+                            <MudText Typo="Typo.subtitle1" Class="card-text-wrap" Align="Align.Center">
                                 @ToFriendlyName(file)
                             </MudText>
                         </MudCardContent>
@@ -58,26 +58,29 @@
 <style>
     .server-file-card {
         background: var(--card-bg);
-        border-radius: 14px;
+        border-radius: 20px;
         padding: 18px;
         border: 1px solid var(--card-border);
         color: var(--card-text);
-        font-family: "Segoe UI", sans-serif;
-        font-size: 1.05rem;
-        letter-spacing: 0.3px;
+        letter-spacing: 0.5px;
         transition: transform .18s ease, box-shadow .18s ease;
     }
 
-        .server-file-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 22px rgba(0,0,0,0.12);
-        }
+    .server-file-card .mud-typography-subtitle1 {
+        font-size: 1.15rem !important;
+        font-weight: 700 !important;
+    }
+
+
+    .server-file-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 22px rgba(0,0,0,0.12);
+    }
 
     .card-text-wrap {
         white-space: normal;
         overflow-wrap: break-word;
     }
-
 
 </style>
 
