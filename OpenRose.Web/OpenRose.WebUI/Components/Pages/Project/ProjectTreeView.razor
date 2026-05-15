@@ -31,6 +31,7 @@
 
 <MudExtensions.MudSplitter @bind-Dimension="@_percentage"
                             OnDoubleClicked="@OnDoubleClicked"
+                            BarStyle="width:6px !important;"
                             EnableSlide="@_sliderEnabled" EnableMargin="@_marginEnabled" Sensitivity="_sensitivity"
                             Height="@_height" Bordered="_borderedEnabled">
     <StartContent>
@@ -186,7 +187,7 @@
 
 
     // Variables related to MudSlidder
-    string _height = "calc(100vh - 80px)";
+    string _height = "calc(100vh - 75px)";
     double _sensitivity = 0.3d;
     double _percentage = 27;
     bool _sliderEnabled = true;
