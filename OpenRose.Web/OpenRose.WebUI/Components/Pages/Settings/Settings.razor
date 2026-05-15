@@ -7,6 +7,7 @@
 @page "/settings/"
 @using OpenRose.WebUI.Client.Services.JsonFile
 @using OpenRose.WebUI.Components.EventServices
+@using OpenRose.WebUI.Components.Pages.Common
 @using OpenRose.WebUI.Components.Pages.Orphan.DeleteAllOrphan
 @using OpenRose.WebUI.Services
 @inject DataSourceStateService DataSourceState
@@ -60,15 +61,25 @@
         }
         else if (DataSourceState.CurrentDataSourceState.IsServerJsonMode)
         {
-            <MudChip T="string" Color="Color.Warning" Size="Size.Small" Variant="Variant.Filled" Class="mb-2">
+@*             <MudChip T="string" Color="Color.Warning" Size="Size.Small" Variant="Variant.Filled" Class="mb-2">
                 Server JSON Mode
-            </MudChip>
+            </MudChip> *@
+
+            <MudButton Variant="Variant.Text" Color="Color.Primary"
+                       OnClick="ShowJsonFileDetailsAsync">
+                <MudChip T="string" Color="Color.Warning" Variant="Variant.Filled">SERVER JSON MODE</MudChip>
+            </MudButton>
         }
         else if (DataSourceState.CurrentDataSourceState.IsClientJsonMode)
         {
-            <MudChip T="string" Color="Color.Info" Size="Size.Small" Variant="Variant.Filled" Class="mb-2">
+@*             <MudChip T="string" Color="Color.Info" Size="Size.Small" Variant="Variant.Filled" Class="mb-2">
                 Client JSON Mode
-            </MudChip>
+            </MudChip> *@
+
+            <MudButton Variant="Variant.Text" Color="Color.Primary"
+                       OnClick="ShowJsonFileDetailsAsync">
+                <MudChip T="string" Color="Color.Info" Variant="Variant.Filled">CLIENT JSON MODE</MudChip>
+            </MudButton>
         }
         else 
         {
@@ -171,6 +182,30 @@
     protected override async Task OnInitializedAsync()
     {
         version = AssemblyInfo.GetAssemblyVersion();
+    }
+
+    /// <summary>
+    /// Shows a dialog displaying the full file path of the JSON file.
+    /// User can copy the path from the dialog.
+    /// </summary>
+    private async Task ShowJsonFileDetailsAsync()
+    {
+        //string fullJsonFilePathToDisplay = DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState.JsonFilePathForDataSource ?? "Unknown";
+
+        string fileName = DataSourceState.CurrentDataSourceState.JsonFileNameForDisplay ?? "Unknown";
+
+
+        var dialogParameters = new DialogParameters();
+        //		dialogParameters.Add("JsonFilePathToShow", fullJsonFilePathToDisplay);
+        dialogParameters.Add("JsonFileNameToShow", fileName);
+
+        var dialogOptions = new DialogOptions { CloseOnEscapeKey = true, BackdropClick = true };
+
+        await Dialogs.ShowAsync<JsonFileDialog>(
+            "JSON File Details",
+            dialogParameters,
+            dialogOptions
+        );
     }
 
     // ============================================================
