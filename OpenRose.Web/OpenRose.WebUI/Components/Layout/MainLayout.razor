@@ -138,41 +138,30 @@
 		</span>
 		} *@
 
-		@if (tempCustomDataSourceState.IsServerJsonMode)
+@* 		@if (tempCustomDataSourceState.IsServerJsonMode)
 		{
-			@* <MudChip T="string" Color="Color.Warning" Variant="Variant.Filled">SERVER JSON MODE</MudChip> *@
-
 				<MudButton Variant="Variant.Text" Color="Color.Primary"
 						   OnClick="ShowJsonFileDetailsAsync">
 					<MudChip T="string" Color="Color.Warning" Variant="Variant.Filled">SERVER JSON MODE</MudChip>
 				</MudButton>
-
-
-@* 			<MudTooltip Text="Click to view full file path" Placement="Placement.Top">
-				<span class="file-path-footer-button" @onclick="ShowJsonFileDetailsAsync">
-					📁 @tempCustomDataSourceState.JsonFileNameForDisplay
-				</span>
-			</MudTooltip>
- *@		}
+		}
 		else if (tempCustomDataSourceState.IsClientJsonMode)
 		{
-			@* <MudChip T="string" Color="Color.Info" Variant="Variant.Filled">CLIENT JSON MODE</MudChip> *@
 
 				<MudButton Variant="Variant.Text" Color="Color.Primary"
 						   OnClick="ShowJsonFileDetailsAsync">
 					<MudChip T="string" Color="Color.Info" Variant="Variant.Filled">CLIENT JSON MODE</MudChip>
 				</MudButton>
-
-@* 			<MudTooltip Text="This file is loaded from your browser memory" Placement="Placement.Top"> 				
-			</MudTooltip>*@
 		}
+*@
 
 @* 		@if (DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState.IsAnyJsonMode)
 		{
 			<span class="file-path-footer-button" @onclick="ShowJsonFileDetailsAsync">
 				📄 @tempCustomDataSourceState.JsonFileNameForDisplay
 			</span>
-		} *@
+		} 
+*@
 
 		<MudSpacer />
 
@@ -305,7 +294,7 @@
 			{
 				<!-- RESTRICTED MENU (SERVER JSON OR CLIENT JSON) -->
 				<MudNavLink Href="/jsonviewer" Icon="@Icons.Material.Filled.FolderOpen">
-					JSON Data View
+					Data File View
 				</MudNavLink>
 				<MudNavLink Href="/settings" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Settings">
 					Settings
@@ -442,24 +431,24 @@
 
 	}
 
-	private async Task ShowDataSourceSwitchDialogForSelectingServerJsonFileAsync()
-	{
-		var dialogOptions = new DialogOptions
-		{
-			CloseOnEscapeKey = true,
-			BackdropClick = true,
-			MaxWidth = MaxWidth.Small,
-			FullWidth = true
-		};
+	// private async Task ShowDataSourceSwitchDialogForSelectingServerJsonFileAsync()
+	// {
+	// 	var dialogOptions = new DialogOptions
+	// 	{
+	// 		CloseOnEscapeKey = true,
+	// 		BackdropClick = true,
+	// 		MaxWidth = MaxWidth.Small,
+	// 		FullWidth = true
+	// 	};
 
-		var dialog = await DialogServiceForShowingDialogs.ShowAsync<DataSourceSwitchServerJsonDialog>(
-			"Select Server JSON File",
-			new DialogParameters(),
-			dialogOptions
-		);
+	// 	var dialog = await DialogServiceForShowingDialogs.ShowAsync<DataSourceSwitchServerJsonDialog>(
+	// 		"Select Server JSON File",
+	// 		new DialogParameters(),
+	// 		dialogOptions
+	// 	);
 
-		await dialog.Result;
-	}
+	// 	await dialog.Result;
+	// }
 
 
 	/// <summary>
@@ -600,29 +589,29 @@
 	// 	NavManager.NavigateTo("/", forceLoad: true);
 	// }
 
-	/// <summary>
-	/// Shows a dialog displaying the full file path of the JSON file.
-	/// User can copy the path from the dialog.
-	/// </summary>
-	private async Task ShowJsonFileDetailsAsync()
-	{
-		//string fullJsonFilePathToDisplay = DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState.JsonFilePathForDataSource ?? "Unknown";
+// 	/// <summary>
+// 	/// Shows a dialog displaying the full file path of the JSON file.
+// 	/// User can copy the path from the dialog.
+// 	/// </summary>
+// 	private async Task ShowJsonFileDetailsAsync()
+// 	{
+// 		//string fullJsonFilePathToDisplay = DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState.JsonFilePathForDataSource ?? "Unknown";
 
-		string fileName = DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState.JsonFileNameForDisplay ?? "Unknown";
+// 		string fileName = DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState.JsonFileNameForDisplay ?? "Unknown";
 
 
-		var dialogParameters = new DialogParameters();
-//		dialogParameters.Add("JsonFilePathToShow", fullJsonFilePathToDisplay);
-		dialogParameters.Add("JsonFileNameToShow", fileName);
+// 		var dialogParameters = new DialogParameters();
+// //		dialogParameters.Add("JsonFilePathToShow", fullJsonFilePathToDisplay);
+// 		dialogParameters.Add("JsonFileNameToShow", fileName);
 
-		var dialogOptions = new DialogOptions { CloseOnEscapeKey = true, BackdropClick = true };
+// 		var dialogOptions = new DialogOptions { CloseOnEscapeKey = true, BackdropClick = true };
 
-		await DialogServiceForShowingDialogs.ShowAsync<JsonFileDialog>(
-			"JSON File Details",
-			dialogParameters,
-			dialogOptions
-		);
-	}
+// 		await DialogServiceForShowingDialogs.ShowAsync<JsonFileDialog>(
+// 			"JSON File Details",
+// 			dialogParameters,
+// 			dialogOptions
+// 		);
+// 	}
 
 	private async Task SwitchToApiModeAsync()
 	{
@@ -646,8 +635,8 @@
 		bool canProceed = await FormStateService.ConfirmDiscardAllChangesAsync();
 		if (!canProceed)
 			return;
-
-		await ShowDataSourceSwitchDialogForSelectingServerJsonFileAsync();
+        NavManager.NavigateTo("/serverdatafiles", true);
+		//await ShowDataSourceSwitchDialogForSelectingServerJsonFileAsync();
 	}
 
 	private async Task SwitchToClientJsonModeAsync()

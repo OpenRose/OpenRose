@@ -1,4 +1,4 @@
-html, body {
+﻿html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
@@ -147,7 +147,41 @@ h1:focus {
     }
 }
 
+
 /* END - Responsive Text for Titles */
+
+/* START - Server Card Styles used in ServerDataFiles.razor */
+
+.clickable-card {
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+    .clickable-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+}
+
+/* Light mode */
+:root {
+    --card-bg: linear-gradient(135deg, #e6faff, #00ccff); /* very light blue */
+    --card-border: #d9e2ff; /* soft blue border */
+    --card-text: #1a1a1a; /* dark readable text */
+}
+
+
+/* Dark mode */
+.mud-theme-dark {
+    --card-bg: linear-gradient(135deg, #1f2129, #7c839c); /* dark slate */
+    --card-border: #3a3d4d;
+    --card-text: #e8e8e8;
+}
+
+
+
+/* END - Server Card Styles used in ServerDataFiles.razor */
+
+
 
 /* Scroll bar for MudPaper mainly for displaying Description Content in Read-Only mode */
 /*.fixed-height-scroll {
