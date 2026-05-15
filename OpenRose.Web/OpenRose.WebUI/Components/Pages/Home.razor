@@ -5,6 +5,7 @@
 *@
 
 @page "/"
+@using OpenRose.WebUI.Components.EventServices
 @using OpenRose.WebUI.Configuration
 @using OpenRose.WebUI.Services
 
@@ -58,6 +59,9 @@
     [Inject] private AssemblyInfoService AssemblyInfo { get; set; } = default!;
     [Inject] private ApiVersionChecker VersionChecker { get; set; } = default!;
     [Inject] private StartupCapabilitiesService StartupCapabilities { get; set; } = default!;
+    [Inject] private DataSourceStateService DataSourceStateService { get; set; } = default!;
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+
     //[Inject] private IServiceProvider Services { get; set; } = default!;
 
 
@@ -65,6 +69,8 @@
     private string version = string.Empty;
     private bool _isReconnectDisabled = false;
     //private ApiVersionChecker? VersionChecker;
+
+    private static bool _redirectedOnce = false;
 
     protected override void OnInitialized()
     {
@@ -74,6 +80,25 @@
         // }
 
         // Only show API configuration error if API is expected to exist
+
+        // Redirect ONLY on first visit AND ONLY if startup mode is Server JSON
+        // if (!_redirectedOnce && DataSourceStateService.CurrentDataSourceState.IsServerJsonMode)
+        // {
+        //     _redirectedOnce = true;
+        //     Navigation.NavigateTo("/serverdatafiles", replace: true);
+        //     return;
+        // }
+
+
+        // Redirect ONLY when the application starts in Server JSON mode
+        if (DataSourceStateService.CurrentDataSourceState.IsServerJsonMode)
+        {
+            Navigation.NavigateTo("/serverdatafiles", replace: true);
+            return; // Prevent further initialization
+        }
+
+
+
         if (StartupCapabilities.ApiAvailable)
         {
             if (!apiConfigService.IsOpenRoseAPIConfigured)
