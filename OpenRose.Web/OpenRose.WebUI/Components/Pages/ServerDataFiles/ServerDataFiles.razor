@@ -56,25 +56,29 @@
     }
 </MudContainer>
 <style>
-.server-file-card {
-    background: var(--server-card-bg);
-    border-radius: 10px;
-    padding: 14px;
-    border: 1px solid var(--server-card-border);
-    color: var(--server-card-text);
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-    .server-file-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+    .server-file-card {
+        background: var(--card-bg);
+        border-radius: 14px;
+        padding: 18px;
+        border: 1px solid var(--card-border);
+        color: var(--card-text);
+        font-family: "Segoe UI", sans-serif;
+        font-size: 1.05rem;
+        letter-spacing: 0.3px;
+        transition: transform .18s ease, box-shadow .18s ease;
     }
 
-.card-text-wrap {
-    white-space: normal;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-}
+        .server-file-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 22px rgba(0,0,0,0.12);
+        }
+
+    .card-text-wrap {
+        white-space: normal;
+        overflow-wrap: break-word;
+    }
+
+
 </style>
 
 
@@ -85,8 +89,11 @@
     private List<string> availableFiles = new();
     private HttpClient? httpClient;
 
+    private static bool _redirectedOnce = false;
+
     protected override async Task OnInitializedAsync()
     {
+
         try
         {
             httpClient = ClientFactory.CreateClient("WebUIInternal");
