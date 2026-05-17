@@ -150,11 +150,18 @@
 
             if (!isAllowed)
             {
+                // EXCPLANATION:
                 // Block navigation to any route that requires API access or write access.
-                // Redirect to the JSON viewer, which is the only safe place.
-                // Nav.NavigateTo("/jsonviewer", forceLoad: true);
-                Nav.NavigateTo("/jsonviewer");
-                return Task.CompletedTask;
+                // Check if Server JSON Mode is active → if so, we can allow access to the server data files page, 
+                // which is safe and relevant for this mode.
+                // Otherwise, Lets redirect to the home page which is "/".
+
+                if (state.IsServerJsonMode)
+                {
+                    Nav.NavigateTo("/serverdatafiles");
+                    return Task.CompletedTask;
+                }
+                Nav.NavigateTo("/");
             }
 
             // Allowed route → proceed
