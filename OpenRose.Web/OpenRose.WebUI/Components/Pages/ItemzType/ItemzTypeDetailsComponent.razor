@@ -112,8 +112,8 @@
 									<MudText>Tree View</MudText>
 								</MudButton>
 							}
-
 						}
+
 						<MudButton Variant="Variant.Filled" Color="Color.Warning"
 									Disabled="!FormStateService.IsDirty(ItemzTypeId)"
 									Size="Size.Large" style="gap: 10px; margin : 1px"
@@ -413,7 +413,10 @@
 		// Now even if user decides to Delete this Itemz Record then also we can go back to it's
 		// Parent ItemzType post completing deletion operation.
 		var httpResponse = await hierarchyService.__Get_Hierarchy_Record_Details_By_GUID__Async(ItemzTypeId);
-		ParentId = httpResponse.ParentRecordId;
+        if (httpResponse != null) // If for some reason API call fails then also we can avoid exception by this null check. 
+		{
+			ParentId = httpResponse.ParentRecordId;
+		}
 
 		await ConvertMarkdownToHtml(singleItemzType.Description);
 
@@ -494,7 +497,17 @@
             await OpenExceptionDialogAsync("Problem Deleting ItemzType : " + ex.Message);
             return;
         }
-		NavManager.NavigateTo($"/project/{ParentId.ToString()}");
+
+		if (ParentId != Guid.Empty)
+		{
+			NavManager.NavigateTo($"/project/{ParentId}");
+		}
+		else
+		{
+			// Fallback: go to a safe default
+			NavManager.NavigateTo("/projects");
+		}
+
 	}
 	private async Task OpenDeleteConfirmationDialogAsync()
 	{

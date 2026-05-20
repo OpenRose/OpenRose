@@ -10,6 +10,7 @@
 @using OpenRose.WebUI.Client.Services.BaselineItemz
 @using OpenRose.WebUI.Client.SharedModels
 @using OpenRose.WebUI.Client.SharedModels.BetweenPagesAndComponent
+@using OpenRose.WebUI.Components.Dialogs
 @using OpenRose.WebUI.Components.Pages.BaselineItemz.BaselineTraceability
 @using OpenRose.WebUI.Components.Pages.Breadcrums
 @using OpenRose.WebUI.Components.Pages.Common
@@ -272,7 +273,7 @@
 			BreadcrumsParameter.RecordType = "baselineitemz"; // TODO :: USE CONSTANT
 			BreadcrumsParameter.isIncluded = singleBaselineItemz.isIncluded;
 
-            // Obtain tags list from the singleBaselineItemz.
+			// Obtain tags list from the singleBaselineItemz.
 			if (!string.IsNullOrWhiteSpace(singleBaselineItemz?.Tags))
 			{
 				// Normalize incoming tags (removes duplicates, trims, preserves order)
@@ -346,20 +347,31 @@
 
 	public async Task goBackToParent()
 	{
-		// TODO: IT COULD BE BASELINE ITEMZ OR BASELINE ITEMZTYPE AS PARENT OF A GIVEN BASELINE ITEMZ.
-
 		// EXPLANATION : At the start of initialization process we capture parent record ID.
 		// Now even if user decides to Delete this Itemz Record then also we can go back to it's
 		// Parent ItemzType post completing deletion operation.
+		initializingPage = true;
+        // StateHasChanged();
 		var httpResponse = await baselineHierarchyService.__Get_BaselineHierarchy_Record_Details_By_GUID__Async(BaselineItemzId);
-
-		if (httpResponse.ParentRecordType.ToLower() == "baselineitemztype") // TODO :: USE GLOBAL CONSTANTS
+		if (httpResponse != null && httpResponse.ParentRecordId != Guid.Empty)  // If for some reason API call fails then also we can avoid exception by this null check.
 		{
-			NavManager.NavigateTo($"/baselineitemztype/{httpResponse.ParentRecordId.ToString()}",true);
+			if (httpResponse.ParentRecordType.ToLower() == "baselineitemztype") // TODO :: USE GLOBAL CONSTANTS
+			{
+				NavManager.NavigateTo($"/baselineitemztype/{httpResponse.ParentRecordId.ToString()}", true);
+			}
+			else if (httpResponse.ParentRecordType.ToLower() == "baselineitemz") // TODO :: USE GLOBAL CONSTANTS
+			{
+				NavManager.NavigateTo($"/baselineitemz/{httpResponse.ParentRecordId.ToString()}", true);
+			}
 		}
-		else if (httpResponse.ParentRecordType.ToLower() == "baselineitemz") // TODO :: USE GLOBAL CONSTANTS
+		else
 		{
-			NavManager.NavigateTo($"/baselineitemz/{httpResponse.ParentRecordId.ToString()}",true);
+			var parameters = new DialogParameters { ["Message"] = "Parent record not found. Please refresh and try again!" };
+			var options = new DialogOptions { CloseButton = false, MaxWidth = MaxWidth.Small, FullWidth = true };
+			var dialogRef = await DialogService.ShowAsync<ErrorDialog>("Error", parameters, options);
+			await dialogRef.Result;
+			initializingPage = false;
+			// StateHasChanged();
 		}
 	}
 

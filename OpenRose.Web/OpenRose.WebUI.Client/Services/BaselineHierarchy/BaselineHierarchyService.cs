@@ -49,7 +49,7 @@ namespace OpenRose.WebUI.Client.Services.BaselineHierarchy
 			}
 			catch (Exception)
 			{
-				throw new NotImplementedException();
+				return null;
 			}
 			return default;
 		}

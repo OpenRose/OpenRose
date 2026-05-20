@@ -349,7 +349,7 @@
 		// Parent ItemzType post completing deletion operation.
 		var httpResponse = await HierarchyService.__Get_Hierarchy_Record_Details_By_GUID__Async(ItemzId);
 
-		if (httpResponse != null) // Orphand Itemz does not have Hierarchy Record
+		if (httpResponse != null && httpResponse.ParentRecordId != Guid.Empty) // Orphand Itemz does not have Hierarchy Record
 		{
 			if (httpResponse.ParentRecordType.ToLower() == "itemztype")
 			{
