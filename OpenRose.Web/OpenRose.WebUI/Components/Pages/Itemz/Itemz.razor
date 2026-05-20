@@ -11,6 +11,7 @@
 @using OpenRose.WebUI.Client.Services.ItemzTypeItemzsService
 @using OpenRose.WebUI.Client.SharedModels
 @using OpenRose.WebUI.Client.SharedModels.BetweenPagesAndComponent
+@using OpenRose.WebUI.Components.Dialogs
 @using OpenRose.WebUI.Components.EventServices
 @using OpenRose.WebUI.Components.FindServices
 @using OpenRose.WebUI.Components.Pages.Breadcrums
@@ -342,14 +343,22 @@
 
 	public async Task goBackToParent()
 	{
-		// TODO: IT COULD BE ITEMZ OR ITEMZTYPE AS PARENT OF A GIVEN ITEMZ.
+		if (breadcrumsService.RequestIsOrphanStatus())
+		{
+			// Orphand Itemz when deleted then go back to Project's list.
+			NavManager.NavigateTo($"/projects/");
+			return;
+		}
 
-		// EXPLANATION : At the start of initialization process we capture parent record ID.
-		// Now even if user decides to Delete this Itemz Record then also we can go back to it's
-		// Parent ItemzType post completing deletion operation.
+		// TODO :: The initializingPage didn't really work for 
+        // showing overlay when connection to API layer was dropped
+
+		initializingPage = true;
+        StateHasChanged();
+
 		var httpResponse = await HierarchyService.__Get_Hierarchy_Record_Details_By_GUID__Async(ItemzId);
 
-		if (httpResponse != null) // Orphand Itemz does not have Hierarchy Record
+		if (httpResponse != null && httpResponse.ParentRecordId != Guid.Empty) // Orphand Itemz does not have Hierarchy Record
 		{
 			if (httpResponse.ParentRecordType.ToLower() == "itemztype")
 			{
@@ -362,8 +371,20 @@
 		}
 		else
 		{
-			// Orphand Itemz when deleted then go back to Project's list.
-			NavManager.NavigateTo($"/projects/");
+
+			// TODO :: Because we capture parent record ID in the initialization code
+			// it will be ideal to try and go back to that parent record
+			// by checking if that parent record is still present. 
+			// If parent record is not present then we can assume that
+			// API Layer connection is not working any more. This is where
+			// we can then show an error dialog box to the user. 
+
+			var parameters = new DialogParameters { ["Message"] = "Parent record not found. Please refresh and try again!" };
+			var options = new DialogOptions { CloseButton = false, MaxWidth = MaxWidth.Small, FullWidth = true };
+			var dialogRef = await DialogService.ShowAsync<ErrorDialog>("Error", parameters, options);
+			await dialogRef.Result;
+			initializingPage = false;
+            StateHasChanged();
 		}
 	}
 

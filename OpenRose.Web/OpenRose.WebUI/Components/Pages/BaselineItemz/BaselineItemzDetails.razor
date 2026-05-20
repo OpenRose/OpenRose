@@ -7,6 +7,7 @@
 @page "/baselineItemzDetails/{BaselineItemzId:guid}"
 @using OpenRose.WebUI.Client.Services.BaselineHierarchy
 @using OpenRose.WebUI.Client.Services.BaselineItemz
+@using OpenRose.WebUI.Components.Dialogs
 @using OpenRose.WebUI.Components.FindServices
 @using OpenRose.WebUI.Components.Pages.Breadcrums
 @using OpenRose.WebUI.Components.Pages.BaselineItemz.BaselineTraceability
@@ -50,17 +51,17 @@
 		<MudTabs Outlined="true" Position="Position.Top" Rounded="true" Border="true" 
 					 IconColor="Color.Secondary" ScrollIconColor="Color.Secondary" SliderColor = "Color.Secondary"
 					 ApplyEffectsToContainer="true" PanelClass="pa-2" MinimumTabWidth="200px" >
-			<MudTabPanel Text="Details" Icon="@Icons.Material.Filled.EditNote" >
-				@if (errors.Length > 0)
-				{
-					<MudPaper Class="pa-4 mud-height-full mud-width-full">
-						<MudText Typo="Typo.subtitle2" Color="@Color.Error">@($"Validation Errors ({errors.Length})")</MudText>
-						@foreach (var error in errors)
-						{
-							<MudText Color="@Color.Error">@error</MudText>
-						}
-					</MudPaper>
-				}
+		<MudTabPanel Text="Details" Icon="@Icons.Material.Filled.EditNote" >
+			@if (errors.Length > 0)
+			{
+				<MudPaper Class="pa-4 mud-height-full mud-width-full">
+					<MudText Typo="Typo.subtitle2" Color="@Color.Error">@($"Validation Errors ({errors.Length})")</MudText>
+					@foreach (var error in errors)
+					{
+						<MudText Color="@Color.Error">@error</MudText>
+					}
+				</MudPaper>
+			}
 		<MudPaper Class="pa-4 mud-height-full" Width="100%">
 		<MudForm Model="@singleBaselineItemz" ReadOnly=true @ref="form" @bind-IsValid="@success" @bind-Errors="@errors">
 			<MudCardActions>
@@ -144,22 +145,22 @@
 					</div>
 				</MudCardContent>
 		</MudForm>
-	</MudPaper>
-			</MudTabPanel>
+		</MudPaper>
+		</MudTabPanel>
 
-			<MudTabPanel Icon="@Icons.Material.Filled.Money" Text="Estimation">
-				<MudPaper Class="pa-0 mud-height-full"
-							Width="100%"
-							Outlined="false"
-							Elevation="0">
-                    <BaselineEstimationComponent @ref="baselineEstimationComponent"
-                                                    RecordId="@BaselineItemzId"
-                                                    RecordType="BaselineItemz" />
-				</MudPaper>
-			</MudTabPanel>
-			<MudTabPanel Icon="@Icons.Material.Filled.Hub" Text="Treaceability">
-				<BaselineTraceabilityComponent BaselineItemzId="@BaselineItemzId" />
-			</MudTabPanel>
+		<MudTabPanel Icon="@Icons.Material.Filled.Money" Text="Estimation">
+			<MudPaper Class="pa-0 mud-height-full"
+						Width="100%"
+						Outlined="false"
+						Elevation="0">
+                <BaselineEstimationComponent @ref="baselineEstimationComponent"
+                                                RecordId="@BaselineItemzId"
+                                                RecordType="BaselineItemz" />
+			</MudPaper>
+		</MudTabPanel>
+		<MudTabPanel Icon="@Icons.Material.Filled.Hub" Text="Treaceability">
+			<BaselineTraceabilityComponent BaselineItemzId="@BaselineItemzId" />
+		</MudTabPanel>
 		</MudTabs>
 		
 		</MudPaper>
@@ -178,11 +179,11 @@
 	private Guid ParentId { get; set; }
 	private string ParentRecordType { get; set; }
 
-	
+
 	public GetBaselineItemzDTO singleBaselineItemz { get; set; } = new();
 	private ParameterForBaselineBreadcrums BreadcrumsParameter;
 	public bool initializingPage { get; set; } = false;
-	
+
 	//MudForm related fields
 	bool success = true;
 	string[] errors = { };
@@ -212,7 +213,7 @@
 				BreadcrumsParameter.Name = singleBaselineItemz.Name;
 				BreadcrumsParameter.RecordType = "baselineitemz"; // TODO :: USE CONSTANT
 				BreadcrumsParameter.isIncluded = singleBaselineItemz.isIncluded;
-				
+
 				// Obtain tags list from the singleBaselineItemz.
 				if (!string.IsNullOrWhiteSpace(singleBaselineItemz?.Tags))
 				{
@@ -240,30 +241,50 @@
 			// Now even if user decides to Delete this Itemz Record then also we can go back to it's 
 			// Parent ItemzType post completing deletion operation. 
 			var httpResponse = await BaselineHierarchyService.__Get_BaselineHierarchy_Record_Details_By_GUID__Async(BaselineItemzId);
-			ParentId = httpResponse.ParentRecordId;
-			ParentRecordType = httpResponse.ParentRecordType;
 
-
+			if (httpResponse != null && httpResponse.ParentRecordId != Guid.Empty) // If for some reason API call fails then also we can avoid exception by this null check.
+			{
+				ParentId = httpResponse.ParentRecordId;
+				ParentRecordType = httpResponse.ParentRecordType;
+			}
 		}
 	}
 
 	public async Task goBackToBaselineItemz()
 	{
-
 		NavManager.NavigateTo($"/baselineitemz/{BaselineItemzId.ToString()}");
 	}
-	public async Task goBackToParent()
-	{
 
-		if (ParentRecordType.ToLower() == "baselineitemztype")
-		{
-			NavManager.NavigateTo($"/baselineitemztype/{ParentId.ToString()}");
-		}
-		else if (ParentRecordType.ToLower() == "baselineitemz")
-		{
-			NavManager.NavigateTo($"/baselineitemz/{ParentId.ToString()}");
-		}
-	}
+	// TODO ::
+	// goBackToParent() METHOD is not used ever in the component so 
+	// we decided to mark it as commented out. We can safely remove it away in the future.
+	// public async Task goBackToParent()
+	// {
+	// 	initializingPage = true;
+
+	// 	var httpResponse = await BaselineHierarchyService.__Get_BaselineHierarchy_Record_Details_By_GUID__Async(BaselineItemzId);
+	// 	if (httpResponse != null && httpResponse.ParentRecordId != Guid.Empty)  // If for some reason API call fails then also we can avoid exception by this null check.
+	// 	{
+	// 		if (ParentRecordType.ToLower() == "baselineitemztype")
+	// 		{
+	// 			NavManager.NavigateTo($"/baselineitemztype/{ParentId.ToString()}");
+	// 		}
+	// 		else if (ParentRecordType.ToLower() == "baselineitemz")
+	// 		{
+	// 			NavManager.NavigateTo($"/baselineitemz/{ParentId.ToString()}");
+	// 		}
+	// 	}
+	// 	else
+	// 	{
+
+	// 		var parameters = new DialogParameters { ["Message"] = "Parent record not found. Please refresh and try again!" };
+	// 		var options = new DialogOptions { CloseButton = false, MaxWidth = MaxWidth.Small, FullWidth = true };
+	// 		var dialogRef = await DialogService.ShowAsync<ErrorDialog>("Error", parameters, options);
+	// 		await dialogRef.Result;
+
+	// 		initializingPage = false;
+	// 	}
+	// }
 
 	public async Task openBaselineTreeView()
 	{

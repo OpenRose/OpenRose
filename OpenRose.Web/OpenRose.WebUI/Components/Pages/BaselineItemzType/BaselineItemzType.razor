@@ -228,7 +228,11 @@
 			// Now even if user decides to Delete this Itemz Record then also we can go back to it's
 			// Parent post completing deletion operation.
 			var httpResponse = await baselineHierarchyService.__Get_BaselineHierarchy_Record_Details_By_GUID__Async(BaselineItemzTypeId);
-			ParentId = httpResponse.ParentRecordId;
+			if (httpResponse != null) // If for some reason API call fails then also we can avoid exception by this null check.
+			{
+				ParentId = httpResponse.ParentRecordId;
+			}
+
 
 			await ConvertMarkdownToHtml(singleIBaselineItemzType.Description);
 			StateHasChanged();
@@ -243,6 +247,17 @@
 
 	public void goBackToBaseline()
 	{
+		if (ParentId == Guid.Empty)
+		{
+			// EXPLANATION ::
+			// This means we are at the top of the hierarchy and there is no parent to go back to.
+			// In this case, we can decide to navigate to a default page, such as the Projects list page.
+            // We don't expect this anyways but this could happen only when there is some issue with API response 
+			// for fetching parent record details and we end up with default value of Guid.Empty for ParentId variable.
+
+			NavManager.NavigateTo("/projects");
+			return;
+		}
 		NavManager.NavigateTo($"/baseline/{ParentId.ToString()}");
 	}
 

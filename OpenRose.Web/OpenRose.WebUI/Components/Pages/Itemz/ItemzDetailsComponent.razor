@@ -559,7 +559,7 @@
 		// Now even if user decides to Delete this Itemz Record then also we can go back to it's
 		// Parent ItemzType post completing deletion operation.
 		var httpResponse = await hierarchyService.__Get_Hierarchy_Record_Details_By_GUID__Async(ItemzId);
-		if (httpResponse != null) // Orphaned Itemz will not have any Hierarchy records.
+		if (httpResponse != null && httpResponse.ParentRecordId != Guid.Empty) // Orphaned Itemz will not have any Hierarchy records.
 		{
 			ParentId = httpResponse.ParentRecordId;
 			ParentRecordType = httpResponse.ParentRecordType;
