@@ -80,16 +80,19 @@
                                     flex-direction:@(bp >= Breakpoint.Md ? "row" : "column");
                                     flex-wrap:@(bp >= Breakpoint.Md ? "nowrap" : "wrap");
                                     ">
-                            <div style="display:flex; align-items:center; gap:6px;">
+							<div style="display:flex; align-items:center; gap:6px;">
 								<strong>ID : </strong>
 								<CopyableText TextToCopy="@singleProject.Id.ToString()" DisplayLength="8" />
 								<MudTooltip Text="Show in Tree View" Placement="Placement.Top">
 									<MudIcon Icon="@Icons.Material.Filled.Park" Size="Size.Small" Class="mouse-pointer-icon" @onclick="findAndShowInTreeView" />
 								</MudTooltip>
 							</div>
-							<div><strong> @(bp >= Breakpoint.Md ? "||" : "") Status      : </strong> @singleProject.Status </div>
-							<div><strong> @(bp >= Breakpoint.Md ? "||" : "")</strong>  <EstimationReadOnlyComponent RecordId="@ProjectId" /> </div>
-						</div>
+							@if (ViewSettings.ShowPropertiesInReadOnlyViews)
+							{
+								<div><strong> @(bp >= Breakpoint.Md ? "||" : "") Status      : </strong> @singleProject.Status </div>
+								<div><strong> @(bp >= Breakpoint.Md ? "||" : "")</strong>  <EstimationReadOnlyComponent RecordId="@ProjectId" /> </div>
+							}
+							</div>
 					</MudBreakpointProvider>
 					}
 

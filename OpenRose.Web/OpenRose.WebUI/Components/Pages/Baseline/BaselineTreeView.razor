@@ -525,12 +525,24 @@
     {
         if (firstRender)
         {
-
-            // Load view settings
+            // Load view settings for ReadOnlyView
             var result = await SessionStorage.GetAsync<bool>("READONLYVIEW");
             if (result.Success)
             {
                 ViewSettings.ReadOnlyView = result.Value;
+            }
+
+            // Load view settings for ShowPropertiesInReadOnlyViews
+            var resultShowProperties = await SessionStorage.GetAsync<bool>("SHOWPROPERTIESINREADONLYVIEWS");
+            if (resultShowProperties.Success)
+            {
+                ViewSettings.ShowPropertiesInReadOnlyViews = resultShowProperties.Value;
+            }
+            else
+            {
+                // If not set in session, default to false and save it
+                ViewSettings.ShowPropertiesInReadOnlyViews = false;
+                await SessionStorage.SetAsync("SHOWPROPERTIESINREADONLYVIEWS", false);
             }
 
             // Load initial data
@@ -540,8 +552,8 @@
             await Task.Delay(300);
             // Load Entire Baseline Hierarchy data
             InitialTreeItems = await LoadAllBaselineHierarchyData(BaselineId);
-            
-            // Hide Parking Lot in read-only mode if empty 
+
+            // Hide Parking Lot in read-only mode if empty
             RemoveParkingLotIfEmpty(InitialTreeItems);
 
             _linearIds = InitialTreeItems.Flatten()
@@ -561,7 +573,7 @@
             }
 
 
-            showLoadingMessage = false; 
+            showLoadingMessage = false;
 
             StateHasChanged();
 
@@ -961,6 +973,12 @@
         // PHASE 5: Add estimation info only if in Read-Only view
         if (ViewSettings.ReadOnlyView)
         {
+            // If ShowPropertiesInReadOnlyViews is false, we skip showing estimation info
+            if (ViewSettings.ShowPropertiesInReadOnlyViews == false)
+            {
+                return string.Empty;
+            }
+
             // I want to return empty string if estimation unit is null or whitespace to avoid showing [N/A 0] for items without estimation
             if (string.IsNullOrWhiteSpace(presenter.EstimationUnit) && presenter.RolledUpEstimation == 0)
             {

@@ -10,10 +10,13 @@
 @using OpenRose.WebUI.Components.Pages.Common
 @using OpenRose.WebUI.Components.Pages.Orphan.DeleteAllOrphan
 @using OpenRose.WebUI.Services
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
 @inject DataSourceStateService DataSourceState
 @inject AssemblyInfoService AssemblyInfo
 @inject NavigationManager Nav
 @inject IDialogService Dialogs
+@inject ViewSettingsService ViewSettings
+@inject ProtectedSessionStorage SessionStorage
 
 <MudPaper Class="pa-3 mb-3 align-start d-flex" Outlined="false">
     <MudStack Row="true" Spacing="3">
@@ -44,10 +47,53 @@
 </MudPaper>
 
 <!-- ============================================================
+     VIEW PREFERENCES SECTION - NEW
+     Always displayed regardless of data source configuration
+     ============================================================ -->
+<MudPaper Class="pa-3 mb-3" Outlined="false">
+    <MudStack Row="true" Spacing="3">
+        <MudIcon Icon="@Icons.Material.Filled.Visibility" Size="Size.Large" />
+        <MudText Typo="Typo.h6" Class="mb-2">View Preferences</MudText>
+    </MudStack>
+
+    <MudDivider Class="my-3" />
+
+    <!-- Show Properties in Read-Only Views Toggle -->
+    <MudStack Row="true" Spacing="3" AlignItems="AlignItems.Center" Class="mt-3">
+
+        <MudTooltip Text="Properties like Stauts, Estimation, Priority, Severity" Placement="Placement.Top">
+            <MudText Typo="Typo.body2" Class="ms-5" >
+                Show Properties in Read-Only Views
+            </MudText>
+        </MudTooltip>
+
+@*         <MudSwitch T="bool"
+                   Value="@ViewSettings.ReadOnlyView"
+                   ValueChanged="ToggleReadOnly"
+                   Label="Read-Only"
+                   Color="Color.Secondary"
+                   LabelPlacement="Placement.End" /> *@
+
+        <MudSwitch T="bool"
+                   Value="@ViewSettings.ShowPropertiesInReadOnlyViews"
+                   ValueChanged="ToggleShowPropertiesInReadOnlyViews"
+                   Color="Color.Primary"
+                   Class="ma-0" />
+
+@*         <MudSwitch T="bool"
+                   @bind-Checked="ViewSettings.ShowPropertiesInReadOnlyViews"
+                   ValueChanged="ToggleShowPropertiesInReadOnlyViews"
+                   Color="Color.Primary"
+                   Class="ma-0" />
+ *@
+    </MudStack>
+</MudPaper>
+
+<!-- ============================================================
      DATA SOURCE MODE SECTION
      ============================================================ -->
 <MudPaper Class="pa-3 mb-3" Outlined="false">
-    
+
     <MudStack Row="true" Spacing="3">
         <MudIcon Icon="@Icons.Material.Filled.Cable" Size="Size.Large" />
         <MudText Typo="Typo.h6" Class="mb-2">Data Source Mode</MudText>
@@ -61,7 +107,7 @@
         }
         else if (DataSourceState.CurrentDataSourceState.IsServerJsonMode)
         {
-@*             <MudChip T="string" Color="Color.Warning" Size="Size.Small" Variant="Variant.Filled" Class="mb-2">
+            @*             <MudChip T="string" Color="Color.Warning" Size="Size.Small" Variant="Variant.Filled" Class="mb-2">
                 Server JSON Mode
             </MudChip> *@
 
@@ -72,7 +118,7 @@
         }
         else if (DataSourceState.CurrentDataSourceState.IsClientJsonMode)
         {
-@*             <MudChip T="string" Color="Color.Info" Size="Size.Small" Variant="Variant.Filled" Class="mb-2">
+            @*             <MudChip T="string" Color="Color.Info" Size="Size.Small" Variant="Variant.Filled" Class="mb-2">
                 Client JSON Mode
             </MudChip> *@
 
@@ -81,7 +127,7 @@
                 <MudChip T="string" Color="Color.Info" Variant="Variant.Filled">CLIENT JSON MODE</MudChip>
             </MudButton>
         }
-        else 
+        else
         {
             <MudChip T="string" Color="Color.Error" Size="Size.Small" Variant="Variant.Filled" Class="mb-2">
                 NONE
@@ -167,7 +213,7 @@
     }
 
     @if (ConfigService.IsOpenRoseAPIConfigured ||
-        string.IsNullOrEmpty(ConfigService.ApiVersionMismatchMessage))
+            string.IsNullOrEmpty(ConfigService.ApiVersionMismatchMessage))
     {
         <DeleteAllOrphanComponent />
     }
@@ -182,6 +228,18 @@
     protected override async Task OnInitializedAsync()
     {
         version = AssemblyInfo.GetAssemblyVersion();
+
+        // Load the ShowPropertiesInReadOnlyViews setting from session storage on page load
+        var resultShowProperties = await SessionStorage.GetAsync<bool>("SHOWPROPERTIESINREADONLYVIEWS");
+        if (resultShowProperties.Success)
+        {
+            ViewSettings.ShowPropertiesInReadOnlyViews = resultShowProperties.Value;
+        }
+        else
+        {
+            // If not set in session, default to false
+            ViewSettings.ShowPropertiesInReadOnlyViews = false;
+        }
     }
 
     /// <summary>
@@ -206,6 +264,30 @@
             dialogParameters,
             dialogOptions
         );
+    }
+
+    /// <summary>
+    /// Handles toggling of ShowPropertiesInReadOnlyViews preference.
+    ///
+    /// EXPLANATION: This method is called whenever the user changes the toggle switch
+    /// for showing properties in read-only views. It updates the ViewSettingsService
+    /// property and persists the user preference to browser session storage so that
+    /// the setting is retained during the user's session.
+    ///
+    /// The session storage key "SHOWPROPERTIESINREADONLYVIEWS" is used consistently
+    /// across all components that need to access this setting (ProjectTreeView.razor,
+    /// BaselineTreeView.razor, and all read-only component files).
+    /// </summary>
+    private async Task ToggleShowPropertiesInReadOnlyViews(bool newValue)
+    {
+        // Update the service property
+        ViewSettings.ShowPropertiesInReadOnlyViews = newValue;
+
+        // Persist the setting to browser session storage
+        await SessionStorage.SetAsync("SHOWPROPERTIESINREADONLYVIEWS", newValue);
+
+        // Force a state refresh so the UI updates
+        StateHasChanged();
     }
 
     // ============================================================

@@ -4,6 +4,7 @@
  * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 *@
 
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
 @using OpenRose.WebUI.Client.Services.JsonFile
 @using OpenRose.WebUI.Client.SharedModels
 @using OpenRose.WebUI.Components.EventServices
@@ -19,6 +20,7 @@
 @inject ViewSettingsService ViewSettings
 @inject BaselineTreeNodeItemzSelectionServiceForJson BaselineItemzSelectionServiceForJson
 @inject IJSRuntime JS
+@inject ProtectedSessionStorage SessionStorage
 @implements IDisposable
 
 <MudExtensions.MudSplitter @bind-Dimension="@_percentage"
@@ -334,6 +336,22 @@
         await ReloadTreeAsync();
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // Load view settings for ShowPropertiesInReadOnlyViews
+        var resultShowProperties = await SessionStorage.GetAsync<bool>("SHOWPROPERTIESINREADONLYVIEWS");
+        if (resultShowProperties.Success)
+        {
+            ViewSettings.ShowPropertiesInReadOnlyViews = resultShowProperties.Value;
+        }
+        else
+        {
+            // If not set in session, default to false and save it
+            ViewSettings.ShowPropertiesInReadOnlyViews = false;
+            await SessionStorage.SetAsync("SHOWPROPERTIESINREADONLYVIEWS", false);
+        }
+    }
+
     private async Task HandleStateChangedAsync()
     {
 
@@ -537,6 +555,12 @@
             return string.Empty;
 
         if (ViewSettings.IsKioskMode)
+        {
+            return string.Empty;
+        }
+
+        // If ShowPropertiesInReadOnlyViews is false, we skip showing estimation info
+        if (ViewSettings.ShowPropertiesInReadOnlyViews == false)
         {
             return string.Empty;
         }

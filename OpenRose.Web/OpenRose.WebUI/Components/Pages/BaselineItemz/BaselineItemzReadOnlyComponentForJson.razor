@@ -100,16 +100,19 @@
                             <MudIcon Icon="@Icons.Material.Filled.Park" Size="Size.Small" Class="mouse-pointer-icon" @onclick="async () => await findAndShowInTreeViewAsync()" />
                         </MudTooltip>
                         </div>
-                        <div><strong> @(bp >= Breakpoint.Md ? "||" : "") Status      :</strong> @_baselineItemz.Status</div>
-                        <div><strong> @(bp >= Breakpoint.Md ? "||" : "") Priority    : </strong> @_baselineItemz.Priority</div>
-                        <div><strong> @(bp >= Breakpoint.Md ? "||" : "") Severity    : </strong> @_baselineItemz.Severity</div>
-                        @if (!string.IsNullOrEmpty(_baselineItemz.EstimationUnit))
+                        @if (ViewSettings.ShowPropertiesInReadOnlyViews)
                         {
-                            <div><strong>@(bp >= Breakpoint.Md ? "||" : "") Estimation [@_baselineItemz.EstimationUnit] : </strong> @_baselineItemz.OwnEstimation <b>|| Roll-Up</b> :@_baselineItemz.RolledUpEstimation </div>
-                        }
-                        else
-                        {
-                            <div><strong>@(bp >= Breakpoint.Md ? "||" : "") Estimation : </strong>> @_baselineItemz.OwnEstimation <b>|| Roll-Up</b> :@_baselineItemz.RolledUpEstimation </div>
+                            <div><strong> @(bp >= Breakpoint.Md ? "||" : "") Status      :</strong> @_baselineItemz.Status</div>
+                            <div><strong> @(bp >= Breakpoint.Md ? "||" : "") Priority    : </strong> @_baselineItemz.Priority</div>
+                            <div><strong> @(bp >= Breakpoint.Md ? "||" : "") Severity    : </strong> @_baselineItemz.Severity</div>
+                            @if (!string.IsNullOrEmpty(_baselineItemz.EstimationUnit))
+                            {
+                                <div><strong>@(bp >= Breakpoint.Md ? "||" : "") Estimation [@_baselineItemz.EstimationUnit] : </strong> @_baselineItemz.OwnEstimation <b>|| Roll-Up</b> :@_baselineItemz.RolledUpEstimation </div>
+                            }
+                            else
+                            {
+                                <div><strong>@(bp >= Breakpoint.Md ? "||" : "") Estimation : </strong>> @_baselineItemz.OwnEstimation <b>|| Roll-Up</b> :@_baselineItemz.RolledUpEstimation </div>
+                            }
                         }
                         </div>
                     </MudBreakpointProvider>

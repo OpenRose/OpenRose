@@ -86,8 +86,11 @@
 							</MudTooltip>
 							<ShowHierarchyTreeButton RecordId="@singleItemzType.Id" />
 							</div>
-							<div><strong> @(bp >= Breakpoint.Md ? "||" : "")Status : </strong> @singleItemzType.Status</div>
-							<div><strong> @(bp >= Breakpoint.Md ? "||" : "")</strong> <EstimationReadOnlyComponent RecordId="@ItemzTypeId" /> </div>
+							@if (ViewSettings.ShowPropertiesInReadOnlyViews)
+							{
+								<div><strong> @(bp >= Breakpoint.Md ? "||" : "")Status : </strong> @singleItemzType.Status</div>
+								<div><strong> @(bp >= Breakpoint.Md ? "||" : "")</strong> <EstimationReadOnlyComponent RecordId="@ItemzTypeId" /> </div>
+							}
 						</div>
 					</MudBreakpointProvider>
 					}

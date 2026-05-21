@@ -92,11 +92,15 @@
 														 UseTreeView="true" />
 							<ShowHierarchyTreeButton RecordId="@singleBaselineItemzType.Id" />
 							</div>
-							<div><strong> @(bp >= Breakpoint.Md ? "||" : "") Status      : </strong> @singleBaselineItemzType.Status</div>
-							<div><strong> @(bp >= Breakpoint.Md ? "||" : "") Is System?  : </strong> @(singleBaselineItemzType.IsSystem ? "Yes" : "No")</div>
-							<div><strong> @(bp >= Breakpoint.Md ? "||" : "")</strong> <BaselineEstimationReadOnlyComponent RecordId="BaselineItemzTypeId" /></div>
+							@if (ViewSettings.ShowPropertiesInReadOnlyViews)
+							{
+								<div><strong> @(bp >= Breakpoint.Md ? "||" : "") Status      : </strong> @singleBaselineItemzType.Status</div>
+								<div><strong> @(bp >= Breakpoint.Md ? "||" : "") Is System?  : </strong> @(singleBaselineItemzType.IsSystem ? "Yes" : "No")</div>
+								<div><strong> @(bp >= Breakpoint.Md ? "||" : "")</strong> <BaselineEstimationReadOnlyComponent RecordId="BaselineItemzTypeId" /></div>
+							}
 						</div>
-					</MudBreakpointProvider>					}				
+					</MudBreakpointProvider>					
+					}				
 					<br />
 					<div class="custom-markdown-editor">
 						@if (!string.IsNullOrEmpty(singleBaselineItemzType.Description))
