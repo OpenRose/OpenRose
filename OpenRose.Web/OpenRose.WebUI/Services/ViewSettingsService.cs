@@ -87,6 +87,28 @@ namespace OpenRose.WebUI.Services
 		/// </summary>
 		public bool ShowTraceabilityInItemzDetails { get; set; } = true;
 
+		/// <summary>
+		/// NEW PROPERTY: Controls whether to display properties (Status, Priority, Severity, Estimation)
+		/// in Read-Only views for Project, ItemzType, Itemz, and their Baseline equivalents.
+		/// 
+		/// EXPLANATION: When user is in Read-Only mode and has enabled this setting,
+		/// property details will be displayed in the read-only components. When false,
+		/// only the item name and description are shown, making the UI cleaner.
+		/// 
+		/// Example, When ShowPropertiesInReadOnlyViews is true:
+		/// - Status, Priority, Severity, and Estimation information is displayed
+		/// - EndText in TreeView nodes shows property information
+		/// 
+		/// Example, When ShowPropertiesInReadOnlyViews is false:
+		/// - Property sections are hidden from view
+		/// - EndText in TreeView nodes is empty
+		/// - Cleaner, minimal UI for viewing
+		/// 
+		/// This setting is stored in browser session storage using key "SHOWPROPERTIESINREADONLYVIEWS"
+		/// and defaults to false (properties hidden by default).
+		/// </summary>
+		public bool ShowPropertiesInReadOnlyViews { get; set; } = false;
+
 		public bool IsKioskMode { get; private set; } = false;
 
 		public event Action? OnKioskModeChanged;
