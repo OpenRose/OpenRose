@@ -84,7 +84,10 @@
 									@onclick="async _ => await gotoBaselineProjectRecord(singleBaseline.Id.ToString())" />
 								</MudTooltip>
 							</div>
-							<div><strong> @(bp >= Breakpoint.Md ? "||" : "")</strong> <BaselineEstimationReadOnlyComponent RecordId="BaselineId" /></div>
+							@if (ViewSettings.ShowPropertiesInReadOnlyViews)
+							{
+								<div><strong> @(bp >= Breakpoint.Md ? "||" : "")</strong> <BaselineEstimationReadOnlyComponent RecordId="BaselineId" /></div>
+							}
 						</div>
 					</MudBreakpointProvider>
 					}

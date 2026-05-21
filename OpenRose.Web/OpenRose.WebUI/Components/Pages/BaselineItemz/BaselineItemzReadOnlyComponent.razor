@@ -112,10 +112,13 @@
 							<GoToOriginalItemzButton BaselineItemzId="@singleBaselineItemz.Id" UseTreeView="true" />
 							<ShowHierarchyTreeButton RecordId="@singleBaselineItemz.Id" />
 							</div>
-							<div><strong> @(bp >= Breakpoint.Md ? "||" : "") Status      : </strong> @singleBaselineItemz.Status</div>
-							<div><strong> @(bp >= Breakpoint.Md ? "||" : "") Priority    : </strong> @singleBaselineItemz.Priority</div>
-							<div><strong> @(bp >= Breakpoint.Md ? "||" : "") Severity    : </strong> @singleBaselineItemz.Severity</div>
-							<div><strong> @(bp >= Breakpoint.Md ? "||" : "")</strong> <BaselineEstimationReadOnlyComponent RecordId="BaselineItemzId" /></div>
+							@if (ViewSettings.ShowPropertiesInReadOnlyViews)
+							{
+								<div><strong> @(bp >= Breakpoint.Md ? "||" : "") Status      : </strong> @singleBaselineItemz.Status</div>
+								<div><strong> @(bp >= Breakpoint.Md ? "||" : "") Priority    : </strong> @singleBaselineItemz.Priority</div>
+								<div><strong> @(bp >= Breakpoint.Md ? "||" : "") Severity    : </strong> @singleBaselineItemz.Severity</div>
+								<div><strong> @(bp >= Breakpoint.Md ? "||" : "")</strong> <BaselineEstimationReadOnlyComponent RecordId="BaselineItemzId" /></div>
+							}
 						</div>
 					</MudBreakpointProvider>
 					}
