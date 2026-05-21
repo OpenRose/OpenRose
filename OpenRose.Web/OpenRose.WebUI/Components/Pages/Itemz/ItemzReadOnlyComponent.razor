@@ -117,10 +117,13 @@
                                     </MudTooltip>
                                     <ShowHierarchyTreeButton RecordId="@singleItemz.Id" />
                                 </div>
-                                <div><strong> @(bp >= Breakpoint.Md ? "||" : "") Status :</strong> @singleItemz.Status</div>
-                                <div><strong> @(bp >= Breakpoint.Md ? "||" : "") Priority :</strong> @singleItemz.Priority</div>
-                                <div><strong> @(bp >= Breakpoint.Md ? "||" : "") Severity :</strong> @singleItemz.Severity</div>
-                                <div><strong> @(bp >= Breakpoint.Md ? "||" : "")</strong> <EstimationReadOnlyComponent RecordId="@ItemzId" /></div>
+                                @if (ViewSettings.ShowPropertiesInReadOnlyViews)
+                                {
+                                    <div><strong> @(bp >= Breakpoint.Md ? "||" : "") Status :</strong> @singleItemz.Status</div>
+                                    <div><strong> @(bp >= Breakpoint.Md ? "||" : "") Priority :</strong> @singleItemz.Priority</div>
+                                    <div><strong> @(bp >= Breakpoint.Md ? "||" : "") Severity :</strong> @singleItemz.Severity</div>
+                                    <div><strong> @(bp >= Breakpoint.Md ? "||" : "")</strong> <EstimationReadOnlyComponent RecordId="@ItemzId" /></div>
+                                }
                             </div>
                         </MudBreakpointProvider>
                     }

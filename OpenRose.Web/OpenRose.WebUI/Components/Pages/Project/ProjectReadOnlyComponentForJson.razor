@@ -74,14 +74,17 @@
                                     <MudIcon Icon="@Icons.Material.Filled.Park" Size="Size.Small" Class="mouse-pointer-icon" @onclick="async () => await findAndShowInTreeViewAsync()" />
                                 </MudTooltip>
                             </div>
-                        <div><strong> @(bp >= Breakpoint.Md ? "||" : "")  Status      : </strong> @_project.Status</div>
-                        @if (!string.IsNullOrEmpty(_project.EstimationUnit))
+                        @if (ViewSettings.ShowPropertiesInReadOnlyViews)
                         {
-                            <div><strong>@(bp >= Breakpoint.Md ? "||" : "") Estimation [@_project.EstimationUnit] : </strong>  @_project.OwnEstimation <b>|| Roll-Up</b> :@_project.RolledUpEstimation </div>
-                        }
-                        else
-                        {
-                            <div><strong>@(bp >= Breakpoint.Md ? "||" : "") Estimation : </strong>  @_project.OwnEstimation <b>|| Roll-Up</b> :@_project.RolledUpEstimation </div>
+                            <div><strong> @(bp >= Breakpoint.Md ? "||" : "")  Status      : </strong> @_project.Status</div>
+                            @if (!string.IsNullOrEmpty(_project.EstimationUnit))
+                            {
+                                <div><strong>@(bp >= Breakpoint.Md ? "||" : "") Estimation [@_project.EstimationUnit] : </strong>  @_project.OwnEstimation <b>|| Roll-Up</b> :@_project.RolledUpEstimation </div>
+                            }
+                            else
+                            {
+                                <div><strong>@(bp >= Breakpoint.Md ? "||" : "") Estimation : </strong>  @_project.OwnEstimation <b>|| Roll-Up</b> :@_project.RolledUpEstimation </div>
+                            }
                         }
                         </div>
                     </MudBreakpointProvider>
