@@ -4,6 +4,7 @@
  * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 *@
 
+@using OpenRose.WebUI.Client.Services.Baselines
 @using OpenRose.WebUI.Client.Services.Hierarchy
 @using OpenRose.WebUI.Client.Services.ItemzType
 @using OpenRose.WebUI.Client.Services.Project
@@ -315,6 +316,9 @@
     public IProjectService ProjectService { get; set; }
 
     [Inject]
+    public IBaselinesService BaselineService { get; set; }
+
+    [Inject]
     public IItemzTypeService ItemzTypeService { get; set; }
 
     [Inject]
@@ -521,10 +525,22 @@
     }
     private async Task OpenDeleteConfirmationDialogAsync()
     {
-        activeIndex = 2; // DeleteTab is the 3rd tab in ZERO base index.
+
+
+        var itemzCount = await ProjectService.__GET_Itemz_Count_By_Project__Async(singleProject.Id);
+        var baselineItemzCount = await BaselineService.__GET_BaselineItemz_Count_By_Project__Async(singleProject.Id);
+
+        // You already have GetBaselinesByProjectIDAsync on the server.
+        // Use your existing client-side service to fetch baselines:
+        var baselineCount = await BaselineService.__GET_Baseline_Count_By_Project__Async(singleProject.Id);
+
+        // activeIndex = 3; // DeleteTab is the 4th tab in ZERO base index.
         var options = new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, Position = DialogPosition.Center };
         var dialogPara = new DialogParameters();
         dialogPara.Add("deletingProjectName", singleProject.Name);
+        dialogPara.Add("itemzCount", itemzCount ?? 0 );   
+        dialogPara.Add("baselineItemzCount", baselineItemzCount);
+        dialogPara.Add("baselineCount", baselineCount );
         var dialogref = await DialogService.ShowAsync<ProjectDeletionConfirmDialog>("CONFIRM", parameters: dialogPara, options);
         var dialogresult = await dialogref.Result;
         if (!(dialogresult!.Canceled))
