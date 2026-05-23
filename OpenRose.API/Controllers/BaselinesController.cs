@@ -567,8 +567,8 @@ namespace ItemzApp.API.Controllers
         /// <returns>Number of BaselineItemz found for the given BaselineID. Zero if none found.</returns>
         /// <response code="200">Returns number of BaselineItemz count that were associated with a given Baseline</response>
         /// <response code="404">Baseline based on baselineId was not found</response>
-        [HttpGet("GetBaselineItemzCount/{BaselineId:Guid}", Name = "__GET_BaselineItemz_Count_By_Baseline__")]
-        [HttpHead("GetBaselineItemzCount/{BaselineId:Guid}", Name = "__HEAD_BaselineItemz_Count_By_Baseline__")]
+        [HttpGet("GetBaselineItemzCount/{baselineId:Guid}", Name = "__GET_BaselineItemz_Count_By_Baseline__")]
+        [HttpHead("GetBaselineItemzCount/{baselineId:Guid}", Name = "__HEAD_BaselineItemz_Count_By_Baseline__")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(int))]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesDefaultResponseType]
