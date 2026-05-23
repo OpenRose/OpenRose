@@ -23,7 +23,12 @@ namespace OpenRose.WebUI.Client.Services.Baselines
             throw new NotImplementedException();
         }
 
-        public Task<int> __GET_BaselineItemz_Trace_Count_By_Baseline__Async(Guid baselineId)
+		public Task<int> __GET_BaselineItemz_Count_By_Project__Async(Guid projectId)
+		{
+			throw new NotImplementedException();
+		}
+
+		public Task<int> __GET_BaselineItemz_Trace_Count_By_Baseline__Async(Guid baselineId)
         {
             throw new NotImplementedException();
         }
