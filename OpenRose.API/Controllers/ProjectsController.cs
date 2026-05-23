@@ -526,8 +526,8 @@ namespace ItemzApp.API.Controllers
         /// <returns>Number of Itemz found for the given ProjectID. Zero if none found.</returns>
         /// <response code="200">Returns number of Itemz count that were associated with a given Project</response>
         /// <response code="404">Project based on projectId was not found</response>
-        [HttpGet("GetItemzCount/{ProjectId:Guid}", Name = "__GET_Itemz_Count_By_Project__")]
-        [HttpHead("GetItemzCount/{ProjectId:Guid}", Name = "__HEAD_Itemz_Count_By_Project__")]
+        [HttpGet("GetItemzCount/{projectId:Guid}", Name = "__GET_Itemz_Count_By_Project__")]
+        [HttpHead("GetItemzCount/{projectId:Guid}", Name = "__HEAD_Itemz_Count_By_Project__")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(int))]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesDefaultResponseType]
