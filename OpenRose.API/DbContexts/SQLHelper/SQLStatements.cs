@@ -156,7 +156,15 @@ namespace ItemzApp.API.DbContexts.SQLHelper
             "AND RecordType = 'BaselineItemz' " +
             "AND BaselineItemzHierarchyId.GetLevel() > 3 ";
 
-        public static readonly string SQLStatementFor_GetBaselineItemzByItemzId =
+		public static readonly string SQLStatementFor_GetBaselineItemzCountByProject =
+			"select count(Id) from BaselineItemzHierarchy " +
+			"where BaselineItemzHierarchyId.IsDescendantOf( " +
+				"(SELECT BaselineItemzHierarchyId FROM BaselineItemzHierarchy WHERE id = @__ProjectID__)" +
+			") = 1 " +
+			"AND RecordType = 'BaselineItemz' " +
+			"AND BaselineItemzHierarchyId.GetLevel() > 3 ";
+
+		public static readonly string SQLStatementFor_GetBaselineItemzByItemzId =
             "select count(Id) from [dbo].[BaselineItemz] as bi " +
             "where bi.ItemzId = @__ItemzId__";
 
