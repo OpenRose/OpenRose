@@ -404,7 +404,24 @@ namespace ItemzApp.API.Services
             return foundItemzByBaseline;
         }
 
-        public async Task<int> GetBaselineItemzTraceCountByBaselineAsync(Guid BaselineId)
+		public async Task<int> GetBaselineItemzCountByProjectAsync(Guid ProjectId)
+		{
+			if (ProjectId == Guid.Empty)
+			{
+				throw new ArgumentNullException(nameof(ProjectId));
+			}
+			KeyValuePair<string, object>[] sqlArgs = new KeyValuePair<string, object>[]
+			{
+				new KeyValuePair<string, object>("@__ProjectID__", ProjectId.ToString()),
+			};
+			var foundItemzByProject = await _baselineContext.CountByRawSqlAsync(SQLStatements.SQLStatementFor_GetBaselineItemzCountByProject, sqlArgs);
+
+			return foundItemzByProject;
+		}
+
+
+
+		public async Task<int> GetBaselineItemzTraceCountByBaselineAsync(Guid BaselineId)
         {
             if (BaselineId == Guid.Empty)
             {
