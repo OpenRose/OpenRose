@@ -591,15 +591,46 @@ namespace ItemzApp.API.Controllers
         }
 
 
+		/// <summary>
+		/// Get total number of BaselineItemz by Project
+		/// </summary>
+		/// <param name="projectId">Provide ProjectID representated in GUID form</param>
+		/// <returns>Number of BaselineItemz found for the given ProjectID. Zero if none found.</returns>
+		/// <response code="200">Returns number of BaselineItemz count that were associated with a given Project</response>
+		/// <response code="404">Project based on projectId was not found</response>
+		[HttpGet("GetBaselineItemzCountByProject/{projectId:Guid}", Name = "__GET_BaselineItemz_Count_By_Project__")]
+		[HttpHead("GetBaselineItemzCountByProject/{projectId:Guid}", Name = "__HEAD_BaselineItemz_Count_By_Project__")]
+		[ProducesResponseType(StatusCodes.Status200OK, Type = typeof(int))]
+		[ProducesResponseType(StatusCodes.Status404NotFound)]
+		[ProducesDefaultResponseType]
+		public async Task<ActionResult<int>> GetBaselineItemzCountByProjectAsync(Guid projectId)
+		{
+			if (!(await _baselineRepository.ProjectExistsAsync(projectId)))
+			{
+				_logger.LogDebug("{FormattedControllerAndActionNames}Cannot find count of BaselineItemz as Project with ID {ProjectId} could not be found",
+					ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+					projectId);
+				return NotFound();
+			}
 
-        /// <summary>
-        /// Get total number of BaselineItemz Traces by Baseline
-        /// </summary>
-        /// <param name="BaselineId">Provide BaselineID representated in GUID form</param>
-        /// <returns>Number of BaselineItemz Traces found for the given BaselineID. Zero if none found.</returns>
-        /// <response code="200">Returns number of BaselineItemz Traces count that are associated with a given Baseline</response>
-        /// <response code="404">Baseline based on baselineId was not found</response>
-        [HttpGet("GetBaselineItemzTraceCount/{BaselineId:Guid}", Name = "__GET_BaselineItemz_Trace_Count_By_Baseline__")]
+			var foundBaselineItemzCountByProjectId = await _baselineRepository.GetBaselineItemzCountByProjectAsync(projectId);
+			_logger.LogDebug("{FormattedControllerAndActionNames} Found {foundBaselineItemzCountByProjectId} BaselineItemz records for Project with ID {projectId}",
+				ControllerAndActionNames.GetFormattedControllerAndActionNames(ControllerContext),
+				foundBaselineItemzCountByProjectId,
+				projectId);
+			return foundBaselineItemzCountByProjectId;
+		}
+
+
+
+		/// <summary>
+		/// Get total number of BaselineItemz Traces by Baseline
+		/// </summary>
+		/// <param name="BaselineId">Provide BaselineID representated in GUID form</param>
+		/// <returns>Number of BaselineItemz Traces found for the given BaselineID. Zero if none found.</returns>
+		/// <response code="200">Returns number of BaselineItemz Traces count that are associated with a given Baseline</response>
+		/// <response code="404">Baseline based on baselineId was not found</response>
+		[HttpGet("GetBaselineItemzTraceCount/{BaselineId:Guid}", Name = "__GET_BaselineItemz_Trace_Count_By_Baseline__")]
         [HttpHead("GetBaselineItemzTraceCount/{BaselineId:Guid}", Name = "__HEAD_BaselineItemz_Trace_Count_By_Baseline__")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(int))]
         [ProducesResponseType(StatusCodes.Status404NotFound)]

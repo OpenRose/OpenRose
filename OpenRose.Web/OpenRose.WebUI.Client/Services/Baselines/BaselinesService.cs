@@ -359,6 +359,40 @@ namespace OpenRose.WebUI.Client.Services.Baselines
 
 		#endregion
 
+		#region __GET_BaselineItemz_Count_By_Project__Async
+		public async Task<int> __GET_BaselineItemz_Count_By_Project__Async(Guid projectId)
+		{
+			return await __GET_BaselineItemz_Count_By_Project__Async(projectId, CancellationToken.None);
+		}
+		public async Task<int> __GET_BaselineItemz_Count_By_Project__Async(Guid projectId, CancellationToken cancellationToken)
+		{
+			try
+			{
+				if (projectId == Guid.Empty)
+				{
+					throw new ArgumentNullException(nameof(projectId) + "is required for which value is not provided");
+				}
+
+				// TODO :: Utilize urlBuilder which is commented below.
+				//var urlBuilder_ = new System.Text.StringBuilder();
+				//urlBuilder_.Append($"/api/Baselines/GetBaselineItemzCountByProject/{projectId.ToString()}");
+				//urlBuilder_.Append('?');
+
+				//urlBuilder_.Length--;
+
+				var response = await _httpClient.GetFromJsonAsync<int>($"/api/Baselines/GetBaselineItemzCountByProject/{projectId.ToString()}", cancellationToken);
+
+				return response!;
+			}
+			catch (Exception)
+			{
+
+			}
+			return default;
+		}
+
+		#endregion
+
 		#region __GET_BaselineItemz_Trace_Count_By_Baseline__Async
 		public async Task<int> __GET_BaselineItemz_Trace_Count_By_Baseline__Async(Guid baselineId)
 		{

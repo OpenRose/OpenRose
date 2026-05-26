@@ -19,6 +19,10 @@
         <p style="color:red; align-content:center">
             <b> @deletingItemzTypeName.ToString() </b>
         </p>
+        <MudPaper Class="pa-4" Elevation="2" Style="background-color:#FFF3F3;">
+            <MudText Color="Color.Error"><b>Deletion Impact Summary</b></MudText>
+            <MudText Color="Color.Error">Itemz:<b> @ItemzCount </b></MudText>
+        </MudPaper>
     </DialogContent>
     <DialogActions>
         <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="Submit">Yes</MudButton>
@@ -31,6 +35,8 @@
     private IMudDialogInstance MudDialog { get; set; }
     [Parameter]
     public string deletingItemzTypeName { get; set; }
+    [Parameter]
+    public int ItemzCount { get; set; }
 
     private void Submit() => MudDialog.Close(DialogResult.Ok(true));
 

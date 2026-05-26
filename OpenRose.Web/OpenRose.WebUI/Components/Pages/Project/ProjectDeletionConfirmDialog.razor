@@ -18,6 +18,15 @@
         <p style="color:red; align-content:center">
             <b> @deletingProjectName.ToString() </b>
         </p>
+
+        <MudPaper Class="pa-4" Elevation="2" Style="background-color:#FFF3F3;">
+            <MudText Color="Color.Error"><b>Deletion Impact Summary</b></MudText>
+            <MudText Color="Color.Error">Itemz:<b> @ItemzCount </b></MudText>
+            <MudText Color="Color.Error">Baselines:<b> @BaselineCount </b></MudText>
+            <MudText Color="Color.Error">Baseline Itemz:<b> @BaselineItemzCount </b></MudText>
+            <MudDivider Class="my-2" />
+            <MudText Color="Color.Error">Total Records Count:<b> @(ItemzCount + BaselineItemzCount)</b></MudText>
+        </MudPaper>
     </DialogContent>
     <DialogActions>
         <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="Submit">Yes</MudButton>
@@ -28,8 +37,19 @@
 @code {
     [CascadingParameter]
     private IMudDialogInstance MudDialog { get; set; }
+
     [Parameter]
     public string deletingProjectName { get; set; }
+    
+    [Parameter] 
+    public int ItemzCount { get; set; }
+    
+    [Parameter] 
+    public int BaselineItemzCount { get; set; }
+    
+    [Parameter] 
+    public int BaselineCount { get; set; }
+
 
     private void Submit() => MudDialog.Close(DialogResult.Ok(true));
 
