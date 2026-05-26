@@ -7,6 +7,7 @@
 @using OpenRose.WebUI.Client.Services.Hierarchy
 @using OpenRose.WebUI.Client.Services.Itemz
 @using OpenRose.WebUI.Client.Services.ItemzType
+@using OpenRose.WebUI.Client.Services.ItemzTypeItemzsService
 @using OpenRose.WebUI.Client.SharedModels
 @using OpenRose.WebUI.Client.SharedModels.BetweenPagesAndComponent
 @using OpenRose.WebUI.Components.EventServices
@@ -295,6 +296,8 @@
 	[Inject]
 	public IItemzService ItemzService { get; set; }
 	[Inject]
+	public IItemzTypeItemzsService ItemzTypeItemzsService { get; set; }
+	[Inject]
 	public FormStateService FormStateService { get; set; }
 
 	public Guid ParentId { get; set; }
@@ -413,7 +416,7 @@
 		// Now even if user decides to Delete this Itemz Record then also we can go back to it's
 		// Parent ItemzType post completing deletion operation.
 		var httpResponse = await hierarchyService.__Get_Hierarchy_Record_Details_By_GUID__Async(ItemzTypeId);
-        if (httpResponse != null) // If for some reason API call fails then also we can avoid exception by this null check. 
+		if (httpResponse != null) // If for some reason API call fails then also we can avoid exception by this null check. 
 		{
 			ParentId = httpResponse.ParentRecordId;
 		}
@@ -492,11 +495,11 @@
 		{
 			await ItemzTypeService.__DELETE_ItemzType_By_GUID_ID__Async(ItemzTypeId);
 		}
-        catch (Exception ex)
-        {
-            await OpenExceptionDialogAsync("Problem Deleting ItemzType : " + ex.Message);
-            return;
-        }
+		catch (Exception ex)
+		{
+			await OpenExceptionDialogAsync("Problem Deleting ItemzType : " + ex.Message);
+			return;
+		}
 
 		if (ParentId != Guid.Empty)
 		{
@@ -511,9 +514,12 @@
 	}
 	private async Task OpenDeleteConfirmationDialogAsync()
 	{
+		var itemzCount = await ItemzTypeItemzsService.__GET_Itemz_Count_By_ItemzType__Async(singleItemzType.Id);
+
 		var options = new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, Position = DialogPosition.Center };
 		var dialogPara = new DialogParameters();
 		dialogPara.Add("deletingItemzTypeName", singleItemzType.Name);
+		dialogPara.Add("itemzCount", itemzCount);
 		var dialogref = await DialogService.ShowAsync<ItemzTypeDeletionConfirmDialog>("CONFIRM", parameters: dialogPara, options);
 		var dialogresult = await dialogref.Result;
 		if (!(dialogresult!.Canceled))
