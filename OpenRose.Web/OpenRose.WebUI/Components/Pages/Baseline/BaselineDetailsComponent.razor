@@ -469,9 +469,13 @@
 
 	private async Task OpenDeleteConfirmationDialogAsync(string baselineName)
 	{
+		var baselineItemzCount = await baselinesService.__GET_BaselineItemz_Count_By_Baseline__Async(BaselineId);
+
 		var options = new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, Position = DialogPosition.Center };
 		var dialogPara = new DialogParameters();
 		dialogPara.Add("deletingBaselineName", baselineName);
+		dialogPara.Add("baselineItemzCount", baselineItemzCount);
+
 		var dialogref = await DialogService.ShowAsync<BaselineDeletionConfirmDialog>("CONFIRM", parameters: dialogPara, options);
 		var dialogresult = await dialogref.Result;
 		if (!(dialogresult!.Canceled))
