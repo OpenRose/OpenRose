@@ -9,7 +9,7 @@
         <MudText Color="Color.Error">CONFIRM</MudText>
     </TitleContent>
     <DialogContent>
-        <p style="color:red;">
+@*         <p style="color:red;">
         <MudIcon Icon="@Icons.Material.Filled.Dangerous" Size="Size.Medium" Color="Color.Error" Title="Delete Itemz" />
             @if (AllChildrenCount > 0)
             {
@@ -23,7 +23,21 @@
             {
                 <MudText Typo="Typo.body1" Color="Color.Error"> Are you sure you want to delete selected Itemz? </MudText>
             }
+        </p> *@
+        <p style="color:red;">
+            <MudIcon Icon="@Icons.Material.Filled.Dangerous" Size="Size.Large" Color="Color.Error" Title="Delete Itemz" />
+            THIS IS IRREVERSABLE OPERATION!
         </p>
+        <p style="color:red; align-content:center">
+            Are you sure you want to delete following Itemz?
+        </p>
+        <p style="color:red; align-content:center">
+            <b> @deletingItemzName.ToString() </b>
+        </p>
+        <MudPaper Class="pa-4" Elevation="2" Style="background-color:#FFF3F3;">
+            <MudText Color="Color.Error"><b>Deletion Impact Summary</b></MudText>
+            <MudText Color="Color.Error">Itemz:<b> @(AllChildrenCount + 1) </b></MudText>
+        </MudPaper>
     </DialogContent>
     <DialogActions>
         <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="Submit">Yes</MudButton>
@@ -34,6 +48,8 @@
 @code {
     [CascadingParameter]
     private IMudDialogInstance MudDialog { get; set; }
+    [Parameter]
+    public string deletingItemzName { get; set; }
     [Parameter]
     public int AllChildrenCount { get; set; }
 

@@ -143,7 +143,10 @@
     {
 
         var options = new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, Position = DialogPosition.Center };
-        var dialogParameters = new DialogParameters { { "AllChildrenCount", 0 } };
+        var dialogParameters = new DialogParameters();
+        dialogParameters.Add("AllChildrenCount", 0);
+        dialogParameters.Add("deletingItemzName", itemz.Name);
+
         var dialogref = await DialogService.ShowAsync<ItemzDeletionConfirmDialog>(title: "CONFIRM", parameters: dialogParameters, options: options);
         var dialogresult = await dialogref.Result;
         if (!(dialogresult!.Canceled))

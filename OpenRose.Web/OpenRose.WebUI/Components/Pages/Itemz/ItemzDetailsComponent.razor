@@ -570,7 +570,7 @@
 
 		await ConvertMarkdownToHtml(singleItemz.Description);
 
-        // Mark that description initialization is complete
+		// Mark that description initialization is complete
 		_initializingDescription = false;
 
 		// Reset dirty state
@@ -641,12 +641,12 @@
 		{
 			await ItemzService.__DELETE_Itemz_By_GUID_ID__Async(ItemzId);
 		}
-        catch (Exception ex)
-        {
-            await OpenExceptionDialogAsync("Problem Deleting Itemz : " + ex.Message);
-            return;
-        }
-	await goBackToParent();
+		catch (Exception ex)
+		{
+			await OpenExceptionDialogAsync("Problem Deleting Itemz : " + ex.Message);
+			return;
+		}
+		await goBackToParent();
 	}
 
 	private async Task OpenDeleteConfirmationDialogAsync()
@@ -675,7 +675,9 @@
 		}
 
 		var options = new DialogOptions { CloseButton = true, CloseOnEscapeKey = true, Position = DialogPosition.Center };
-		var dialogParameters = new DialogParameters { { "AllChildrenCount", allChildrenCount } };
+		var dialogParameters = new DialogParameters();
+		dialogParameters.Add("AllChildrenCount", allChildrenCount );
+		dialogParameters.Add("deletingItemzName", singleItemz.Name);
 		var dialogref = await DialogService.ShowAsync<ItemzDeletionConfirmDialog>(title: "CONFIRM", parameters: dialogParameters , options: options);
 		var dialogresult = await dialogref.Result;
 		if (!(dialogresult!.Canceled))
