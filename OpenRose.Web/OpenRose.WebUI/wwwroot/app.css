@@ -115,6 +115,12 @@ h1:focus {
 
 
 /* Used for markdown preview */
+
+/* ============================================================
+   MARKDOWN EDITOR STYLES - See css/markdown-styles.css
+   for globally managed, user-accessible layout patterns
+   ============================================================ */
+
 .custom-markdown-editor ul {
     list-style-type: disc !important;
     margin-left: 20px !important; /* Add margin to ensure bullets are visible */
