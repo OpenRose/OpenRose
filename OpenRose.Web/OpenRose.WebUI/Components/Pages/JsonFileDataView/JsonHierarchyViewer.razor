@@ -32,7 +32,15 @@
     <!-- EXISTING VIEWER LOGIC (UNCHANGED) -->
     @if (!isLoaded)
     {
-        <MudText>Please load a JSON file first.</MudText>
+         
+        if(DataSourceState.CurrentDataSourceState.IsServerJsonMode)
+        {
+            Nav.NavigateTo("/serverdatafiles", replace: true);
+        }
+        else
+        {
+            <MudText>Please load OpenRose exported data JSON file first.</MudText>
+        }
     }
     else
     {
