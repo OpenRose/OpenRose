@@ -1,0 +1,489 @@
+﻿/* 
+ * OpenRose Markdown Global Styles
+ * These styles are available for use in Description fields across all record types.
+ * Users can apply these pre-defined layout patterns within their markdown content.
+ * 
+ * SUPPORTS: Light Mode & Dark Mode (MudBlazor theme-aware)
+ *
+ * NOTES : THIS CSS FILE OVERRIDES DARK MODE WITH LIGHT MODE IN PRACTICAL USAGE.
+ */
+
+/* ============================================================
+   ROOT COLOR VARIABLES - Light & Dark Mode
+   ============================================================ */
+
+:root {
+    /* Light Mode Colors */
+    --or-text-primary: #333333;
+    --or-text-secondary: #666666;
+    --or-bg-light: #ffffff;
+    --or-bg-lighter: #f5f5f5;
+    --or-border-color: #e0e0e0;
+    --or-accent-color: #1976d2;
+}
+
+/* Dark Mode Colors */
+.mud-theme-dark {
+    --or-text-primary: #e8e8e8;
+    --or-text-secondary: #b0b0b0;
+    --or-bg-light: #1e1e1e;
+    --or-bg-lighter: #2a2a2a;
+    --or-border-color: #404040;
+    --or-accent-color: #90caf9;
+}
+
+/* ============================================================
+   LAYOUT PATTERNS FOR MARKDOWN CONTENT
+   ============================================================ */
+
+/* 
+   Container Pattern: Two-Column Layout (Image Left, Content Right)
+   Usage: Wrap image and text content in <div class="or-layout-two-column">
+   
+   Example:
+   <div class="or-layout-two-column">
+     <img src="path/to/image.webp" />
+     <div>
+       ### Your Heading
+       Your content here...
+     </div>
+   </div>
+*/
+.or-layout-two-column {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    color: var(--or-text-primary);
+}
+
+    /* Image styling within layouts */
+    .or-layout-two-column img {
+        flex-shrink: 0;
+        max-height: 800px;
+        object-fit: contain;
+        border-radius: 4px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Ensure text content is always readable */
+    .or-layout-two-column > div {
+        flex: 1;
+        color: var(--or-text-primary);
+    }
+
+    .or-layout-two-column h1,
+    .or-layout-two-column h2,
+    .or-layout-two-column h3,
+    .or-layout-two-column h4,
+    .or-layout-two-column h5,
+    .or-layout-two-column h6 {
+        color: var(--or-text-primary);
+        margin-top: 10px;
+        margin-bottom: 8px;
+    }
+
+    .or-layout-two-column p {
+        color: var(--or-text-primary);
+        line-height: 1.6;
+        margin: 8px 0;
+    }
+
+    .or-layout-two-column ul,
+    .or-layout-two-column ol {
+        color: var(--or-text-primary);
+        margin: 10px 0;
+        padding-left: 20px;
+    }
+
+    .or-layout-two-column li {
+        color: var(--or-text-primary);
+        margin: 5px 0;
+    }
+
+    .or-layout-two-column a {
+        color: var(--or-accent-color);
+        text-decoration: none;
+        border-bottom: 1px solid var(--or-accent-color);
+    }
+
+        .or-layout-two-column a:hover {
+            text-decoration: underline;
+        }
+
+/* Responsive behavior for tablets and mobile */
+@media (max-width: 768px) {
+    .or-layout-two-column {
+        flex-direction: column;
+        align-items: center;
+    }
+
+        .or-layout-two-column img {
+            width: 100%;
+            height: auto;
+            max-height: 600px;
+        }
+
+        .or-layout-two-column > div {
+            font-size: 90%;
+        }
+
+        .or-layout-two-column h1 {
+            font-size: 1.5rem;
+        }
+
+        .or-layout-two-column h2 {
+            font-size: 1.3rem;
+        }
+
+        .or-layout-two-column h3 {
+            font-size: 1.1rem;
+        }
+}
+
+/* ============================================================
+   TEXT & TYPOGRAPHY PATTERNS
+   ============================================================ */
+
+.or-text-centered {
+    text-align: center;
+    color: var(--or-text-primary);
+}
+
+.or-text-justified {
+    text-align: justify;
+    color: var(--or-text-primary);
+    hyphens: auto;
+}
+
+.or-highlight-box {
+    background-color: var(--or-bg-lighter);
+    border-left: 4px solid var(--or-accent-color);
+    padding: 15px;
+    margin: 10px 0;
+    border-radius: 4px;
+    color: var(--or-text-primary);
+    border: 1px solid var(--or-border-color);
+}
+
+    .or-highlight-box h4 {
+        color: var(--or-text-primary);
+        margin-top: 0;
+    }
+
+    .or-highlight-box p {
+        color: var(--or-text-primary);
+        margin: 0;
+    }
+
+/* ============================================================
+   CODE & PRE-FORMATTED TEXT
+   ============================================================ */
+
+.custom-markdown-editor code,
+.markdown-body code {
+    background-color: var(--or-bg-lighter);
+    color: var(--or-text-primary);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    border: 1px solid var(--or-border-color);
+}
+
+.custom-markdown-editor pre,
+.markdown-body pre {
+    background-color: var(--or-bg-lighter);
+    border: 1px solid var(--or-border-color);
+    padding: 12px;
+    border-radius: 4px;
+    overflow-x: auto;
+    color: var(--or-text-primary);
+}
+
+    .custom-markdown-editor pre code,
+    .markdown-body pre code {
+        background-color: transparent;
+        border: none;
+        padding: 0;
+        color: var(--or-text-primary);
+    }
+
+/* ============================================================
+   BASE MARKDOWN STYLES - Custom Markdown Editor
+   ============================================================ */
+
+.custom-markdown-editor {
+    color: var(--or-text-primary);
+}
+
+    .custom-markdown-editor ul {
+        list-style-type: disc !important;
+        margin-left: 20px !important;
+        color: var(--or-text-primary);
+    }
+
+        .custom-markdown-editor ul li {
+            color: var(--or-text-primary) !important;
+        }
+
+            .custom-markdown-editor ul li::marker {
+                content: '\2022  ' !important;
+                color: var(--or-text-primary) !important;
+            }
+
+    .custom-markdown-editor ol {
+        color: var(--or-text-primary);
+    }
+
+        .custom-markdown-editor ol li {
+            color: var(--or-text-primary) !important;
+        }
+
+    .custom-markdown-editor h1,
+    .custom-markdown-editor h2,
+    .custom-markdown-editor h3,
+    .custom-markdown-editor h4,
+    .custom-markdown-editor h5,
+    .custom-markdown-editor h6 {
+        color: var(--or-text-primary);
+        border-bottom: 1px solid var(--or-border-color);
+        padding-bottom: 8px;
+    }
+
+    .custom-markdown-editor p {
+        color: var(--or-text-primary);
+        line-height: 1.6;
+    }
+
+    .custom-markdown-editor a {
+        color: var(--or-accent-color);
+        text-decoration: none;
+        border-bottom: 1px solid var(--or-accent-color);
+    }
+
+        .custom-markdown-editor a:hover {
+            text-decoration: underline;
+        }
+
+    .custom-markdown-editor blockquote {
+        border-left: 4px solid var(--or-accent-color);
+        padding-left: 12px;
+        margin-left: 0;
+        color: var(--or-text-secondary);
+        font-style: italic;
+    }
+
+    .custom-markdown-editor hr {
+        border: none;
+        border-top: 2px solid var(--or-border-color);
+        margin: 20px 0;
+    }
+
+    .custom-markdown-editor table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 10px 0;
+    }
+
+        .custom-markdown-editor table th {
+            background-color: var(--or-bg-lighter);
+            color: var(--or-text-primary);
+            padding: 10px;
+            border: 1px solid var(--or-border-color);
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .custom-markdown-editor table td {
+            padding: 10px;
+            border: 1px solid var(--or-border-color);
+            color: var(--or-text-primary);
+        }
+
+        .custom-markdown-editor table tbody tr:hover {
+            background-color: var(--or-bg-lighter);
+        }
+
+/* ============================================================
+   MARKDOWN BODY - Read-Only Preview
+   ============================================================ */
+
+.markdown-body {
+    color: var(--or-text-primary);
+    line-height: 1.6;
+    background-color: transparent;
+    font-size: 14px;
+}
+
+    .markdown-body h1,
+    .markdown-body h2,
+    .markdown-body h3,
+    .markdown-body h4,
+    .markdown-body h5,
+    .markdown-body h6 {
+        color: var(--or-text-primary);
+        border-bottom: 1px solid var(--or-border-color);
+        padding-bottom: 8px;
+        margin-top: 16px;
+        margin-bottom: 8px;
+    }
+
+    .markdown-body p {
+        color: var(--or-text-primary);
+        margin: 8px 0;
+    }
+
+    .markdown-body ul,
+    .markdown-body ol {
+        color: var(--or-text-primary);
+    }
+
+    .markdown-body li {
+        color: var(--or-text-primary);
+        margin: 4px 0;
+    }
+
+    .markdown-body a {
+        color: var(--or-accent-color);
+        text-decoration: none;
+        border-bottom: 1px solid var(--or-accent-color);
+    }
+
+        .markdown-body a:hover {
+            text-decoration: underline;
+        }
+
+    .markdown-body blockquote {
+        border-left: 4px solid var(--or-accent-color);
+        color: var(--or-text-secondary);
+        padding-left: 12px;
+        margin-left: 0;
+        font-style: italic;
+    }
+
+    .markdown-body code {
+        background-color: var(--or-bg-lighter);
+        color: var(--or-text-primary);
+        padding: 2px 6px;
+        border-radius: 3px;
+        border: 1px solid var(--or-border-color);
+    }
+
+    .markdown-body pre {
+        background-color: var(--or-bg-lighter);
+        border: 1px solid var(--or-border-color);
+        padding: 12px;
+        border-radius: 4px;
+        overflow-x: auto;
+        color: var(--or-text-primary);
+    }
+
+        .markdown-body pre code {
+            background-color: transparent;
+            border: none;
+            padding: 0;
+            color: var(--or-text-primary);
+        }
+
+    .markdown-body table {
+        border-collapse: collapse;
+        width: 100%;
+        margin: 10px 0;
+    }
+
+        .markdown-body table th {
+            background-color: var(--or-bg-lighter);
+            color: var(--or-text-primary);
+            padding: 10px;
+            border: 1px solid var(--or-border-color);
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .markdown-body table td {
+            padding: 10px;
+            border: 1px solid var(--or-border-color);
+            color: var(--or-text-primary);
+        }
+
+        .markdown-body table tbody tr:hover {
+            background-color: var(--or-bg-lighter);
+        }
+
+    .markdown-body hr {
+        border: none;
+        border-top: 2px solid var(--or-border-color);
+        margin: 20px 0;
+    }
+
+    .markdown-body img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 4px;
+    }
+
+/* ============================================================
+   UTILITY CLASSES
+   ============================================================ */
+
+.or-text-muted {
+    color: var(--or-text-secondary) !important;
+}
+
+.or-border {
+    border: 1px solid var(--or-border-color);
+    border-radius: 4px;
+    padding: 10px;
+}
+
+.or-rounded {
+    border-radius: 8px;
+}
+
+/* ============================================================
+   ACCESSIBILITY
+   ============================================================ */
+
+/* Ensure sufficient contrast in all elements */
+.custom-markdown-editor,
+.markdown-body {
+    /* Fallback for users with reduced motion preferences */
+    @media (prefers-reduced-motion: reduce) {
+        * {
+            animation: none !important;
+            transition: none !important;
+        }
+    }
+    /* High contrast mode support */
+    @media (prefers-contrast: more) {
+        color: var(--or-text-primary);
+
+        h1, h2, h3, h4, h5, h6 {
+            font-weight: 700;
+        }
+
+        a {
+            text-decoration: underline;
+        }
+    }
+}
+
+/* ============================================================
+   PRINT STYLES
+   ============================================================ */
+
+@media print {
+    .custom-markdown-editor,
+    .markdown-body {
+        color: #000000;
+        background-color: #ffffff;
+    }
+
+        .custom-markdown-editor a,
+        .markdown-body a {
+            color: #0066cc;
+            text-decoration: underline;
+        }
+}
