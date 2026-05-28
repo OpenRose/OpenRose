@@ -129,12 +129,20 @@
                         </MudBreakpointProvider>
                     }
                     <br />
+
                     <div class="custom-markdown-editor">
                         @if (!string.IsNullOrEmpty(singleItemz.Description))
                         {
                             <div class="markdown-body">@((MarkupString)convertedMarkdown)</div>
                         }
                     </div>
+                    <!-- MARKDOWN DESCRIPTION - Dark Mode Support -->
+@*                     <MudPaper Class="pa-4 mb-4" Outlined="true" Elevation="1">
+                        @if (!string.IsNullOrEmpty(singleItemz.Description))
+                        {
+                            <div class="custom-markdown-editor markdown-body">@((MarkupString)convertedMarkdown)</div>
+                        }
+                    </MudPaper> *@
                     <TraceabilityReadOnlyComponent ItemzId="@ItemzId" />
                 </MudCardContent>
             </MudCard>
