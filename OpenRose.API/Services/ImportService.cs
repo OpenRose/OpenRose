@@ -50,6 +50,9 @@ namespace ItemzApp.API.Services
 											string detectedType,
 											ImportDataPlacementDTO placementDto)
 		{
+			// TODO - Test team reported that first parent record's estimation data import 
+			// and estimation unit import is not working as expected. Please verify and fix if needed.
+
 			var result = new ImportResult
 			{
 				Success = false,
