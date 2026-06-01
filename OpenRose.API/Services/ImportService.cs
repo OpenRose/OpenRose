@@ -154,6 +154,16 @@ namespace ItemzApp.API.Services
 
 				await _itemzRepository.SaveAsync();
 
+				// EXPLANATION: Apply estimation data to the root Itemz after placement is complete.
+				// This mirrors the pattern used for child Itemz records in ImportItemzRecursivelyWithStats,
+				// ensuring consistent behavior for all imported Itemz regardless of hierarchy level.
+				await _itemzRepository.ImportServiceUpdateItemzEstimationInHierarchyAsync(rootEntity.Id
+					, estimationUnit: itemzDto.EstimationUnit
+					, ownEstimation: itemzDto.OwnEstimation
+					, rolledUpEstimation: itemzDto.RolledUpEstimation
+				);
+				await _itemzRepository.SaveAsync();
+
 				// Now that root is placed, import sub-itemz recursively
 				int totalCreated = 1;
 				int maxDepth = 1;
