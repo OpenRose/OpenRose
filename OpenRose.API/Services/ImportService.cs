@@ -50,9 +50,6 @@ namespace ItemzApp.API.Services
 											string detectedType,
 											ImportDataPlacementDTO placementDto)
 		{
-			// TODO - Test team reported that first parent record's estimation data import 
-			// and estimation unit import is not working as expected. Please verify and fix if needed.
-
 			var result = new ImportResult
 			{
 				Success = false,
@@ -155,6 +152,16 @@ namespace ItemzApp.API.Services
 					return result;
 				}
 
+				await _itemzRepository.SaveAsync();
+
+				// EXPLANATION: Apply estimation data to the root Itemz after placement is complete.
+				// This mirrors the pattern used for child Itemz records in ImportItemzRecursivelyWithStats,
+				// ensuring consistent behavior for all imported Itemz regardless of hierarchy level.
+				await _itemzRepository.ImportServiceUpdateItemzEstimationInHierarchyAsync(rootEntity.Id
+					, estimationUnit: itemzDto.EstimationUnit
+					, ownEstimation: itemzDto.OwnEstimation
+					, rolledUpEstimation: itemzDto.RolledUpEstimation
+				);
 				await _itemzRepository.SaveAsync();
 
 				// Now that root is placed, import sub-itemz recursively
