@@ -65,6 +65,13 @@
     //[Inject] private IServiceProvider Services { get; set; } = default!;
 
 
+    // EXPLANATION ::
+    // In the past we did use _errorMessage to show that API server was not available but then we 
+    // started supporting Enhanced StartUp Mode and we allow admins to configure OpenRose without 
+    // connecting to API layer. So we decided not to show any more errorMessages when API layer is
+    // not configured. Anyways, we decided to leave this variable here just in case if we need to 
+    // use it for any other purpose in the future. 
+
     private string _errorMessage = string.Empty;
     private string version = string.Empty;
     private bool _isReconnectDisabled = false;
@@ -74,37 +81,12 @@
 
     protected override void OnInitialized()
     {
-        // @if (StartupCapabilities.ApiAvailable)
-        // {
-        //     VersionChecker = Services.GetService<ApiVersionChecker>();
-        // }
-
-        // Only show API configuration error if API is expected to exist
-
-        // Redirect ONLY on first visit AND ONLY if startup mode is Server JSON
-        // if (!_redirectedOnce && DataSourceStateService.CurrentDataSourceState.IsServerJsonMode)
-        // {
-        //     _redirectedOnce = true;
-        //     Navigation.NavigateTo("/serverdatafiles", replace: true);
-        //     return;
-        // }
-
 
         // Redirect ONLY when the application starts in Server JSON mode
         if (DataSourceStateService.CurrentDataSourceState.IsServerJsonMode)
         {
             Navigation.NavigateTo("/serverdatafiles", replace: true);
             return; // Prevent further initialization
-        }
-
-
-
-        if (StartupCapabilities.ApiAvailable)
-        {
-            if (!apiConfigService.IsOpenRoseAPIConfigured)
-            {
-                _errorMessage = "OpenRose API connection via base URL is not configured. Please contact your System Administrator.";
-            }
         }
 
         version = AssemblyInfo.GetAssemblyVersion();
@@ -125,10 +107,14 @@
         _isReconnectDisabled = true;
         @if (StartupCapabilities.ApiAvailable)
         {
-            await VersionChecker.CheckApiVersionAsync();
+            var ok = await VersionChecker.CheckApiVersionAsync();
             // StateHasChanged(); // Blazor does this automatically after event handlers
-        }
 
+            if (ok)
+            {
+                _errorMessage = string.Empty;   // <-- FIX
+            }
+        }
 
         // Wait few seconds before re-enabling
         await Task.Delay(TimeSpan.FromSeconds(3));
