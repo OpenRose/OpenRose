@@ -68,16 +68,6 @@ namespace OpenRose.WebUI.Services
 		/// </summary>
 		public bool IsOperatingInJsonFileDataSourceMode { get; set; } = false;
 
-		/// <summary>
-		/// NEW PROPERTY: Controls whether to display the "Switch Data Source" button/icon
-		/// in the application UI (specifically in MainLayout).
-		/// 
-		/// EXPLANATION: This allows the application to conditionally show or hide
-		/// the data source switch control based on configuration or application state.
-		/// For now, this defaults to true (always show the switch button).
-		/// </summary>
-		public bool ShowDataSourceSwitchControl { get; set; } = true;
-
 
 		/// <summary>
 		/// Indicates whether traceability information is displayed in Itemz details view.
