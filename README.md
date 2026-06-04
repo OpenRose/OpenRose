@@ -45,9 +45,23 @@ BUT primarily, **Itemz** is nothing but Requirements / Needs / Wants / Notes / F
 
 ## Overview of Current State
 
-Latest release [version 0.2.0-478](https://github.com/OpenRose/OpenRose/releases/tag/v0.2.0-478)
+Latest release [version 0.2.0-744](https://github.com/OpenRose/OpenRose/releases/tag/v0.2.0-744)
 
-Main New Feature
+version v0.2.0-744
+- Introduced setting for show properties toggle button for Read Only views
+- Introducing Global Style for Two Columns in Description 
+
+version v0.2.0-707
+- External Static File Support via custom user defined folders
+- Enhance Logging for Server Offline Data files and User Files
+- Support for Hosted Server Side JSON Data in Cloud Deployment Scenarios
+- Improved UI for Server Data Files view to support Mobile Users
+
+version v0.2.0-647
+
+- Estimation Roll Ups for Requirements [Demo][https://www.youtube.com/watch?v=LW6lS7eWq28]
+
+version v0.2.0-478
 
 - Adding support for Tagging in Requirements Items and Baseline Requirement Items [Demo](https://www.youtube.com/watch?v=ev8CE9Lv5qo)
 - Introducing Server Side JSON Data file based ReadOnly TreeViews [Demo](https://www.youtube.com/watch?v=cRm--ATHAUQ)
