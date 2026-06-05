@@ -79,6 +79,7 @@ namespace OpenRose.WebUI.Client.Services.Export
 			bool showTraceabilityOnly,
 			bool includeEstimations,
 			string baseUrl,
+			string? view = null,
 			CancellationToken cancellationToken = default)
 		{
 			try
@@ -110,6 +111,11 @@ namespace OpenRose.WebUI.Client.Services.Export
 				if (includeEstimations)
 				{
 					urlBuilder_.Append("&includeEstimations=true");
+				}
+
+				if(!string.IsNullOrWhiteSpace(view))
+				{
+					urlBuilder_.Append($"&view={Uri.EscapeDataString(view)}");
 				}
 
 				// urlBuilder_.Length--; // cleanup if trailing ? or & is left
