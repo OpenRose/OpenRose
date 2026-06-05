@@ -37,12 +37,13 @@ namespace ItemzApp.API.Helper
 							  IEnumerable<ItemzTraceDTO> traces,
 							  Guid rootId,
 							  string? baseUrl,
-							  bool includeEstimations = false)
+							  bool includeEstimations = false,
+							  string? view = null)
 		{
 			var sb = new StringBuilder();
 			EmitOpenRoseHeader(sb);
 
-			EmitHierarchyInline(root, sb, rootId, 1, baseUrl, includeEstimations);
+			EmitHierarchyInline(root, sb, rootId, 1, baseUrl, includeEstimations, view);
 
 			// Build lookup dictionary from hierarchy
 			var idToName = BuildIdToNameMap(root);
@@ -97,12 +98,13 @@ namespace ItemzApp.API.Helper
 			IEnumerable<BaselineItemzTraceDTO> traces,
 			Guid rootId,
 			string? baseUrl = null,
-			bool includeEstimations = false)
+			bool includeEstimations = false,
+			string? view = null)
 		{
 			var sb = new StringBuilder();
 			EmitOpenRoseHeader(sb);
 
-			EmitBaselineHierarchyInline(root, sb, rootId, 1, baseUrl, includeEstimations);
+			EmitBaselineHierarchyInline(root, sb, rootId, 1, baseUrl, includeEstimations, view);
 
 			// Build lookup dictionary from baseline hierarchy
 			var idToName = BuildBaselineIdToNameMap(root);
@@ -146,7 +148,8 @@ namespace ItemzApp.API.Helper
 												Guid rootId,
 												int indentLevel,
 												string? baseUrl = null,
-												bool includeEstimations = false)
+												bool includeEstimations = false,
+												string? view = null)
 		{
 			string parent = string.Empty;
 			
@@ -167,7 +170,8 @@ namespace ItemzApp.API.Helper
 				sb.AppendLine($"{indent}{parent}");
 				if (!string.IsNullOrWhiteSpace(baseUrl))
 				{
-					var gotoUrl = $"{baseUrl}/GoTo/{node.RecordId}";
+					//var gotoUrl = $"{baseUrl}/GoTo/{node.RecordId}";
+					var gotoUrl = BuildGotoUrl(baseUrl, node.RecordId, view);
 					var safeLabel = TransformLabelForMermaid(node.Name);
 					sb.AppendLine($"{indent}click {node.RecordId} href \"{gotoUrl}\"");
 				}
@@ -194,12 +198,13 @@ namespace ItemzApp.API.Helper
 					// Add click directive if baseUrl is provided
 					if (!string.IsNullOrWhiteSpace(baseUrl))
 					{
-						var gotoUrl = $"{baseUrl}/GoTo/{child.RecordId}";
+						//var gotoUrl = $"{baseUrl}/GoTo/{child.RecordId}";
+						var gotoUrl = BuildGotoUrl(baseUrl, child.RecordId, view);
 						var safeLabel = TransformLabelForMermaid(child.Name);
 						sb.AppendLine($"{indent}click {child.RecordId} href \"{gotoUrl}\"");
 					}
 
-					EmitHierarchyInline(child, sb, rootId, indentLevel + 1, baseUrl, includeEstimations);
+					EmitHierarchyInline(child, sb, rootId, indentLevel + 1, baseUrl, includeEstimations, view);
 				}
 			}
 		}
@@ -212,7 +217,8 @@ namespace ItemzApp.API.Helper
 														Guid rootId,
 														int indentLevel,
 														string? baseUrl = null,
-														bool includeEstimations = false)
+														bool includeEstimations = false,
+														string? view = null)
 		{
 			string parent = string.Empty;
 
@@ -235,7 +241,8 @@ namespace ItemzApp.API.Helper
 
 				if (!string.IsNullOrWhiteSpace(baseUrl))
 				{
-					var gotoUrl = $"{baseUrl}/GoTo/{node.RecordId}";
+					//var gotoUrl = $"{baseUrl}/GoTo/{node.RecordId}";
+					var gotoUrl = BuildGotoUrl(baseUrl, node.RecordId, view);
 					sb.AppendLine($"{indent}click {node.RecordId} href \"{gotoUrl}\"");
 				}
 			}
@@ -262,11 +269,12 @@ namespace ItemzApp.API.Helper
 
 					if (!string.IsNullOrWhiteSpace(baseUrl))
 					{
-						var gotoUrl = $"{baseUrl}/GoTo/{child.RecordId}";
+						//var gotoUrl = $"{baseUrl}/GoTo/{child.RecordId}";
+						var gotoUrl = BuildGotoUrl(baseUrl, child.RecordId, view);
 						sb.AppendLine($"{indent}click {child.RecordId} href \"{gotoUrl}\"");
 					}
 
-					EmitBaselineHierarchyInline(child, sb, rootId, indentLevel + 1, baseUrl, includeEstimations);
+					EmitBaselineHierarchyInline(child, sb, rootId, indentLevel + 1, baseUrl, includeEstimations, view);
 				}
 			}
 		}
@@ -508,6 +516,23 @@ namespace ItemzApp.API.Helper
 			sb.AppendLine("  OpenRoseIcon@{ img: \"https://github.com/OpenRose/OpenRose/blob/main/OpenRose.Web/OpenRose.WebUI/wwwroot/icons/OpenRose_Mermaid.png?raw=true\", label: \"By OpenRose\", pos: \"b\", h: 60, constraint: \"on\" }");
 			sb.AppendLine("  click OpenRoseIcon href \"https://github.com/OpenRose\" \"OpenRose\" _blank");
 		}
+
+		private static string BuildGotoUrl(string? baseUrl, Guid recordId, string? view)
+		{
+			if (string.IsNullOrWhiteSpace(baseUrl))
+				return $"GoTo/{recordId}";
+
+			var url = $"{baseUrl}/GoTo/{recordId}";
+
+			if (!string.IsNullOrWhiteSpace(view) &&
+				view.Equals("treeview", StringComparison.OrdinalIgnoreCase))
+			{
+				url += "?view=treeview";
+			}
+
+			return url;
+		}
+
 
 	}
 }
