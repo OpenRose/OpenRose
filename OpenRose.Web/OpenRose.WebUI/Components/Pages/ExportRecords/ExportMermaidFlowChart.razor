@@ -14,7 +14,7 @@
 @inject IJSRuntime JS
 
 <MudPaper Class="pa-3 mb-3 align-start d-flex" Outlined="false">
-    <MudStack Row="true" Spacing="3">
+    <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="3" Justify="Justify.FlexStart">
         <MudIcon Icon="@Icons.Material.Filled.GraphicEq" Size="Size.Large" />
         <MudText Typo="Typo.h5" Align="Align.Left">Export Mermaid FlowChart</MudText>
         <MudSpacer />
@@ -50,16 +50,25 @@
                           Immediate="true"
                           OnKeyDown="@(async e => { if (e.Key == "Enter" && IsGuidInputValid()) { await HandleExportMermaidFlowChartAsync(); } })" />
 
-            <MudCheckBox @bind-Value="exportIncludedBaselineItemzOnly"
-                         Label="Only export BaselineItemz marked for Inclusion" />
+            <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="2" AlignItems="AlignItems.Center" Justify="Justify.FlexStart">
 
-            <MudCheckBox Label="Show only traced records (Traceability Only)"
-                         Value="showTraceabilityOnly"
-                         ValueChanged="@((bool x) => OnTraceabilityOnlyChanged(x))" />
+                <MudCheckBox @bind-Value="exportIncludedBaselineItemzOnly"
+                             Label="Only export BaselineItemz marked for Inclusion" />
 
-            <MudCheckBox Label="Include Estimations"
-                         Value="includeEstimations"
-                         ValueChanged="@((bool x) => OnIncludeEstimationsChanged(x))" />
+                <MudCheckBox Label="Show only traced records (Traceability Only)"
+                             Value="showTraceabilityOnly"
+                             ValueChanged="@((bool x) => OnTraceabilityOnlyChanged(x))" />
+
+                <MudCheckBox Label="Include Estimations"
+                             Value="includeEstimations"
+                             ValueChanged="@((bool x) => OnIncludeEstimationsChanged(x))" />
+
+                <MudCheckBox Label="Generate TreeView URL links"
+                             Value="generateTreeViewLinks"
+                             ValueChanged="@((bool x) => OnGenerateTreeViewLinksChanged(x))" />
+
+            </MudStack>
+
 
             <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
                 <MudButton Variant="Variant.Filled"
@@ -152,6 +161,7 @@
     private bool exportIncludedBaselineItemzOnly { get; set; } = false;
     private bool showTraceabilityOnly { get; set; } = false;
     private bool includeEstimations { get; set; } = false;
+    private bool generateTreeViewLinks { get; set; } = false;
     private string mermaidText { get; set; } = string.Empty;
     private bool loading { get; set; } = false;
 
@@ -179,11 +189,12 @@
             var clientBaseUrl = NavigationManager.BaseUri.TrimEnd('/');
 
             mermaidText = await ExportService.__GET_MermaidFlowChart_By_GUID_ID__Async(
-                                                guid, 
-                                                exportIncludedBaselineItemzOnly,
-                                                showTraceabilityOnly,
-                                                includeEstimations,
-                                                clientBaseUrl);
+                                                exportRecordId: guid,
+                                                exportIncludedBaselineItemzOnly: exportIncludedBaselineItemzOnly,
+                                                showTraceabilityOnly: showTraceabilityOnly,
+                                                includeEstimations: includeEstimations,
+                                                baseUrl: clientBaseUrl,
+                                                view: generateTreeViewLinks ? "treeView" : null);
 
             loading = false;
 
@@ -244,6 +255,12 @@
     private void OnIncludeEstimationsChanged(bool newValue)
     {
         includeEstimations = newValue;
+        mermaidText = string.Empty;  // clear old flowchart text
+    }
+
+    private void OnGenerateTreeViewLinksChanged(bool newValue)
+    {
+        generateTreeViewLinks = newValue;
         mermaidText = string.Empty;  // clear old flowchart text
     }
 
