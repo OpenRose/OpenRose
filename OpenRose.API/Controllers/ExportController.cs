@@ -443,7 +443,8 @@ namespace ItemzApp.API.Controllers
 																[FromQuery] bool exportIncludedBaselineItemzOnly = false,
 																[FromQuery] string? baseUrl = null,
 																[FromQuery] bool showTraceabilityOnly = false,
-																[FromQuery] bool includeEstimations = false)
+																[FromQuery] bool includeEstimations = false,
+																[FromQuery] string? view = null)
 		{
 			if (exportRecordId == Guid.Empty)
 			{
@@ -557,7 +558,7 @@ namespace ItemzApp.API.Controllers
 							.ToList();
 					}
 
-					var mermaidText = MermaidExporter.Generate(rootNodeToExport, itemzTraces, exportRecordId, baseUrl, includeEstimations);
+					var mermaidText = MermaidExporter.Generate(rootNodeToExport, itemzTraces, exportRecordId, baseUrl, includeEstimations, view);
 
 					// var mermaidText = MermaidExporter.Generate(rootNode, itemzTraces, exportRecordId, baseUrl);
 					return Content(mermaidText, "text/plain");
@@ -670,7 +671,7 @@ namespace ItemzApp.API.Controllers
 							.ToList();
 					}
 
-					var mermaidText = MermaidExporter.GenerateBaseline(rootNodeToExport, baselineItemzTraces, exportRecordId, baseUrl, includeEstimations);
+					var mermaidText = MermaidExporter.GenerateBaseline(rootNodeToExport, baselineItemzTraces, exportRecordId, baseUrl, includeEstimations, view);
 
 
 					//var mermaidText = MermaidExporter.GenerateBaseline(rootNode, baselineItemzTraces, exportRecordId, baseUrl);
