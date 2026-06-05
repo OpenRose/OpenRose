@@ -40,6 +40,7 @@ namespace OpenRose.WebUI.Client.Services.Export
 																bool showTraceabilityOnly,
 																bool includeEstimations,
 																string baseUrl,
+																string view,
 																CancellationToken cancellationToken = default);
 	}
 
