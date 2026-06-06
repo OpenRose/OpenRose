@@ -12,21 +12,22 @@
 @rendermode InteractiveServer
 @inject NavigationManager NavManager
 
-
-@* <MudPaper Class="pa-3 mb-3 align-start d-flex" Style="width: auto " Outlined="false">
-    <MudStack Row="true" Spacing="3">
-        <MudIcon Icon="@Icons.Material.Filled.LocalFlorist" Size="Size.Large" />
-        <MudText Typo="Typo.h6" Align="Align.Left">About OpenRose </MudText>
-        <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success"> Version -  @version </MudChip>
-    </MudStack>
-</MudPaper>
- *@
 <MudPaper Class="pa-4 mb-5 align-start d-flex" Style="width: auto" Outlined="false" >
-    <MudIcon Icon="@Icons.Material.Filled.LocalFlorist" Size="Size.Large" Color="Color.Secondary"/>
-    <MudText Typo="Typo.h5" Align="Align.Left">@((MarkupString)(" &nbsp; Projects &nbsp;&nbsp;"))</MudText>
-    <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Primary"> @AllProjects.Count().ToString()</MudChip>
-    <MudSpacer />
-    <MudButton @onclick="createNewProject" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Primary"> Create Project </MudButton>
+
+ <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="3">
+    <MudIcon Icon="@Icons.Material.Filled.LocalFlorist" Size="Size.Large" Color="Color.Secondary" />
+    <MudText Typo="Typo.h5">@((MarkupString)(" &nbsp; Projects &nbsp;&nbsp;"))</MudText>
+    <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Primary">
+        @AllProjects.Count().ToString()
+    </MudChip>
+</MudStack>
+<MudButton @onclick="createNewProject"
+        Variant="Variant.Filled"
+        Size="Size.Medium"
+        Color="Color.Primary"
+        Style="margin-left:auto;">
+    Create Project
+</MudButton>
 </MudPaper>
 
 @if (initializingPage)
