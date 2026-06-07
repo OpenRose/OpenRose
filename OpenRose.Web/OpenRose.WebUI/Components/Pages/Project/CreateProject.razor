@@ -58,7 +58,7 @@
 							Label="Status">
 					@foreach (var _stringProjectStatusValue in _stringProjectStatusValues)
 					{
-						<MudSelectItem T="string" Value="_stringProjectStatusValue">@_stringProjectStatusValue</MudSelectItem>
+						<MudSelectItem T="string" Value="@_stringProjectStatusValue">@_stringProjectStatusValue</MudSelectItem>
 					}
 				</MudSelect>
 @* 				<MudTextField T="string" Label="Description" Required="true" RequiredError="Description is required!"
@@ -184,6 +184,8 @@
 
 	string[] _stringProjectStatusValues = { };
 
+
+
 	private MarkupString convertedMarkdown;
 
 	protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -201,6 +203,13 @@
 			if (singleProject != null && singleProject.Description != null)
 			{
 				await ConvertMarkdownToHtml(singleProject.Description);
+			}
+
+			if(string.IsNullOrEmpty(singleProject.Status))
+			{
+				// EXPLANATION ::
+				// Get default value as 'New' which is the first value in the Enum as per integer base of 0 ZERO
+				singleProject.Status = _stringProjectStatusValues.FirstOrDefault(); 
 			}
 
 			StateHasChanged();
