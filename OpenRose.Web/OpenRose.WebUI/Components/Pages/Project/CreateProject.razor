@@ -58,13 +58,9 @@
 							Label="Status">
 					@foreach (var _stringProjectStatusValue in _stringProjectStatusValues)
 					{
-						<MudSelectItem T="string" Value="_stringProjectStatusValue">@_stringProjectStatusValue</MudSelectItem>
+						<MudSelectItem T="string" Value="@_stringProjectStatusValue">@_stringProjectStatusValue</MudSelectItem>
 					}
 				</MudSelect>
-@* 				<MudTextField T="string" Label="Description" Required="true" RequiredError="Description is required!"
-							  @bind-Value="singleProject.Description"
-							  For="@(() => singleProject.Description)" /> *@
-
 					<!-- Ensure this div applies the custom class to the Markdown content -->
 					<MudText><strong>Description : </strong></MudText>
 					<div class="custom-markdown-editor">
@@ -184,6 +180,8 @@
 
 	string[] _stringProjectStatusValues = { };
 
+
+
 	private MarkupString convertedMarkdown;
 
 	protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -203,6 +201,13 @@
 				await ConvertMarkdownToHtml(singleProject.Description);
 			}
 
+			if(string.IsNullOrEmpty(singleProject.Status))
+			{
+				// EXPLANATION ::
+				// Get default value as 'New' which is the first value in the Enum as per integer base of 0 ZERO
+				singleProject.Status = _stringProjectStatusValues.FirstOrDefault(); 
+			}
+
 			StateHasChanged();
 		}
 	}
@@ -219,8 +224,7 @@
 				try
 				{
 					var updatedResult = await ProjectService.__POST_Create_Project__Async(singleProject);
-					await Task.Delay(1500);
-					NavManager.NavigateTo("/projects");
+					NavManager.NavigateTo($"/projectTreeView/{updatedResult.Id}");
 				}
 				catch (Exception ex)
 				{
