@@ -61,10 +61,6 @@
 						<MudSelectItem T="string" Value="@_stringProjectStatusValue">@_stringProjectStatusValue</MudSelectItem>
 					}
 				</MudSelect>
-@* 				<MudTextField T="string" Label="Description" Required="true" RequiredError="Description is required!"
-							  @bind-Value="singleProject.Description"
-							  For="@(() => singleProject.Description)" /> *@
-
 					<!-- Ensure this div applies the custom class to the Markdown content -->
 					<MudText><strong>Description : </strong></MudText>
 					<div class="custom-markdown-editor">
@@ -228,8 +224,7 @@
 				try
 				{
 					var updatedResult = await ProjectService.__POST_Create_Project__Async(singleProject);
-					await Task.Delay(1500);
-					NavManager.NavigateTo("/projects");
+					NavManager.NavigateTo($"/projectTreeView/{updatedResult.Id}");
 				}
 				catch (Exception ex)
 				{
