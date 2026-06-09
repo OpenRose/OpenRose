@@ -25,6 +25,7 @@
 @inject IExportService ExportService
 @inject IDialogService DialogService
 @inject IJSRuntime JS
+@inject ISnackbar Snackbar
 
 <MudPaper Class="pa-3 mb-3 align-start d-flex" Style="width: auto " Outlined="false">
     <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="3" Justify="Justify.FlexStart">
@@ -346,7 +347,7 @@
             }
 
             await DownloadFile(fileContent, fileName ?? $"Export_{recordType}_{selectedRecordId}.json");
-            await ShowSuccessMessage("Export completed successfully!");
+            ShowSnackbarAtBottomLeft("Download Completed Successfully", Defaults.Classes.Position.BottomLeft);
 
             // Now it's safe to reset selection (including checkbox)
             await ResetSelection();
@@ -387,5 +388,12 @@
     private async Task ShowSuccessMessage(string message)
     {
         await DialogService.ShowMessageBox("SUCCESS", markupMessage: new MarkupString($"<p style=\"color: blue;\">{message}</p>"), yesText: "OK");
+    }
+
+    private void ShowSnackbarAtBottomLeft(string message, string position)
+    {
+        Snackbar.Clear();
+        Snackbar.Configuration.PositionClass = position;
+        Snackbar.Add(message, Severity.Success);
     }
 }
