@@ -1,0 +1,43 @@
+﻿@* 
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0. 
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+@using MudBlazor
+
+<MudDialog>
+    <TitleContent>
+        <MudIcon Icon="@Icons.Material.Filled.WarningAmber" Class="mr-3" Color="Color.Warning" />
+        Project Deleted
+    </TitleContent>
+    <DialogContent>
+        <MudAlert Severity="Severity.Warning" Class="mb-4">
+            The project <strong>@ProjectName</strong> has been deleted by another user.
+        </MudAlert>
+        <MudText Class="mt-4">
+            This project is no longer available. You will be redirected to the projects list.
+        </MudText>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="NavigateToProjectsList">
+            Go to Projects List
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter]
+    public Guid ProjectId { get; set; }
+
+    [Parameter]
+    public string ProjectName { get; set; } = string.Empty;
+
+    private void NavigateToProjectsList()
+    {
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+}
