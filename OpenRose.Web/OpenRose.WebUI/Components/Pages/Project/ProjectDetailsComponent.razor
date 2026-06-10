@@ -14,14 +14,18 @@
 @using OpenRose.WebUI.Components.EventServices
 @using OpenRose.WebUI.Components.Pages.Baseline
 @using OpenRose.WebUI.Components.Pages.Common
+@using OpenRose.WebUI.Services.NotificationHub
 @using Microsoft.AspNetCore.Components.Forms
 @using OpenRose.WebUI.Components.Pages.SharedComponents
 @using PSC.Blazor.Components.MarkdownEditor
 @using PSC.Blazor.Components.MarkdownEditor.EventsArgs
+@inject ProjectDeletionService DeletionService
+@inject ILogger<ProjectDetailsComponent> _logger
 @inject NavigationManager NavManager
 @inject IDialogService DialogService
 @inject TreeNodeItemzSelectionService TreeNodeItemzSelectionService
 @inject IJSRuntime JS
+
 
 @if (FormStateService.IsDirty(ProjectId))
 {
@@ -510,19 +514,64 @@
     }
 
 
+    // public async Task deleteProject()
+    // {
+    //     try
+    //     {
+    //         await ProjectService.__DELETE_Project_By_GUID_ID__Async(ProjectId);
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         await OpenExceptionDialogAsync("Problem Deleting Project : " + ex.Message);
+    //         return;
+    //     }
+    //     NavManager.NavigateTo("/projects");
+    // }
+
     public async Task deleteProject()
     {
         try
         {
-            await ProjectService.__DELETE_Project_By_GUID_ID__Async(ProjectId);
+            _logger.LogInformation(
+                "Starting project deletion for project {ProjectId} ({ProjectName})",
+                ProjectId,
+            singleProject?.Name ?? "Unknown");
+
+            // Call the deletion service which will:
+            // 1. Delete the project via API
+            // 2. Broadcast notification to all connected users
+            var success = await DeletionService.DeleteProjectWithNotificationAsync(ProjectId);
+
+            if (success)
+            {
+                _logger.LogInformation(
+                    "Project {ProjectId} deleted successfully and notification broadcasted",
+                    ProjectId);
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "Project deletion returned false for project {ProjectId}",
+                    ProjectId);
+                await OpenExceptionDialogAsync("Failed to delete project. Please try again.");
+                return;
+            }
         }
         catch (Exception ex)
         {
+            _logger.LogError(
+                ex,
+                "Exception occurred while deleting project {ProjectId}",
+                ProjectId);
             await OpenExceptionDialogAsync("Problem Deleting Project : " + ex.Message);
             return;
         }
+
+        // Navigate back to projects list after successful deletion
         NavManager.NavigateTo("/projects");
     }
+
+
     private async Task OpenDeleteConfirmationDialogAsync()
     {
 
