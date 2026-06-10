@@ -31,6 +31,7 @@ using OpenRose.WebUI.Components.EventServices;
 using OpenRose.WebUI.Components.FindServices;
 using OpenRose.WebUI.Configuration;
 using OpenRose.WebUI.Services;
+using OpenRose.WebUI.Services.NotificationHub;
 using OpenRose.WebUI.Services.StartUpConfiguration;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -57,6 +58,15 @@ else
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()
     .AddInteractiveWebAssemblyComponents();
+
+// Add SignalR for real-time notifications
+builder.Services.AddSignalR();
+
+// Register Notification Services
+builder.Services.AddScoped<IProjectNotificationService, ProjectNotificationService>();
+builder.Services.AddScoped<ProjectDeletionService>();
+builder.Services.AddScoped<ProjectCreationService>();
+builder.Services.AddScoped<ProjectUpdateService>();
 
 
 builder.Services.AddControllers();
@@ -332,6 +342,11 @@ startupConfigurationManager.ConfigureAndLogStartupSettings();
 
 app.MapStaticAssets();
 app.UseAntiforgery();
+
+
+// Map the SignalR Hub - This uses the existing Blazor Server circuit
+app.MapHub<ProjectNotificationHub>("/projectNotificationHub");
+
 
 app.MapRazorComponents<App>()
 	.AddInteractiveServerRenderMode()
