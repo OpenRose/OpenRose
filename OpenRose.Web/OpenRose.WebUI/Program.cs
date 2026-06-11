@@ -347,10 +347,10 @@ app.UseAntiforgery();
 
 // Map SignalR Hubs using constants
 app.MapHub<ProjectNotificationHub>(SignalRConstants.HubPaths.ProjectNotificationHub);
-//app.MapHub<RequirementNotificationHub>(SignalRConstants.HubPaths.RequirementNotificationHub);
-//app.MapHub<BaselineNotificationHub>(SignalRConstants.HubPaths.BaselineNotificationHub);
-//app.MapHub<EstimationNotificationHub>(SignalRConstants.HubPaths.EstimationNotificationHub);
-//app.MapHub<TraceabilityNotificationHub>(SignalRConstants.HubPaths.TraceabilityNotificationHub);
+app.MapHub<RequirementNotificationHub>(SignalRConstants.HubPaths.RequirementNotificationHub);
+app.MapHub<BaselineNotificationHub>(SignalRConstants.HubPaths.BaselineNotificationHub);
+app.MapHub<EstimationNotificationHub>(SignalRConstants.HubPaths.EstimationNotificationHub);
+app.MapHub<TraceabilityNotificationHub>(SignalRConstants.HubPaths.TraceabilityNotificationHub);
 app.MapHub<SignalRMonitoringHub>(SignalRConstants.HubPaths.MonitoringHub);
 
 app.MapRazorComponents<App>()
