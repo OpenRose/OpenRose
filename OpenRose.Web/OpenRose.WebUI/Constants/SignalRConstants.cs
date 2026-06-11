@@ -22,6 +22,7 @@ namespace OpenRose.WebUI.Constants
 			public const string BaselineNotificationHub = "/baselineNotificationHub";
 			public const string EstimationNotificationHub = "/estimationNotificationHub";
 			public const string TraceabilityNotificationHub = "/traceabilityNotificationHub";
+			public const string MonitoringHub = "/signalRMonitoringHub"; 
 		}
 
 		/// <summary>
