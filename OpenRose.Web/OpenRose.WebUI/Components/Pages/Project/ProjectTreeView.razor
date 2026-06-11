@@ -16,6 +16,7 @@
 @using OpenRose.WebUI.Components.Pages.Common
 @using OpenRose.WebUI.Helper.TreeViewNodes
 @using OpenRose.WebUI.Components.FindServices
+@using OpenRose.WebUI.Constants
 @using OpenRose.WebUI.Services
 @using OpenRose.WebUI.Services.NotificationHub
 @using Microsoft.AspNetCore.Components.Forms
@@ -779,19 +780,24 @@
                 try
                 {
                     hubConnection = new HubConnectionBuilder()
-                        .WithUrl(NavManager.ToAbsoluteUri("/projectNotificationHub"))
+                        .WithUrl(NavManager.ToAbsoluteUri(SignalRConstants.HubPaths.ProjectNotificationHub))
                         .WithAutomaticReconnect()
                         .Build();
 
-                    // Listen for project deleted notifications - only receive ProjectId
+                    // Listen for project deleted notifications
                     hubConnection.On<Guid>(
-                        "ProjectDeleted",
+                        SignalRConstants.ProjectEvents.ProjectDeleted,
                         OnProjectDeletedAsync);
 
-                    // Listen for project updated notifications - only receive ProjectId
+                    // Listen for project updated notifications
                     hubConnection.On<Guid>(
-                        "ProjectUpdated",
+                        SignalRConstants.ProjectEvents.ProjectModified,
                         OnProjectUpdatedAsync);
+
+                    // Listen for project created notifications
+                    hubConnection.On<Guid>(
+                        SignalRConstants.ProjectEvents.ProjectCreated,
+                        OnProjectCreatedAsync);
 
                     await hubConnection.StartAsync();
 
@@ -1201,6 +1207,22 @@
         _logger.LogInformation(
             $"Project {projectIdUpdated} was updated");
 
+        // Optionally refresh the project data if needed
+        // await LoadProjectDataAsync();
+        // StateHasChanged();
+    }
+
+    /// <summary>
+    /// Called when server broadcasts that this project was created.
+    /// Receives only the ProjectId.
+    /// </summary>
+    private async Task OnProjectCreatedAsync(Guid projectIdCreated)
+    {
+        if (projectIdCreated != ProjectId)
+            return;
+
+        _logger.LogInformation(
+            $"Project {projectIdCreated} was created");
         // Optionally refresh the project data if needed
         // await LoadProjectDataAsync();
         // StateHasChanged();

@@ -3,6 +3,7 @@
 // See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 
 using Microsoft.AspNetCore.SignalR;
+using OpenRose.WebUI.Constants;
 using System;
 using System.Threading.Tasks;
 
@@ -38,21 +39,23 @@ namespace OpenRose.WebUI.Services.NotificationHub
 		{
 			try
 			{
-				var groupName = $"project-{projectId}";
+				var groupName = SignalRConstants.GroupNamePatterns.GetProjectGroup(projectId);
 
 				// Send only the ProjectId - clients have all details already
 				await _hubContext.Clients.Group(groupName)
-					.SendAsync("ProjectDeleted", projectId);
+					.SendAsync(SignalRConstants.ProjectEvents.ProjectDeleted, projectId);
 
 				_logger.LogInformation(
-					"Broadcasted ProjectDeleted notification for project {ProjectId}",
+					"Broadcasted {EventName} notification for project {ProjectId}",
+					SignalRConstants.ProjectEvents.ProjectDeleted,
 					projectId);
 			}
 			catch (Exception ex)
 			{
 				_logger.LogError(
 					ex,
-					"Error broadcasting ProjectDeleted notification for project {ProjectId}",
+					"Error broadcasting {EventName} notification for project {ProjectId}",
+					SignalRConstants.ProjectEvents.ProjectDeleted,
 					projectId);
 				throw;
 			}
@@ -70,17 +73,19 @@ namespace OpenRose.WebUI.Services.NotificationHub
 			{
 				// Send to all connected clients (new project visible in all project lists)
 				await _hubContext.Clients.All
-					.SendAsync("ProjectCreated", projectId);
+					.SendAsync(SignalRConstants.ProjectEvents.ProjectCreated, projectId);
 
 				_logger.LogInformation(
-					"Broadcasted ProjectCreated notification for project {ProjectId}",
+					"Broadcasted {EventName} notification for project {ProjectId}",
+					SignalRConstants.ProjectEvents.ProjectCreated,
 					projectId);
 			}
 			catch (Exception ex)
 			{
 				_logger.LogError(
 					ex,
-					"Error broadcasting ProjectCreated notification for project {ProjectId}",
+					"Error broadcasting {EventName} notification for project {ProjectId}",
+					SignalRConstants.ProjectEvents.ProjectCreated,
 					projectId);
 				throw;
 			}
@@ -94,21 +99,23 @@ namespace OpenRose.WebUI.Services.NotificationHub
 		{
 			try
 			{
-				var groupName = $"project-{projectId}";
+				var groupName = SignalRConstants.GroupNamePatterns.GetProjectGroup(projectId);
 
 				// Send only the ProjectId - clients have all details already
 				await _hubContext.Clients.Group(groupName)
-					.SendAsync("ProjectUpdated", projectId);
+					.SendAsync(SignalRConstants.ProjectEvents.ProjectModified, projectId);
 
 				_logger.LogInformation(
-					"Broadcasted ProjectUpdated notification for project {ProjectId}",
+					"Broadcasted {EventName} notification for project {ProjectId}",
+					SignalRConstants.ProjectEvents.ProjectModified,
 					projectId);
 			}
 			catch (Exception ex)
 			{
 				_logger.LogError(
 					ex,
-					"Error broadcasting ProjectUpdated notification for project {ProjectId}",
+					"Error broadcasting {EventName} notification for project {ProjectId}",
+					SignalRConstants.ProjectEvents.ProjectModified,
 					projectId);
 				throw;
 			}

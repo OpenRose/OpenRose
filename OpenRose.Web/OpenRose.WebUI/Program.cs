@@ -30,6 +30,7 @@ using OpenRose.WebUI.Components;
 using OpenRose.WebUI.Components.EventServices;
 using OpenRose.WebUI.Components.FindServices;
 using OpenRose.WebUI.Configuration;
+using OpenRose.WebUI.Constants;
 using OpenRose.WebUI.Services;
 using OpenRose.WebUI.Services.NotificationHub;
 using OpenRose.WebUI.Services.StartUpConfiguration;
@@ -344,8 +345,12 @@ app.MapStaticAssets();
 app.UseAntiforgery();
 
 
-// Map the SignalR Hub - This uses the existing Blazor Server circuit
-app.MapHub<ProjectNotificationHub>("/projectNotificationHub");
+// Map SignalR Hubs using constants
+app.MapHub<ProjectNotificationHub>(SignalRConstants.HubPaths.ProjectNotificationHub);
+//app.MapHub<RequirementNotificationHub>(SignalRConstants.HubPaths.RequirementNotificationHub);
+//app.MapHub<BaselineNotificationHub>(SignalRConstants.HubPaths.BaselineNotificationHub);
+//app.MapHub<EstimationNotificationHub>(SignalRConstants.HubPaths.EstimationNotificationHub);
+//app.MapHub<TraceabilityNotificationHub>(SignalRConstants.HubPaths.TraceabilityNotificationHub);
 
 
 app.MapRazorComponents<App>()
