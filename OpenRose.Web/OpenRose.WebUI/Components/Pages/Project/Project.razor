@@ -197,22 +197,192 @@
 	{
 		initializingPage = true;
 
-		// Load project
-		singleProject = await ProjectService.__Single_Project_By_GUID_ID__Async(ProjectId);
-
-		// If markdown exists, defer JS conversion until first render
-		if (!string.IsNullOrEmpty(singleProject?.Description))
+		bool loadingSuccessful = false;
+		while (!loadingSuccessful)
 		{
-			_pendingMarkdown = singleProject.Description;
+			try
+			{
+
+				// Load project
+				singleProject = await ProjectService.__Single_Project_By_GUID_ID__Async(ProjectId);
+
+				// If markdown exists, defer JS conversion until first render
+
+				if (singleProject == null)
+				{
+					throw new ApplicationException($"Either API Server is unavailable OR Project with ID {ProjectId} has been deleted.");
+                }
+
+				if (!string.IsNullOrEmpty(singleProject?.Description))
+				{
+					_pendingMarkdown = singleProject.Description;
+				}
+
+				// Load Itemz Types
+				var returnedItemzTypeList =
+					await HierarchyService.__Get_Immediate_Children_Hierarchy_By_GUID__Async(ProjectId);
+
+				AllItemzTypesForProject = returnedItemzTypeList?.ToList() ?? new();
+
+				initializingPage = false;
+				
+				// 🔑 MARK LOADING AS SUCCESSFUL
+				loadingSuccessful = true;
+			}
+			catch (ApplicationException ex)
+			{
+				// 🔑 API SERVER IS UNREACHABLE (Network/Connection error)
+				_logger.LogWarning(
+					ex,
+					"Either API Server is unavailable OR requested project has been deleted.",
+					ProjectId);
+
+				initializingPage = true;
+				// showLoadingMessage = false;
+				// StateHasChanged();
+
+				// Show error dialog with retry option
+				var retryOptions = new DialogOptions
+					{
+						CloseButton = false
+					};
+
+				var dialogResult = await DialogService.ShowMessageBox(
+					title: "Connection Error",
+					markupMessage: new MarkupString(
+						$"<p style=\"color: red;\"><strong>Unable to obtain Project Data</strong></p>" +
+						$"<p>Either API server is currently unreachable OR</p>" +
+						$"<p>The requested project has been deleted.</p>" +
+						$"<p><strong>Would you like to retry?</strong></p>"
+					),
+					yesText: "Retry",
+					noText: "Go to Home",
+					options: retryOptions
+				);
+
+				// 🔑 USER CLICKED RETRY - LOOP CONTINUES AND TRIES AGAIN
+				if (dialogResult == true)
+				{
+					_logger.LogInformation("User chose to retry loading project {ProjectId}. Waiting 2 seconds before retry.", ProjectId);
+					// Wait 1 seconds before retrying to give server time to recover
+					await Task.Delay(1000);
+					// showLoadingMessage = true;
+					// StateHasChanged();
+					// Continue the loop to retry
+					continue;
+				}
+				else
+				{
+					// 🔑 USER CLICKED "GO TO Home Screen"
+					_logger.LogInformation("User chose to go to home screen");
+					NavManager.NavigateTo("/");
+					loadingSuccessful = true;
+				}
+			}
+			catch (Exception ex)
+			{
+				// 🔑 HANDLE ANY OTHER UNEXPECTED ERRORS
+				// Check if this is a connection error wrapped in AggregateException or OperationCanceledException
+				bool isConnectionError = false;
+				string errorType = "Unknown Error";
+
+				if (ex is OperationCanceledException)
+				{
+					isConnectionError = true;
+					errorType = "Connection Timeout";
+				}
+				else if (ex.InnerException is HttpRequestException)
+				{
+					isConnectionError = true;
+					errorType = "Connection Error";
+				}
+				else if (ex.InnerException is OperationCanceledException)
+				{
+					isConnectionError = true;
+					errorType = "Connection Timeout";
+				}
+				else if (ex is AggregateException aggEx && aggEx.InnerExceptions.Any(ie => ie is HttpRequestException || ie is OperationCanceledException))
+				{
+					isConnectionError = true;
+					errorType = aggEx.InnerExceptions.OfType<OperationCanceledException>().Any() ? "Connection Timeout" : "Connection Error";
+				}
+
+				_logger.LogError(
+					ex,
+					"Error loading project {ProjectId}. Error Type: {ErrorType}. Is Connection Error: {IsConnectionError}. Message: {Message}",
+					ProjectId,
+					errorType,
+					isConnectionError,
+					ex.Message);
+
+				// showLoadingMessage = false;
+				// StateHasChanged();
+
+				var retryOptions = new DialogOptions
+					{
+						CloseButton = false
+					};
+
+				// If it's a connection error, treat it as such
+				if (isConnectionError)
+				{
+					var dialogResult = await DialogService.ShowMessageBox(
+						"Connection Error",
+						markupMessage: new MarkupString(
+							$"<p style=\"color: red;\"><strong>Unable to Connect to Server ({errorType})</strong></p>" +
+							$"<p>The API server is currently unreachable or not responding.</p>" +
+							$"<p>The project data cannot be loaded at this moment.</p>" +
+							$"<p style=\"color: gray; font-size: 0.9em;\">Error: {ex.Message}</p>" +
+							$"<p><strong>Would you like to retry?</strong></p>"
+						),
+						yesText: "Retry",
+						noText: "Go to Projects List",
+						options: retryOptions
+					);
+
+					if (dialogResult == true)
+					{
+						_logger.LogInformation("User chose to retry after {ErrorType} for project {ProjectId}. Waiting 2 seconds before retry.", errorType, ProjectId);
+						await Task.Delay(2000);
+						continue;
+					}
+					else
+					{
+						_logger.LogInformation("User chose to go to projects list after {ErrorType}", errorType);
+						NavManager.NavigateTo("/projects", forceLoad: true);
+						loadingSuccessful = true;
+					}
+				}
+				else
+				{
+					// Show generic error message with retry for other unexpected errors
+					var dialogResult = await DialogService.ShowMessageBox(
+						"Error Loading Project",
+						markupMessage: new MarkupString(
+							$"<p style=\"color: red;\"><strong>An Unexpected Error Occurred</strong></p>" +
+							$"<p>Error: {ex.Message}</p>" +
+							$"<p><strong>Would you like to retry?</strong></p>"
+						),
+						yesText: "Retry",
+						noText: "Go to Projects List",
+						options: retryOptions
+					);
+
+					if (dialogResult == true)
+					{
+						_logger.LogInformation("User chose to retry after error for project {ProjectId}", ProjectId);
+						await Task.Delay(2000);
+						continue;
+					}
+					else
+					{
+						_logger.LogInformation("User chose to go to projects list after error");
+						NavManager.NavigateTo("/projects", forceLoad: true);
+						loadingSuccessful = true;
+					}
+				}
+			}
 		}
-
-		// Load Itemz Types
-		var returnedItemzTypeList =
-			await HierarchyService.__Get_Immediate_Children_Hierarchy_By_GUID__Async(ProjectId);
-
-		AllItemzTypesForProject = returnedItemzTypeList?.ToList() ?? new();
-
-		initializingPage = false;
 
 		// -------------------------------
 		// Initialize SignalR connection
