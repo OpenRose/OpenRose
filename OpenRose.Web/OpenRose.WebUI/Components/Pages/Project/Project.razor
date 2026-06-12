@@ -9,13 +9,19 @@
 @using OpenRose.WebUI.Client.Services.Project
 @using OpenRose.WebUI.Client.Services.ItemzType
 @using OpenRose.WebUI.Client.SharedModels
+@using OpenRose.WebUI.Components.Dialogs
 @using OpenRose.WebUI.Components.Pages.Common
 @using OpenRose.WebUI.Components.Pages.SharedComponents
+@using OpenRose.WebUI.Constants
 @using OpenRose.WebUI.Services
+@using OpenRose.WebUI.Services.NotificationHub
 @using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.SignalR.Client
 @inject NavigationManager NavManager
 @inject IDialogService DialogService
 @inject IJSRuntime JS
+@inject ILogger<Project> _logger
+@inject ProjectDeletionService DeletionService
 
 <MudPaper Class="pa-3 mb-3 align-start d-flex" Style="width: auto " Outlined="false">
     <MudStack Row="true" Spacing="3">
@@ -182,6 +188,11 @@
 
 	private Breakpoint bp;
 
+	//SignalR Hub Connection
+	private HubConnection? hubConnection;
+
+
+
 	protected override async Task OnAfterRenderAsync(bool firstRender)
 	{
 		if (firstRender)
@@ -206,6 +217,46 @@
 
 			initializingPage = false;
 			StateHasChanged();
+
+		// EXPLANATION :: INITIALIZE SIGNALR CONNECTION TO THE HUB (Only if project loaded successfully)
+			try
+			{
+				hubConnection = new HubConnectionBuilder()
+					.WithUrl(NavManager.ToAbsoluteUri(SignalRConstants.HubPaths.ProjectNotificationHub))
+					.WithAutomaticReconnect()
+					.Build();
+
+				// Listen for project deleted notifications
+				hubConnection.On<Guid>(
+					SignalRConstants.ProjectEvents.ProjectDeleted,
+					OnProjectDeletedAsync);
+
+				// Listen for project updated notifications
+				hubConnection.On<Guid>(
+					SignalRConstants.ProjectEvents.ProjectModified,
+					OnProjectUpdatedAsync);
+
+				// Listen for project created notifications
+				hubConnection.On<Guid>(
+					SignalRConstants.ProjectEvents.ProjectCreated,
+					OnProjectCreatedAsync);
+
+				await hubConnection.StartAsync();
+
+				// Subscribe to notifications for the current project
+				if (hubConnection.State == HubConnectionState.Connected)
+				{
+					await hubConnection.InvokeAsync("SubscribeToProjectAsync", ProjectId);
+					_logger.LogInformation($"Subscribed to notifications for project {ProjectId}");
+				}
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Failed to connect to ProjectNotificationHub: {ex.Message}");
+			}
+
+			StateHasChanged();
+
 		}
 	}
 
@@ -367,5 +418,94 @@
 			// await JS.InvokeVoidAsync("applyMarkdownEditorFullscreenStyles");
 		}
 	}
+
+    #region SignalR Event Handlers including overall Dispose method
+	/// <summary>
+	/// Called when server broadcasts that this project was deleted.
+	/// Receives only the ProjectId - we already have the project details.
+	/// </summary>
+	private async Task OnProjectDeletedAsync(Guid projectIdDeleted)
+	{
+		// Only process if this is for the current project
+		if (projectIdDeleted != ProjectId)
+			return;
+
+		_logger.LogInformation(
+			$"Received notification: Project {projectIdDeleted} was deleted");
+
+		// Use the already-loaded project details from singleProject
+		var parameters = new DialogParameters<DeletedProjectDialog>
+		{
+			{ x => x.ProjectId, projectIdDeleted },
+			{ x => x.ProjectName, singleProject?.Name ?? "Unknown Project" }
+		};
+
+		var dialog = await DialogService.ShowAsync<DeletedProjectDialog>(
+			"Project Deleted",
+			parameters);
+
+		var result = await dialog.Result;
+
+		// Navigate away if user confirmed
+		if (!result.Canceled)
+		{
+			NavManager.NavigateTo("/Projects", forceLoad: true);
+		}
+	}
+
+	/// <summary>
+	/// Called when server broadcasts that this project was updated.
+	/// Receives only the ProjectId.
+	/// </summary>
+	private async Task OnProjectUpdatedAsync(Guid projectIdUpdated)
+	{
+		if (projectIdUpdated != ProjectId)
+			return;
+
+		_logger.LogInformation(
+			$"Project {projectIdUpdated} was updated");
+
+		// Optionally refresh the project data if needed
+		// await LoadProjectDataAsync();
+		// StateHasChanged();
+	}
+
+	/// <summary>
+	/// Called when server broadcasts that this project was created.
+	/// Receives only the ProjectId.
+	/// </summary>
+	private async Task OnProjectCreatedAsync(Guid projectIdCreated)
+	{
+		if (projectIdCreated != ProjectId)
+			return;
+
+		_logger.LogInformation(
+			$"Project {projectIdCreated} was created");
+		// Optionally refresh the project data if needed
+		// await LoadProjectDataAsync();
+		// StateHasChanged();
+	}
+
+	
+
+	public async ValueTask DisposeAsync()
+	{
+
+		// Cleanup SignalR connection
+		if (hubConnection is not null)
+		{
+			try
+			{
+				await hubConnection.InvokeAsync("UnsubscribeFromProjectAsync", ProjectId);
+				await hubConnection.DisposeAsync();
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"Error disposing hub connection: {ex.Message}");
+			}
+		}
+	}
+
+	#endregion
 
 }
