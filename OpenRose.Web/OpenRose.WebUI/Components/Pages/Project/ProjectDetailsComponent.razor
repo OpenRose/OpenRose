@@ -306,32 +306,32 @@
 </MudGrid>
 @code 
 {
-    [Parameter]
-    public Guid ProjectId { get; set; }
-    [Parameter]
-    [SupplyParameterFromQuery(Name = "showBaselineTab")]
-    public bool ShowBaselineTab { get; set; } = false;
-    [Parameter]
-    [SupplyParameterFromQuery(Name = "calledFrom")]
-    public string CalledFrom { get; set; } = string.Empty;
+        [Parameter]
+        public Guid ProjectId { get; set; }
+        [Parameter]
+        [SupplyParameterFromQuery(Name = "showBaselineTab")]
+        public bool ShowBaselineTab { get; set; } = false;
+        [Parameter]
+        [SupplyParameterFromQuery(Name = "calledFrom")]
+        public string CalledFrom { get; set; } = string.Empty;
 
-    [Parameter]
-    public EventCallback<string> ContentChanged { get; set; }
+        [Parameter]
+        public EventCallback<string> ContentChanged { get; set; }
 
-    [Inject]
-    public IProjectService ProjectService { get; set; }
+        [Inject]
+        public IProjectService ProjectService { get; set; }
 
-    [Inject]
-    public IBaselinesService BaselineService { get; set; }
+        [Inject]
+        public IBaselinesService BaselineService { get; set; }
 
-    [Inject]
-    public IItemzTypeService ItemzTypeService { get; set; }
+        [Inject]
+        public IItemzTypeService ItemzTypeService { get; set; }
 
-    [Inject]
-    public IHierarchyService HierarchyService { get; set; }
+        [Inject]
+        public IHierarchyService HierarchyService { get; set; }
 
-    [Inject]
-    public FormStateService FormStateService { get; set; }
+        [Inject]
+        public FormStateService FormStateService { get; set; }
 
 
     // public Guid displayOnlyProjectID = Guid.Empty ;
@@ -346,7 +346,7 @@
     private bool isRecalculatingRollUpEstimations = false;
 
     private EstimationManagementComponent? estimationComponent;
-    
+
     //SignalR Hub Connection
     private HubConnection? hubConnection;
 
@@ -423,50 +423,214 @@
         initializingPage = true;
         StateHasChanged();
         //await Task.Delay(300);
-        singleProject = await ProjectService.__Single_Project_By_GUID_ID__Async(ProjectId);
 
-        if (singleProject != null)
+        bool loadingSuccessful = false;
+        while (!loadingSuccessful)
         {
-            TreeNodeItemzSelectionService.UpdateTreeNodeItemzName(ProjectId, singleProject.Name!);
-            _originalDescription = singleProject.Description ?? string.Empty;
-            MyContent = _originalDescription;
+            try
+            {
+
+                singleProject = await ProjectService.__Single_Project_By_GUID_ID__Async(ProjectId);
+
+                if (singleProject != null)
+                {
+                    TreeNodeItemzSelectionService.UpdateTreeNodeItemzName(ProjectId, singleProject.Name!);
+                    _originalDescription = singleProject.Description ?? string.Empty;
+                    MyContent = _originalDescription;
+                }
+                else
+                {
+                    throw new ApplicationException($"Either API Server is unavailable OR Project with ID {ProjectId} has been deleted.");
+                }
+
+                if (form != null)
+                {
+                    await form.Validate();
+                    // Always keep Save disabled on first render.
+                    disableUpdateProjectDetailsButton = true;
+                }
+                initializingPage = false;
+
+                // EXPLANATION :: First we create string list and then just call ToArray() for producing required string array
+                List<string> tempList = new List<string>();
+                foreach (var _projectStatusValue in Enum.GetValues<ProjectStatus>())
+                {
+                    tempList.Add(_projectStatusValue.ToString().Trim());
+                }
+                _stringProjectStatusValues = tempList.ToArray();
+
+                await ConvertMarkdownToHtml(singleProject.Description);
+
+                // Reset dirty state
+                disableUpdateProjectDetailsButton = true;
+                FormStateService.SetDirty(singleProject.Id, false);
+
+                // EXPLANATION :: Location of setting active tab is important to be here at the end of data loading, 
+                // because if we set it before data loading then it will cause multiple unnecessary renders and may 
+                // also cause the tab to not switch properly on first load due to the async nature of data loading.
+
+                if (ShowBaselineTab == true)
+                {
+                    // activeIndex = 2;
+                    await projectTabs.ActivatePanelAsync(baselineTab);
+                }
+
+                StateHasChanged();
+
+
+                // 🔑 MARK LOADING AS SUCCESSFUL
+                loadingSuccessful = true;
+            }
+            catch (ApplicationException ex)
+            {
+                // 🔑 API SERVER IS UNREACHABLE (Network/Connection error)
+                _logger.LogWarning(
+                    ex,
+                    "Either API Server is unavailable OR requested project has been deleted.",
+                    ProjectId);
+
+                initializingPage = true;
+
+                // Show error dialog with retry option
+                var retryOptions = new DialogOptions
+                {
+                    CloseButton = false
+                };
+
+                var dialogResult = await DialogService.ShowMessageBox(
+                    title: "Connection Error",
+                    markupMessage: new MarkupString(
+                        $"<p style=\"color: red;\"><strong>Unable to obtain Project Data</strong></p>" +
+                        $"<p>Either API server is currently unreachable OR</p>" +
+                        $"<p>The requested project has been deleted.</p>" +
+                        $"<p><strong>Would you like to retry?</strong></p>"
+                    ),
+                    yesText: "Retry",
+                    noText: "Go to Home",
+                    options: retryOptions
+                );
+
+                // USER CLICKED RETRY - LOOP CONTINUES AND TRIES AGAIN
+                if (dialogResult == true)
+                {
+                    _logger.LogInformation("User chose to retry loading project {ProjectId}. Waiting 2 seconds before retry.", ProjectId);
+                    // Wait 1 seconds before retrying to give server time to recover
+                    await Task.Delay(1000);
+                    // showLoadingMessage = true;
+                    // StateHasChanged();
+                    // Continue the loop to retry
+                    continue;
+                }
+                else
+                {
+                    // USER CLICKED "GO TO Home Screen"
+                    _logger.LogInformation("User chose to go to home screen");
+                    NavManager.NavigateTo("/");
+                    loadingSuccessful = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                // HANDLE ANY OTHER UNEXPECTED ERRORS
+                // Check if this is a connection error wrapped in AggregateException or OperationCanceledException
+                bool isConnectionError = false;
+                string errorType = "Unknown Error";
+
+                if (ex is OperationCanceledException)
+                {
+                    isConnectionError = true;
+                    errorType = "Connection Timeout";
+                }
+                else if (ex.InnerException is HttpRequestException)
+                {
+                    isConnectionError = true;
+                    errorType = "Connection Error";
+                }
+                else if (ex.InnerException is OperationCanceledException)
+                {
+                    isConnectionError = true;
+                    errorType = "Connection Timeout";
+                }
+                else if (ex is AggregateException aggEx && aggEx.InnerExceptions.Any(ie => ie is HttpRequestException || ie is OperationCanceledException))
+                {
+                    isConnectionError = true;
+                    errorType = aggEx.InnerExceptions.OfType<OperationCanceledException>().Any() ? "Connection Timeout" : "Connection Error";
+                }
+
+                _logger.LogError(
+                    ex,
+                    "Error loading project {ProjectId}. Error Type: {ErrorType}. Is Connection Error: {IsConnectionError}. Message: {Message}",
+                    ProjectId,
+                    errorType,
+                    isConnectionError,
+                    ex.Message);
+
+                var retryOptions = new DialogOptions
+                {
+                    CloseButton = false
+                };
+
+                // If it's a connection error, treat it as such
+                if (isConnectionError)
+                {
+                    var dialogResult = await DialogService.ShowMessageBox(
+                        "Connection Error",
+                        markupMessage: new MarkupString(
+                            $"<p style=\"color: red;\"><strong>Unable to Connect to Server ({errorType})</strong></p>" +
+                            $"<p>The API server is currently unreachable or not responding.</p>" +
+                            $"<p>The project data cannot be loaded at this moment.</p>" +
+                            $"<p style=\"color: gray; font-size: 0.9em;\">Error: {ex.Message}</p>" +
+                            $"<p><strong>Would you like to retry?</strong></p>"
+                        ),
+                        yesText: "Retry",
+                        noText: "Go to Projects List",
+                        options: retryOptions
+                    );
+
+                    if (dialogResult == true)
+                    {
+                        _logger.LogInformation("User chose to retry after {ErrorType} for project {ProjectId}. Waiting 2 seconds before retry.", errorType, ProjectId);
+                        await Task.Delay(2000);
+                        continue;
+                    }
+                    else
+                    {
+                        _logger.LogInformation("User chose to go to projects list after {ErrorType}", errorType);
+                        NavManager.NavigateTo("/projects", forceLoad: true);
+                        loadingSuccessful = true;
+                    }
+                }
+                else
+                {
+                    // Show generic error message with retry for other unexpected errors
+                    var dialogResult = await DialogService.ShowMessageBox(
+                        "Error Loading Project",
+                        markupMessage: new MarkupString(
+                            $"<p style=\"color: red;\"><strong>An Unexpected Error Occurred</strong></p>" +
+                            $"<p>Error: {ex.Message}</p>" +
+                            $"<p><strong>Would you like to retry?</strong></p>"
+                        ),
+                        yesText: "Retry",
+                        noText: "Go to Projects List",
+                        options: retryOptions
+                    );
+
+                    if (dialogResult == true)
+                    {
+                        _logger.LogInformation("User chose to retry after error for project {ProjectId}", ProjectId);
+                        await Task.Delay(2000);
+                        continue;
+                    }
+                    else
+                    {
+                        _logger.LogInformation("User chose to go to projects list after error");
+                        NavManager.NavigateTo("/projects", forceLoad: true);
+                        loadingSuccessful = true;
+                    }
+                }
+            }
         }
 
-        if (form != null)
-        {
-            await form.Validate();
-            // Always keep Save disabled on first render.
-            disableUpdateProjectDetailsButton = true;
-        }
-        initializingPage = false;
-
-        // EXPLANATION :: First we create string list and then just call ToArray() for producing required string array
-        List<string> tempList = new List<string>();
-        foreach (var _projectStatusValue in Enum.GetValues<ProjectStatus>())
-        {
-            tempList.Add(_projectStatusValue.ToString().Trim());
-        }
-        _stringProjectStatusValues = tempList.ToArray();
-
-
-
-        await ConvertMarkdownToHtml(singleProject.Description);
-
-        // Reset dirty state
-        disableUpdateProjectDetailsButton = true;
-        FormStateService.SetDirty(singleProject.Id, false);
-
-        // EXPLANATION :: Location of setting active tab is important to be here at the end of data loading, 
-        // because if we set it before data loading then it will cause multiple unnecessary renders and may 
-        // also cause the tab to not switch properly on first load due to the async nature of data loading.
-
-        if (ShowBaselineTab == true)
-        {
-            // activeIndex = 2;
-            await projectTabs.ActivatePanelAsync(baselineTab);
-        }
-
-        StateHasChanged();
 
         // -------------------------------
         // Initialize SignalR connection
