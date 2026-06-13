@@ -405,7 +405,7 @@
     // 	{
     // 		projectTabs.ActivatePanel(baselineTab);
     // 	}
-
+    
     // 	StateHasChanged();
     // }
 
@@ -494,7 +494,9 @@
                 // Show error dialog with retry option
                 var retryOptions = new DialogOptions
                 {
-                    CloseButton = false
+                    CloseButton = false,
+                    BackdropClick = false,
+                    CloseOnEscapeKey = false
                 };
 
                 var dialogResult = await DialogService.ShowMessageBox(
@@ -567,7 +569,9 @@
 
                 var retryOptions = new DialogOptions
                 {
-                    CloseButton = false
+                    CloseButton = false,
+                    BackdropClick = false,
+                    CloseOnEscapeKey = false
                 };
 
                 // If it's a connection error, treat it as such
