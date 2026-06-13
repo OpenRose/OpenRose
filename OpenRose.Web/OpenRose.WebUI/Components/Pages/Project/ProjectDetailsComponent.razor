@@ -635,46 +635,47 @@
             }
         }
 
-
-        // -------------------------------
-        // Initialize SignalR connection
-        // -------------------------------
-        try
+        @if (CalledFrom == nameof(ProjectDetails))
         {
-            hubConnection = new HubConnectionBuilder()
-                .WithUrl(NavManager.ToAbsoluteUri(SignalRConstants.HubPaths.ProjectNotificationHub))
-                .WithAutomaticReconnect()
-                .Build();
-
-            // Listen for project deleted notifications
-            hubConnection.On<Guid>(
-                SignalRConstants.ProjectEvents.ProjectDeleted,
-                OnProjectDeletedAsync);
-
-            // Listen for project updated notifications
-            hubConnection.On<Guid>(
-                SignalRConstants.ProjectEvents.ProjectModified,
-                OnProjectUpdatedAsync);
-
-            // Listen for project created notifications
-            hubConnection.On<Guid>(
-                SignalRConstants.ProjectEvents.ProjectCreated,
-                OnProjectCreatedAsync);
-
-            await hubConnection.StartAsync();
-
-            // Subscribe to notifications for the current project
-            if (hubConnection.State == HubConnectionState.Connected)
+            // -------------------------------
+            // Initialize SignalR connection
+            // -------------------------------
+            try
             {
-                await hubConnection.InvokeAsync("SubscribeToProjectAsync", ProjectId);
-                _logger.LogInformation($"Subscribed to notifications for project {ProjectId}");
+                hubConnection = new HubConnectionBuilder()
+                    .WithUrl(NavManager.ToAbsoluteUri(SignalRConstants.HubPaths.ProjectNotificationHub))
+                    .WithAutomaticReconnect()
+                    .Build();
+
+                // Listen for project deleted notifications
+                hubConnection.On<Guid>(
+                    SignalRConstants.ProjectEvents.ProjectDeleted,
+                    OnProjectDeletedAsync);
+
+                // Listen for project updated notifications
+                hubConnection.On<Guid>(
+                    SignalRConstants.ProjectEvents.ProjectModified,
+                    OnProjectUpdatedAsync);
+
+                // Listen for project created notifications
+                hubConnection.On<Guid>(
+                    SignalRConstants.ProjectEvents.ProjectCreated,
+                    OnProjectCreatedAsync);
+
+                await hubConnection.StartAsync();
+
+                // Subscribe to notifications for the current project
+                if (hubConnection.State == HubConnectionState.Connected)
+                {
+                    await hubConnection.InvokeAsync("SubscribeToProjectAsync", ProjectId);
+                    _logger.LogInformation($"Subscribed to notifications for project {ProjectId}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to connect to ProjectNotificationHub: {ex.Message}");
             }
         }
-        catch (Exception ex)
-        {
-            _logger.LogError($"Failed to connect to ProjectNotificationHub: {ex.Message}");
-        }
-
     }
     public async Task HandleProjectDetailsPatchSubmission()
     {
@@ -748,9 +749,20 @@
                 ProjectId,
             singleProject?.Name ?? "Unknown");
 
+
+            // EXPLANATION :: Before we delete the project, we need to unsubscribe 
+            // from notifications for this project otherwise user will briefly see 
+            // a notification that the project was deleted before the page navigates away.
+
+            if (hubConnection is not null)
+            {
+                await hubConnection.InvokeAsync("UnsubscribeFromProjectAsync", ProjectId);
+            }
+
             // Call the deletion service which will:
             // 1. Delete the project via API
             // 2. Broadcast notification to all connected users
+
             var success = await DeletionService.DeleteProjectWithNotificationAsync(ProjectId);
 
             if (success)
@@ -765,6 +777,18 @@
                     "Project deletion returned false for project {ProjectId}",
                     ProjectId);
                 await OpenExceptionDialogAsync("Failed to delete project. Please try again.");
+
+                if (hubConnection is not null)
+                {
+                    // EXPLANATION :: Subscribe back to notifications for the current project
+                    // This is important because the user may want to retry the deletion 
+                    // or continue working with the project.
+                    if (hubConnection.State == HubConnectionState.Connected)
+                    {
+                        await hubConnection.InvokeAsync("SubscribeToProjectAsync", ProjectId);
+                        _logger.LogInformation($"Subscribed to notifications for project {ProjectId}");
+                    }
+                }
                 return;
             }
         }
