@@ -827,6 +827,9 @@
                 _logger.LogInformation(
                     "Project {ProjectId} deleted successfully and notification broadcasted",
                     ProjectId);
+
+                // Navigate back to projects list after successful deletion
+                NavManager.NavigateTo("/projects");
             }
             else
             {
@@ -859,8 +862,8 @@
             return;
         }
 
-        // Navigate back to projects list after successful deletion
-        NavManager.NavigateTo("/projects");
+        // // Navigate back to projects list after successful deletion
+        // NavManager.NavigateTo("/projects");
     }
 
 
