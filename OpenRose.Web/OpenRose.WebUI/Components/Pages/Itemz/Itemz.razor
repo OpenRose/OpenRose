@@ -27,6 +27,7 @@
 @inject ProtectedSessionStorage SessionStorage
 @inject ViewSettingsService ViewSettings
 @inject IJSRuntime JS
+@inject ILogger<Itemz> _logger
 @inject IServiceProvider serviceProvider
 
 @if (BreadcrumsParameter != null)
@@ -47,7 +48,8 @@
 
 		<!-- This spacer pushes everything after it to the far right -->
 		<MudSpacer />
-
+		@if (singleItemz != null)
+		{
 		<MudSwitch T="bool"
 				   Value="@ViewSettings.ShowTraceabilityInItemzDetails"
 				   ValueChanged="ToggleShowTraces"
@@ -55,7 +57,7 @@
 				   UncheckedColor="Color.Success"
 				   Color="Color.Success"
 				   LabelPlacement="Placement.End" />
-
+		}
 	</MudStack>
 </MudPaper>
 
@@ -263,34 +265,107 @@
 		initializingPage = true;
 		StateHasChanged();
 		//await Task.Delay(300);
-		singleItemz = await itemzService.__Single_Itemz_By_GUID_ID__Async(ItemzId);
 
-		if (singleItemz != null)
+		bool loadingSuccessful = false;
+		while (!loadingSuccessful)
 		{
-			BreadcrumsParameter = new ParameterForItemzBreadcrums();
-			BreadcrumsParameter.Id = singleItemz.Id;
-			BreadcrumsParameter.Name = singleItemz.Name;
-			BreadcrumsParameter.RecordType = "itemz"; // TODO :: USE CONSTANT
-
-			if (!string.IsNullOrWhiteSpace(singleItemz?.Tags))
+			try
 			{
-				// Normalize incoming tags (removes duplicates, trims, preserves order)
-				var normalized = TagParsingUtility.NormalizeAndRemoveDuplicates(singleItemz.Tags);
 
-				// Parse into list
-				tagsList = TagParsingUtility.ParseTags(normalized);
+				singleItemz = await itemzService.__Single_Itemz_By_GUID_ID__Async(ItemzId);
+
+				if (singleItemz == null)
+				{
+					throw new ApplicationException($"Itemz with ID {ItemzId} not found.");
+				}
+
 			}
-			else
+			catch (ApplicationException ex)
 			{
-				tagsList = new List<string>();
+				// 🔑 API SERVER IS UNREACHABLE (Network/Connection error)
+				_logger.LogWarning(
+					ex,
+					"Either API Server is unavailable OR requested itemz has been deleted.",
+					ItemzId);
+
+				initializingPage = true;
+				StateHasChanged();
+
+				var parameters = new DialogParameters
+				{
+					["Title"] = "Connection Error",
+					["MessageHtml"] =
+								"<p style='color:red;'><strong>Unable to obtain Itemz Data</strong></p>" +
+								"<p>Either API server is currently unreachable</p> <p> OR</p>" +
+								"<p>The requested itemz has been deleted.</p>" +
+								"<p><strong>Would you like to retry?</strong></p>",
+					["YesText"] = "Retry",
+					["NoText"] = "Go to Home"
+				};
+
+				// Show error dialog with retry option
+				var options = new DialogOptions
+				{
+					CloseButton = false,
+					BackdropClick = false,
+					CloseOnEscapeKey = false
+				};
+
+				var dialog = await DialogService.ShowAsync<ConnectionAndDataNotFoundErrorDialog>(
+					"Connection Error",
+					parameters,
+					options);
+
+				var dialogResult = await dialog.Result;
+
+				// 🔑 USER CLICKED RETRY - LOOP CONTINUES AND TRIES AGAIN
+				if (dialogResult != null && dialogResult.Data is bool retry && retry)
+				{
+					_logger.LogInformation("User chose to retry loading itemz {ItemzId}. Waiting 1 seconds before retry.", ItemzId);
+					// Wait 1 second before retrying to give server time to recover
+					await Task.Delay(1000);
+					// Continue the loop to retry
+					continue;
+				}
+				else
+				{
+					// 🔑 USER CLICKED "GO TO Home Screen"
+					_logger.LogInformation("User chose to go to home screen");
+					loadingSuccessful = true;
+					NavManager.NavigateTo("/");
+				}
 			}
 
-			var returnedItemzList = await HierarchyService.__Get_Immediate_Children_Hierarchy_By_GUID__Async(ItemzId);
-
-			if (returnedItemzList != null)
+			if (singleItemz != null)
 			{
-				AllChildItemz = returnedItemzList.ToList();
+				BreadcrumsParameter = new ParameterForItemzBreadcrums();
+				BreadcrumsParameter.Id = singleItemz.Id;
+				BreadcrumsParameter.Name = singleItemz.Name;
+				BreadcrumsParameter.RecordType = "itemz"; // TODO :: USE CONSTANT
+
+				if (!string.IsNullOrWhiteSpace(singleItemz?.Tags))
+				{
+					// Normalize incoming tags (removes duplicates, trims, preserves order)
+					var normalized = TagParsingUtility.NormalizeAndRemoveDuplicates(singleItemz.Tags);
+
+					// Parse into list
+					tagsList = TagParsingUtility.ParseTags(normalized);
+				}
+				else
+				{
+					tagsList = new List<string>();
+				}
+
+				var returnedItemzList = await HierarchyService.__Get_Immediate_Children_Hierarchy_By_GUID__Async(ItemzId);
+
+				if (returnedItemzList != null)
+				{
+					AllChildItemz = returnedItemzList.ToList();
+				}
 			}
+			// 🔑 MARK LOADING AS SUCCESSFUL
+			loadingSuccessful = true;
+
 		}
 	}
 
@@ -310,9 +385,16 @@
 			await Task.Delay(200); // Wanted Breadcrums to load so that decision about displaying Child Itemz can be taken properly.
 		}
 
-		await ConvertMarkdownToHtml(singleItemz.Description);
-		await InvokeAsync(StateHasChanged);
-		initializingPage = false;
+		if (singleItemz != null)
+		{
+			initializingPage = false;
+			await InvokeAsync(StateHasChanged);
+
+			if (!string.IsNullOrEmpty(singleItemz.Description))
+			{
+				await ConvertMarkdownToHtml(singleItemz.Description);
+			}
+		}
 	}
 
 	public async Task editItemzDetails(string itemzId)
