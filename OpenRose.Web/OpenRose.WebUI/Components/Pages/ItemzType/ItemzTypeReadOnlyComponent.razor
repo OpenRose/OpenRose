@@ -7,16 +7,19 @@
 @using OpenRose.WebUI.Client.Services.Hierarchy
 @using OpenRose.WebUI.Client.Services.ItemzType
 @using OpenRose.WebUI.Client.SharedModels
+@using OpenRose.WebUI.Components.Dialogs
 @using OpenRose.WebUI.Components.EventServices
 @using OpenRose.WebUI.Components.Pages.Common
 @using OpenRose.WebUI.Components.Pages.SharedComponents
 @using OpenRose.WebUI.Services
 @using Microsoft.AspNetCore.Components.Forms
 @inject NavigationBlockerService NavigationBlocker
+@inject NavigationManager NavManager
 @inject ViewSettingsService ViewSettings
 @inject TreeNodeItemzSelectionService TreeNodeItemzSelectionService
 @inject IDialogService DialogService
 @inject IJSRuntime JS
+@inject ILogger<ItemzType> _logger
 
 <MudGrid>
 	@if (initializingPage)
@@ -29,7 +32,7 @@
 			</MudOverlay>
 		</MudPaper>
 	}
-	else
+	else if (singleItemzType != null)
 	{
  		<MudItem xs="12" sm="12">
 			<MudCard style="background-color:#FABBBB; position:sticky; top:0; z-index:10;">
@@ -143,14 +146,89 @@
 			StateHasChanged();
 			await Task.Delay(300);
 
-			singleItemzType = await ItemzTypeService.__Single_ItemzType_By_GUID_ID__Async(ItemzTypeId);
-			if (singleItemzType != null && singleItemzType.Description != null)
+			bool loadingSuccessful = false;
+			while (!loadingSuccessful)
 			{
-				await ConvertMarkdownToHtml(singleItemzType.Description);
+				try
+				{
+					singleItemzType = await ItemzTypeService.__Single_ItemzType_By_GUID_ID__Async(ItemzTypeId);
+
+					if (singleItemzType == null)
+					{
+						throw new ApplicationException($"ItemzType with ID {ItemzTypeId} not found.");
+					}
+
+				}
+				catch (ApplicationException ex)
+				{
+					// 🔑 API SERVER IS UNREACHABLE (Network/Connection error)
+					_logger.LogWarning(
+						ex,
+						"Either API Server is unavailable OR requested itemz type has been deleted.",
+						ItemzTypeId);
+
+					initializingPage = true;
+					StateHasChanged();
+
+					var parameters = new DialogParameters
+					{
+						["Title"] = "Connection Error",
+						["MessageHtml"] =
+									"<p style='color:red;'><strong>Unable to obtain Itemz Type Data</strong></p>" +
+									"<p>Either API server is currently unreachable</p> <p> OR</p>" +
+									"<p>The requested itemz type has been deleted.</p>" +
+									"<p><strong>Would you like to retry?</strong></p>",
+						["YesText"] = "Retry",
+						["NoText"] = "Go to Home"
+					};
+
+					// Show error dialog with retry option
+					var options = new DialogOptions
+					{
+						CloseButton = false,
+						BackdropClick = false,
+						CloseOnEscapeKey = false
+					};
+
+					var dialog = await DialogService.ShowAsync<ConnectionAndDataNotFoundErrorDialog>(
+						"Connection Error",
+						parameters,
+						options);
+
+					var dialogResult = await dialog.Result;
+
+					// 🔑 USER CLICKED RETRY - LOOP CONTINUES AND TRIES AGAIN
+					if (dialogResult != null && dialogResult.Data is bool retry && retry)
+					{
+						_logger.LogInformation("User chose to retry loading itemz type {ItemzTypeId}. Waiting 2 seconds before retry.", ItemzTypeId);
+						// Wait 1 seconds before retrying to give server time to recover
+						await Task.Delay(1000);
+						// Continue the loop to retry
+						continue;
+					}
+					else
+					{
+						// 🔑 USER CLICKED "GO TO Home Screen"
+						_logger.LogInformation("User chose to go to home screen");
+						NavManager.NavigateTo("/");
+						loadingSuccessful = true;
+					}
+				}
+
+				// 🔑 MARK LOADING AS SUCCESSFUL
+				loadingSuccessful = true;
+
 			}
 
-			initializingPage = false;
-			StateHasChanged();
+			if (singleItemzType != null)
+			{
+				initializingPage = false;
+				StateHasChanged();
+				if (!string.IsNullOrEmpty(singleItemzType.Description))
+				{
+					await ConvertMarkdownToHtml(singleItemzType.Description);
+				}
+			}
 
 			// ALWAYS run navigation blocker after render if kiosk mode is active
 			if (ViewSettings.IsKioskMode)
