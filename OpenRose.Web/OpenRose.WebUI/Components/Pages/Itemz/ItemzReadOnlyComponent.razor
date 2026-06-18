@@ -7,6 +7,7 @@
 @using OpenRose.WebUI.Client.Services.Hierarchy
 @using OpenRose.WebUI.Client.Services.Itemz
 @using OpenRose.WebUI.Client.SharedModels
+@using OpenRose.WebUI.Components.Dialogs
 @using OpenRose.WebUI.Components.EventServices
 @using OpenRose.WebUI.Components.Pages.Common
 @using OpenRose.WebUI.Components.Pages.Itemz.Traceability
@@ -15,10 +16,12 @@
 @using OpenRose.WebUI.Services
 @using Microsoft.AspNetCore.Components.Forms
 @inject NavigationBlockerService NavigationBlocker
+@inject NavigationManager NavManager
 @inject ViewSettingsService ViewSettings
 @inject TreeNodeItemzSelectionService TreeNodeItemzSelectionService
 @inject IDialogService DialogService
 @inject IJSRuntime JS
+@inject ILogger<Itemz> _logger
 
 <MudGrid>
     @if (initializingPage)
@@ -195,26 +198,103 @@
             initializingPage = true;
             StateHasChanged();
             await Task.Delay(300);
+        
+            bool loadingSuccessful = false;
+		    while (!loadingSuccessful)
+		    {
+			    try
+			    {
 
-            singleItemz = await ItemzService.__Single_Itemz_By_GUID_ID__Async(ItemzId);
-            if (singleItemz != null && singleItemz.Description != null)
-            {
-                await ConvertMarkdownToHtml(singleItemz.Description);
+                singleItemz = await ItemzService.__Single_Itemz_By_GUID_ID__Async(ItemzId);
+
+
+				    if (singleItemz == null)
+				    {
+					    throw new ApplicationException($"Itemz with ID {ItemzId} not found.");
+				    }
+
+			    }
+			    catch (ApplicationException ex)
+			    {
+				    // 🔑 API SERVER IS UNREACHABLE (Network/Connection error)
+				    _logger.LogWarning(
+					    ex,
+					    "Either API Server is unavailable OR requested itemz has been deleted.",
+					    ItemzId);
+
+				    initializingPage = true;
+				    StateHasChanged();
+
+				    var parameters = new DialogParameters
+				    {
+					    ["Title"] = "Connection Error",
+					    ["MessageHtml"] =
+								    "<p style='color:red;'><strong>Unable to obtain Itemz Data</strong></p>" +
+								    "<p>Either API server is currently unreachable</p> <p> OR</p>" +
+								    "<p>The requested itemz has been deleted.</p>" +
+								    "<p><strong>Would you like to retry?</strong></p>",
+					    ["YesText"] = "Retry",
+					    ["NoText"] = "Go to Home"
+				    };
+
+				    // Show error dialog with retry option
+				    var options = new DialogOptions
+				    {
+					    CloseButton = false,
+					    BackdropClick = false,
+					    CloseOnEscapeKey = false
+				    };
+
+				    var dialog = await DialogService.ShowAsync<ConnectionAndDataNotFoundErrorDialog>(
+					    "Connection Error",
+					    parameters,
+					    options);
+
+				    var dialogResult = await dialog.Result;
+
+				    // 🔑 USER CLICKED RETRY - LOOP CONTINUES AND TRIES AGAIN
+				    if (dialogResult != null && dialogResult.Data is bool retry && retry)
+				    {
+					    _logger.LogInformation("User chose to retry loading itemz {ItemzId}. Waiting 1 seconds before retry.", ItemzId);
+					    // Wait 1 second before retrying to give server time to recover
+					    await Task.Delay(1000);
+					    // Continue the loop to retry
+					    continue;
+				    }
+				    else
+				    {
+					    // 🔑 USER CLICKED "GO TO Home Screen"
+					    _logger.LogInformation("User chose to go to home screen");
+					    loadingSuccessful = true;
+					    NavManager.NavigateTo("/");
+				    }
+			    }
+
+                if (singleItemz != null && singleItemz.Description != null)
+                {
+                    await ConvertMarkdownToHtml(singleItemz.Description);
+                }
+
+                if (singleItemz != null && singleItemz?.Tags != null)
+                {
+                    tagsList = TagParsingUtility.ParseTags(singleItemz.Tags);
+                }
+
+                if (singleItemz != null)
+                {
+                    initializingPage = false;
+                    await InvokeAsync(StateHasChanged);
+                }
+
+                // ALWAYS run navigation blocker after render if kiosk mode is active
+                if (ViewSettings.IsKioskMode)
+                {
+                    await NavigationBlocker.Enable();
+                }
+
+                // 🔑 MARK LOADING AS SUCCESSFUL
+                loadingSuccessful = true;
             }
-
-            if (singleItemz?.Tags != null)
-            {
-                tagsList = TagParsingUtility.ParseTags(singleItemz.Tags);
-            }
-
-            initializingPage = false;
-            StateHasChanged();
-        }
-
-        // ALWAYS run navigation blocker after render if kiosk mode is active
-        if (ViewSettings.IsKioskMode)
-        {
-            await NavigationBlocker.Enable();
         }
     }
 
