@@ -8,6 +8,7 @@
 @using OpenRose.WebUI.Client.Services.Itemz
 @using OpenRose.WebUI.Client.SharedModels
 @using OpenRose.WebUI.Client.SharedModels.BetweenPagesAndComponent
+@using OpenRose.WebUI.Components.Dialogs
 @using OpenRose.WebUI.Components.EventServices
 @using OpenRose.WebUI.Components.FindServices
 @using OpenRose.WebUI.Components.Pages.Breadcrums
@@ -26,6 +27,7 @@
 @inject TreeNodeItemzSelectionService TreeNodeItemzSelectionService
 @inject BreadcrumsService breadcrumsService
 @inject IJSRuntime JS
+@inject ILogger<ItemzDetailsComponent> _logger
 @inject IServiceProvider serviceProvider
 
 
@@ -57,7 +59,7 @@
 	<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Class="w-100">
 		<MudText Typo="Typo.h6" Align="Align.Left">Itemz Details</MudText>
 		<MudSpacer />
-		@if (CalledFrom == nameof(ProjectTreeView))
+		@if (CalledFrom == nameof(ProjectTreeView) && singleItemz != null)
 		{
 			<MudButton Variant="Variant.Filled" Color="Color.Success"
 					   Disabled="FormStateService.IsDirty(ItemzId)"
@@ -78,7 +80,7 @@
 <MudGrid>
 		@if (initializingPage)
 	{
-		<MudPaper Height="calc(100vh - 100px);" Width="100%">
+		<MudPaper Style="margin-top : 20px" Height="calc(100vh - 100px);" Width="100%">
 			<MudOverlay Visible="@initializingPage" DarkBackground="true" Absolute="true">
 				<MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Inherit">Loading ...</MudText>
 				<br />
@@ -485,99 +487,177 @@
 		initializingPage = true;
 		StateHasChanged();
 		//await Task.Delay(300);
-		singleItemz = await ItemzService.__Single_Itemz_By_GUID_ID__Async(ItemzId);
 
-		if (singleItemz != null)
+		bool loadingSuccessful = false;
+		while (!loadingSuccessful)
 		{
-			BreadcrumsParameter = new ParameterForItemzBreadcrums();
-			BreadcrumsParameter.Id = singleItemz.Id;
-			BreadcrumsParameter.Name = singleItemz.Name;
-			BreadcrumsParameter.RecordType = "itemz"; // TODO :: USE CONSTANT
-
-			TreeNodeItemzSelectionService.UpdateTreeNodeItemzName(ItemzId, singleItemz.Name!);
-			originalItemzName = singleItemz.Name ?? string.Empty;
-
-			_originalDescription = singleItemz.Description ?? string.Empty;
-			MyContent = _originalDescription;
-
-			if (!string.IsNullOrWhiteSpace(singleItemz?.Tags))
+			try
 			{
-				// Normalize incoming tags (removes duplicates, trims, preserves order)
-				var normalized = TagParsingUtility.NormalizeAndRemoveDuplicates(singleItemz.Tags);
+				singleItemz = await ItemzService.__Single_Itemz_By_GUID_ID__Async(ItemzId);
 
-				// Parse into list
-				tagsList = TagParsingUtility.ParseTags(normalized);
+				if (singleItemz == null)
+				{
+					throw new ApplicationException($"Itemz with ID {ItemzId} not found.");
+				}
 
-				UpdateTagLength();
 			}
-			else
+			catch (ApplicationException ex)
 			{
-				tagsList = new List<string>();
+				// 🔑 API SERVER IS UNREACHABLE (Network/Connection error)
+				_logger.LogWarning(
+					ex,
+					"Either API Server is unavailable OR requested itemz has been deleted.",
+					ItemzId);
+
+				initializingPage = true;
+				StateHasChanged();
+
+				var parameters = new DialogParameters
+				{
+					["Title"] = "Connection Error",
+					["MessageHtml"] =
+								"<p style='color:red;'><strong>Unable to obtain Itemz Data</strong></p>" +
+								"<p>Either API server is currently unreachable</p> <p> OR</p>" +
+								"<p>The requested itemz has been deleted.</p>" +
+								"<p><strong>Would you like to retry?</strong></p>",
+					["YesText"] = "Retry",
+					["NoText"] = "Go to Home"
+				};
+
+				// Show error dialog with retry option
+				var options = new DialogOptions
+				{
+					CloseButton = false,
+					BackdropClick = false,
+					CloseOnEscapeKey = false
+				};
+
+				var dialog = await DialogService.ShowAsync<ConnectionAndDataNotFoundErrorDialog>(
+					"Connection Error",
+					parameters,
+					options);
+
+				var dialogResult = await dialog.Result;
+
+				// 🔑 USER CLICKED RETRY - LOOP CONTINUES AND TRIES AGAIN
+				if (dialogResult != null && dialogResult.Data is bool retry && retry)
+				{
+					_logger.LogInformation("User chose to retry loading itemz {ItemzId}. Waiting 1 seconds before retry.", ItemzId);
+					// Wait 1 second before retrying to give server time to recover
+					await Task.Delay(1000);
+					// Continue the loop to retry
+					continue;
+				}
+				else
+				{
+					// 🔑 USER CLICKED "GO TO Home Screen"
+					_logger.LogInformation("User chose to go to home screen");
+					loadingSuccessful = true;
+					NavManager.NavigateTo("/");
+				}
 			}
+
+			if (singleItemz != null)
+			{
+				BreadcrumsParameter = new ParameterForItemzBreadcrums();
+				BreadcrumsParameter.Id = singleItemz.Id;
+				BreadcrumsParameter.Name = singleItemz.Name;
+				BreadcrumsParameter.RecordType = "itemz"; // TODO :: USE CONSTANT
+
+				TreeNodeItemzSelectionService.UpdateTreeNodeItemzName(ItemzId, singleItemz.Name!);
+				originalItemzName = singleItemz.Name ?? string.Empty;
+
+				_originalDescription = singleItemz.Description ?? string.Empty;
+				MyContent = _originalDescription;
+
+				if (!string.IsNullOrWhiteSpace(singleItemz?.Tags))
+				{
+					// Normalize incoming tags (removes duplicates, trims, preserves order)
+					var normalized = TagParsingUtility.NormalizeAndRemoveDuplicates(singleItemz.Tags);
+
+					// Parse into list
+					tagsList = TagParsingUtility.ParseTags(normalized);
+
+					UpdateTagLength();
+				}
+				else
+				{
+					tagsList = new List<string>();
+				}
+			}
+
+			if (form != null)
+			{
+				await form.Validate();
+				if (form.IsValid)
+				{
+					disableUpdateItemzDetailsButton = false;
+				}
+				else
+				{
+					disableUpdateItemzDetailsButton = true;
+				}
+
+				// EXPLANATION :: First we create string list and then just call ToArray() for producing required string array
+				List<string> tempStatusList = new List<string>();
+				foreach (var _itemzStatusValue in Enum.GetValues<ItemzStatus>())
+				{
+					tempStatusList.Add(_itemzStatusValue.ToString().Trim());
+				}
+				_stringItemzStatusValues = tempStatusList.ToArray();
+
+				// EXPLANATION :: First we create string list and then just call ToArray() for producing required string array
+				List<string> tempPriorityList = new List<string>();
+				foreach (var _itemzPriorityValue in Enum.GetValues<ItemzPriority>())
+				{
+					tempPriorityList.Add(_itemzPriorityValue.ToString().Trim());
+				}
+				_stringItemzPriorityValues = tempPriorityList.ToArray();
+
+				// EXPLANATION :: First we create string list and then just call ToArray() for producing required string array
+				List<string> tempSeverityList = new List<string>();
+				foreach (var _itemzSeverityValue in Enum.GetValues<ItemzSeverity>())
+				{
+					tempSeverityList.Add(_itemzSeverityValue.ToString().Trim());
+				}
+				_stringItemzSeverityValues = tempSeverityList.ToArray();
+
+				// initializingPage = false;
+			}
+
+			// EXPLANATION : At the start of initialization process we capture parent record ID.
+			// Now even if user decides to Delete this Itemz Record then also we can go back to it's
+			// Parent ItemzType post completing deletion operation.
+			var httpResponse = await hierarchyService.__Get_Hierarchy_Record_Details_By_GUID__Async(ItemzId);
+			if (httpResponse != null && httpResponse.ParentRecordId != Guid.Empty) // Orphaned Itemz will not have any Hierarchy records.
+			{
+				ParentId = httpResponse.ParentRecordId;
+				ParentRecordType = httpResponse.ParentRecordType;
+			}
+
+			// Determine orphaned state (no parent -> we don't expect children)
+			isOrphaned = (httpResponse == null) || (httpResponse.ParentRecordId == Guid.Empty);
+
+			if (singleItemz != null)
+			{
+				initializingPage = false;
+				await InvokeAsync(StateHasChanged);
+
+				if (!string.IsNullOrEmpty(singleItemz.Description))
+				{
+					await ConvertMarkdownToHtml(singleItemz.Description);
+				}
+			}
+
+			// Reset dirty state
+			FormStateService.SetDirty(ItemzId, false);
+
+			// Mark that description initialization is complete
+			_initializingDescription = false;
+
+			// 🔑 MARK LOADING AS SUCCESSFUL
+			loadingSuccessful = true;
 		}
-
-		if (form != null)
-		{
-			await form.Validate();
-			if (form.IsValid)
-			{
-				disableUpdateItemzDetailsButton = false;
-			}
-			else
-			{
-				disableUpdateItemzDetailsButton = true;
-			}
-
-			// EXPLANATION :: First we create string list and then just call ToArray() for producing required string array
-			List<string> tempStatusList = new List<string>();
-			foreach (var _itemzStatusValue in Enum.GetValues<ItemzStatus>())
-			{
-				tempStatusList.Add(_itemzStatusValue.ToString().Trim());
-			}
-			_stringItemzStatusValues = tempStatusList.ToArray();
-
-			// EXPLANATION :: First we create string list and then just call ToArray() for producing required string array
-			List<string> tempPriorityList = new List<string>();
-			foreach (var _itemzPriorityValue in Enum.GetValues<ItemzPriority>())
-			{
-				tempPriorityList.Add(_itemzPriorityValue.ToString().Trim());
-			}
-			_stringItemzPriorityValues = tempPriorityList.ToArray();
-
-			// EXPLANATION :: First we create string list and then just call ToArray() for producing required string array
-			List<string> tempSeverityList = new List<string>();
-			foreach (var _itemzSeverityValue in Enum.GetValues<ItemzSeverity>())
-			{
-				tempSeverityList.Add(_itemzSeverityValue.ToString().Trim());
-			}
-			_stringItemzSeverityValues = tempSeverityList.ToArray();
-
-			// initializingPage = false;
-		}
-
-		// EXPLANATION : At the start of initialization process we capture parent record ID.
-		// Now even if user decides to Delete this Itemz Record then also we can go back to it's
-		// Parent ItemzType post completing deletion operation.
-		var httpResponse = await hierarchyService.__Get_Hierarchy_Record_Details_By_GUID__Async(ItemzId);
-		if (httpResponse != null && httpResponse.ParentRecordId != Guid.Empty) // Orphaned Itemz will not have any Hierarchy records.
-		{
-			ParentId = httpResponse.ParentRecordId;
-			ParentRecordType = httpResponse.ParentRecordType;
-		}
-
-		// Determine orphaned state (no parent -> we don't expect children)
-		isOrphaned = (httpResponse == null) || (httpResponse.ParentRecordId == Guid.Empty);
-
-		await ConvertMarkdownToHtml(singleItemz.Description);
-
-		// Mark that description initialization is complete
-		_initializingDescription = false;
-
-		// Reset dirty state
-		FormStateService.SetDirty(ItemzId, false);
-
-		initializingPage = false;
-		StateHasChanged();
 	}
 
 	public async Task HandleItemzDetailsPatchSubmission()
