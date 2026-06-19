@@ -5,8 +5,8 @@
 *@
 
 @using OpenRose.WebUI.Client.Services.BaselineItemzTypes
-@using OpenRose.WebUI.Components.Dialogs
 @using OpenRose.WebUI.Client.SharedModels
+@using OpenRose.WebUI.Components.Dialogs
 @using OpenRose.WebUI.Components.EventServices
 @using OpenRose.WebUI.Components.Pages.Common
 @using OpenRose.WebUI.Components.Pages.SharedComponents
@@ -18,6 +18,7 @@
 @inject ViewSettingsService ViewSettings
 @inject IDialogService DialogService
 @inject IJSRuntime JS
+@inject ILogger<BaselineItemzTypeReadOnlyComponent> _logger
 
 <MudGrid>
 	@if (initializingPage)
@@ -30,7 +31,7 @@
 			</MudOverlay>
 		</MudPaper>
 	}
-	else
+	else if (singleBaselineItemzType != null)
 	{
  		<MudItem xs="12" sm="12">
 			<MudCard style="background-color:#FABBBB; position:sticky; top:0; z-index:10;">
@@ -154,18 +155,102 @@
 			StateHasChanged();
 			await Task.Delay(300);
 
-			singleBaselineItemzType = await BaselineItemzTypeServices.__Single_BaselineItemzType_By_GUID_ID__Async(BaselineItemzTypeId);
-			if (singleBaselineItemzType != null && singleBaselineItemzType.Description != null)
+			bool loadingSuccessful = false;
+			while (!loadingSuccessful)
 			{
-				await ConvertMarkdownToHtml(singleBaselineItemzType.Description);
-			}
+				try
+				{
+					singleBaselineItemzType = await BaselineItemzTypeServices.__Single_BaselineItemzType_By_GUID_ID__Async(BaselineItemzTypeId);
 
-			initializingPage = false;
-			StateHasChanged();
-			// ALWAYS run navigation blocker after render if kiosk mode is active
-			if (ViewSettings.IsKioskMode)
-			{
-				await NavigationBlocker.Enable();
+					if (singleBaselineItemzType == null)
+					{
+						throw new ApplicationException($"BaselineItemzType with ID {BaselineItemzTypeId} not found.");
+					}
+
+				}
+				catch (ApplicationException ex)
+				{
+					// 🔑 API SERVER IS UNREACHABLE (Network/Connection error)
+					_logger.LogWarning(
+						ex,
+						"Either API Server is unavailable OR requested baseline itemz type has been deleted.",
+						BaselineItemzTypeId);
+
+					initializingPage = true;
+					StateHasChanged();
+
+					var parameters = new DialogParameters
+					{
+						["Title"] = "Connection Error",
+						["MessageHtml"] =
+									"<p style='color:red;'><strong>Unable to obtain Baseline Itemz Type Data</strong></p>" +
+									"<p>Either API server is currently unreachable</p> <p> OR</p>" +
+									"<p>The requested baseline itemz type has been deleted.</p>" +
+									"<p><strong>Would you like to retry?</strong></p>",
+						["YesText"] = "Retry",
+						["NoText"] = "Go to Home"
+					};
+
+					// Show error dialog with retry option
+					var options = new DialogOptions
+					{
+						CloseButton = false,
+						BackdropClick = false,
+						CloseOnEscapeKey = false
+					};
+
+					var dialog = await DialogService.ShowAsync<ConnectionAndDataNotFoundErrorDialog>(
+						"Connection Error",
+						parameters,
+						options);
+
+					var dialogResult = await dialog.Result;
+
+					// 🔑 USER CLICKED RETRY - LOOP CONTINUES AND TRIES AGAIN
+					if (dialogResult != null && dialogResult.Data is bool retry && retry)
+					{
+						_logger.LogInformation("User chose to retry loading baseline itemz type {BaselineItemzTypeId}. Waiting 2 seconds before retry.", BaselineItemzTypeId);
+						// Wait 1 seconds before retrying to give server time to recover
+						await Task.Delay(1000);
+						// Continue the loop to retry
+						continue;
+					}
+					else
+					{
+						// 🔑 USER CLICKED "GO TO Home Screen"
+						_logger.LogInformation("User chose to go to home screen");
+						loadingSuccessful = true;
+						NavManager.NavigateTo("/");
+					}
+				}
+
+				if (singleBaselineItemzType != null)
+				{
+
+					// EXPLANATION :: initializingPage is surrounded by if condition because
+					// as part of exception handling we now allow users to retry loading data.
+					// if user wants to retry then we want to keep showing user the loading
+					// layover message.
+
+					initializingPage = false;
+					StateHasChanged();
+
+					if (singleBaselineItemzType.Description != null)
+					{
+						await ConvertMarkdownToHtml(singleBaselineItemzType.Description);
+					}
+
+				}
+
+				// ALWAYS run navigation blocker after render if kiosk mode is active
+				if (ViewSettings.IsKioskMode)
+				{
+					await NavigationBlocker.Enable();
+				}
+
+				// 🔑 MARK LOADING AS SUCCESSFUL
+				loadingSuccessful = true;
+
 			}
 		}
 	}

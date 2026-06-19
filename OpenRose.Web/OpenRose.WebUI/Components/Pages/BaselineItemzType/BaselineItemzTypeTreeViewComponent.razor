@@ -20,6 +20,7 @@
 @inject IFindProjectOfItemzId FindProjectOfItemzId
 @inject IDialogService DialogService
 @inject IJSRuntime JS
+@inject ILogger<BaselineItemzTypeTreeViewComponent> _logger
 
 <MudPaper Class="pa-4 mb-3 ml-1 align-start d-flex" Style="width: auto" Outlined="false">
 	<MudText Typo="Typo.h6" Align="Align.Left">Baseline ItemzType</MudText>
@@ -36,7 +37,7 @@
 			</MudOverlay>
 		</MudPaper>
 	}
-	else
+	else if (singleBaselineItemzType != null)
 	{
  		<MudItem xs="12" sm="12">
 		<MudTabs Outlined="true" Position="Position.Top" Rounded="true" Border="true" 
@@ -48,7 +49,7 @@
 				<MudItem Class="align-start d-flex" Style="width: auto" Outlined="false">
 					<MudGrid>
 						<MudItem xs="12" sm="12" md="7" lg="7">
-							<MudText Typo="Typo.h5" Align="Align.Left"><strong>@singleIBaselineItemzType.Name </strong></MudText>
+							<MudText Typo="Typo.h5" Align="Align.Left"><strong>@singleBaselineItemzType.Name </strong></MudText>
 						</MudItem>
 						<MudItem xs="12" sm="12" md="5" lg="5">
 							<MudStack Row="true" Spacing="2" AlignItems="AlignItems.End" Justify="Justify.FlexEnd" Class="w-100">
@@ -65,34 +66,34 @@
 					<MudStack Row="true" Spacing="2" StretchItems="StretchItems.None" AlignItems="AlignItems.Start" Class="w-100">
 						<MudStack Row="true" Spacing="2">
 							<MudText><strong>ID          : </strong></MudText>
-							<CopyableText TextToCopy="@singleIBaselineItemzType.Id.ToString()" DisplayLength="8" />
+							<CopyableText TextToCopy="@singleBaselineItemzType.Id.ToString()" DisplayLength="8" />
 							<MudTooltip Text="Show in Tree View" Placement="Placement.Top">
 								<MudIcon Icon="@Icons.Material.Filled.Park" Size="Size.Small" Class="mouse-pointer-icon" @onclick="findAndShowInTreeView" />
 							</MudTooltip>
-                            <GoToOriginalItemzTypeButton BaselineItemzTypeId="@singleIBaselineItemzType.Id"
+                            <GoToOriginalItemzTypeButton BaselineItemzTypeId="@singleBaselineItemzType.Id"
                                                          UseTreeView="true" />
-							<ShowHierarchyTreeButton RecordId="@singleIBaselineItemzType.Id" />
+							<ShowHierarchyTreeButton RecordId="@singleBaselineItemzType.Id" />
 						</MudStack>
-						<MudText><strong> || Status      : </strong> @singleIBaselineItemzType.Status</MudText>
-						<MudText><strong> || Is System?  : </strong> @(singleIBaselineItemzType.IsSystem ? "Yes" : "No")</MudText>
+						<MudText><strong> || Status      : </strong> @singleBaselineItemzType.Status</MudText>
+						<MudText><strong> || Is System?  : </strong> @(singleBaselineItemzType.IsSystem ? "Yes" : "No")</MudText>
 						|| <BaselineEstimationReadOnlyComponent RecordId="BaselineItemzTypeId" />
 					</MudStack>
 
 @* 					<MudStack Row="true" Spacing="2">
 						<MudText><strong>ID           : </strong> </MudText>
-						<CopyableText TextToCopy="@singleIBaselineItemzType.Id.ToString()" />
+						<CopyableText TextToCopy="@singleBaselineItemzType.Id.ToString()" />
 						<MudTooltip Text="Show in Tree View">
 						<MudIcon Icon="@Icons.Material.Filled.Park" Size="Size.Small" Class="mouse-pointer-icon" @onclick="findAndShowInTreeView" />
 						</MudTooltip>
 					</MudStack>
-					<MudText><strong>Status       : </strong> @singleIBaselineItemzType.Status</MudText>
-					<MudText><strong>Is System?   : </strong> @(singleIBaselineItemzType.IsSystem ? "Yes" : "No") </MudText>
-					<MudText><strong>Created Date : </strong> @singleIBaselineItemzType.CreatedDate.ToString("dd MMM yyyy HH:mm:ss", CultureInfo.CurrentCulture)</MudText> *@
+					<MudText><strong>Status       : </strong> @singleBaselineItemzType.Status</MudText>
+					<MudText><strong>Is System?   : </strong> @(singleBaselineItemzType.IsSystem ? "Yes" : "No") </MudText>
+					<MudText><strong>Created Date : </strong> @singleBaselineItemzType.CreatedDate.ToString("dd MMM yyyy HH:mm:ss", CultureInfo.CurrentCulture)</MudText> *@
 					<MudText><strong>Description : </strong></MudText>
 					<br />
 					<div class="custom-markdown-editor">
 						<MudPaper Class="pa-4 mb-5">
-							@if (!string.IsNullOrEmpty(singleIBaselineItemzType.Description))
+							@if (!string.IsNullOrEmpty(singleBaselineItemzType.Description))
 							{
 								<div class="markdown-body">@((MarkupString)convertedMarkdown)</div>
 							}
@@ -122,7 +123,7 @@
     public IBaselineItemzTypesService baselineItemzTypesService { get; set; }
 
 
-    public GetBaselineItemzTypeDTO singleIBaselineItemzType { get; set; } = new();
+    public GetBaselineItemzTypeDTO singleBaselineItemzType { get; set; } = new();
     public bool initializingPage { get; set; } = true;
 
     private MarkupString convertedMarkdown;
@@ -134,15 +135,100 @@
             initializingPage = true;
             StateHasChanged();
             //await Task.Delay(300);
-            singleIBaselineItemzType = await baselineItemzTypesService.__Single_BaselineItemzType_By_GUID_ID__Async(BaselineItemzTypeId);
 
-            // TODO :: THROW EXCEPTION IF BASELINE ITEMTYPE IS NOT FOUND!
+			bool loadingSuccessful = false;
+			while (!loadingSuccessful)
+			{
+				try
+				{
+				  singleBaselineItemzType = await baselineItemzTypesService.__Single_BaselineItemzType_By_GUID_ID__Async(BaselineItemzTypeId);
 
-            initializingPage = false;
+				  if (singleBaselineItemzType == null)
+					{
+						throw new ApplicationException($"BaselineItemzType with ID {BaselineItemzTypeId} not found.");
+					}
 
-            await ConvertMarkdownToHtml(singleIBaselineItemzType.Description);
+				}
+				catch (ApplicationException ex)
+				{
+					// 🔑 API SERVER IS UNREACHABLE (Network/Connection error)
+					_logger.LogWarning(
+						ex,
+						"Either API Server is unavailable OR requested baseline itemz type has been deleted.",
+						BaselineItemzTypeId);
 
-            StateHasChanged();
+					initializingPage = true;
+					StateHasChanged();
+
+					var parameters = new DialogParameters
+					{
+						["Title"] = "Connection Error",
+						["MessageHtml"] =
+									"<p style='color:red;'><strong>Unable to obtain Baseline Itemz Type Data</strong></p>" +
+									"<p>Either API server is currently unreachable</p> <p> OR</p>" +
+									"<p>The requested baseline itemz type has been deleted.</p>" +
+									"<p><strong>Would you like to retry?</strong></p>",
+						["YesText"] = "Retry",
+						["NoText"] = "Go to Home"
+					};
+
+					// Show error dialog with retry option
+					var options = new DialogOptions
+					{
+						CloseButton = false,
+						BackdropClick = false,
+						CloseOnEscapeKey = false
+					};
+
+					var dialog = await DialogService.ShowAsync<ConnectionAndDataNotFoundErrorDialog>(
+						"Connection Error",
+						parameters,
+						options);
+
+					var dialogResult = await dialog.Result;
+
+					// 🔑 USER CLICKED RETRY - LOOP CONTINUES AND TRIES AGAIN
+					if (dialogResult != null && dialogResult.Data is bool retry && retry)
+					{
+						_logger.LogInformation("User chose to retry loading baseline itemz type {BaselineItemzTypeId}. Waiting 2 seconds before retry.", BaselineItemzTypeId);
+						// Wait 1 seconds before retrying to give server time to recover
+						await Task.Delay(1000);
+						// Continue the loop to retry
+						continue;
+					}
+					else
+					{
+						// 🔑 USER CLICKED "GO TO Home Screen"
+						_logger.LogInformation("User chose to go to home screen");
+						loadingSuccessful = true;
+						NavManager.NavigateTo("/");
+					}
+				}
+
+
+
+				if (singleBaselineItemzType != null)
+				{
+
+					// EXPLANATION :: initializingPage is surrounded by if condition because
+					// as part of exception handling we now allow users to retry loading data.
+					// if user wants to retry then we want to keep showing user the loading
+					// layover message.
+
+					initializingPage = false;
+					StateHasChanged();
+
+					if (singleBaselineItemzType.Description != null)
+					{
+						await ConvertMarkdownToHtml(singleBaselineItemzType.Description);
+					}
+
+				}
+				// StateHasChanged();
+
+				// 🔑 MARK LOADING AS SUCCESSFUL
+				loadingSuccessful = true;
+			}
         }
     }
     private void findAndShowInTreeView()
