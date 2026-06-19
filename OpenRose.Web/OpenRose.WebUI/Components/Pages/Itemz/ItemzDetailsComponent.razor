@@ -78,7 +78,7 @@
 </MudPaper>
 @* <MudGrid Class="ms-0 mt-0 pa-0"> *@
 <MudGrid>
-		@if (initializingPage)
+	@if (initializingPage)
 	{
 		<MudPaper Style="margin-top : 20px" Height="calc(100vh - 100px);" Width="100%">
 			<MudOverlay Visible="@initializingPage" DarkBackground="true" Absolute="true">
@@ -88,7 +88,7 @@
 			</MudOverlay>
 		</MudPaper>
 	}
-	else
+	else if (singleItemz != null)
 	{
 		<MudItem xs="12" sm="12" Outline="false">
 @* 		<MudPaper Class="mb-5" Outlined="false"> *@
@@ -454,10 +454,6 @@
 		}
 	}
 
-
-
-
-
 	//MudForm related fields
 	bool success = true;
 	bool disableUpdateItemzDetailsButton = false;
@@ -640,6 +636,11 @@
 
 			if (singleItemz != null)
 			{
+
+				// EXPLANATION :: initializingPage is surrounded by if condition because
+				// as part of exception handling we now allow users to retry loading data.
+				// if user wants to retry then we want to keep showing user the loading
+				// layover message.
 				initializingPage = false;
 				await InvokeAsync(StateHasChanged);
 

@@ -679,8 +679,8 @@
                     else
                     {
                         _logger.LogInformation("User chose to go to home screen");
-                        NavManager.NavigateTo("/");
                         loadingSuccessful = true;
+                        NavManager.NavigateTo("/");
                     }
                 }
                 // catch (Exception ex)
@@ -1013,55 +1013,6 @@
             }
             catch (ApplicationException ex)
             {
-                // // // 🔑 API SERVER IS UNREACHABLE (Network/Connection error)
-                // // _logger.LogWarning(
-                // //     ex,
-                // //     "Either API Server is unavailable OR requested project has been deleted.",
-                // //     ProjectId);
-
-                // // showLoadingMessage = false;
-                // // StateHasChanged();
-
-                // // // Show error dialog with retry option
-                // // var retryOptions = new DialogOptions
-                // //     {
-                // //         CloseButton = false,
-                // //         BackdropClick = false,
-                // //         CloseOnEscapeKey = false
-                // //     };
-
-                // // var dialogResult = await DialogService.ShowMessageBox(
-                // //     title: "Connection Error",
-                // //     markupMessage: new MarkupString(
-                // //         $"<p style=\"color: red;\"><strong>Unable to obtain Project Data</strong></p>" +
-                // //         $"<p>Either API server is currently unreachable OR</p>" +
-                // //         $"<p>The requested project has been deleted.</p>" +
-                // //         $"<p><strong>Would you like to retry?</strong></p>"
-                // //     ),
-                // //     yesText: "Retry",
-                // //     noText: "Go to Home",
-                // //     options: retryOptions
-                // // );
-
-                // // // 🔑 USER CLICKED RETRY - LOOP CONTINUES AND TRIES AGAIN
-                // // if (dialogResult == true)
-                // // {
-                // //     _logger.LogInformation("User chose to retry loading project {ProjectId}. Waiting 2 seconds before retry.", ProjectId);
-                // //     // Wait 1 seconds before retrying to give server time to recover
-                // //     await Task.Delay(1000);
-                // //     showLoadingMessage = true;
-                // //     StateHasChanged();
-                // //     // Continue the loop to retry
-                // //     continue;
-                // // }
-                // // else
-                // // {
-                // //     // 🔑 USER CLICKED "GO TO Home Screen"
-                // //     _logger.LogInformation("User chose to go to home screen");
-                // //     NavManager.NavigateTo("/");
-                // //     loadingSuccessful = true;
-                // // }
-
                 // 🔑 API SERVER IS UNREACHABLE (Network/Connection error)
                 _logger.LogWarning(
                     ex,
@@ -1112,8 +1063,8 @@
                 else
                 {
                     _logger.LogInformation("User chose to go to home screen");
-                    NavManager.NavigateTo("/");
                     loadingSuccessful = true;
+                    NavManager.NavigateTo("/");
                 }
             }
         }
