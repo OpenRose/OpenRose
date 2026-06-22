@@ -258,7 +258,7 @@
 					// 🔑 USER CLICKED RETRY - LOOP CONTINUES AND TRIES AGAIN
 					if (dialogResult != null && dialogResult.Data is bool retry && retry)
 					{
-						_logger.LogInformation("User chose to retry loading baseline itemz type {BaselineItemzTypeId}. Waiting 2 seconds before retry.", BaselineItemzTypeId);
+						_logger.LogInformation("User chose to retry loading baseline itemz type {BaselineItemzTypeId}. Waiting 1 second before retry.", BaselineItemzTypeId);
 						// Wait 1 seconds before retrying to give server time to recover
 						await Task.Delay(1000);
 						// Continue the loop to retry
