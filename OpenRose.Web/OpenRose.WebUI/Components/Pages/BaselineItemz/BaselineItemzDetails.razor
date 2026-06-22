@@ -22,6 +22,7 @@
 @inject IFindProjectAndBaselineIdsByBaselineItemzIdService FindProjectAndBaselineIdsByBaselineItemzIdService
 @inject IDialogService DialogService
 @inject IJSRuntime JS
+@inject ILogger<BaselineItemzDetails> _logger
 
 @if (BreadcrumsParameter != null)
 {
@@ -44,7 +45,7 @@
 			</MudOverlay>
 		</MudPaper>
 	}
-	else
+	else if (singleBaselineItemz != null)
 	{
 		<MudItem xs="12" sm="12">
 		<MudPaper Class="mb-5">
@@ -203,49 +204,140 @@
 		{
 			initializingPage = true;
 			StateHasChanged();
-			// TODO :: IMPLEMENT TRY AND CATCH WHILE WE CALL BASELINE ITEMZ SERVICE
-			singleBaselineItemz = await BaselineItemzService.__Single_BaselineItemz_By_GUID_ID__Async(BaselineItemzId);
 
-			if (singleBaselineItemz != null)
+			bool loadingSuccessful = false;
+			while (!loadingSuccessful)
 			{
-				BreadcrumsParameter = new ParameterForBaselineBreadcrums();
-				BreadcrumsParameter.Id = singleBaselineItemz.Id;
-				BreadcrumsParameter.Name = singleBaselineItemz.Name;
-				BreadcrumsParameter.RecordType = "baselineitemz"; // TODO :: USE CONSTANT
-				BreadcrumsParameter.isIncluded = singleBaselineItemz.isIncluded;
-
-				// Obtain tags list from the singleBaselineItemz.
-				if (!string.IsNullOrWhiteSpace(singleBaselineItemz?.Tags))
+				try
 				{
-					// Normalize incoming tags (removes duplicates, trims, preserves order)
-					var normalized = TagParsingUtility.NormalizeAndRemoveDuplicates(singleBaselineItemz.Tags);
+					singleBaselineItemz = await BaselineItemzService.__Single_BaselineItemz_By_GUID_ID__Async(BaselineItemzId);
 
-					// Parse into list
-					tagsList = TagParsingUtility.ParseTags(normalized);
+					if (singleBaselineItemz == null)
+					{
+						throw new ApplicationException($"BaselineItemz with ID {BaselineItemzId} not found.");
+					}
 				}
-				else
+				catch (ApplicationException ex)
 				{
-					tagsList = new List<string>();
+					// 🔑 API SERVER IS UNREACHABLE (Network/Connection error)
+					_logger.LogWarning(
+						ex,
+						"Either API Server is unavailable OR requested baseline itemz has been deleted.",
+						BaselineItemzId);
+
+					initializingPage = true;
+					StateHasChanged();
+
+					var parameters = new DialogParameters
+					{
+						["Title"] = "Connection Error",
+						["MessageHtml"] =
+									"<p style='color:red;'><strong>Unable to obtain Baseline Itemz Data</strong></p>" +
+									"<p>Either API server is currently unreachable</p> <p> OR</p>" +
+									"<p>The requested baseline itemz has been deleted.</p>" +
+									"<p><strong>Would you like to retry?</strong></p>",
+						["YesText"] = "Retry",
+						["NoText"] = "Go to Home"
+					};
+
+					// Show error dialog with retry option
+					var options = new DialogOptions
+					{
+						CloseButton = false,
+						BackdropClick = false,
+						CloseOnEscapeKey = false
+					};
+
+					var dialog = await DialogService.ShowAsync<ConnectionAndDataNotFoundErrorDialog>(
+						"Connection Error",
+						parameters,
+						options);
+
+					var dialogResult = await dialog.Result;
+
+					// 🔑 USER CLICKED RETRY - LOOP CONTINUES AND TRIES AGAIN
+					if (dialogResult != null && dialogResult.Data is bool retry && retry)
+					{
+						_logger.LogInformation("User chose to retry loading baseline itemz {BaselineItemzId}. Waiting 1 second before retry.", BaselineItemzId);
+						// Wait 1 seconds before retrying to give server time to recover
+						await Task.Delay(1000);
+						// Continue the loop to retry
+						continue;
+					}
+					else
+					{
+						// 🔑 USER CLICKED "GO TO Home Screen"
+						_logger.LogInformation("User chose to go to home screen");
+						loadingSuccessful = true;
+						NavManager.NavigateTo("/");
+					}
 				}
-			}
 
-			if (form != null)
-			{
-				initializingPage = false;
-			}
+				if (singleBaselineItemz != null)
+				{
+					BreadcrumsParameter = new ParameterForBaselineBreadcrums();
+					BreadcrumsParameter.Id = singleBaselineItemz.Id;
+					BreadcrumsParameter.Name = singleBaselineItemz.Name;
+					BreadcrumsParameter.RecordType = "baselineitemz"; // TODO :: USE CONSTANT
+					BreadcrumsParameter.isIncluded = singleBaselineItemz.isIncluded;
 
-			await ConvertMarkdownToHtml(singleBaselineItemz.Description);
-			StateHasChanged();
+					// Obtain tags list from the singleBaselineItemz.
+					if (!string.IsNullOrWhiteSpace(singleBaselineItemz?.Tags))
+					{
+						// Normalize incoming tags (removes duplicates, trims, preserves order)
+						var normalized = TagParsingUtility.NormalizeAndRemoveDuplicates(singleBaselineItemz.Tags);
 
-			// EXPLANATION : At the start of initialization process we capture parent record ID. 
-			// Now even if user decides to Delete this Itemz Record then also we can go back to it's 
-			// Parent ItemzType post completing deletion operation. 
-			var httpResponse = await BaselineHierarchyService.__Get_BaselineHierarchy_Record_Details_By_GUID__Async(BaselineItemzId);
+						// Parse into list
+						tagsList = TagParsingUtility.ParseTags(normalized);
+					}
+					else
+					{
+						tagsList = new List<string>();
+					}
+				}
 
-			if (httpResponse != null && httpResponse.ParentRecordId != Guid.Empty) // If for some reason API call fails then also we can avoid exception by this null check.
-			{
-				ParentId = httpResponse.ParentRecordId;
-				ParentRecordType = httpResponse.ParentRecordType;
+				#region DELETEME NEXT TIME
+				// if (form != null)
+				// {
+				// 	initializingPage = false;
+				// }
+
+				// await ConvertMarkdownToHtml(singleBaselineItemz.Description);
+				// StateHasChanged();
+
+				#endregion
+
+				if (singleBaselineItemz != null)
+				{
+
+					// EXPLANATION :: initializingPage is surrounded by if condition because
+					// as part of exception handling we now allow users to retry loading data.
+					// if user wants to retry then we want to keep showing user the loading
+					// layover message.
+
+					initializingPage = false;
+					StateHasChanged();
+
+					if (singleBaselineItemz.Description != null)
+					{
+						await ConvertMarkdownToHtml(singleBaselineItemz.Description);
+					}
+
+				}
+
+				// EXPLANATION : At the start of initialization process we capture parent record ID. 
+				// Now even if user decides to Delete this Itemz Record then also we can go back to it's 
+				// Parent ItemzType post completing deletion operation. 
+				var httpResponse = await BaselineHierarchyService.__Get_BaselineHierarchy_Record_Details_By_GUID__Async(BaselineItemzId);
+
+				if (httpResponse != null && httpResponse.ParentRecordId != Guid.Empty) // If for some reason API call fails then also we can avoid exception by this null check.
+				{
+					ParentId = httpResponse.ParentRecordId;
+					ParentRecordType = httpResponse.ParentRecordType;
+				}
+
+				// 🔑 MARK LOADING AS SUCCESSFUL
+				loadingSuccessful = true;
 			}
 		}
 	}
