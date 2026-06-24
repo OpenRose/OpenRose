@@ -547,8 +547,8 @@
 	{
 		// TODO :: Similar Code is there in several places in the project.
 		// We should try and come up with some common way to handle it!
-
-		var foundProjectAndBaselineIds = await FindProjectAndBaselineIdsByBaselineItemzIdService.GetProjectAndBaselineId(Id);
+		    
+		// var foundProjectAndBaselineIds = await FindProjectAndBaselineIdsByBaselineItemzIdService.GetProjectAndBaselineId(Id);
 		if (foundProjectAndBaselineIds.BaselineId != Guid.Empty)
 		{
 			var url = $"/BaselineTreeView/{foundProjectAndBaselineIds.BaselineId}?autoSelectedRecordId={Id}";

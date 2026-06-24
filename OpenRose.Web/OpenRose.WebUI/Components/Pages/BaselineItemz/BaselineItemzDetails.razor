@@ -182,6 +182,7 @@
 
 
 	public GetBaselineItemzDTO singleBaselineItemz { get; set; } = new();
+	private (Guid ProjectId, Guid BaselineId) foundProjectAndBaselineIds;
 	private ParameterForBaselineBreadcrums BreadcrumsParameter;
 	public bool initializingPage { get; set; } = false;
 
@@ -323,6 +324,8 @@
 						await ConvertMarkdownToHtml(singleBaselineItemz.Description);
 					}
 
+					foundProjectAndBaselineIds = await FindProjectAndBaselineIdsByBaselineItemzIdService.GetProjectAndBaselineId(BaselineItemzId);
+
 				}
 
 				// EXPLANATION : At the start of initialization process we capture parent record ID. 
@@ -383,7 +386,7 @@
 		// TODO :: Similar Code is there in several places in the project.
 		// We should try and come up with some common way to handle it!
 
-		var foundProjectAndBaselineIds = await FindProjectAndBaselineIdsByBaselineItemzIdService.GetProjectAndBaselineId(BaselineItemzId);
+		// var foundProjectAndBaselineIds = await FindProjectAndBaselineIdsByBaselineItemzIdService.GetProjectAndBaselineId(BaselineItemzId);
 		if (foundProjectAndBaselineIds.BaselineId != Guid.Empty)
 		{
 			var url = $"/BaselineTreeView/{foundProjectAndBaselineIds.BaselineId}?autoSelectedRecordId={BaselineItemzId}";
