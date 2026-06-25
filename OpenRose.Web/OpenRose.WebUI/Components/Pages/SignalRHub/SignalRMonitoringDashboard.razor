@@ -1,0 +1,140 @@
+﻿@* 
+ * OpenRose - Requirements Management
+ * Licensed under the Apache License, Version 2.0. 
+ * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
+*@
+
+@page "/HubHealth"
+
+@using OpenRose.WebUI.Constants
+@using Microsoft.AspNetCore.SignalR.Client
+@inject NavigationManager NavManager
+@inject ILogger<SignalRMonitoringDashboard> _logger
+@implements IAsyncDisposable
+
+<MudPaper Class="pa-4 mb-4">
+    <MudStack Spacing="3">
+        <MudText Typo="Typo.h5">SignalR Hub Monitoring</MudText>
+
+        @if (healthMetrics != null)
+        {
+            <MudGrid>
+                <MudItem xs="12" sm="6" md="3">
+                    <MudCard>
+                        <MudCardContent>
+                            <MudText Typo="Typo.caption">Total Connections</MudText>
+                            <MudText Typo="Typo.h4" Color="Color.Primary">
+                                @healthMetrics.TotalConnections
+                            </MudText>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+
+                <MudItem xs="12" sm="6" md="3">
+                    <MudCard>
+                        <MudCardContent>
+                            <MudText Typo="Typo.caption">Connected Users</MudText>
+                            <MudText Typo="Typo.h4" Color="Color.Info">
+                                @healthMetrics.ConnectedUsers
+                            </MudText>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+
+                <MudItem xs="12" sm="6" md="3">
+                    <MudCard>
+                        <MudCardContent>
+                            <MudText Typo="Typo.caption">Health Status</MudText>
+                            <MudChip T="string" Color="@(healthMetrics.IsHealthy ? Color.Success : Color.Error)" 
+                                     Variant="Variant.Filled">
+                                @(healthMetrics.IsHealthy ? "Healthy" : "Warning")
+                            </MudChip>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+
+                <MudItem xs="12" sm="6" md="3">
+                    <MudCard>
+                        <MudCardContent>
+                            <MudText Typo="Typo.caption">Last Check</MudText>
+                            <MudText Typo="Typo.body2">
+                                @healthMetrics.LastCheckAt.ToString("HH:mm:ss")
+                            </MudText>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+            </MudGrid>
+
+            <MudText Typo="Typo.subtitle2">Active Hubs</MudText>
+            <MudList T="string">
+                @foreach (var hub in healthMetrics.HubInstances)
+                {
+                    <MudListItem Icon="@Icons.Material.Filled.Check" IconColor="Color.Success">
+                        @hub
+                    </MudListItem>
+                }
+            </MudList>
+        }
+
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="RefreshMetrics">
+            Refresh Metrics
+        </MudButton>
+    </MudStack>
+</MudPaper>
+
+@code {
+    private HubConnection? monitoringHub;
+    private SignalRHealthMetrics? healthMetrics;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            monitoringHub = new HubConnectionBuilder()
+                .WithUrl(NavManager.ToAbsoluteUri(SignalRConstants.HubPaths.MonitoringHub))
+                .WithAutomaticReconnect()
+                .Build();
+
+            await monitoringHub.StartAsync();
+
+            await RefreshMetrics();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Failed to connect to monitoring hub: {ex.Message}");
+        }
+    }
+
+    private async Task RefreshMetrics()
+    {
+        try
+        {
+            if (monitoringHub?.State == HubConnectionState.Connected)
+            {
+                healthMetrics = await monitoringHub.InvokeAsync<SignalRHealthMetrics>("GetHealthMetrics");
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Failed to refresh metrics: {ex.Message}");
+        }
+    }
+
+    async ValueTask IAsyncDisposable.DisposeAsync()
+    {
+        if (monitoringHub is not null)
+        {
+            await monitoringHub.DisposeAsync();
+        }
+    }
+
+    public class SignalRHealthMetrics
+    {
+        public int TotalConnections { get; set; }
+        public int ConnectedUsers { get; set; }
+        public string[] HubInstances { get; set; } = Array.Empty<string>();
+        public DateTime LastCheckAt { get; set; }
+        public bool IsHealthy { get; set; }
+    }
+}

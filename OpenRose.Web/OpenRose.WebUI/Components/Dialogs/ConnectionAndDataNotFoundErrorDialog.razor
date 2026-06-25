@@ -1,0 +1,52 @@
+﻿<MudDialog>
+
+    <TitleContent>
+        <MudText Typo="Typo.h6" Color="Color.Error">
+            @Title
+        </MudText>
+    </TitleContent>
+
+    <DialogContent>
+        <MudGrid>
+            <!-- FIXED ICON -->
+            <MudItem xs="12" sm="2" Class="d-flex justify-center align-center">
+                <MudIcon Icon="@Icons.Material.Filled.Error"
+                         Color="Color.Error"
+                         Size="Size.Large" />
+            </MudItem>
+
+            <!-- MESSAGE -->
+            <MudItem xs="12" sm="10" Class="d-flex align-center">
+                <MudText Dense="true">@((MarkupString)MessageHtml)</MudText>
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Success"
+                   OnClick="@(() => Close(true))">
+            @YesText
+        </MudButton>
+
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Error"
+                   OnClick="@(() => Close(false))">
+            @NoText
+        </MudButton>
+    </DialogActions>
+
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; }
+
+    [Parameter] public string Title { get; set; } = "Message";
+    [Parameter] public string MessageHtml { get; set; } = "";
+
+    // Always two buttons, caller overrides text
+    [Parameter] public string YesText { get; set; } = "Yes";
+    [Parameter] public string NoText { get; set; } = "No";
+
+    private void Close(bool result) => MudDialog.Close(DialogResult.Ok(result));
+}

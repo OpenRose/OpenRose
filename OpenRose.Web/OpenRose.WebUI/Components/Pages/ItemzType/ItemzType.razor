@@ -11,6 +11,7 @@
 @using OpenRose.WebUI.Client.Services.ItemzTypeItemzsService
 @using OpenRose.WebUI.Client.SharedModels
 @using OpenRose.WebUI.Client.SharedModels.BetweenPagesAndComponent
+@using OpenRose.WebUI.Components.Dialogs
 @using OpenRose.WebUI.Components.EventServices
 @using OpenRose.WebUI.Components.FindServices
 @using OpenRose.WebUI.Components.Pages.Breadcrums
@@ -22,6 +23,7 @@
 @inject IDialogService DialogService
 @inject BreadcrumsService breadcrumsService
 @inject IJSRuntime JS
+@inject ILogger<ItemzType> _logger
 @inject IServiceProvider serviceProvider
 
 
@@ -47,7 +49,7 @@
 			</MudOverlay>
 		</MudPaper>
 	}
-	else
+    else if (singleItemzType != null)
 	{
  		<MudItem xs="12" sm="12">
 			<MudCard style="background-color : #FABBBB;" >
@@ -66,15 +68,12 @@
 								Color="Color.Success">
 								@(bp >= Breakpoint.Sm ? "Edit ItemzType" : "E")
 							</MudButton>
-								@if (!(breadcrumsService.RequestIsOrphanStatus()))
-								{
 									<MudButton Variant="Variant.Filled"
 										Size="@(bp >= Breakpoint.Sm ? Size.Medium : Size.Small)"
 										Color="Color.Success"
 										OnClick="(() => HandleGoToTreeView())">
 										@(bp >= Breakpoint.Sm ? "Tree View" : "T")
 									</MudButton>
-								}
 								<MudButton OnClick="goBackToProject" Variant="Variant.Filled"
 									Size="@(bp >= Breakpoint.Sm ? Size.Medium : Size.Small)"
 									Color="Color.Warning">
@@ -108,7 +107,7 @@
 					<br />
 					<div class="custom-markdown-editor">
 						<MudPaper Class="pa-2" Elevation="0" Outlined="false">
-							@if (!string.IsNullOrEmpty(singleItemzType.Description))
+							@if (singleItemzType != null && !string.IsNullOrEmpty(singleItemzType.Description))
 							{
 								<div class="markdown-body">@((MarkupString)convertedMarkdown)</div>
 							}
@@ -211,22 +210,96 @@
 
 		initializingPage = true;
 		StateHasChanged();
-		//await Task.Delay(300);
-		singleItemzType = await itemzTypeService.__Single_ItemzType_By_GUID_ID__Async(ItemzTypeId);
-		if (singleItemzType != null)
-		{
-			BreadcrumsParameter = new ParameterForItemzBreadcrums();
-			BreadcrumsParameter.Id = singleItemzType.Id;
-			BreadcrumsParameter.Name = singleItemzType.Name;
-			BreadcrumsParameter.RecordType = "itemztype"; // TODO :: USE CONSTANT
-		}
 
-		//var returnedItemzList = await itemzTypeItemzsService.__GET_Itemzs_By_ItemzType__Async(ItemzTypeId,1,25,"Name");
-		var returnedItemzList = await HierarchyService.__Get_Immediate_Children_Hierarchy_By_GUID__Async(ItemzTypeId);
-
-		if (returnedItemzList != null)
+		bool loadingSuccessful = false;
+		while (!loadingSuccessful)
 		{
-			AllItemzForItemzType = returnedItemzList.ToList();
+			try
+			{
+				//await Task.Delay(300);
+				singleItemzType = await itemzTypeService.__Single_ItemzType_By_GUID_ID__Async(ItemzTypeId);
+
+				if (singleItemzType == null)
+				{
+					throw new ApplicationException($"ItemzType with ID {ItemzTypeId} not found.");
+				}
+
+			}
+			catch (ApplicationException ex)
+			{
+				// 🔑 API SERVER IS UNREACHABLE (Network/Connection error)
+				_logger.LogWarning(
+					ex,
+					"Either API Server is unavailable OR requested itemz type has been deleted.",
+					ItemzTypeId);
+
+				initializingPage = true;
+				StateHasChanged();
+
+				var parameters = new DialogParameters
+				{
+					["Title"] = "Connection Error",
+					["MessageHtml"] =
+								"<p style='color:red;'><strong>Unable to obtain Itemz Type Data</strong></p>" +
+								"<p>Either API server is currently unreachable</p> <p> OR</p>" +
+								"<p>The requested itemz type has been deleted.</p>" +
+								"<p><strong>Would you like to retry?</strong></p>",
+					["YesText"] = "Retry",
+					["NoText"] = "Go to Home"
+				};
+
+				// Show error dialog with retry option
+				var options = new DialogOptions
+				{
+					CloseButton = false,
+					BackdropClick = false,
+					CloseOnEscapeKey = false
+				};
+
+				var dialog = await DialogService.ShowAsync<ConnectionAndDataNotFoundErrorDialog>(
+					"Connection Error",
+					parameters,
+					options);
+
+				var dialogResult = await dialog.Result;
+
+				// 🔑 USER CLICKED RETRY - LOOP CONTINUES AND TRIES AGAIN
+				if (dialogResult != null && dialogResult.Data is bool retry && retry)
+				{
+					_logger.LogInformation("User chose to retry loading itemz type {ItemzTypeId}. Waiting 2 seconds before retry.", ItemzTypeId);
+					// Wait 1 seconds before retrying to give server time to recover
+					await Task.Delay(1000);
+					// Continue the loop to retry
+					continue;
+				}
+				else
+				{
+					// 🔑 USER CLICKED "GO TO Home Screen"
+					_logger.LogInformation("User chose to go to home screen");
+					loadingSuccessful = true;
+					NavManager.NavigateTo("/");
+				}
+			}
+
+				if (singleItemzType != null)
+				{
+					BreadcrumsParameter = new ParameterForItemzBreadcrums();
+					BreadcrumsParameter.Id = singleItemzType.Id;
+					BreadcrumsParameter.Name = singleItemzType.Name;
+					BreadcrumsParameter.RecordType = "itemztype"; // TODO :: USE CONSTANT
+				}
+
+				//var returnedItemzList = await itemzTypeItemzsService.__GET_Itemzs_By_ItemzType__Async(ItemzTypeId,1,25,"Name");
+				var returnedItemzList = await HierarchyService.__Get_Immediate_Children_Hierarchy_By_GUID__Async(ItemzTypeId);
+
+				if (returnedItemzList != null)
+				{
+					AllItemzForItemzType = returnedItemzList.ToList();
+				}
+
+				// 🔑 MARK LOADING AS SUCCESSFUL
+				loadingSuccessful = true;
+			
 		}
 	}
 
@@ -238,10 +311,26 @@
 			// Now even if user decides to Delete this Itemz Record then also we can go back to it's
 			// Parent ItemzType post completing deletion operation.
 
-			var httpResponse = await HierarchyService.__Get_Hierarchy_Record_Details_By_GUID__Async(ItemzTypeId);
-			ParentId = httpResponse.ParentRecordId;
+			try
+			{
+				var httpResponse = await HierarchyService.__Get_Hierarchy_Record_Details_By_GUID__Async(ItemzTypeId);
 
-			await Task.Delay(200); // Wanted Breadcrums to load so that decision about displaying Child Itemz can be taken properly.
+				if(httpResponse == null)
+				{
+					throw new ApplicationException($"ONAFTERRENDERASYNC - Unable to obtain hierarchy record details for ItemzTypeId: {ItemzTypeId}");
+				}
+
+				ParentId = httpResponse.ParentRecordId;
+
+				await Task.Delay(200); // Wanted Breadcrums to load so that decision about displaying Child Itemz can be taken properly.
+			}
+			catch (ApplicationException ex)
+			{
+                // EXPLANATION :: We are handling exception in the OnInitializedAsync method 
+				// and so we can just dont perform any logical action in this catch block.
+
+				await InvokeAsync(StateHasChanged);
+			}
 
 			// var returnedParentHierarchyList = await HierarchyService.__Get_All_Parents_Hierarchy_By_GUID__Async(ItemzTypeId);
 
@@ -259,9 +348,16 @@
 			//StateHasChanged();
 		}
 
-		await ConvertMarkdownToHtml(singleItemzType.Description);
-		await InvokeAsync(StateHasChanged);
-		initializingPage = false;
+		if ( singleItemzType != null )
+		{
+			initializingPage = false;
+			await InvokeAsync(StateHasChanged);
+
+			if (!string.IsNullOrEmpty(singleItemzType.Description))
+			{
+				await ConvertMarkdownToHtml(singleItemzType.Description);
+			}
+		}
 	}
 
 
@@ -420,6 +516,13 @@
 		{
 			var url = $"/ProjectTreeView/{foundProjectId}?autoSelectedRecordId={ItemzTypeId}";
 			await JS.InvokeVoidAsync("openInNewTab", url);
+		}
+		else
+		{
+			var parameters = new DialogParameters { ["Message"] = "Issue encountered while obtaining related data from server" };
+			var options = new DialogOptions { CloseButton = false, MaxWidth = MaxWidth.Small, FullWidth = true };
+			var dialogRef = await DialogService.ShowAsync<ErrorDialog>("Error", parameters, options);
+			await dialogRef.Result;
 		}
 	}
 

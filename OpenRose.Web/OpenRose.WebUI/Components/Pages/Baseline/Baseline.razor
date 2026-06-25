@@ -9,6 +9,7 @@
 @using OpenRose.WebUI.Client.Services.Baselines
 @using OpenRose.WebUI.Client.SharedModels
 @using OpenRose.WebUI.Client.SharedModels.BetweenPagesAndComponent
+@using OpenRose.WebUI.Components.Dialogs
 @using OpenRose.WebUI.Components.Pages.Breadcrums
 @using OpenRose.WebUI.Components.Pages.Common
 @using OpenRose.WebUI.Components.Pages.SharedComponents
@@ -17,6 +18,7 @@
 @inject NavigationManager NavManager
 @inject IDialogService DialogService
 @inject IJSRuntime JS
+@inject ILogger<Baseline> _logger
 
 @if (BreadcrumsParameter != null)
 {
@@ -41,7 +43,7 @@
 			</MudOverlay>
 		</MudPaper>
 	}
-	else
+	else if (singleBaseline != null)
 	{
  		<MudItem xs="12" sm="12">
 			<MudPaper Class="pa-2 mb-2">
@@ -156,11 +158,11 @@
 	}
 </MudGrid>
 @code {
-    [Parameter]
-    public Guid BaselineId { get; set; }
+	[Parameter]
+	public Guid BaselineId { get; set; }
 
-    [Inject]
-    public IBaselinesService baselineService { get; set; }
+	[Inject]
+	public IBaselinesService baselineService { get; set; }
 
 	[Inject]
 	public IBaselineHierarchyService baselineHierarchyService { get; set; }
@@ -183,35 +185,109 @@
 			StateHasChanged();
 			await Task.Delay(300);
 
-			singleBaseline = await baselineService.__Single_Baseline_By_GUID_ID__Async(BaselineId);
-			if (singleBaseline != null)
+			bool loadingSuccessful = false;
+			while (!loadingSuccessful)
 			{
-				BreadcrumsParameter = new ParameterForBaselineBreadcrums();
-				BreadcrumsParameter.Id = singleBaseline.Id;
-				BreadcrumsParameter.Name = singleBaseline.Name;
-				BreadcrumsParameter.RecordType = "baseline"; // TODO :: USE CONSTANT
-				BreadcrumsParameter.isIncluded = true; // TODO :: WE SET INCLUSION FOR BASELINEITEMZTYPE TO TRUE BUT WE CAN DO BETTER
-			}
-			//var returnedItemzTypeList = await ProjectService.__GET_ItemzTypes_By_Project__Async(ProjectId);
-			var returnedItemzTypeList = await baselineHierarchyService.__Get_Immediate_Children_Baseline_Hierarchy_By_GUID__Async(BaselineId);
+				try
+				{
+
+					singleBaseline = await baselineService.__Single_Baseline_By_GUID_ID__Async(BaselineId);
+
+					if (singleBaseline == null)
+					{
+						throw new ApplicationException($"Baseline with ID {BaselineId} not found.");
+					}
+
+				}
+				catch (ApplicationException ex)
+				{
+					// 🔑 API SERVER IS UNREACHABLE (Network/Connection error)
+					_logger.LogWarning(
+						ex,
+						"Either API Server is unavailable OR requested baseline has been deleted.",
+						BaselineId);
+
+					initializingPage = true;
+					StateHasChanged();
+
+					var parameters = new DialogParameters
+					{
+						["Title"] = "Connection Error",
+						["MessageHtml"] =
+									"<p style='color:red;'><strong>Unable to obtain Baseline Data</strong></p>" +
+									"<p>Either API server is currently unreachable</p> <p> OR</p>" +
+									"<p>The requested baseline has been deleted.</p>" +
+									"<p><strong>Would you like to retry?</strong></p>",
+						["YesText"] = "Retry",
+						["NoText"] = "Go to Home"
+					};
+
+					// Show error dialog with retry option
+					var options = new DialogOptions
+					{
+						CloseButton = false,
+						BackdropClick = false,
+						CloseOnEscapeKey = false
+					};
+
+					var dialog = await DialogService.ShowAsync<ConnectionAndDataNotFoundErrorDialog>(
+						"Connection Error",
+						parameters,
+						options);
+
+					var dialogResult = await dialog.Result;
+
+					// 🔑 USER CLICKED RETRY - LOOP CONTINUES AND TRIES AGAIN
+					if (dialogResult != null && dialogResult.Data is bool retry && retry)
+					{
+						_logger.LogInformation("User chose to retry loading baseline {BaselineId}. Waiting 1 seconds before retry.", BaselineId);
+						// Wait 1 second before retrying to give server time to recover
+						await Task.Delay(1000);
+						// Continue the loop to retry
+						continue;
+					}
+					else
+					{
+						// 🔑 USER CLICKED "GO TO Home Screen"
+						_logger.LogInformation("User chose to go to home screen");
+						loadingSuccessful = true;
+						NavManager.NavigateTo("/");
+					}
+				}
+
+				if (singleBaseline != null)
+				{
+					BreadcrumsParameter = new ParameterForBaselineBreadcrums();
+					BreadcrumsParameter.Id = singleBaseline.Id;
+					BreadcrumsParameter.Name = singleBaseline.Name;
+					BreadcrumsParameter.RecordType = "baseline"; // TODO :: USE CONSTANT
+					BreadcrumsParameter.isIncluded = true; // TODO :: WE SET INCLUSION FOR BASELINEITEMZTYPE TO TRUE BUT WE CAN DO BETTER
+				}
+
+				var returnedItemzTypeList = await baselineHierarchyService.__Get_Immediate_Children_Baseline_Hierarchy_By_GUID__Async(BaselineId);
 
 
-			if (returnedItemzTypeList != null)
-			{
-				AllItemzTypesForBaseline = returnedItemzTypeList.ToList();
-			}
+				if (returnedItemzTypeList != null)
+				{
+					AllItemzTypesForBaseline = returnedItemzTypeList.ToList();
+				}
 
-			initializingPage = false;
+				initializingPage = false;
 
-			// EXPLANATION : At the start of initialization process we capture parent record ID.
-			// Now even if user decides to Delete this Itemz Record then also we can go back to it's
-			// Parent ItemzType post completing deletion operation.
-			var httpResponse = await baselineHierarchyService.__Get_BaselineHierarchy_Record_Details_By_GUID__Async(BaselineId);
-			parentId = httpResponse.ParentRecordId;
+				// EXPLANATION : At the start of initialization process we capture parent record ID.
+				// Now even if user decides to Delete this Itemz Record then also we can go back to it's
+				// Parent ItemzType post completing deletion operation.
+				var httpResponse = await baselineHierarchyService.__Get_BaselineHierarchy_Record_Details_By_GUID__Async(BaselineId);
+				parentId = httpResponse.ParentRecordId;
 
-			await ConvertMarkdownToHtml(singleBaseline.Description);
+				await ConvertMarkdownToHtml(singleBaseline.Description);
 
-			StateHasChanged();
+				StateHasChanged();
+
+				// 🔑 MARK LOADING AS SUCCESSFUL
+				loadingSuccessful = true;
+
+			} // WHILE LOOP ENDS
 		}
 	}
 

@@ -30,7 +30,9 @@ using OpenRose.WebUI.Components;
 using OpenRose.WebUI.Components.EventServices;
 using OpenRose.WebUI.Components.FindServices;
 using OpenRose.WebUI.Configuration;
+using OpenRose.WebUI.Constants;
 using OpenRose.WebUI.Services;
+using OpenRose.WebUI.Services.NotificationHub;
 using OpenRose.WebUI.Services.StartUpConfiguration;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -57,6 +59,15 @@ else
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()
     .AddInteractiveWebAssemblyComponents();
+
+// Add SignalR for real-time notifications
+builder.Services.AddSignalR();
+
+// Register Notification Services
+builder.Services.AddScoped<IProjectNotificationService, ProjectNotificationService>();
+builder.Services.AddScoped<ProjectDeletionService>();
+builder.Services.AddScoped<ProjectCreationService>();
+builder.Services.AddScoped<ProjectUpdateService>();
 
 
 builder.Services.AddControllers();
@@ -332,6 +343,15 @@ startupConfigurationManager.ConfigureAndLogStartupSettings();
 
 app.MapStaticAssets();
 app.UseAntiforgery();
+
+
+// Map SignalR Hubs using constants
+app.MapHub<ProjectNotificationHub>(SignalRConstants.HubPaths.ProjectNotificationHub);
+app.MapHub<RequirementNotificationHub>(SignalRConstants.HubPaths.RequirementNotificationHub);
+app.MapHub<BaselineNotificationHub>(SignalRConstants.HubPaths.BaselineNotificationHub);
+app.MapHub<EstimationNotificationHub>(SignalRConstants.HubPaths.EstimationNotificationHub);
+app.MapHub<TraceabilityNotificationHub>(SignalRConstants.HubPaths.TraceabilityNotificationHub);
+app.MapHub<SignalRMonitoringHub>(SignalRConstants.HubPaths.MonitoringHub);
 
 app.MapRazorComponents<App>()
 	.AddInteractiveServerRenderMode()

@@ -10,6 +10,7 @@
 @using OpenRose.WebUI.Client.Services.ItemzTypeItemzsService
 @using OpenRose.WebUI.Client.SharedModels
 @using OpenRose.WebUI.Client.SharedModels.BetweenPagesAndComponent
+@using OpenRose.WebUI.Components.Dialogs
 @using OpenRose.WebUI.Components.EventServices
 @using OpenRose.WebUI.Components.FindServices
 @using OpenRose.WebUI.Components.Pages.Breadcrums
@@ -23,6 +24,7 @@
 @inject IDialogService DialogService
 @inject TreeNodeItemzSelectionService TreeNodeItemzSelectionService
 @inject IJSRuntime JS
+@inject ILogger<ItemzTypeDetails> _logger
 @inject IServiceProvider serviceProvider
 
 @if (CalledFrom == nameof(ItemzTypeDetails))
@@ -42,7 +44,7 @@
 	<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Class="w-100">
 	<MudText Typo="Typo.h6" Align="Align.Left">ItemzType Details</MudText>
 		<MudSpacer />
-		@if (CalledFrom == nameof(ProjectTreeView))
+		@if (CalledFrom == nameof(ProjectTreeView) && singleItemzType != null)
 		{
 			<MudButton Variant="Variant.Filled" Color="Color.Success"
 					   Disabled="FormStateService.IsDirty(ItemzTypeId)"
@@ -57,7 +59,7 @@
 <MudGrid>
 	@if (initializingPage)
 	{
-		<MudPaper Height="calc(100vh - 100px);" Width="100%">
+		<MudPaper Style="margin-top : 20px" Height="calc(100vh - 100px);" Width="100%">
 			<MudOverlay Visible="@initializingPage" DarkBackground="true" Absolute="true">
 				<MudText Typo="Typo.h4" Align="Align.Center" Color="Color.Inherit">Loading ...</MudText>
 				<br />
@@ -65,7 +67,7 @@
 			</MudOverlay>
 		</MudPaper>
 	}
-	else
+	else if (singleItemzType != null)
 	{
 		<MudItem hidden="@hideValidationError" xs="12" sm="12">
 			<MudPaper Class="mb-5 mud-height-full">
@@ -365,67 +367,155 @@
 		initializingPage = true;
 		StateHasChanged();
 		//await Task.Delay(300);
-		singleItemzType = await ItemzTypeService.__Single_ItemzType_By_GUID_ID__Async(ItemzTypeId);
-		if (singleItemzType != null)
+
+		bool loadingSuccessful = false;
+		while (!loadingSuccessful)
 		{
-			BreadcrumsParameter = new ParameterForItemzBreadcrums();
-			BreadcrumsParameter.Id = singleItemzType.Id;
-			BreadcrumsParameter.Name = singleItemzType.Name;
-			BreadcrumsParameter.RecordType = "itemztype"; // TODO :: USE CONSTANT
-
-			TreeNodeItemzSelectionService.UpdateTreeNodeItemzName(ItemzTypeId, singleItemzType.Name!);
-			_originalDescription = singleItemzType.Description ?? string.Empty;
-			MyContent = _originalDescription;
-		}
-
-		if (form != null)
-		{
-			await form.Validate();
-			if (form.IsValid)
+			try
 			{
-				disableUpdateItemzTypeDetailsButton = false;
+
+				singleItemzType = await ItemzTypeService.__Single_ItemzType_By_GUID_ID__Async(ItemzTypeId);
+
+				if (singleItemzType == null)
+				{
+					throw new ApplicationException($"ItemzType with ID {ItemzTypeId} not found.");
+				}
+
+				// EXPLANATION : At the start of initialization process we capture parent record ID.
+				// Now even if user decides to Delete this Itemz Record then also we can go back to it's
+				// Parent ItemzType post completing deletion operation.
+				var httpResponse = await hierarchyService.__Get_Hierarchy_Record_Details_By_GUID__Async(ItemzTypeId);
+				if (httpResponse != null) // If for some reason API call fails then also we can avoid exception by this null check.
+				{
+					ParentId = httpResponse.ParentRecordId;
+				}
+				else
+				{
+					throw new ApplicationException($"Parent record for ItemzType with ID {ItemzTypeId} not found.");
+				}
+
 			}
-			else
+			catch (ApplicationException ex)
 			{
-				disableUpdateItemzTypeDetailsButton = true;
+				// 🔑 API SERVER IS UNREACHABLE (Network/Connection error)
+				_logger.LogWarning(
+					ex,
+					"Either API Server is unavailable OR requested itemz type has been deleted.",
+					ItemzTypeId);
+
+				initializingPage = true;
+				await InvokeAsync(StateHasChanged);
+
+				var parameters = new DialogParameters
+					{
+						["Title"] = "Connection Error",
+						["MessageHtml"] =
+									"<p style='color:red;'><strong>Unable to obtain Itemz Type Data</strong></p>" +
+									"<p>Either API server is currently unreachable</p> <p> OR</p>" +
+									"<p>The requested itemz type has been deleted.</p>" +
+									"<p><strong>Would you like to retry?</strong></p>",
+						["YesText"] = "Retry",
+						["NoText"] = "Go to Home"
+					};
+
+				// Show error dialog with retry option
+				var options = new DialogOptions
+					{
+						CloseButton = false,
+						BackdropClick = false,
+						CloseOnEscapeKey = false
+					};
+
+				var dialog = await DialogService.ShowAsync<ConnectionAndDataNotFoundErrorDialog>(
+					"Connection Error",
+					parameters,
+					options);
+
+				var dialogResult = await dialog.Result;
+
+				// 🔑 USER CLICKED RETRY - LOOP CONTINUES AND TRIES AGAIN
+				if (dialogResult != null && dialogResult.Data is bool retry && retry)
+				{
+					_logger.LogInformation("User chose to retry loading itemz type {ItemzTypeId}. Waiting 2 seconds before retry.", ItemzTypeId);
+					// Wait 1 seconds before retrying to give server time to recover
+					await Task.Delay(1000);
+					// Continue the loop to retry
+					continue;
+				}
+				else
+				{
+					// 🔑 USER CLICKED "GO TO Home Screen"
+					_logger.LogInformation("User chose to go to home screen");
+					NavManager.NavigateTo("/");
+					loadingSuccessful = true;
+				}
 			}
 
-			// EXPLANATION :: First we create string list and then just call ToArray() for producing required string array
-			List<string> tempList = new List<string>();
-			foreach (var _itemzTypeStatusValue in Enum.GetValues<ItemzTypeStatus>())
-			{
-				tempList.Add(_itemzTypeStatusValue.ToString().Trim());
-			}
-			_stringItemzTypeStatusValues = tempList.ToArray();
+
+
 
 			if (singleItemzType != null)
 			{
-				if (singleItemzType.IsSystem)
+				BreadcrumsParameter = new ParameterForItemzBreadcrums();
+				BreadcrumsParameter.Id = singleItemzType.Id;
+				BreadcrumsParameter.Name = singleItemzType.Name;
+				BreadcrumsParameter.RecordType = "itemztype"; // TODO :: USE CONSTANT
+
+				TreeNodeItemzSelectionService.UpdateTreeNodeItemzName(ItemzTypeId, singleItemzType.Name!);
+				_originalDescription = singleItemzType.Description ?? string.Empty;
+				MyContent = _originalDescription;
+			}
+
+			if (form != null)
+			{
+				await form.Validate();
+				if (form.IsValid)
 				{
-					if (CalledFrom == nameof(ItemzTypeDetails))
-					{
-						await OpenExceptionDialogAsync("System ItemzType can not be edited!");
-					}
+					disableUpdateItemzTypeDetailsButton = false;
+				}
+				else
+				{
 					disableUpdateItemzTypeDetailsButton = true;
-					form.Disabled = true;
+				}
+
+				// EXPLANATION :: First we create string list and then just call ToArray() for producing required string array
+				List<string> tempList = new List<string>();
+				foreach (var _itemzTypeStatusValue in Enum.GetValues<ItemzTypeStatus>())
+				{
+					tempList.Add(_itemzTypeStatusValue.ToString().Trim());
+				}
+				_stringItemzTypeStatusValues = tempList.ToArray();
+
+				if (singleItemzType != null)
+				{
+					if (singleItemzType.IsSystem)
+					{
+						if (CalledFrom == nameof(ItemzTypeDetails))
+						{
+							await OpenExceptionDialogAsync("System ItemzType can not be edited!");
+						}
+						disableUpdateItemzTypeDetailsButton = true;
+						form.Disabled = true;
+					}
 				}
 			}
+
+			if (singleItemzType != null)
+			{
+				initializingPage = false;
+				StateHasChanged();
+
+				if (!string.IsNullOrEmpty(singleItemzType.Description))
+				{
+					await ConvertMarkdownToHtml(singleItemzType.Description);
+				}
+			}
+
+			FormStateService.SetDirty(ItemzTypeId, false);
+
+			// 🔑 MARK LOADING AS SUCCESSFUL
+			loadingSuccessful = true;
 		}
-
-		// EXPLANATION : At the start of initialization process we capture parent record ID.
-		// Now even if user decides to Delete this Itemz Record then also we can go back to it's
-		// Parent ItemzType post completing deletion operation.
-		var httpResponse = await hierarchyService.__Get_Hierarchy_Record_Details_By_GUID__Async(ItemzTypeId);
-		if (httpResponse != null) // If for some reason API call fails then also we can avoid exception by this null check. 
-		{
-			ParentId = httpResponse.ParentRecordId;
-		}
-
-		await ConvertMarkdownToHtml(singleItemzType.Description);
-
-		FormStateService.SetDirty(ItemzTypeId, false);
-		initializingPage = false;
-		StateHasChanged();
 	}
 
 	public async Task HandleItemzTypeDetailsPatchSubmission()
@@ -625,6 +715,13 @@
 		{
 			var url = $"/ProjectTreeView/{foundProjectId}?autoSelectedRecordId={ItemzTypeId}";
 			await JS.InvokeVoidAsync("openInNewTab", url);
+		}
+		else
+		{
+			var parameters = new DialogParameters { ["Message"] = "Issue encountered while obtaining related data from server" };
+			var options = new DialogOptions { CloseButton = false, MaxWidth = MaxWidth.Small, FullWidth = true };
+			var dialogRef = await DialogService.ShowAsync<ErrorDialog>("Error", parameters, options);
+			await dialogRef.Result;
 		}
 	}
 

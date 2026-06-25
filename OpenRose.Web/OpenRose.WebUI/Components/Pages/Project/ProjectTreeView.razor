@@ -9,14 +9,18 @@
 @using OpenRose.WebUI.Client.Services.Hierarchy
 @using OpenRose.WebUI.Client.Services.Project
 @using OpenRose.WebUI.Client.SharedModels
+@using OpenRose.WebUI.Components.Dialogs
 @using OpenRose.WebUI.Components.EventServices
 @using OpenRose.WebUI.Components.Pages.Itemz
 @using OpenRose.WebUI.Components.Pages.ItemzType
 @using OpenRose.WebUI.Components.Pages.Common
 @using OpenRose.WebUI.Helper.TreeViewNodes
 @using OpenRose.WebUI.Components.FindServices
+@using OpenRose.WebUI.Constants
 @using OpenRose.WebUI.Services
+@using OpenRose.WebUI.Services.NotificationHub
 @using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.SignalR.Client
 @using System.Collections.ObjectModel
 @inject IServiceProvider serviceProvider
 @inject NavigationManager NavManager
@@ -25,9 +29,11 @@
 @inject FullScreenService FullScreenService
 @inject IDialogService DialogService
 @inject IJSRuntime JS
+@inject ILogger<ProjectTreeView> _logger
 @inject TreeNodeItemzSelectionService ItemzSelectionService
 @inject ViewSettingsService ViewSettings
 @inject ProtectedSessionStorage SessionStorage
+@inject ProjectDeletionService DeletionService
 
 <MudExtensions.MudSplitter @bind-Dimension="@_percentage"
                             OnDoubleClicked="@OnDoubleClicked"
@@ -175,6 +181,9 @@
 
 
     public MudTreeView<Guid> projectMudTreeView;
+
+    //SignalR Hub Connection
+    private HubConnection? hubConnection;
 
     private bool showLoadingMessage = true;
 
@@ -556,57 +565,272 @@
                 await SessionStorage.SetAsync("SHOWPROPERTIESINREADONLYVIEWS", false);
             }
 
-            // Load initial data
-            InitialTreeItems = await LoadInitialData(ProjectId);
-            StateHasChanged();
-
-            // Load entire hierarchy
-            InitialTreeItems = await LoadAllProjectHierarchyData(ProjectId);
-
-            if (ViewSettings.ReadOnlyView)
+            // 🔑 TRY TO LOAD PROJECT DATA - DISTINGUISH BETWEEN DIFFERENT ERROR TYPES
+            bool loadingSuccessful = false;
+            while (!loadingSuccessful)
             {
-                // Apply Parking Lot hiding logic
-                RemoveParkingLotIfEmpty(InitialTreeItems);
+                try
+                {
+                    // Load initial data
+                    InitialTreeItems = await LoadInitialData(ProjectId);
+                    StateHasChanged();
+
+                    // Load entire hierarchy
+                    InitialTreeItems = await LoadAllProjectHierarchyData(ProjectId);
+
+                    if (ViewSettings.ReadOnlyView)
+                    {
+                        // Apply Parking Lot hiding logic
+                        RemoveParkingLotIfEmpty(InitialTreeItems);
+                    }
+
+                    // Build linear list once after full hierarchy is loaded
+                    _linearIds = InitialTreeItems.Flatten()
+                                                 .Select(x => x.Value)
+                                                 .ToList();
+
+                    _currentIndex = _linearIds.FindIndex(id => id == _selectedValue);
+
+                    // After building _linearIds in OnAfterRenderAsync
+                    if (_selectedValue == Guid.Empty && _linearIds.Count > 0)
+                    {
+                        _selectedValue = _linearIds[0]; // root project node
+                        _currentIndex = 0;
+
+                        // Keep tree in sync
+                        projectMudTreeView.SelectedValue = _selectedValue;
+
+                        // Update right-hand side content immediately
+                        await UpdateSelectedItem(_selectedValue);
+                    }
+
+                    showLoadingMessage = false;
+                    StateHasChanged();
+
+                    if (AutoSelectedRecordId.HasValue)
+                    {
+                        // Select the node after the first render
+                        await HandleItemzSelectedAsync(AutoSelectedRecordId.Value);
+                        AutoSelectedRecordId = null;
+                    }
+
+                    await JS.InvokeVoidAsync("initializeResizable");
+                    StateHasChanged();
+
+                    // 🔑 MARK LOADING AS SUCCESSFUL
+                    loadingSuccessful = true;
+                }
+                catch (ApplicationException ex)
+                {
+                    // 🔑 API SERVER IS UNREACHABLE (Network/Connection error)
+                    _logger.LogWarning(
+                        ex,
+                        "Either API Server is unavailable OR requested project has been deleted.",
+                        ProjectId);
+
+                    showLoadingMessage = false;
+                    // StateHasChanged();
+
+                    var parameters = new DialogParameters
+                    {
+                        ["Title"] = "Connection Error",
+                        ["MessageHtml"] =
+                            "<p style='color:red;'><strong>Unable to obtain Project Data</strong></p>" +
+                            "<p>Either API server is currently unreachable</p> <p> OR</p>" +
+                            "<p>The requested project has been deleted.</p>" +
+                            "<p><strong>Would you like to retry?</strong></p>",
+                        ["YesText"] = "Retry",
+                        ["NoText"] = "Go to Home"
+                    };
+
+                    // // Show error dialog with retry option
+                    // var retryOptions = new DialogOptions
+                    // {
+                    //     CloseButton = false,
+                    //     BackdropClick = false,
+                    //     CloseOnEscapeKey = false
+                    // };
+
+                    var options = new DialogOptions
+                    {
+                        CloseButton = false,
+                        BackdropClick = false,
+                        CloseOnEscapeKey = false
+                    };
+
+                    var dialog = await DialogService.ShowAsync<ConnectionAndDataNotFoundErrorDialog>(
+                        "Connection Error",
+                        parameters,
+                        options);
+
+                    var dialogResult = await dialog.Result;
+
+                    if (dialogResult != null && dialogResult.Data is bool retry && retry)
+                    {
+                        _logger.LogInformation(
+                            "User chose to retry loading project {ProjectId}. Waiting 1 second before retry.",
+                            ProjectId);
+
+                        showLoadingMessage = true;
+
+                        await Task.Delay(1000);
+                        continue;   // retry loop
+                    }
+                    else
+                    {
+                        _logger.LogInformation("User chose to go to home screen");
+                        loadingSuccessful = true;
+                        NavManager.NavigateTo("/");
+                    }
+                }
+                // catch (Exception ex)
+                // {
+                //     // 🔑 HANDLE ANY OTHER UNEXPECTED ERRORS
+                //     // Check if this is a connection error wrapped in AggregateException or OperationCanceledException
+                //     bool isConnectionError = false;
+                //     string errorType = "Unknown Error";
+
+                //     if (ex is OperationCanceledException)
+                //     {
+                //         isConnectionError = true;
+                //         errorType = "Connection Timeout";
+                //     }
+                //     else if (ex.InnerException is HttpRequestException)
+                //     {
+                //         isConnectionError = true;
+                //         errorType = "Connection Error";
+                //     }
+                //     else if (ex.InnerException is OperationCanceledException)
+                //     {
+                //         isConnectionError = true;
+                //         errorType = "Connection Timeout";
+                //     }
+                //     else if (ex is AggregateException aggEx && aggEx.InnerExceptions.Any(ie => ie is HttpRequestException || ie is OperationCanceledException))
+                //     {
+                //         isConnectionError = true;
+                //         errorType = aggEx.InnerExceptions.OfType<OperationCanceledException>().Any() ? "Connection Timeout" : "Connection Error";
+                //     }
+
+                //     _logger.LogError(
+                //         ex,
+                //         "Error loading project {ProjectId}. Error Type: {ErrorType}. Is Connection Error: {IsConnectionError}. Message: {Message}",
+                //         ProjectId,
+                //         errorType,
+                //         isConnectionError,
+                //         ex.Message);
+
+                //     showLoadingMessage = false;
+                //     StateHasChanged();
+
+                //     var retryOptions = new DialogOptions
+                //     {
+                //         CloseButton = false,
+                //         BackdropClick = false,
+                //         CloseOnEscapeKey = false
+                //     };
+
+                //     // If it's a connection error, treat it as such
+                //     if (isConnectionError)
+                //     {
+                //         var dialogResult = await DialogService.ShowMessageBox(
+                //             "Connection Error",
+                //             markupMessage: new MarkupString(
+                //                 $"<p style=\"color: red;\"><strong>Unable to Connect to Server ({errorType})</strong></p>" +
+                //                 $"<p>The API server is currently unreachable or not responding.</p>" +
+                //                 $"<p>The project data cannot be loaded at this moment.</p>" +
+                //                 $"<p style=\"color: gray; font-size: 0.9em;\">Error: {ex.Message}</p>" +
+                //                 $"<p><strong>Would you like to retry?</strong></p>"
+                //             ),
+                //             yesText: "Retry",
+                //             noText: "Go to Projects List",
+                //             options: retryOptions
+                //         );
+
+                //         if (dialogResult == true)
+                //         {
+                //             _logger.LogInformation("User chose to retry after {ErrorType} for project {ProjectId}. Waiting 2 seconds before retry.", errorType, ProjectId);
+                //             await Task.Delay(2000);
+                //             continue;
+                //         }
+                //         else
+                //         {
+                //             _logger.LogInformation("User chose to go to projects list after {ErrorType}", errorType);
+                //             NavManager.NavigateTo("/projects", forceLoad: true);
+                //             loadingSuccessful = true;
+                //         }
+                //     }
+                //     else
+                //     {
+                //         // Show generic error message with retry for other unexpected errors
+                //         var dialogResult = await DialogService.ShowMessageBox(
+                //             "Error Loading Project",
+                //             markupMessage: new MarkupString(
+                //                 $"<p style=\"color: red;\"><strong>An Unexpected Error Occurred</strong></p>" +
+                //                 $"<p>Error: {ex.Message}</p>" +
+                //                 $"<p><strong>Would you like to retry?</strong></p>"
+                //             ),
+                //             yesText: "Retry",
+                //             noText: "Go to Projects List",
+                //             options: retryOptions
+                //         );
+
+                //         if (dialogResult == true)
+                //         {
+                //             _logger.LogInformation("User chose to retry after error for project {ProjectId}", ProjectId);
+                //             await Task.Delay(2000);
+                //             continue;
+                //         }
+                //         else
+                //         {
+                //             _logger.LogInformation("User chose to go to projects list after error");
+                //             NavManager.NavigateTo("/projects", forceLoad: true);
+                //             loadingSuccessful = true;
+                //         }
+                //     }
+                // }
             }
 
-            // Build linear list once after full hierarchy is loaded
-            _linearIds = InitialTreeItems.Flatten()
-                                         .Select(x => x.Value)
-                                         .ToList();
-
-            _currentIndex = _linearIds.FindIndex(id => id == _selectedValue);
-
-            // After building _linearIds in OnAfterRenderAsync
-            if (_selectedValue == Guid.Empty && _linearIds.Count > 0)
+            // 🔑 INITIALIZE SIGNALR CONNECTION TO THE HUB (Only if project loaded successfully)
+            if (loadingSuccessful && InitialTreeItems.Count > 0)
             {
-                _selectedValue = _linearIds[0]; // root project node
-                _currentIndex = 0;
+                try
+                {
+                    hubConnection = new HubConnectionBuilder()
+                        .WithUrl(NavManager.ToAbsoluteUri(SignalRConstants.HubPaths.ProjectNotificationHub))
+                        .WithAutomaticReconnect()
+                        .Build();
 
-                // Keep tree in sync
-                projectMudTreeView.SelectedValue = _selectedValue;
+                    // Listen for project deleted notifications
+                    hubConnection.On<Guid>(
+                        SignalRConstants.ProjectEvents.ProjectDeleted,
+                        OnProjectDeletedAsync);
 
-                // Update right-hand side content immediately
-                await UpdateSelectedItem(_selectedValue);
+                    // Listen for project updated notifications
+                    hubConnection.On<Guid>(
+                        SignalRConstants.ProjectEvents.ProjectModified,
+                        OnProjectUpdatedAsync);
 
+                    // Listen for project created notifications
+                    hubConnection.On<Guid>(
+                        SignalRConstants.ProjectEvents.ProjectCreated,
+                        OnProjectCreatedAsync);
+
+                    await hubConnection.StartAsync();
+
+                    // Subscribe to notifications for the current project
+                    if (hubConnection.State == HubConnectionState.Connected)
+                    {
+                        await hubConnection.InvokeAsync("SubscribeToProjectAsync", ProjectId);
+                        _logger.LogInformation($"Subscribed to notifications for project {ProjectId}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"Failed to connect to ProjectNotificationHub: {ex.Message}");
+                }
+
+                StateHasChanged();
             }
-
-            showLoadingMessage = false;
-            StateHasChanged();
-
-            if (AutoSelectedRecordId.HasValue)
-            {
-                // Select the node after the first render
-
-                // This Task.Delay is important to allow full
-                // rendering which could take some time for large project.
-                // await Task.Delay(500);
-
-                await HandleItemzSelectedAsync(AutoSelectedRecordId.Value);
-                AutoSelectedRecordId = null;
-            }
-
-            await JS.InvokeVoidAsync("initializeResizable");
-            StateHasChanged();
         }
     }
 
@@ -777,8 +1001,73 @@
         ViewSettings.ReadOnlyView = newValue;
         await SessionStorage.SetAsync("READONLYVIEW", newValue);
 
-        // Reload hierarchy because visibility depends on mode
-        InitialTreeItems = await LoadAllProjectHierarchyData(ProjectId);
+        bool loadingSuccessful = false;
+        while (!loadingSuccessful)
+        {
+            try
+            {
+                // Reload hierarchy because visibility depends on mode
+                InitialTreeItems = await LoadAllProjectHierarchyData(ProjectId);
+                loadingSuccessful = true;
+                showLoadingMessage = false;
+            }
+            catch (ApplicationException ex)
+            {
+                // 🔑 API SERVER IS UNREACHABLE (Network/Connection error)
+                _logger.LogWarning(
+                    ex,
+                    "Either API Server is unavailable OR requested project has been deleted.",
+                    ProjectId);
+
+                showLoadingMessage = false;
+                // StateHasChanged();
+
+                var parameters = new DialogParameters
+                {
+                    ["Title"] = "Connection Error",
+                    ["MessageHtml"] =
+                        "<p style='color:red;'><strong>Unable to obtain Project Data</strong></p>" +
+                        "<p>Either API server is currently unreachable</p> <p> OR</p>" +
+                        "<p>The requested project has been deleted.</p>" +
+                        "<p><strong>Would you like to retry?</strong></p>",
+                    ["YesText"] = "Retry",
+                    ["NoText"] = "Go to Home"
+                };
+
+                var options = new DialogOptions
+                {
+                    CloseButton = false,
+                    BackdropClick = false,
+                    CloseOnEscapeKey = false
+                };
+
+                var dialog = await DialogService.ShowAsync<ConnectionAndDataNotFoundErrorDialog>(
+                    "Connection Error",
+                    parameters,
+                    options);
+
+                var dialogResult = await dialog.Result;
+
+                if (dialogResult != null && dialogResult.Data is bool retry && retry)
+                {
+                    _logger.LogInformation(
+                        "User chose to retry loading project {ProjectId}. Waiting 1 second before retry.",
+                        ProjectId);
+
+                    showLoadingMessage = true;
+                    StateHasChanged();
+
+                    await Task.Delay(1000);
+                    continue;   // retry loop
+                }
+                else
+                {
+                    _logger.LogInformation("User chose to go to home screen");
+                    loadingSuccessful = true;
+                    NavManager.NavigateTo("/");
+                }
+            }
+        }
 
         // Hide Parking Lot only if empty and in read-only mode
         RemoveParkingLotIfEmpty(InitialTreeItems);
@@ -953,7 +1242,74 @@
 
         return endText;
     }
-    public void Dispose()
+
+    /// <summary>
+    /// Called when server broadcasts that this project was deleted.
+    /// Receives only the ProjectId - we already have the project details.
+    /// </summary>
+    private async Task OnProjectDeletedAsync(Guid projectIdDeleted)
+    {
+        // Only process if this is for the current project
+        if (projectIdDeleted != ProjectId)
+            return;
+
+        _logger.LogInformation(
+            $"Received notification: Project {projectIdDeleted} was deleted");
+
+        // Use the already-loaded project details from singleProject
+        var parameters = new DialogParameters<DeletedProjectDialog>
+        {
+            { x => x.ProjectId, projectIdDeleted },
+            { x => x.ProjectName, singleProject?.Name ?? "Unknown Project" }
+        };
+
+        var dialog = await DialogService.ShowAsync<DeletedProjectDialog>(
+            "Project Deleted",
+            parameters);
+
+        var result = await dialog.Result;
+
+        // Navigate away if user confirmed
+        if (!result.Canceled)
+        {
+            NavManager.NavigateTo("/Projects", forceLoad: true);
+        }
+    }
+
+    /// <summary>
+    /// Called when server broadcasts that this project was updated.
+    /// Receives only the ProjectId.
+    /// </summary>
+    private async Task OnProjectUpdatedAsync(Guid projectIdUpdated)
+    {
+        if (projectIdUpdated != ProjectId)
+            return;
+
+        _logger.LogInformation(
+            $"Project {projectIdUpdated} was updated");
+
+        // Optionally refresh the project data if needed
+        // await LoadProjectDataAsync();
+        // StateHasChanged();
+    }
+
+    /// <summary>
+    /// Called when server broadcasts that this project was created.
+    /// Receives only the ProjectId.
+    /// </summary>
+    private async Task OnProjectCreatedAsync(Guid projectIdCreated)
+    {
+        if (projectIdCreated != ProjectId)
+            return;
+
+        _logger.LogInformation(
+            $"Project {projectIdCreated} was created");
+        // Optionally refresh the project data if needed
+        // await LoadProjectDataAsync();
+        // StateHasChanged();
+    }
+
+    public async ValueTask DisposeAsync()
     {
         // Always unsubscribe to avoid memory leaks
         ItemzSelectionService.OnTreeNodeItemzSelected -= HandleItemzSelectedAsync;
@@ -962,6 +1318,20 @@
         ItemzSelectionService.OnScrollToTreeViewNode -= HandleScrollToTreeViewNode;
         ItemzSelectionService.OnTreeNodeItemzDeleted -= HandleItemzDeleted;
         ItemzSelectionService.OnCreatedNewItemzType -= HandleCreatedNewItemzTypeAsync;
+
+        // Cleanup SignalR connection
+        if (hubConnection is not null)
+        {
+            try
+            {
+                await hubConnection.InvokeAsync("UnsubscribeFromProjectAsync", ProjectId);
+                await hubConnection.DisposeAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error disposing hub connection: {ex.Message}");
+            }
+        }
     }
 
  }

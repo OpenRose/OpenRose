@@ -14,14 +14,20 @@
 @using OpenRose.WebUI.Components.EventServices
 @using OpenRose.WebUI.Components.Pages.Baseline
 @using OpenRose.WebUI.Components.Pages.Common
+@using OpenRose.WebUI.Constants
+@using OpenRose.WebUI.Services.NotificationHub
 @using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.SignalR.Client
 @using OpenRose.WebUI.Components.Pages.SharedComponents
 @using PSC.Blazor.Components.MarkdownEditor
 @using PSC.Blazor.Components.MarkdownEditor.EventsArgs
+@inject ProjectDeletionService DeletionService
+@inject ILogger<ProjectDetailsComponent> _logger
 @inject NavigationManager NavManager
 @inject IDialogService DialogService
 @inject TreeNodeItemzSelectionService TreeNodeItemzSelectionService
 @inject IJSRuntime JS
+
 
 @if (FormStateService.IsDirty(ProjectId))
 {
@@ -300,32 +306,32 @@
 </MudGrid>
 @code 
 {
-    [Parameter]
-    public Guid ProjectId { get; set; }
-    [Parameter]
-    [SupplyParameterFromQuery(Name = "showBaselineTab")]
-    public bool ShowBaselineTab { get; set; } = false;
-    [Parameter]
-    [SupplyParameterFromQuery(Name = "calledFrom")]
-    public string CalledFrom { get; set; } = string.Empty;
+        [Parameter]
+        public Guid ProjectId { get; set; }
+        [Parameter]
+        [SupplyParameterFromQuery(Name = "showBaselineTab")]
+        public bool ShowBaselineTab { get; set; } = false;
+        [Parameter]
+        [SupplyParameterFromQuery(Name = "calledFrom")]
+        public string CalledFrom { get; set; } = string.Empty;
 
-    [Parameter]
-    public EventCallback<string> ContentChanged { get; set; }
+        [Parameter]
+        public EventCallback<string> ContentChanged { get; set; }
 
-    [Inject]
-    public IProjectService ProjectService { get; set; }
+        [Inject]
+        public IProjectService ProjectService { get; set; }
 
-    [Inject]
-    public IBaselinesService BaselineService { get; set; }
+        [Inject]
+        public IBaselinesService BaselineService { get; set; }
 
-    [Inject]
-    public IItemzTypeService ItemzTypeService { get; set; }
+        [Inject]
+        public IItemzTypeService ItemzTypeService { get; set; }
 
-    [Inject]
-    public IHierarchyService HierarchyService { get; set; }
+        [Inject]
+        public IHierarchyService HierarchyService { get; set; }
 
-    [Inject]
-    public FormStateService FormStateService { get; set; }
+        [Inject]
+        public FormStateService FormStateService { get; set; }
 
 
     // public Guid displayOnlyProjectID = Guid.Empty ;
@@ -341,6 +347,8 @@
 
     private EstimationManagementComponent? estimationComponent;
 
+    //SignalR Hub Connection
+    private HubConnection? hubConnection;
 
     // private string _Content = string.Empty;
     private string MyContent
@@ -397,7 +405,7 @@
     // 	{
     // 		projectTabs.ActivatePanel(baselineTab);
     // 	}
-
+    
     // 	StateHasChanged();
     // }
 
@@ -415,51 +423,268 @@
         initializingPage = true;
         StateHasChanged();
         //await Task.Delay(300);
-        singleProject = await ProjectService.__Single_Project_By_GUID_ID__Async(ProjectId);
 
-        if (singleProject != null)
+        bool loadingSuccessful = false;
+        while (!loadingSuccessful)
         {
-            TreeNodeItemzSelectionService.UpdateTreeNodeItemzName(ProjectId, singleProject.Name!);
-            _originalDescription = singleProject.Description ?? string.Empty;
-            MyContent = _originalDescription;
+            try
+            {
+
+                singleProject = await ProjectService.__Single_Project_By_GUID_ID__Async(ProjectId);
+
+                if (singleProject != null)
+                {
+                    TreeNodeItemzSelectionService.UpdateTreeNodeItemzName(ProjectId, singleProject.Name!);
+                    _originalDescription = singleProject.Description ?? string.Empty;
+                    MyContent = _originalDescription;
+                }
+                else
+                {
+                    throw new ApplicationException($"Either API Server is unavailable OR Project with ID {ProjectId} has been deleted.");
+                }
+
+                if (form != null)
+                {
+                    await form.Validate();
+                    // Always keep Save disabled on first render.
+                    disableUpdateProjectDetailsButton = true;
+                }
+                initializingPage = false;
+
+                // EXPLANATION :: First we create string list and then just call ToArray() for producing required string array
+                List<string> tempList = new List<string>();
+                foreach (var _projectStatusValue in Enum.GetValues<ProjectStatus>())
+                {
+                    tempList.Add(_projectStatusValue.ToString().Trim());
+                }
+                _stringProjectStatusValues = tempList.ToArray();
+
+                await ConvertMarkdownToHtml(singleProject.Description);
+
+                // Reset dirty state
+                disableUpdateProjectDetailsButton = true;
+                FormStateService.SetDirty(singleProject.Id, false);
+
+                // EXPLANATION :: Location of setting active tab is important to be here at the end of data loading, 
+                // because if we set it before data loading then it will cause multiple unnecessary renders and may 
+                // also cause the tab to not switch properly on first load due to the async nature of data loading.
+
+                if (ShowBaselineTab == true)
+                {
+                    // activeIndex = 2;
+                    await projectTabs.ActivatePanelAsync(baselineTab);
+                }
+
+                StateHasChanged();
+
+
+                // 🔑 MARK LOADING AS SUCCESSFUL
+                loadingSuccessful = true;
+            }
+            catch (ApplicationException ex)
+            {
+
+                // 🔑 API SERVER IS UNREACHABLE (Network/Connection error)
+                _logger.LogWarning(
+                    ex,
+                    "Either API Server is unavailable OR requested project has been deleted.",
+                    ProjectId);
+
+                initializingPage = true;
+
+
+                var parameters = new DialogParameters
+                {
+                    ["Title"] = "Connection Error",
+                    ["MessageHtml"] =
+                        "<p style='color:red;'><strong>Unable to obtain Project Data</strong></p>" +
+                        "<p>Either API server is currently unreachable</p> <p> OR</p>" +
+                        "<p>The requested project has been deleted.</p>" +
+                        "<p><strong>Would you like to retry?</strong></p>",
+                    ["YesText"] = "Retry",
+                    ["NoText"] = "Go to Home"
+                };
+
+                // Show error dialog with retry option
+
+                var options = new DialogOptions
+                {
+                    CloseButton = false,
+                    BackdropClick = false,
+                    CloseOnEscapeKey = false
+                };
+
+                var dialog = await DialogService.ShowAsync<ConnectionAndDataNotFoundErrorDialog>(
+                    "Connection Error",
+                    parameters,
+                    options);
+
+                var dialogResult = await dialog.Result;
+
+                // USER CLICKED RETRY - LOOP CONTINUES AND TRIES AGAIN
+                if (dialogResult != null && dialogResult.Data is bool retry && retry)
+                {
+                    _logger.LogInformation(
+                        "User chose to retry loading project {ProjectId}. Waiting 1 second before retry.",
+                        ProjectId);
+                    // Wait 1 seconds before retrying to give server time to recover
+                    
+                    await Task.Delay(1000);
+                    continue; // retry loop
+                }
+                else
+                {
+                    // USER CLICKED "GO TO Home Screen"
+                    _logger.LogInformation("User chose to go to home screen");
+                    NavManager.NavigateTo("/");
+                    loadingSuccessful = true;
+                }
+            }
+            // catch (Exception ex)
+            // {
+            //     // HANDLE ANY OTHER UNEXPECTED ERRORS
+            //     // Check if this is a connection error wrapped in AggregateException or OperationCanceledException
+            //     bool isConnectionError = false;
+            //     string errorType = "Unknown Error";
+
+            //     if (ex is OperationCanceledException)
+            //     {
+            //         isConnectionError = true;
+            //         errorType = "Connection Timeout";
+            //     }
+            //     else if (ex.InnerException is HttpRequestException)
+            //     {
+            //         isConnectionError = true;
+            //         errorType = "Connection Error";
+            //     }
+            //     else if (ex.InnerException is OperationCanceledException)
+            //     {
+            //         isConnectionError = true;
+            //         errorType = "Connection Timeout";
+            //     }
+            //     else if (ex is AggregateException aggEx && aggEx.InnerExceptions.Any(ie => ie is HttpRequestException || ie is OperationCanceledException))
+            //     {
+            //         isConnectionError = true;
+            //         errorType = aggEx.InnerExceptions.OfType<OperationCanceledException>().Any() ? "Connection Timeout" : "Connection Error";
+            //     }
+
+            //     _logger.LogError(
+            //         ex,
+            //         "Error loading project {ProjectId}. Error Type: {ErrorType}. Is Connection Error: {IsConnectionError}. Message: {Message}",
+            //         ProjectId,
+            //         errorType,
+            //         isConnectionError,
+            //         ex.Message);
+
+            //     var retryOptions = new DialogOptions
+            //     {
+            //         CloseButton = false,
+            //         BackdropClick = false,
+            //         CloseOnEscapeKey = false
+            //     };
+
+            //     // If it's a connection error, treat it as such
+            //     if (isConnectionError)
+            //     {
+            //         var dialogResult = await DialogService.ShowMessageBox(
+            //             "Connection Error",
+            //             markupMessage: new MarkupString(
+            //                 $"<p style=\"color: red;\"><strong>Unable to Connect to Server ({errorType})</strong></p>" +
+            //                 $"<p>The API server is currently unreachable or not responding.</p>" +
+            //                 $"<p>The project data cannot be loaded at this moment.</p>" +
+            //                 $"<p style=\"color: gray; font-size: 0.9em;\">Error: {ex.Message}</p>" +
+            //                 $"<p><strong>Would you like to retry?</strong></p>"
+            //             ),
+            //             yesText: "Retry",
+            //             noText: "Go to Projects List",
+            //             options: retryOptions
+            //         );
+
+            //         if (dialogResult == true)
+            //         {
+            //             _logger.LogInformation("User chose to retry after {ErrorType} for project {ProjectId}. Waiting 2 seconds before retry.", errorType, ProjectId);
+            //             await Task.Delay(2000);
+            //             continue;
+            //         }
+            //         else
+            //         {
+            //             _logger.LogInformation("User chose to go to projects list after {ErrorType}", errorType);
+            //             NavManager.NavigateTo("/projects", forceLoad: true);
+            //             loadingSuccessful = true;
+            //         }
+            //     }
+            //     else
+            //     {
+            //         // Show generic error message with retry for other unexpected errors
+            //         var dialogResult = await DialogService.ShowMessageBox(
+            //             "Error Loading Project",
+            //             markupMessage: new MarkupString(
+            //                 $"<p style=\"color: red;\"><strong>An Unexpected Error Occurred</strong></p>" +
+            //                 $"<p>Error: {ex.Message}</p>" +
+            //                 $"<p><strong>Would you like to retry?</strong></p>"
+            //             ),
+            //             yesText: "Retry",
+            //             noText: "Go to Projects List",
+            //             options: retryOptions
+            //         );
+
+            //         if (dialogResult == true)
+            //         {
+            //             _logger.LogInformation("User chose to retry after error for project {ProjectId}", ProjectId);
+            //             await Task.Delay(2000);
+            //             continue;
+            //         }
+            //         else
+            //         {
+            //             _logger.LogInformation("User chose to go to projects list after error");
+            //             NavManager.NavigateTo("/projects", forceLoad: true);
+            //             loadingSuccessful = true;
+            //         }
+            //     }
+            // }
         }
 
-        if (form != null)
+        @if (CalledFrom == nameof(ProjectDetails))
         {
-            await form.Validate();
-            // Always keep Save disabled on first render.
-            disableUpdateProjectDetailsButton = true;
+            // -------------------------------
+            // Initialize SignalR connection
+            // -------------------------------
+            try
+            {
+                hubConnection = new HubConnectionBuilder()
+                    .WithUrl(NavManager.ToAbsoluteUri(SignalRConstants.HubPaths.ProjectNotificationHub))
+                    .WithAutomaticReconnect()
+                    .Build();
+
+                // Listen for project deleted notifications
+                hubConnection.On<Guid>(
+                    SignalRConstants.ProjectEvents.ProjectDeleted,
+                    OnProjectDeletedAsync);
+
+                // Listen for project updated notifications
+                hubConnection.On<Guid>(
+                    SignalRConstants.ProjectEvents.ProjectModified,
+                    OnProjectUpdatedAsync);
+
+                // Listen for project created notifications
+                hubConnection.On<Guid>(
+                    SignalRConstants.ProjectEvents.ProjectCreated,
+                    OnProjectCreatedAsync);
+
+                await hubConnection.StartAsync();
+
+                // Subscribe to notifications for the current project
+                if (hubConnection.State == HubConnectionState.Connected)
+                {
+                    await hubConnection.InvokeAsync("SubscribeToProjectAsync", ProjectId);
+                    _logger.LogInformation($"Subscribed to notifications for project {ProjectId}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Failed to connect to ProjectNotificationHub: {ex.Message}");
+            }
         }
-        initializingPage = false;
-
-        // EXPLANATION :: First we create string list and then just call ToArray() for producing required string array
-        List<string> tempList = new List<string>();
-        foreach (var _projectStatusValue in Enum.GetValues<ProjectStatus>())
-        {
-            tempList.Add(_projectStatusValue.ToString().Trim());
-        }
-        _stringProjectStatusValues = tempList.ToArray();
-
-
-
-        await ConvertMarkdownToHtml(singleProject.Description);
-
-        // Reset dirty state
-        disableUpdateProjectDetailsButton = true;
-        FormStateService.SetDirty(singleProject.Id, false);
-
-        // EXPLANATION :: Location of setting active tab is important to be here at the end of data loading, 
-        // because if we set it before data loading then it will cause multiple unnecessary renders and may 
-        // also cause the tab to not switch properly on first load due to the async nature of data loading.
-
-        if (ShowBaselineTab == true)
-        {
-            // activeIndex = 2;
-            await projectTabs.ActivatePanelAsync(baselineTab);
-        }
-
-        StateHasChanged();
-
     }
     public async Task HandleProjectDetailsPatchSubmission()
     {
@@ -510,19 +735,90 @@
     }
 
 
+    // public async Task deleteProject()
+    // {
+    //     try
+    //     {
+    //         await ProjectService.__DELETE_Project_By_GUID_ID__Async(ProjectId);
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         await OpenExceptionDialogAsync("Problem Deleting Project : " + ex.Message);
+    //         return;
+    //     }
+    //     NavManager.NavigateTo("/projects");
+    // }
+
     public async Task deleteProject()
     {
         try
         {
-            await ProjectService.__DELETE_Project_By_GUID_ID__Async(ProjectId);
+            _logger.LogInformation(
+                "Starting project deletion for project {ProjectId} ({ProjectName})",
+                ProjectId,
+            singleProject?.Name ?? "Unknown");
+
+
+            // EXPLANATION :: Before we delete the project, we need to unsubscribe 
+            // from notifications for this project otherwise user will briefly see 
+            // a notification that the project was deleted before the page navigates away.
+
+            if (hubConnection is not null)
+            {
+                await hubConnection.InvokeAsync("UnsubscribeFromProjectAsync", ProjectId);
+            }
+
+            // Call the deletion service which will:
+            // 1. Delete the project via API
+            // 2. Broadcast notification to all connected users
+
+            var success = await DeletionService.DeleteProjectWithNotificationAsync(ProjectId);
+
+            if (success)
+            {
+                _logger.LogInformation(
+                    "Project {ProjectId} deleted successfully and notification broadcasted",
+                    ProjectId);
+
+                // Navigate back to projects list after successful deletion
+                NavManager.NavigateTo("/projects");
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "Project deletion returned false for project {ProjectId}",
+                    ProjectId);
+                await OpenExceptionDialogAsync("Failed to delete project. Please try again.");
+
+                if (hubConnection is not null)
+                {
+                    // EXPLANATION :: Subscribe back to notifications for the current project
+                    // This is important because the user may want to retry the deletion 
+                    // or continue working with the project.
+                    if (hubConnection.State == HubConnectionState.Connected)
+                    {
+                        await hubConnection.InvokeAsync("SubscribeToProjectAsync", ProjectId);
+                        _logger.LogInformation($"Subscribed to notifications for project {ProjectId}");
+                    }
+                }
+                return;
+            }
         }
         catch (Exception ex)
         {
+            _logger.LogError(
+                ex,
+                "Exception occurred while deleting project {ProjectId}",
+                ProjectId);
             await OpenExceptionDialogAsync("Problem Deleting Project : " + ex.Message);
             return;
         }
-        NavManager.NavigateTo("/projects");
+
+        // // Navigate back to projects list after successful deletion
+        // NavManager.NavigateTo("/projects");
     }
+
+
     private async Task OpenDeleteConfirmationDialogAsync()
     {
 
@@ -745,4 +1041,93 @@
 			StateHasChanged();
 		}
 	}
+
+    #region SignalR Event Handlers including overall Dispose method
+    /// <summary>
+    /// Called when server broadcasts that this project was deleted.
+    /// Receives only the ProjectId - we already have the project details.
+    /// </summary>
+    private async Task OnProjectDeletedAsync(Guid projectIdDeleted)
+    {
+        // Only process if this is for the current project
+        if (projectIdDeleted != ProjectId)
+            return;
+
+        _logger.LogInformation(
+            $"Received notification: Project {projectIdDeleted} was deleted");
+
+        // Use the already-loaded project details from singleProject
+        var parameters = new DialogParameters<DeletedProjectDialog>
+        {
+            { x => x.ProjectId, projectIdDeleted },
+            { x => x.ProjectName, singleProject?.Name ?? "Unknown Project" }
+        };
+
+        var dialog = await DialogService.ShowAsync<DeletedProjectDialog>(
+            "Project Deleted",
+            parameters);
+
+        var result = await dialog.Result;
+
+        // Navigate away if user confirmed
+        if (!result.Canceled)
+        {
+            NavManager.NavigateTo("/Projects", forceLoad: true);
+        }
+    }
+
+    /// <summary>
+    /// Called when server broadcasts that this project was updated.
+    /// Receives only the ProjectId.
+    /// </summary>
+    private async Task OnProjectUpdatedAsync(Guid projectIdUpdated)
+    {
+        if (projectIdUpdated != ProjectId)
+            return;
+
+        _logger.LogInformation(
+            $"Project {projectIdUpdated} was updated");
+
+        // Optionally refresh the project data if needed
+        // await LoadProjectDataAsync();
+        // StateHasChanged();
+    }
+
+    /// <summary>
+    /// Called when server broadcasts that this project was created.
+    /// Receives only the ProjectId.
+    /// </summary>
+    private async Task OnProjectCreatedAsync(Guid projectIdCreated)
+    {
+        if (projectIdCreated != ProjectId)
+            return;
+
+        _logger.LogInformation(
+            $"Project {projectIdCreated} was created");
+        // Optionally refresh the project data if needed
+        // await LoadProjectDataAsync();
+        // StateHasChanged();
+    }
+
+
+
+    public async ValueTask DisposeAsync()
+    {
+
+        // Cleanup SignalR connection
+        if (hubConnection is not null)
+        {
+            try
+            {
+                await hubConnection.InvokeAsync("UnsubscribeFromProjectAsync", ProjectId);
+                await hubConnection.DisposeAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error disposing hub connection: {ex.Message}");
+            }
+        }
+    }
+
+    #endregion
 }

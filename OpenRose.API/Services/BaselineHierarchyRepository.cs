@@ -310,8 +310,8 @@ namespace ItemzApp.API.Services
 			if (foundBaselineHierarchyRecord.Count() != 1)
 			{
 				throw new ApplicationException($"Expected 1 Baseline Itemz Hierarchy record to be found " +
-					$"but instead found {foundBaselineHierarchyRecord.Count()} records for ID {recordId}" +
-					"Please contact your System Administrator.");
+					$"but instead found {foundBaselineHierarchyRecord.Count()} records for ID {recordId}." +
+					" Please contact your System Administrator.");
 			}
 
 			var foundBaselineHierarchyRecordLevel = foundBaselineHierarchyRecord.FirstOrDefault()!.BaselineItemzHierarchyId!.GetLevel();

@@ -7,6 +7,7 @@
 @using OpenRose.WebUI.Client.Services.Hierarchy
 @using OpenRose.WebUI.Client.Services.BaselineItemz
 @using OpenRose.WebUI.Client.SharedModels
+@using OpenRose.WebUI.Components.Dialogs
 @using OpenRose.WebUI.Components.EventServices
 @using OpenRose.WebUI.Components.Pages.BaselineItemz.BaselineTraceability
 @using OpenRose.WebUI.Components.Pages.Common
@@ -16,9 +17,11 @@
 @using Microsoft.AspNetCore.Components.Forms
 @inject BaselineTreeNodeItemzSelectionService BaselineItemzSelectionService
 @inject NavigationBlockerService NavigationBlocker
+@inject NavigationManager NavManager
 @inject ViewSettingsService ViewSettings
 @inject IDialogService DialogService
 @inject IJSRuntime JS
+@inject ILogger<BaselineItemzReadOnlyComponent> _logger
 
 <MudGrid>
 	@if (initializingPage)
@@ -31,7 +34,7 @@
 			</MudOverlay>
 		</MudPaper>
 	}
-	else
+	else if (singleBaselineItemz != null)
 	{
  		<MudItem xs="12" sm="12">
 			<MudCard style="background-color:#FABBBB; position:sticky; top:0; z-index:10;">
@@ -180,33 +183,112 @@
 			StateHasChanged();
 			await Task.Delay(300);
 
-			singleBaselineItemz = await BaselineItemzService.__Single_BaselineItemz_By_GUID_ID__Async(BaselineItemzId);
-			if (singleBaselineItemz != null && singleBaselineItemz.Description != null)
+			bool loadingSuccessful = false;
+			while (!loadingSuccessful)
 			{
-				await ConvertMarkdownToHtml(singleBaselineItemz.Description);
-
-				// Obtain tags list from the singleBaselineItemz.
-				if (!string.IsNullOrWhiteSpace(singleBaselineItemz?.Tags))
+				try
 				{
-					// Normalize incoming tags (removes duplicates, trims, preserves order)
-					var normalized = TagParsingUtility.NormalizeAndRemoveDuplicates(singleBaselineItemz.Tags);
-
-					// Parse into list
-					tagsList = TagParsingUtility.ParseTags(normalized);
+					singleBaselineItemz = await BaselineItemzService.__Single_BaselineItemz_By_GUID_ID__Async(BaselineItemzId);
+					if (singleBaselineItemz == null)
+					{
+						throw new ApplicationException($"BaselineItemz with ID {BaselineItemzId} not found.");
+					}
 				}
-				else
+				catch (ApplicationException ex)
 				{
-					tagsList = new List<string>();
+					// 🔑 API SERVER IS UNREACHABLE (Network/Connection error)
+					_logger.LogWarning(
+						ex,
+						"Either API Server is unavailable OR requested baseline itemz has been deleted.",
+						BaselineItemzId);
+
+					initializingPage = true;
+					StateHasChanged();
+
+					var parameters = new DialogParameters
+						{
+							["Title"] = "Connection Error",
+							["MessageHtml"] =
+										"<p style='color:red;'><strong>Unable to obtain Baseline Itemz Data</strong></p>" +
+										"<p>Either API server is currently unreachable</p> <p> OR</p>" +
+										"<p>The requested baseline itemz has been deleted.</p>" +
+										"<p><strong>Would you like to retry?</strong></p>",
+							["YesText"] = "Retry",
+							["NoText"] = "Go to Home"
+						};
+
+					// Show error dialog with retry option
+					var options = new DialogOptions
+						{
+							CloseButton = false,
+							BackdropClick = false,
+							CloseOnEscapeKey = false
+						};
+
+					var dialog = await DialogService.ShowAsync<ConnectionAndDataNotFoundErrorDialog>(
+						"Connection Error",
+						parameters,
+						options);
+
+					var dialogResult = await dialog.Result;
+
+					// USER CLICKED RETRY - LOOP CONTINUES AND TRIES AGAIN
+					if (dialogResult != null && dialogResult.Data is bool retry && retry)
+					{
+						_logger.LogInformation("User chose to retry loading baseline itemz {BaselineItemzId}. Waiting 1 second before retry.", BaselineItemzId);
+						// Wait 1 seconds before retrying to give server time to recover
+						await Task.Delay(1000);
+						// Continue the loop to retry
+						continue;
+					}
+					else
+					{
+						// USER CLICKED "GO TO Home Screen"
+						_logger.LogInformation("User chose to go to home screen");
+						loadingSuccessful = true;
+						NavManager.NavigateTo("/");
+					}
 				}
-			}
+				
+				if (singleBaselineItemz != null)
+				{
+					// EXPLANATION :: initializingPage is surrounded by if condition because
+					// as part of exception handling we now allow users to retry loading data.
+					// if user wants to retry then we want to keep showing user the loading
+					// layover message.
 
-			initializingPage = false;
-			StateHasChanged();
+					initializingPage = false;
+					StateHasChanged();
 
-			// ALWAYS run navigation blocker after render if kiosk mode is active
-			if (ViewSettings.IsKioskMode)
-			{
-				await NavigationBlocker.Enable();
+					if (singleBaselineItemz.Description != null)
+					{
+						await ConvertMarkdownToHtml(singleBaselineItemz.Description);
+
+					}
+
+					// Obtain tags list from the singleBaselineItemz.
+					if (!string.IsNullOrWhiteSpace(singleBaselineItemz?.Tags))
+					{
+						// Normalize incoming tags (removes duplicates, trims, preserves order)
+						var normalized = TagParsingUtility.NormalizeAndRemoveDuplicates(singleBaselineItemz.Tags);
+
+						// Parse into list
+						tagsList = TagParsingUtility.ParseTags(normalized);
+					}
+					else
+					{
+						tagsList = new List<string>();
+					}
+				}
+
+				// ALWAYS run navigation blocker after render if kiosk mode is active
+				if (ViewSettings.IsKioskMode)
+				{
+					await NavigationBlocker.Enable();
+				}
+
+				// 🔑 MARK LOADING AS SUCCESSFUL
+				loadingSuccessful = true;
 			}
 		}
 	}
