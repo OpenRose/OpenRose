@@ -902,7 +902,7 @@
 	{
 		// EXPLANATION :: Before we navigate to a different view, ensure any unsaved changes are handled.
 		bool canProceed = await FormStateService.ConfirmDiscardChangesAsync(ItemzId);
-        if (!canProceed) return;
+		if (!canProceed) return;
 
 		var url = $"/itemz/{ItemzId.ToString()}";
 		await JS.InvokeVoidAsync("openInNewTab", url);
@@ -925,6 +925,13 @@
 		{
 			var url = $"/ProjectTreeView/{foundProjectId}?autoSelectedRecordId={ItemzId}";
 			await JS.InvokeVoidAsync("openInNewTab", url);
+		}
+		else
+		{
+			var parameters = new DialogParameters { ["Message"] = "Issue encountered while obtaining requirement related data" };
+			var options = new DialogOptions { CloseButton = false, MaxWidth = MaxWidth.Small, FullWidth = true };
+			var dialogRef = await DialogService.ShowAsync<ErrorDialog>("Error", parameters, options);
+			await dialogRef.Result;
 		}
 	}
 	private async Task ConfirmNavigation(LocationChangingContext context)

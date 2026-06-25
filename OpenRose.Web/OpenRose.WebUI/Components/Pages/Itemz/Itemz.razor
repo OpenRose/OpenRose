@@ -431,10 +431,10 @@
 		}
 
 		// TODO :: The initializingPage didn't really work for 
-        // showing overlay when connection to API layer was dropped
+		// showing overlay when connection to API layer was dropped
 
 		initializingPage = true;
-        StateHasChanged();
+		StateHasChanged();
 
 		var httpResponse = await HierarchyService.__Get_Hierarchy_Record_Details_By_GUID__Async(ItemzId);
 
@@ -464,7 +464,7 @@
 			var dialogRef = await DialogService.ShowAsync<ErrorDialog>("Error", parameters, options);
 			await dialogRef.Result;
 			initializingPage = false;
-            StateHasChanged();
+			StateHasChanged();
 		}
 	}
 
@@ -600,6 +600,13 @@
 		{
 			var url = $"/ProjectTreeView/{foundProjectId}?autoSelectedRecordId={ItemzId}";
 			await JS.InvokeVoidAsync("openInNewTab", url);
+		}
+		else
+		{
+			var parameters = new DialogParameters { ["Message"] = "Issue encountered while obtaining requirement related data" };
+			var options = new DialogOptions { CloseButton = false, MaxWidth = MaxWidth.Small, FullWidth = true };
+			var dialogRef = await DialogService.ShowAsync<ErrorDialog>("Error", parameters, options);
+			await dialogRef.Result;
 		}
 	}
 
