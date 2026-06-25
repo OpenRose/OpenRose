@@ -189,6 +189,7 @@
 
 	public GetBaselineItemzTypeDTO singleBaselineItemzType { get; set; } = new();
 	private List<BaselineHierarchyIdRecordDetailsDTO> AllBaselineItemzForBaselineItemzType { get; set; } = new List<BaselineHierarchyIdRecordDetailsDTO>();
+	private (Guid ProjectId, Guid BaselineId) foundProjectAndBaselineIds;
 	private ParameterForBaselineBreadcrums BreadcrumsParameter;
 	public bool initializingPage { get; set; } = true;
 
@@ -273,6 +274,9 @@
 					}
 				}
 			
+				// TODO :: WE HAVE TWO IF CONDITIONS THAT ARE SIMILAR WHERE WE ARE CHECKING FOR 
+				// if (singleBaselineItemzType != null). Lets combine them together.
+
 				if (singleBaselineItemzType != null)
 				{
 					BreadcrumsParameter = new ParameterForBaselineBreadcrums();
@@ -305,6 +309,7 @@
 						await ConvertMarkdownToHtml(singleBaselineItemzType.Description);
 					}
 
+					foundProjectAndBaselineIds = await FindProjectAndBaselineIdsByBaselineItemzIdService.GetProjectAndBaselineId(BaselineItemzTypeId);
 				}
 
 				// EXPLANATION : At the start of initialization process we capture parent record ID.
@@ -348,8 +353,8 @@
 		// TODO :: Similar Code is there in ProjectTreeView.razor file as well.
 		// We should try and come up with some common way to handle it!
 
-		var foundProjectAndBaselineIds = await FindProjectAndBaselineIdsByBaselineItemzIdService.GetProjectAndBaselineId(Id);
-		if (foundProjectAndBaselineIds.BaselineId != Guid.Empty)
+		// var foundProjectAndBaselineIds = await FindProjectAndBaselineIdsByBaselineItemzIdService.GetProjectAndBaselineId(Id);
+		if (foundProjectAndBaselineIds.BaselineId != Guid.Empty)  // TODO :: if (foundProjectAndBaselineIds is { BaselineId: not Guid.Empty })
 		{
 			var url = $"/BaselineTreeView/{foundProjectAndBaselineIds.BaselineId}?autoSelectedRecordId={Id}";
 			await JS.InvokeVoidAsync("openInNewTab", url);
