@@ -928,7 +928,7 @@
 		}
 		else
 		{
-			var parameters = new DialogParameters { ["Message"] = "Issue encountered while obtaining requirement related data" };
+			var parameters = new DialogParameters { ["Message"] = "Issue encountered while obtaining related data from server" };
 			var options = new DialogOptions { CloseButton = false, MaxWidth = MaxWidth.Small, FullWidth = true };
 			var dialogRef = await DialogService.ShowAsync<ErrorDialog>("Error", parameters, options);
 			await dialogRef.Result;
