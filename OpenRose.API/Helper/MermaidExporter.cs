@@ -291,16 +291,7 @@ namespace ItemzApp.API.Helper
 		/// </returns>
 		private static string RenderNode(Guid id, string? recordType, string? name, bool isRoot)
 		{
-			string label = recordType?.ToLowerInvariant() switch
-			{
-				"project" => TransformLabelForMermaid($"Project :: {name}"),
-				"itemztype" => TransformLabelForMermaid($"ItemzType :: {name}"),
-				"baseline" => TransformLabelForMermaid($"Baseline :: {name}"),
-				"baselineitemztype" => TransformLabelForMermaid($"BaselineItemzType :: {name}"),
-				"itemz" => TransformLabelForMermaid(name),
-				"baselineitemz" => TransformLabelForMermaid(name),
-				_ => TransformLabelForMermaid(name)
-			};
+			string label = TransformLabelForMermaid(name);
 
 			return isRoot
 				? $"{id}(({label}))"   // circle for root
@@ -333,16 +324,7 @@ namespace ItemzApp.API.Helper
 			// Format the estimation line
 			string estimationLine = $"<br/>{estimationDisplay} {rolledUpEstimation:F2}";
 
-			string label = recordType?.ToLowerInvariant() switch
-			{
-				"project" => TransformLabelForMermaid($"Project :: {name}{estimationLine}"),
-				"itemztype" => TransformLabelForMermaid($"ItemzType :: {name}{estimationLine}"),
-				"baseline" => TransformLabelForMermaid($"Baseline :: {name}{estimationLine}"),
-				"baselineitemztype" => TransformLabelForMermaid($"BaselineItemzType :: {name}{estimationLine}"),
-				"itemz" => TransformLabelForMermaid($"{name}{estimationLine}"),
-				"baselineitemz" => TransformLabelForMermaid($"{name}{estimationLine}"),
-				_ => TransformLabelForMermaid($"{name}{estimationLine}")
-			};
+			string label = TransformLabelForMermaid($"{name}{estimationLine}");
 
 			return isRoot
 				? $"{id}(({label}))"   // circle for root
