@@ -59,7 +59,7 @@ version v0.2.0-707
 
 version v0.2.0-647
 
-- Estimation Roll Ups for Requirements [Demo][https://www.youtube.com/watch?v=LW6lS7eWq28]
+- Estimation Roll Ups for Requirements [Demo](https://www.youtube.com/watch?v=LW6lS7eWq28)
 
 version v0.2.0-478
 
