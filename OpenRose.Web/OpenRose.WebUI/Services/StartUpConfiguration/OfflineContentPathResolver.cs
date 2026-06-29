@@ -52,18 +52,20 @@ namespace OpenRose.WebUI.Services.StartUpConfiguration
 				_logger.LogInformation(
 					"OfflineContent: StorageFolder is not configured. Server-side JSON mode will be unavailable.");
 			}
-			else if (!IsStorageFolderAvailable)
-			{
-				_logger.LogWarning(
-					"OfflineContent: StorageFolder resolved to '{Path}', but the folder is unavailable (creation failed or inaccessible).",
-					ResolvedStorageFolderPath);
-			}
-			else
-			{
-				_logger.LogInformation(
-					"OfflineContent: StorageFolder resolved to '{Path}' and is available.",
-					ResolvedStorageFolderPath);
-			}
+			#region DELETE ME NEXT TIME
+			//else if (!IsStorageFolderAvailable)
+			//{
+			//	_logger.LogWarning(
+			//		"OfflineContent: StorageFolder resolved to '{Path}', but the folder is unavailable (creation failed or inaccessible).",
+			//		ResolvedStorageFolderPath);
+			//}
+			//else
+			//{
+			//	_logger.LogInformation(
+			//		"OfflineContent: StorageFolder resolved to '{Path}' and is available.",
+			//		ResolvedStorageFolderPath);
+			//}
+			#endregion
 		}
 
 
