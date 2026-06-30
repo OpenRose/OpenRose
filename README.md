@@ -45,66 +45,67 @@ BUT primarily, **Itemz** is nothing but Requirements / Needs / Wants / Notes / F
 
 ## Overview of Current State
 
-Latest release [version 0.2.0-744](https://github.com/OpenRose/OpenRose/releases/tag/v0.2.0-744)
+Latest release [version 0.2.0-808](https://github.com/OpenRose/OpenRose/releases/tag/v0.2.0-808)
 
-version v0.2.0-744
+**version v0.2.0-808**
+- Mermaid Export GoTo url with optional TreeView parameter.
+- Page title section UI improvement to support better view for Mobile Users 
+- Better handling of deleted data notification and informing connected users 
+- Enable Environment Variable based overrides for Empty String configuration settings
+
+**version v0.2.0-744**
 - Introduced setting for show properties toggle button for Read Only views
 - Introducing Global Style for Two Columns in Description 
 
-version v0.2.0-707
+**version v0.2.0-707**
 - External Static File Support via custom user defined folders
 - Enhance Logging for Server Offline Data files and User Files
 - Support for Hosted Server Side JSON Data in Cloud Deployment Scenarios
 - Improved UI for Server Data Files view to support Mobile Users
 
-version v0.2.0-647
-
+**version v0.2.0-647**
 - Estimation Roll Ups for Requirements [Demo](https://www.youtube.com/watch?v=LW6lS7eWq28)
 
-version v0.2.0-478
-
+**version v0.2.0-478**
 - Adding support for Tagging in Requirements Items and Baseline Requirement Items [Demo](https://www.youtube.com/watch?v=ev8CE9Lv5qo)
 - Introducing Server Side JSON Data file based ReadOnly TreeViews [Demo](https://www.youtube.com/watch?v=cRm--ATHAUQ)
 - Enhanced startup mode supporting API, Server and Client JSON Data files [Demo](https://www.youtube.com/watch?v=8GuntjlFKuc)
 
-version v0.2.0-393
+**version v0.2.0-393**
 - Supporting Client Off-Line Read Only JSON Data file Views based on Exported Data from Open Rose [Demo](https://www.youtube.com/watch?v=3Wl6xnN3ba0)
 
-version v0.2.0-334
+**version v0.2.0-334**
 - Enable windows services deployment for WebUI and API (Auto-start OpenRose) [Demo](https://www.youtube.com/watch?v=wO1bKZHl-I0)
 
-version v0.2.0-295
+**version v0.2.0-295**
 - Introducing Read Only Tree View [Demo](https://www.youtube.com/watch?v=ewlJPxkLkT4)
 - Include From Requirements Trace and To Requirement Trace Names in JSON Export [Demo](https://www.youtube.com/watch?v=ozyLh8lAMms)
 
-version v0.2.0-232
-
+**version v0.2.0-232**
 - Introduce Trace Label within Requirements to Requirements Trace Link  [Demo](https://www.youtube.com/watch?v=h_cLO1M2cyY)
 - Create, Update and Remove bulk traces [Demo](https://www.youtube.com/watch?v=bQXqsPQVmdU)
 
-version 0.2.0-196
-
+**version 0.2.0-196**
 - Stay on Page Alert when encountered unsaved data [Demo](https://www.youtube.com/watch?v=QcpDGpGqOD0)
 
-version 0.2.0-161
-
+**version 0.2.0-161**
 - Generating Mermaid FlowChart diagrams - [Demo](https://www.youtube.com/watch?v=DFF0bJ5y1p4)
 - Multilingual Title and Description - Support for Unicode - [Demo](https://www.youtube.com/shorts/hFAA9wb3kns)
 
- version 0.2.0-120
+**version 0.2.0-120**
  - GoTo Navigation Links - [Demo](https://www.youtube.com/watch?v=DuJJl_uzPoc)
 
-version 0.2.0-69
+**version 0.2.0-69**
  - Import Requirements Data - [Demo](https://www.youtube.com/watch?v=TAXf8oQlvC8)
  - Import Baseline Data - [Demo](https://www.youtube.com/watch?v=Xq2rQMxb_Io)
 
-version 0.2.0-32
+**version 0.2.0-32**
  - Export Requirements Data - [Demo](https://www.youtube.com/watch?v=1Y9MAcyOjWg)
 
-version 0.1.2-243
+**version 0.1.2-243**
  - Copy Requirements Data - [Demo](https://www.youtube.com/watch?v=2bExGaaQSVc)
 
-Feature list
+## Feature list
 
  - Project
  - Custom Requirements Itemz Type
