@@ -67,6 +67,10 @@
                              Value="generateTreeViewLinks"
                              ValueChanged="@((bool x) => OnGenerateTreeViewLinksChanged(x))" />
 
+                <MudCheckBox Label="Include Tags"
+                             Value="includeTags"
+                             ValueChanged="@((bool x) => OnIncludeTagsChanged(x))" />
+
             </MudStack>
 
 
@@ -162,6 +166,7 @@
     private bool showTraceabilityOnly { get; set; } = false;
     private bool includeEstimations { get; set; } = false;
     private bool generateTreeViewLinks { get; set; } = false;
+    private bool includeTags { get; set; } = false;
     private string mermaidText { get; set; } = string.Empty;
     private bool loading { get; set; } = false;
 
@@ -261,6 +266,12 @@
     private void OnGenerateTreeViewLinksChanged(bool newValue)
     {
         generateTreeViewLinks = newValue;
+        mermaidText = string.Empty;  // clear old flowchart text
+    }
+
+    private void OnIncludeTagsChanged(bool newValue)
+    {
+        includeTags = newValue;
         mermaidText = string.Empty;  // clear old flowchart text
     }
 
