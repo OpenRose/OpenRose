@@ -78,6 +78,7 @@ namespace OpenRose.WebUI.Client.Services.Export
 			bool exportIncludedBaselineItemzOnly,
 			bool showTraceabilityOnly,
 			bool includeEstimations,
+			bool includeTags,
 			string baseUrl,
 			string? view = null,
 			CancellationToken cancellationToken = default)
@@ -113,7 +114,12 @@ namespace OpenRose.WebUI.Client.Services.Export
 					urlBuilder_.Append("&includeEstimations=true");
 				}
 
-				if(!string.IsNullOrWhiteSpace(view))
+				if (includeTags)
+				{
+					urlBuilder_.Append("&includeTags=true");
+				}
+
+				if (!string.IsNullOrWhiteSpace(view))
 				{
 					urlBuilder_.Append($"&view={Uri.EscapeDataString(view)}");
 				}
