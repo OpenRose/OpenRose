@@ -38,12 +38,13 @@ namespace ItemzApp.API.Helper
 							  Guid rootId,
 							  string? baseUrl,
 							  bool includeEstimations = false,
+							  bool includeTags = false,
 							  string? view = null)
 		{
 			var sb = new StringBuilder();
 			EmitOpenRoseHeader(sb);
 
-			EmitHierarchyInline(root, sb, rootId, 1, baseUrl, includeEstimations, view);
+			EmitHierarchyInline(root, sb, rootId, 1, baseUrl, includeEstimations, includeTags, view);
 
 			// Build lookup dictionary from hierarchy
 			var idToName = BuildIdToNameMap(root);
@@ -99,6 +100,7 @@ namespace ItemzApp.API.Helper
 			Guid rootId,
 			string? baseUrl = null,
 			bool includeEstimations = false,
+			bool includeTags = false,
 			string? view = null)
 		{
 			var sb = new StringBuilder();
@@ -149,6 +151,7 @@ namespace ItemzApp.API.Helper
 												int indentLevel,
 												string? baseUrl = null,
 												bool includeEstimations = false,
+												bool includeTags = false,
 												string? view = null)
 		{
 			string parent = string.Empty;
@@ -204,7 +207,7 @@ namespace ItemzApp.API.Helper
 						sb.AppendLine($"{indent}click {child.RecordId} href \"{gotoUrl}\"");
 					}
 
-					EmitHierarchyInline(child, sb, rootId, indentLevel + 1, baseUrl, includeEstimations, view);
+					EmitHierarchyInline(child, sb, rootId, indentLevel + 1, baseUrl, includeEstimations, includeTags, view);
 				}
 			}
 		}
