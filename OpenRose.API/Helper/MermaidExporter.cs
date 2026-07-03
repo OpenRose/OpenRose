@@ -2,11 +2,12 @@
 // Licensed under the Apache License, Version 2.0. 
 // See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 
+using ItemzApp.API.Constants;
+using ItemzApp.API.Models;
+using ItemzApp.API.Services;
 using System;
 using System.Collections.Generic;
 using System.Text;
-using ItemzApp.API.Constants;
-using ItemzApp.API.Models;
 
 namespace ItemzApp.API.Helper
 {
@@ -34,17 +35,18 @@ namespace ItemzApp.API.Helper
 		/// </returns>
 
 		public static string Generate(NestedHierarchyIdRecordDetailsDTO root,
-							  IEnumerable<ItemzTraceDTO> traces,
-							  Guid rootId,
-							  string? baseUrl,
-							  bool includeEstimations = false,
-							  bool includeTags = false,
-							  string? view = null)
+								  IEnumerable<ItemzTraceDTO> traces,
+								  Guid rootId,
+								  string? baseUrl,
+								  bool includeEstimations = false,
+								  bool includeTags = false,
+								  string? view = null,
+								  IItemzRepository? itemzRepository = null)
 		{
 			var sb = new StringBuilder();
 			EmitOpenRoseHeader(sb);
 
-			EmitHierarchyInline(root, sb, rootId, 1, baseUrl, includeEstimations, includeTags, view);
+			EmitHierarchyInline(root, sb, rootId, 1, baseUrl, includeEstimations, includeTags, view, itemzRepository);
 
 			// Build lookup dictionary from hierarchy
 			var idToName = BuildIdToNameMap(root);
@@ -101,12 +103,13 @@ namespace ItemzApp.API.Helper
 			string? baseUrl = null,
 			bool includeEstimations = false,
 			bool includeTags = false,
-			string? view = null)
+			string? view = null,
+			IItemzRepository? itemzRepository = null)
 		{
 			var sb = new StringBuilder();
 			EmitOpenRoseHeader(sb);
 
-			EmitBaselineHierarchyInline(root, sb, rootId, 1, baseUrl, includeEstimations, view);
+			EmitBaselineHierarchyInline(root, sb, rootId, 1, baseUrl, includeEstimations, includeTags, view, itemzRepository);
 
 			// Build lookup dictionary from baseline hierarchy
 			var idToName = BuildBaselineIdToNameMap(root);
@@ -145,6 +148,87 @@ namespace ItemzApp.API.Helper
 		/// <param name="sb">The StringBuilder accumulating Mermaid syntax.</param>
 		/// <param name="rootId">The Guid of the root node.</param>
 		/// <param name="indentLevel">Indentation level for readability.</param>
+		//private static void EmitHierarchyInline(NestedHierarchyIdRecordDetailsDTO node,
+		//										StringBuilder sb,
+		//										Guid rootId,
+		//										int indentLevel,
+		//										string? baseUrl = null,
+		//										bool includeEstimations = false,
+		//										bool includeTags = false,
+		//										string? view = null,
+		//										IItemzRepository? itemzRepository = null)
+		//{
+		//	string parent = string.Empty;
+
+		//	if (includeEstimations)
+		//	{
+		//		 parent = RenderNodeWithEstimation(node.RecordId, node.RecordType, node.Name, node.RecordId == rootId
+		//			, node.EstimationUnit, node.RolledUpEstimation);
+		//	}
+		//	else
+		//	{
+		//		parent = RenderNode(node.RecordId, node.RecordType, node.Name, node.RecordId == rootId);
+		//	}
+
+		//	string indent = new string(' ', indentLevel * 4);
+
+		//	if (node.RecordId == rootId)
+		//	{
+		//		sb.AppendLine($"{indent}{parent}");
+		//		if (!string.IsNullOrWhiteSpace(baseUrl))
+		//		{
+		//			//var gotoUrl = $"{baseUrl}/GoTo/{node.RecordId}";
+		//			var gotoUrl = BuildGotoUrl(baseUrl, node.RecordId, view);
+		//			var safeLabel = TransformLabelForMermaid(node.Name);
+		//			sb.AppendLine($"{indent}click {node.RecordId} href \"{gotoUrl}\"");
+		//		}
+		//	}
+
+		//	if (node.Children != null && node.Children.Count > 0)
+		//	{
+		//		foreach (var child in node.Children)
+		//		{
+		//			string childText = string.Empty;
+
+		//			if (includeEstimations)
+		//			{
+		//				childText = RenderNodeWithEstimation(child.RecordId, child.RecordType, child.Name, child.RecordId == rootId
+		//				, child.EstimationUnit, child.RolledUpEstimation);
+		//			}
+		//			else
+		//			{
+		//				childText = RenderNode(child.RecordId, child.RecordType, child.Name, child.RecordId == rootId);
+		//			}
+
+		//			// If includeTags is true and this is an Itemz record, fetch and append tags
+		//			if (includeTags && child.RecordType == "Itemz" && itemzRepository != null)
+		//			{
+		//				var tagsMarkup = GetTagsMarkupAsync(child.RecordId, itemzRepository).Result;
+		//				if (!string.IsNullOrWhiteSpace(tagsMarkup))
+		//				{
+		//					// Reconstruct the child node text with tags appended
+		//					childText = RenderNodeWithTags(child.RecordId, child.RecordType, child.Name,
+		//						child.RecordId == rootId, includeEstimations,
+		//						child.EstimationUnit, child.RolledUpEstimation, tagsMarkup);
+		//				}
+		//			}
+
+		//			sb.AppendLine($"{indent}{parent} --> {childText}");
+
+		//			// Add click directive if baseUrl is provided
+		//			if (!string.IsNullOrWhiteSpace(baseUrl))
+		//			{
+		//				//var gotoUrl = $"{baseUrl}/GoTo/{child.RecordId}";
+		//				var gotoUrl = BuildGotoUrl(baseUrl, child.RecordId, view);
+		//				var safeLabel = TransformLabelForMermaid(child.Name);
+		//				sb.AppendLine($"{indent}click {child.RecordId} href \"{gotoUrl}\"");
+		//			}
+
+		//			EmitHierarchyInline(child, sb, rootId, indentLevel + 1, baseUrl, includeEstimations, includeTags, view, itemzRepository);
+		//		}
+		//	}
+		//}
+
 		private static void EmitHierarchyInline(NestedHierarchyIdRecordDetailsDTO node,
 												StringBuilder sb,
 												Guid rootId,
@@ -152,62 +236,106 @@ namespace ItemzApp.API.Helper
 												string? baseUrl = null,
 												bool includeEstimations = false,
 												bool includeTags = false,
-												string? view = null)
+												string? view = null,
+												IItemzRepository? itemzRepository = null)
 		{
-			string parent = string.Empty;
-			
+			// First pass: Define all nodes with their complete information (including tags)
+			DefineNodeRecursive(node, sb, rootId, includeEstimations, includeTags, itemzRepository);
+
+			// Second pass: Add all click directives
+			if (!string.IsNullOrWhiteSpace(baseUrl))
+			{
+				sb.AppendLine();
+				sb.AppendLine("    %% Click directives");
+				AddClickDirectivesRecursive(node, sb, baseUrl, view);
+			}
+
+			// Third pass: Add all links
+			sb.AppendLine();
+			sb.AppendLine("    %% Links");
+			EmitLinksRecursive(node, sb);
+		}
+
+		/// <summary>
+		/// First pass: Recursively define all nodes with their complete information including tags.
+		/// </summary>
+		private static void DefineNodeRecursive(NestedHierarchyIdRecordDetailsDTO node,
+												StringBuilder sb,
+												Guid rootId,
+												bool includeEstimations = false,
+												bool includeTags = false,
+												IItemzRepository? itemzRepository = null)
+		{
+			string nodeDefinition = string.Empty;
+
 			if (includeEstimations)
 			{
-				 parent = RenderNodeWithEstimation(node.RecordId, node.RecordType, node.Name, node.RecordId == rootId
+				nodeDefinition = RenderNodeWithEstimation(node.RecordId, node.RecordType, node.Name, node.RecordId == rootId
 					, node.EstimationUnit, node.RolledUpEstimation);
 			}
 			else
 			{
-				parent = RenderNode(node.RecordId, node.RecordType, node.Name, node.RecordId == rootId);
+				nodeDefinition = RenderNode(node.RecordId, node.RecordType, node.Name, node.RecordId == rootId);
 			}
 
-			string indent = new string(' ', indentLevel * 4);
-
-			if (node.RecordId == rootId)
+			// If includeTags is true and this is an Itemz record, fetch and append tags
+			if (includeTags && node.RecordType == "Itemz" && itemzRepository != null)
 			{
-				sb.AppendLine($"{indent}{parent}");
-				if (!string.IsNullOrWhiteSpace(baseUrl))
+				var tagsMarkup = GetTagsMarkupAsync(node.RecordId, itemzRepository).Result;
+				if (!string.IsNullOrWhiteSpace(tagsMarkup))
 				{
-					//var gotoUrl = $"{baseUrl}/GoTo/{node.RecordId}";
-					var gotoUrl = BuildGotoUrl(baseUrl, node.RecordId, view);
-					var safeLabel = TransformLabelForMermaid(node.Name);
-					sb.AppendLine($"{indent}click {node.RecordId} href \"{gotoUrl}\"");
+					// Reconstruct the node definition with tags appended
+					nodeDefinition = RenderNodeWithTags(node.RecordId, node.RecordType, node.Name,
+						node.RecordId == rootId, includeEstimations,
+						node.EstimationUnit, node.RolledUpEstimation, tagsMarkup);
 				}
 			}
 
+			sb.AppendLine($"    {nodeDefinition}");
+
+			// Recursively define all children
 			if (node.Children != null && node.Children.Count > 0)
 			{
 				foreach (var child in node.Children)
 				{
-					string childText = string.Empty;
+					DefineNodeRecursive(child, sb, rootId, includeEstimations, includeTags, itemzRepository);
+				}
+			}
+		}
 
-					if (includeEstimations)
-					{
-						childText = RenderNodeWithEstimation(child.RecordId, child.RecordType, child.Name, child.RecordId == rootId
-						, child.EstimationUnit, child.RolledUpEstimation);
-					}
-					else
-					{
-						childText = RenderNode(child.RecordId, child.RecordType, child.Name, child.RecordId == rootId);
-					}
+		/// <summary>
+		/// Second pass: Recursively add click directives for all nodes.
+		/// </summary>
+		private static void AddClickDirectivesRecursive(NestedHierarchyIdRecordDetailsDTO node,
+														StringBuilder sb,
+														string? baseUrl,
+														string? view)
+		{
+			var gotoUrl = BuildGotoUrl(baseUrl, node.RecordId, view);
+			sb.AppendLine($"    click {node.RecordId} href \"{gotoUrl}\"");
 
-					sb.AppendLine($"{indent}{parent} --> {childText}");
+			// Recursively add click directives for all children
+			if (node.Children != null && node.Children.Count > 0)
+			{
+				foreach (var child in node.Children)
+				{
+					AddClickDirectivesRecursive(child, sb, baseUrl, view);
+				}
+			}
+		}
 
-					// Add click directive if baseUrl is provided
-					if (!string.IsNullOrWhiteSpace(baseUrl))
-					{
-						//var gotoUrl = $"{baseUrl}/GoTo/{child.RecordId}";
-						var gotoUrl = BuildGotoUrl(baseUrl, child.RecordId, view);
-						var safeLabel = TransformLabelForMermaid(child.Name);
-						sb.AppendLine($"{indent}click {child.RecordId} href \"{gotoUrl}\"");
-					}
-
-					EmitHierarchyInline(child, sb, rootId, indentLevel + 1, baseUrl, includeEstimations, includeTags, view);
+		/// <summary>
+		/// Third pass: Recursively emit all links between parent and child nodes.
+		/// </summary>
+		private static void EmitLinksRecursive(NestedHierarchyIdRecordDetailsDTO node,
+												StringBuilder sb)
+		{
+			if (node.Children != null && node.Children.Count > 0)
+			{
+				foreach (var child in node.Children)
+				{
+					sb.AppendLine($"    {node.RecordId} --> {child.RecordId}");
+					EmitLinksRecursive(child, sb);
 				}
 			}
 		}
@@ -215,69 +343,183 @@ namespace ItemzApp.API.Helper
 		/// <summary>
 		/// Recursively emits nodes and edges for a baseline hierarchy into the StringBuilder.
 		/// </summary>
+		//private static void EmitBaselineHierarchyInline(NestedBaselineHierarchyIdRecordDetailsDTO node,
+		//												StringBuilder sb,
+		//												Guid rootId,
+		//												int indentLevel,
+		//												string? baseUrl = null,
+		//												bool includeEstimations = false,
+		//												bool includeTags = false,
+		//												string? view = null,
+		//												IItemzRepository? itemzRepository = null)
+		//{
+		//	string parent = string.Empty;
+
+		//	if (includeEstimations)
+		//	{
+		//		parent = RenderNodeWithEstimation(node.RecordId, node.RecordType, node.Name, node.RecordId == rootId
+		//						, node.EstimationUnit, node.RolledUpEstimation);
+		//	}
+		//	else 
+		//	{
+		//		parent = RenderNode(node.RecordId, node.RecordType, node.Name, node.RecordId == rootId);
+
+		//	}
+		//	string indent = new string(' ', indentLevel * 4);
+
+		//	// Root node
+		//	if (node.RecordId == rootId)
+		//	{
+		//		sb.AppendLine($"{indent}{parent}");
+
+		//		if (!string.IsNullOrWhiteSpace(baseUrl))
+		//		{
+		//			//var gotoUrl = $"{baseUrl}/GoTo/{node.RecordId}";
+		//			var gotoUrl = BuildGotoUrl(baseUrl, node.RecordId, view);
+		//			sb.AppendLine($"{indent}click {node.RecordId} href \"{gotoUrl}\"");
+		//		}
+		//	}
+
+		//	// Children
+		//	if (node.Children != null && node.Children.Count > 0)
+		//	{
+		//		foreach (var child in node.Children)
+		//		{
+
+		//			string childText = string.Empty;
+
+		//			if(includeEstimations)
+		//			{
+		//				childText = RenderNodeWithEstimation(child.RecordId, child.RecordType, child.Name, child.RecordId == rootId
+		//				, child.EstimationUnit, child.RolledUpEstimation);
+		//			}
+		//			else
+		//			{
+		//				 childText = RenderNode(child.RecordId, child.RecordType, child.Name, child.RecordId == rootId);
+		//			}
+
+		//			sb.AppendLine($"{indent}{parent} --> {childText}");
+
+		//			if (!string.IsNullOrWhiteSpace(baseUrl))
+		//			{
+		//				//var gotoUrl = $"{baseUrl}/GoTo/{child.RecordId}";
+		//				var gotoUrl = BuildGotoUrl(baseUrl, child.RecordId, view);
+		//				sb.AppendLine($"{indent}click {child.RecordId} href \"{gotoUrl}\"");
+		//			}
+
+		//			EmitBaselineHierarchyInline(child, sb, rootId, indentLevel + 1, baseUrl, includeEstimations, includeTags, view, itemzRepository);
+		//		}
+		//	}
+		//}
+
 		private static void EmitBaselineHierarchyInline(NestedBaselineHierarchyIdRecordDetailsDTO node,
 														StringBuilder sb,
 														Guid rootId,
 														int indentLevel,
 														string? baseUrl = null,
 														bool includeEstimations = false,
-														string? view = null)
+														bool includeTags = false,
+														string? view = null,
+														IItemzRepository? itemzRepository = null)
 		{
-			string parent = string.Empty;
+			// First pass: Define all nodes with their complete information (including tags)
+			DefineBaselineNodeRecursive(node, sb, rootId, includeEstimations, includeTags, itemzRepository);
+
+			// Second pass: Add all click directives
+			if (!string.IsNullOrWhiteSpace(baseUrl))
+			{
+				sb.AppendLine();
+				sb.AppendLine("    %% Click directives");
+				AddBaselineClickDirectivesRecursive(node, sb, baseUrl, view);
+			}
+
+			// Third pass: Add all links
+			sb.AppendLine();
+			sb.AppendLine("    %% Links");
+			EmitBaselineLinksRecursive(node, sb);
+		}
+
+		/// <summary>
+		/// First pass: Recursively define all baseline nodes with their complete information including tags.
+		/// </summary>
+		private static void DefineBaselineNodeRecursive(NestedBaselineHierarchyIdRecordDetailsDTO node,
+														StringBuilder sb,
+														Guid rootId,
+														bool includeEstimations = false,
+														bool includeTags = false,
+														IItemzRepository? itemzRepository = null)
+		{
+			string nodeDefinition = string.Empty;
 
 			if (includeEstimations)
 			{
-				parent = RenderNodeWithEstimation(node.RecordId, node.RecordType, node.Name, node.RecordId == rootId
-								, node.EstimationUnit, node.RolledUpEstimation);
+				nodeDefinition = RenderNodeWithEstimation(node.RecordId, node.RecordType, node.Name, node.RecordId == rootId
+					, node.EstimationUnit, node.RolledUpEstimation);
 			}
-			else 
+			else
 			{
-				parent = RenderNode(node.RecordId, node.RecordType, node.Name, node.RecordId == rootId);
-
+				nodeDefinition = RenderNode(node.RecordId, node.RecordType, node.Name, node.RecordId == rootId);
 			}
-			string indent = new string(' ', indentLevel * 4);
 
-			// Root node
-			if (node.RecordId == rootId)
+			// If includeTags is true and this is a BaselineItemz record, fetch and append tags
+			// Note: Baseline records reference the live Itemz, so we fetch tags the same way
+			if (includeTags && node.RecordType == "BaselineItemz" && itemzRepository != null)
 			{
-				sb.AppendLine($"{indent}{parent}");
-
-				if (!string.IsNullOrWhiteSpace(baseUrl))
+				var tagsMarkup = GetTagsMarkupAsync(node.RecordId, itemzRepository).Result;
+				if (!string.IsNullOrWhiteSpace(tagsMarkup))
 				{
-					//var gotoUrl = $"{baseUrl}/GoTo/{node.RecordId}";
-					var gotoUrl = BuildGotoUrl(baseUrl, node.RecordId, view);
-					sb.AppendLine($"{indent}click {node.RecordId} href \"{gotoUrl}\"");
+					// Reconstruct the node definition with tags appended
+					nodeDefinition = RenderNodeWithTags(node.RecordId, node.RecordType, node.Name,
+						node.RecordId == rootId, includeEstimations,
+						node.EstimationUnit, node.RolledUpEstimation, tagsMarkup);
 				}
 			}
 
-			// Children
+			sb.AppendLine($"    {nodeDefinition}");
+
+			// Recursively define all children
 			if (node.Children != null && node.Children.Count > 0)
 			{
 				foreach (var child in node.Children)
 				{
+					DefineBaselineNodeRecursive(child, sb, rootId, includeEstimations, includeTags, itemzRepository);
+				}
+			}
+		}
 
-					string childText = string.Empty;
+		/// <summary>
+		/// Second pass: Recursively add click directives for all baseline nodes.
+		/// </summary>
+		private static void AddBaselineClickDirectivesRecursive(NestedBaselineHierarchyIdRecordDetailsDTO node,
+															StringBuilder sb,
+															string? baseUrl,
+															string? view)
+		{
+			var gotoUrl = BuildGotoUrl(baseUrl, node.RecordId, view);
+			sb.AppendLine($"    click {node.RecordId} href \"{gotoUrl}\"");
 
-					if(includeEstimations)
-					{
-						childText = RenderNodeWithEstimation(child.RecordId, child.RecordType, child.Name, child.RecordId == rootId
-						, child.EstimationUnit, child.RolledUpEstimation);
-					}
-					else
-					{
-						 childText = RenderNode(child.RecordId, child.RecordType, child.Name, child.RecordId == rootId);
-					}
-					
-					sb.AppendLine($"{indent}{parent} --> {childText}");
+			// Recursively add click directives for all children
+			if (node.Children != null && node.Children.Count > 0)
+			{
+				foreach (var child in node.Children)
+				{
+					AddBaselineClickDirectivesRecursive(child, sb, baseUrl, view);
+				}
+			}
+		}
 
-					if (!string.IsNullOrWhiteSpace(baseUrl))
-					{
-						//var gotoUrl = $"{baseUrl}/GoTo/{child.RecordId}";
-						var gotoUrl = BuildGotoUrl(baseUrl, child.RecordId, view);
-						sb.AppendLine($"{indent}click {child.RecordId} href \"{gotoUrl}\"");
-					}
-
-					EmitBaselineHierarchyInline(child, sb, rootId, indentLevel + 1, baseUrl, includeEstimations, view);
+		/// <summary>
+		/// Third pass: Recursively emit all links between parent and child baseline nodes.
+		/// </summary>
+		private static void EmitBaselineLinksRecursive(NestedBaselineHierarchyIdRecordDetailsDTO node,
+													StringBuilder sb)
+		{
+			if (node.Children != null && node.Children.Count > 0)
+			{
+				foreach (var child in node.Children)
+				{
+					sb.AppendLine($"    {node.RecordId} --> {child.RecordId}");
+					EmitBaselineLinksRecursive(child, sb);
 				}
 			}
 		}
@@ -333,6 +575,85 @@ namespace ItemzApp.API.Helper
 				? $"{id}(({label}))"   // circle for root
 				: $"{id}[{label}]";    // rectangle for others
 		}
+
+
+		/// <summary>
+		/// Renders a node into Mermaid syntax with estimation and tags.
+		/// </summary>
+		private static string RenderNodeWithTags(Guid id, string? recordType, string? name, bool isRoot,
+			bool includeEstimations = false,
+			string? estimationUnit = null,
+			decimal rolledUpEstimation = 0,
+			string? tagsMarkup = null)
+		{
+			// First, transform the base name and estimation
+			var labelParts = new List<string> { TransformLabelForMermaid(name) };
+
+			if (includeEstimations)
+			{
+				string estimationDisplay = string.IsNullOrWhiteSpace(estimationUnit) ? "N/A" : estimationUnit;
+				labelParts.Add($"<br/>{estimationDisplay} {rolledUpEstimation:F2}");
+			}
+
+			if (!string.IsNullOrWhiteSpace(tagsMarkup))
+			{
+				labelParts.Add($"<br/>Tags:<br/>{tagsMarkup}");
+			}
+
+			string fullLabel = string.Concat(labelParts);
+
+			return isRoot
+				? $"{id}(({fullLabel}))"   // circle for root
+				: $"{id}[{fullLabel}]";    // rectangle for others
+		}
+		
+		/// <summary>
+		/// Fetches tags for an Itemz record and formats them with HTML markup.
+		/// Tags are stored as a pipe-delimited string and rendered as highlighted badges.
+		/// </summary>
+		/// <param name="itemzId">The ID of the Itemz record.</param>
+		/// <param name="itemzRepository">Repository for fetching Itemz details.</param>
+		/// <returns>A string containing HTML markup for tags, or null if no tags exist.</returns>
+		private static async System.Threading.Tasks.Task<string?> GetTagsMarkupAsync(Guid itemzId, IItemzRepository itemzRepository)
+		{
+			try
+			{
+				var itemz = await itemzRepository.GetItemzAsync(itemzId);
+				if (itemz == null || string.IsNullOrWhiteSpace(itemz.Tags))
+				{
+					return null;
+				}
+
+				// Tags are pipe-delimited; split and trim each tag
+				var tags = itemz.Tags.Split('|');
+				var tagMarkups = new List<string>();
+
+				foreach (var tag in tags)
+				{
+					var trimmedTag = tag.Trim();
+					if (!string.IsNullOrWhiteSpace(trimmedTag))
+					{
+						// Create a mark element with LIGHTGREEN background for each tag
+						// Note: Using << >> instead of < > to preserve angle brackets in Mermaid output
+						tagMarkups.Add($"<<mark style='background:LIGHTGREEN'>{trimmedTag}</mark>>");
+					}
+				}
+
+				if (tagMarkups.Count == 0)
+				{
+					return null;
+				}
+
+				// Join all tags with line breaks
+				return string.Join("<br/>", tagMarkups);
+			}
+			catch
+			{
+				// Gracefully handle any errors fetching tags
+				return null;
+			}
+		}
+
 
 		/// <summary>
 		/// Transforms a raw label string into a Mermaid-safe format.
