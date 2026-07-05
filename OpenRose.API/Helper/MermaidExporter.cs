@@ -104,12 +104,12 @@ namespace ItemzApp.API.Helper
 			bool includeEstimations = false,
 			bool includeTags = false,
 			string? view = null,
-			IItemzRepository? itemzRepository = null)
+			IBaselineItemzRepository? baselineItemzRepository = null)
 		{
 			var sb = new StringBuilder();
 			EmitOpenRoseHeader(sb);
 
-			EmitBaselineHierarchyInline(root, sb, rootId, 1, baseUrl, includeEstimations, includeTags, view, itemzRepository);
+			EmitBaselineHierarchyInline(root, sb, rootId, 1, baseUrl, includeEstimations, includeTags, view, baselineItemzRepository);
 
 			// Build lookup dictionary from baseline hierarchy
 			var idToName = BuildBaselineIdToNameMap(root);
@@ -413,17 +413,17 @@ namespace ItemzApp.API.Helper
 		//}
 
 		private static void EmitBaselineHierarchyInline(NestedBaselineHierarchyIdRecordDetailsDTO node,
-														StringBuilder sb,
-														Guid rootId,
-														int indentLevel,
-														string? baseUrl = null,
-														bool includeEstimations = false,
-														bool includeTags = false,
-														string? view = null,
-														IItemzRepository? itemzRepository = null)
+												StringBuilder sb,
+												Guid rootId,
+												int indentLevel,
+												string? baseUrl = null,
+												bool includeEstimations = false,
+												bool includeTags = false,
+												string? view = null,
+												IBaselineItemzRepository? baselineItemzRepository = null)
 		{
 			// First pass: Define all nodes with their complete information (including tags)
-			DefineBaselineNodeRecursive(node, sb, rootId, includeEstimations, includeTags, itemzRepository);
+			DefineBaselineNodeRecursive(node, sb, rootId, includeEstimations, includeTags, baselineItemzRepository);
 
 			// Second pass: Add all click directives
 			if (!string.IsNullOrWhiteSpace(baseUrl))
@@ -447,7 +447,7 @@ namespace ItemzApp.API.Helper
 														Guid rootId,
 														bool includeEstimations = false,
 														bool includeTags = false,
-														IItemzRepository? itemzRepository = null)
+														IBaselineItemzRepository? baselineItemzRepository = null)
 		{
 			string nodeDefinition = string.Empty;
 
@@ -462,10 +462,9 @@ namespace ItemzApp.API.Helper
 			}
 
 			// If includeTags is true and this is a BaselineItemz record, fetch and append tags
-			// Note: Baseline records reference the live Itemz, so we fetch tags the same way
-			if (includeTags && node.RecordType == "BaselineItemz" && itemzRepository != null)
+			if (includeTags && node.RecordType == "BaselineItemz" && baselineItemzRepository != null)
 			{
-				var tagsMarkup = GetTagsMarkupAsync(node.RecordId, itemzRepository).Result;
+				var tagsMarkup = GetBaselineTagsMarkupAsync(node.RecordId, baselineItemzRepository).Result;
 				if (!string.IsNullOrWhiteSpace(tagsMarkup))
 				{
 					// Reconstruct the node definition with tags appended
@@ -482,7 +481,7 @@ namespace ItemzApp.API.Helper
 			{
 				foreach (var child in node.Children)
 				{
-					DefineBaselineNodeRecursive(child, sb, rootId, includeEstimations, includeTags, itemzRepository);
+					DefineBaselineNodeRecursive(child, sb, rootId, includeEstimations, includeTags, baselineItemzRepository);
 				}
 			}
 		}
@@ -654,6 +653,53 @@ namespace ItemzApp.API.Helper
 			}
 		}
 
+
+		/// <summary>
+		/// Fetches tags for a BaselineItemz record and formats them with HTML markup.
+		/// Tags are stored as a pipe-delimited string and rendered as highlighted badges.
+		/// </summary>
+		/// <param name="baselineItemzId">The ID of the BaselineItemz record.</param>
+		/// <param name="baselineItemzRepository">Repository for fetching BaselineItemz details.</param>
+		/// <returns>A string containing HTML markup for tags, or null if no tags exist.</returns>
+		private static async System.Threading.Tasks.Task<string?> GetBaselineTagsMarkupAsync(Guid baselineItemzId, IBaselineItemzRepository baselineItemzRepository)
+		{
+			try
+			{
+				var baselineItemz = await baselineItemzRepository.GetBaselineItemzAsync(baselineItemzId);
+				if (baselineItemz == null || string.IsNullOrWhiteSpace(baselineItemz.Tags))
+				{
+					return null;
+				}
+
+				// Tags are pipe-delimited; split and trim each tag
+				var tags = baselineItemz.Tags.Split('|');
+				var tagMarkups = new List<string>();
+
+				foreach (var tag in tags)
+				{
+					var trimmedTag = tag.Trim();
+					if (!string.IsNullOrWhiteSpace(trimmedTag))
+					{
+						// Create a mark element with LIGHTGREEN background for each tag
+						// Note: Using << >> instead of < > to preserve angle brackets in Mermaid output
+						tagMarkups.Add($"<<mark style='background:LIGHTGREEN'>{trimmedTag}</mark>>");
+					}
+				}
+
+				if (tagMarkups.Count == 0)
+				{
+					return null;
+				}
+
+				// Join all tags with line breaks
+				return string.Join("<br/>", tagMarkups);
+			}
+			catch
+			{
+				// Gracefully handle any errors fetching tags
+				return null;
+			}
+		}
 
 		/// <summary>
 		/// Transforms a raw label string into a Mermaid-safe format.

@@ -42,6 +42,7 @@ namespace ItemzApp.API.Controllers
 								IProjectRepository projectRepository,
 								IHierarchyRepository hierarchyRepository,
 								IItemzRepository itemzRepository,
+								IBaselineItemzRepository baselineItemzRepository,
 								IMapper mapper,
 								ILogger<ExportController> logger)
 		{
@@ -54,6 +55,7 @@ namespace ItemzApp.API.Controllers
 			_projectRepository = projectRepository ?? throw new ArgumentNullException(nameof(projectRepository));
 			_hierarchyRepository = hierarchyRepository ?? throw new ArgumentNullException(nameof(hierarchyRepository));
 			_itemzRepository = itemzRepository ?? throw new ArgumentNullException(nameof(itemzRepository));
+			_baselineItemzRepository = baselineItemzRepository ?? throw new ArgumentNullException(nameof(baselineItemzRepository));
 			_mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
 			_logger = logger ?? throw new ArgumentNullException(nameof(logger));
 		}
@@ -683,8 +685,7 @@ namespace ItemzApp.API.Controllers
 							.ToList();
 					}
 
-					var mermaidText = MermaidExporter.GenerateBaseline(rootNodeToExport, baselineItemzTraces, exportRecordId, baseUrl, includeEstimations, includeTags, view);
-
+					var mermaidText = MermaidExporter.GenerateBaseline(rootNodeToExport, baselineItemzTraces, exportRecordId, baseUrl, includeEstimations, includeTags, view, _baselineItemzRepository);
 
 					//var mermaidText = MermaidExporter.GenerateBaseline(rootNode, baselineItemzTraces, exportRecordId, baseUrl);
 					return Content(mermaidText, "text/plain");
