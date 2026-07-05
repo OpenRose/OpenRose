@@ -596,8 +596,10 @@ namespace ItemzApp.API.Helper
 
 			if (!string.IsNullOrWhiteSpace(tagsMarkup))
 			{
-				labelParts.Add($"<br/>Tags:<br/>{tagsMarkup}");
+				//labelParts.Add($"<br/>Tags:<br/>{tagsMarkup}");
+				labelParts.Add($"<br/>{tagsMarkup}");
 			}
+
 
 			string fullLabel = string.Concat(labelParts);
 
