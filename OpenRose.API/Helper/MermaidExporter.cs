@@ -148,87 +148,7 @@ namespace ItemzApp.API.Helper
 		/// <param name="sb">The StringBuilder accumulating Mermaid syntax.</param>
 		/// <param name="rootId">The Guid of the root node.</param>
 		/// <param name="indentLevel">Indentation level for readability.</param>
-		//private static void EmitHierarchyInline(NestedHierarchyIdRecordDetailsDTO node,
-		//										StringBuilder sb,
-		//										Guid rootId,
-		//										int indentLevel,
-		//										string? baseUrl = null,
-		//										bool includeEstimations = false,
-		//										bool includeTags = false,
-		//										string? view = null,
-		//										IItemzRepository? itemzRepository = null)
-		//{
-		//	string parent = string.Empty;
-
-		//	if (includeEstimations)
-		//	{
-		//		 parent = RenderNodeWithEstimation(node.RecordId, node.RecordType, node.Name, node.RecordId == rootId
-		//			, node.EstimationUnit, node.RolledUpEstimation);
-		//	}
-		//	else
-		//	{
-		//		parent = RenderNode(node.RecordId, node.RecordType, node.Name, node.RecordId == rootId);
-		//	}
-
-		//	string indent = new string(' ', indentLevel * 4);
-
-		//	if (node.RecordId == rootId)
-		//	{
-		//		sb.AppendLine($"{indent}{parent}");
-		//		if (!string.IsNullOrWhiteSpace(baseUrl))
-		//		{
-		//			//var gotoUrl = $"{baseUrl}/GoTo/{node.RecordId}";
-		//			var gotoUrl = BuildGotoUrl(baseUrl, node.RecordId, view);
-		//			var safeLabel = TransformLabelForMermaid(node.Name);
-		//			sb.AppendLine($"{indent}click {node.RecordId} href \"{gotoUrl}\"");
-		//		}
-		//	}
-
-		//	if (node.Children != null && node.Children.Count > 0)
-		//	{
-		//		foreach (var child in node.Children)
-		//		{
-		//			string childText = string.Empty;
-
-		//			if (includeEstimations)
-		//			{
-		//				childText = RenderNodeWithEstimation(child.RecordId, child.RecordType, child.Name, child.RecordId == rootId
-		//				, child.EstimationUnit, child.RolledUpEstimation);
-		//			}
-		//			else
-		//			{
-		//				childText = RenderNode(child.RecordId, child.RecordType, child.Name, child.RecordId == rootId);
-		//			}
-
-		//			// If includeTags is true and this is an Itemz record, fetch and append tags
-		//			if (includeTags && child.RecordType == "Itemz" && itemzRepository != null)
-		//			{
-		//				var tagsMarkup = GetTagsMarkupAsync(child.RecordId, itemzRepository).Result;
-		//				if (!string.IsNullOrWhiteSpace(tagsMarkup))
-		//				{
-		//					// Reconstruct the child node text with tags appended
-		//					childText = RenderNodeWithTags(child.RecordId, child.RecordType, child.Name,
-		//						child.RecordId == rootId, includeEstimations,
-		//						child.EstimationUnit, child.RolledUpEstimation, tagsMarkup);
-		//				}
-		//			}
-
-		//			sb.AppendLine($"{indent}{parent} --> {childText}");
-
-		//			// Add click directive if baseUrl is provided
-		//			if (!string.IsNullOrWhiteSpace(baseUrl))
-		//			{
-		//				//var gotoUrl = $"{baseUrl}/GoTo/{child.RecordId}";
-		//				var gotoUrl = BuildGotoUrl(baseUrl, child.RecordId, view);
-		//				var safeLabel = TransformLabelForMermaid(child.Name);
-		//				sb.AppendLine($"{indent}click {child.RecordId} href \"{gotoUrl}\"");
-		//			}
-
-		//			EmitHierarchyInline(child, sb, rootId, indentLevel + 1, baseUrl, includeEstimations, includeTags, view, itemzRepository);
-		//		}
-		//	}
-		//}
-
+		
 		private static void EmitHierarchyInline(NestedHierarchyIdRecordDetailsDTO node,
 												StringBuilder sb,
 												Guid rootId,
@@ -343,75 +263,6 @@ namespace ItemzApp.API.Helper
 		/// <summary>
 		/// Recursively emits nodes and edges for a baseline hierarchy into the StringBuilder.
 		/// </summary>
-		//private static void EmitBaselineHierarchyInline(NestedBaselineHierarchyIdRecordDetailsDTO node,
-		//												StringBuilder sb,
-		//												Guid rootId,
-		//												int indentLevel,
-		//												string? baseUrl = null,
-		//												bool includeEstimations = false,
-		//												bool includeTags = false,
-		//												string? view = null,
-		//												IItemzRepository? itemzRepository = null)
-		//{
-		//	string parent = string.Empty;
-
-		//	if (includeEstimations)
-		//	{
-		//		parent = RenderNodeWithEstimation(node.RecordId, node.RecordType, node.Name, node.RecordId == rootId
-		//						, node.EstimationUnit, node.RolledUpEstimation);
-		//	}
-		//	else 
-		//	{
-		//		parent = RenderNode(node.RecordId, node.RecordType, node.Name, node.RecordId == rootId);
-
-		//	}
-		//	string indent = new string(' ', indentLevel * 4);
-
-		//	// Root node
-		//	if (node.RecordId == rootId)
-		//	{
-		//		sb.AppendLine($"{indent}{parent}");
-
-		//		if (!string.IsNullOrWhiteSpace(baseUrl))
-		//		{
-		//			//var gotoUrl = $"{baseUrl}/GoTo/{node.RecordId}";
-		//			var gotoUrl = BuildGotoUrl(baseUrl, node.RecordId, view);
-		//			sb.AppendLine($"{indent}click {node.RecordId} href \"{gotoUrl}\"");
-		//		}
-		//	}
-
-		//	// Children
-		//	if (node.Children != null && node.Children.Count > 0)
-		//	{
-		//		foreach (var child in node.Children)
-		//		{
-
-		//			string childText = string.Empty;
-
-		//			if(includeEstimations)
-		//			{
-		//				childText = RenderNodeWithEstimation(child.RecordId, child.RecordType, child.Name, child.RecordId == rootId
-		//				, child.EstimationUnit, child.RolledUpEstimation);
-		//			}
-		//			else
-		//			{
-		//				 childText = RenderNode(child.RecordId, child.RecordType, child.Name, child.RecordId == rootId);
-		//			}
-
-		//			sb.AppendLine($"{indent}{parent} --> {childText}");
-
-		//			if (!string.IsNullOrWhiteSpace(baseUrl))
-		//			{
-		//				//var gotoUrl = $"{baseUrl}/GoTo/{child.RecordId}";
-		//				var gotoUrl = BuildGotoUrl(baseUrl, child.RecordId, view);
-		//				sb.AppendLine($"{indent}click {child.RecordId} href \"{gotoUrl}\"");
-		//			}
-
-		//			EmitBaselineHierarchyInline(child, sb, rootId, indentLevel + 1, baseUrl, includeEstimations, includeTags, view, itemzRepository);
-		//		}
-		//	}
-		//}
-
 		private static void EmitBaselineHierarchyInline(NestedBaselineHierarchyIdRecordDetailsDTO node,
 												StringBuilder sb,
 												Guid rootId,
@@ -886,7 +737,5 @@ namespace ItemzApp.API.Helper
 
 			return url;
 		}
-
-
 	}
 }
