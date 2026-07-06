@@ -538,7 +538,7 @@ namespace ItemzApp.API.Helper
 			string label = TransformLabelForMermaid(name);
 
 			return isRoot
-				? $"{id}(({label}))"   // circle for root
+				? $"{id}({label})"   // circle for root
 				: $"{id}[{label}]";    // rectangle for others
 		}
 
@@ -571,7 +571,7 @@ namespace ItemzApp.API.Helper
 			string label = TransformLabelForMermaid($"{name}{estimationLine}");
 
 			return isRoot
-				? $"{id}(({label}))"   // circle for root
+				? $"{id}({label})"   // circle for root
 				: $"{id}[{label}]";    // rectangle for others
 		}
 
@@ -604,7 +604,7 @@ namespace ItemzApp.API.Helper
 			string fullLabel = string.Concat(labelParts);
 
 			return isRoot
-				? $"{id}(({fullLabel}))"   // circle for root
+				? $"{id}({fullLabel})"   // circle for root
 				: $"{id}[{fullLabel}]";    // rectangle for others
 		}
 		
