@@ -30,6 +30,8 @@ namespace ItemzApp.API.Controllers
 		private readonly IExportNodeMapper _exportNodeMapper;
 		private readonly IProjectRepository _projectRepository;
 		private readonly IHierarchyRepository _hierarchyRepository;
+		private readonly IItemzRepository _itemzRepository;
+		private readonly IBaselineItemzRepository _baselineItemzRepository;
 		private readonly IMapper _mapper;
 		private readonly ILogger<ExportController> _logger;
 
@@ -39,6 +41,8 @@ namespace ItemzApp.API.Controllers
 								IExportNodeMapper exportNodeMapper,
 								IProjectRepository projectRepository,
 								IHierarchyRepository hierarchyRepository,
+								IItemzRepository itemzRepository,
+								IBaselineItemzRepository baselineItemzRepository,
 								IMapper mapper,
 								ILogger<ExportController> logger)
 		{
@@ -50,6 +54,8 @@ namespace ItemzApp.API.Controllers
 			_exportNodeMapper = exportNodeMapper ?? throw new ArgumentNullException(nameof(exportNodeMapper));
 			_projectRepository = projectRepository ?? throw new ArgumentNullException(nameof(projectRepository));
 			_hierarchyRepository = hierarchyRepository ?? throw new ArgumentNullException(nameof(hierarchyRepository));
+			_itemzRepository = itemzRepository ?? throw new ArgumentNullException(nameof(itemzRepository));
+			_baselineItemzRepository = baselineItemzRepository ?? throw new ArgumentNullException(nameof(baselineItemzRepository));
 			_mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
 			_logger = logger ?? throw new ArgumentNullException(nameof(logger));
 		}
@@ -444,6 +450,7 @@ namespace ItemzApp.API.Controllers
 																[FromQuery] string? baseUrl = null,
 																[FromQuery] bool showTraceabilityOnly = false,
 																[FromQuery] bool includeEstimations = false,
+																[FromQuery] bool includeTags = false,
 																[FromQuery] string? view = null)
 		{
 			if (exportRecordId == Guid.Empty)
@@ -558,7 +565,14 @@ namespace ItemzApp.API.Controllers
 							.ToList();
 					}
 
-					var mermaidText = MermaidExporter.Generate(rootNodeToExport, itemzTraces, exportRecordId, baseUrl, includeEstimations, view);
+					var mermaidText = MermaidExporter.Generate(root: rootNodeToExport
+						, traces: itemzTraces
+						, rootId: exportRecordId
+						, baseUrl: baseUrl
+						, includeEstimations: includeEstimations
+						, includeTags: includeTags
+						, view: view
+						, itemzRepository: _itemzRepository);
 
 					// var mermaidText = MermaidExporter.Generate(rootNode, itemzTraces, exportRecordId, baseUrl);
 					return Content(mermaidText, "text/plain");
@@ -671,8 +685,7 @@ namespace ItemzApp.API.Controllers
 							.ToList();
 					}
 
-					var mermaidText = MermaidExporter.GenerateBaseline(rootNodeToExport, baselineItemzTraces, exportRecordId, baseUrl, includeEstimations, view);
-
+					var mermaidText = MermaidExporter.GenerateBaseline(rootNodeToExport, baselineItemzTraces, exportRecordId, baseUrl, includeEstimations, includeTags, view, _baselineItemzRepository);
 
 					//var mermaidText = MermaidExporter.GenerateBaseline(rootNode, baselineItemzTraces, exportRecordId, baseUrl);
 					return Content(mermaidText, "text/plain");

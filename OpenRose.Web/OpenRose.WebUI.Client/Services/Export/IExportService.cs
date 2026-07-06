@@ -39,6 +39,7 @@ namespace OpenRose.WebUI.Client.Services.Export
 																bool exportIncludedBaselineItemzOnly,
 																bool showTraceabilityOnly,
 																bool includeEstimations,
+																bool includeTags,
 																string baseUrl,
 																string view,
 																CancellationToken cancellationToken = default);
