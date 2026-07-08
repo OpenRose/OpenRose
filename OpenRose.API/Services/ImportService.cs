@@ -46,9 +46,9 @@ namespace ItemzApp.API.Services
 		}
 
 		public async Task<ImportResult> ImportAsync(
-											RepositoryImportDTO repositoryImportDto,
-											string detectedType,
-											ImportDataPlacementDTO placementDto)
+										RepositoryImportDTO repositoryImportDto,
+										string detectedType,
+										ImportDataPlacementDTO placementDto)
 		{
 			var result = new ImportResult
 			{
@@ -210,10 +210,10 @@ namespace ItemzApp.API.Services
 
 
 		private async Task<(Guid RootId, int TotalCreated, int Depth)> ImportItemzRecursivelyWithStats(
-									ItemzImportNode itemzImportNode,
-									Guid? parentItemzId,
-									int currentDepth,
-									Dictionary<Guid, Guid> idMap)
+								ItemzImportNode itemzImportNode,
+								Guid? parentItemzId,
+								int currentDepth,
+								Dictionary<Guid, Guid> idMap)
 		{
 			var itemzDto = itemzImportNode.Itemz;
 			var originalId = itemzDto.Id;
@@ -269,8 +269,8 @@ namespace ItemzApp.API.Services
 
 
 		public async Task<ImportResult> ImportItemzTypeHierarchyAsync(
-											RepositoryImportDTO repositoryImportDto,
-											ImportDataPlacementDTO placementDto)
+										RepositoryImportDTO repositoryImportDto,
+										ImportDataPlacementDTO placementDto)
 		{
 			var result = new ImportResult
 			{
@@ -366,26 +366,31 @@ namespace ItemzApp.API.Services
 
 
 		private async Task<(Guid RootId, int TotalCreated, int MaxDepth)> ImportSingleItemzTypeAsync(
-												ItemzTypeImportNode itemzTypeNode,
-												Guid targetProjectId,
-												Dictionary<Guid, Guid> idMap)
+											ItemzTypeImportNode itemzTypeNode,
+											Guid targetProjectId,
+											Dictionary<Guid, Guid> idMap)
 		{
 			var itemzTypeDto = itemzTypeNode.ItemzType;
 
-			// Check for System "Parking Lot"
-			if (itemzTypeDto.Name == "Parking Lot" && itemzTypeDto.IsSystem)
+			// EXPLANATION: Check for System "Parking Lot" ONLY.
+			// We check BOTH Name AND IsSystem flag to ensure we identify the system-generated Parking Lot.
+			// If a user has created a custom ItemzType named "Parking Lot" with IsSystem=false,
+			// it will NOT match this condition and will be treated as a normal custom ItemzType.
+			if (string.Equals(itemzTypeDto.Name, "Parking Lot", StringComparison.OrdinalIgnoreCase) 
+				&& itemzTypeDto.IsSystem == true)
 			{
 				var existingItemzTypes = await _projectRepository.GetItemzTypesAsync(targetProjectId);
 
+				// Find the default System Parking Lot that was created when the project was created
 				var systemParkingLot = existingItemzTypes?
 					.FirstOrDefault(it =>
 						string.Equals(it.Name, "Parking Lot", StringComparison.OrdinalIgnoreCase) &&
-						it.IsSystem);
+						it.IsSystem == true);
 
 				if (systemParkingLot != null)
 				{
 
-					// Update existing "Parking Lot" System ItemzType with imported data
+					// EXPLANATION: Update existing "Parking Lot" System ItemzType with imported data
 					// with estimation data from JSON data file.
 
 					await _itemzTypeRepository.ImportServiceUpdateItemzTypeEstimationInHierarchyAsync(systemParkingLot.Id
@@ -420,7 +425,14 @@ namespace ItemzApp.API.Services
 				}
 			}
 
-			// Normal creation flow
+			// EXPLANATION: Normal creation flow.
+			// This applies to:
+			// 1. Non-Parking Lot ItemzTypes
+			// 2. Custom ItemzTypes named "Parking Lot" with IsSystem=false
+			//
+			// User-defined "Parking Lot" ItemzTypes are imported as regular custom ItemzTypes
+			// and will be subject to the same positioning rules as any other custom ItemzType.
+
 			var createDto = new CreateItemzTypeDTO
 			{
 				ProjectId = targetProjectId,
@@ -560,9 +572,19 @@ namespace ItemzApp.API.Services
 
 			idMap[projectDto.Id] = projectEntity.Id;
 
+			// ✅ PARKING LOT POSITION PRESERVATION: Analyze Parking Lot position BEFORE importing ItemzTypes
+			// EXPLANATION: We analyze the position of the System Parking Lot in the JSON file
+			// BEFORE we import any ItemzTypes. This way we can later reposition the default
+			// Parking Lot to match its original location.
+			var parkingLotPositionMetadata = ParkingLotPositionAnalyzer.AnalyzeParkingLotPosition(
+				projectNode.ItemzTypes ?? new List<ItemzTypeImportNode>());
+
 			int totalCreated = 0;
 			int maxDepth = 1;
 
+			// EXPLANATION: Import all ItemzTypes from the JSON file.
+			// This includes the System Parking Lot (which will use the existing default Parking Lot)
+			// and any custom ItemzTypes (which will be created normally).
 			foreach (var itemzTypeNode in projectNode.ItemzTypes ?? Enumerable.Empty<ItemzTypeImportNode>())
 			{
 				var (_, created, depth) = await ImportSingleItemzTypeAsync(
@@ -574,6 +596,19 @@ namespace ItemzApp.API.Services
 				maxDepth = Math.Max(maxDepth, depth);
 			}
 
+			// ✅ PARKING LOT POSITION PRESERVATION: Reposition Parking Lot AFTER all other ItemzTypes are imported
+			// EXPLANATION: After all ItemzTypes have been imported, we now reposition the default
+			// Parking Lot (which was created when the project was created) to match the position
+			// it had in the JSON file. This ensures that the imported project structure matches
+			// the original export.
+			if (parkingLotPositionMetadata.Exists)
+			{
+				await RepositionParkingLotItemzTypeAsync(
+					projectEntity.Id,
+					parkingLotPositionMetadata,
+					idMap);
+			}
+
 			return (projectEntity.Id, totalCreated, maxDepth);
 		}
 
@@ -581,8 +616,8 @@ namespace ItemzApp.API.Services
 
 
 		public async Task<ImportResult> ImportBaselineItemzAsync(
-									RepositoryImportDTO repositoryImportDto,
-									ImportDataPlacementDTO placementDto)
+								RepositoryImportDTO repositoryImportDto,
+								ImportDataPlacementDTO placementDto)
 		{
 			// Transform BaselineItemz hierarchy to Itemz-compatible format
 			var itemzNodes = repositoryImportDto.BaselineItemz
@@ -610,8 +645,8 @@ namespace ItemzApp.API.Services
 
 
 		public async Task<ImportResult> ImportBaselineItemzTypeAsync(
-									RepositoryImportDTO repositoryImportDto,
-									ImportDataPlacementDTO placementDto)
+								RepositoryImportDTO repositoryImportDto,
+								ImportDataPlacementDTO placementDto)
 		{
 			var result = new ImportResult
 			{
@@ -690,7 +725,9 @@ namespace ItemzApp.API.Services
 
 				var projectResult = await ImportProjectHierarchyAsync(convertedRepository, placementDto);
 
+				// ✅ PARKING LOT POSITION PRESERVATION:
 				// Post-import roll-up recalculation is already handled in ImportProjectHierarchyAsync
+				// Parking Lot repositioning is also already handled in ImportProjectHierarchyAsync through ImportSingleProjectAsync
 				// No additional call needed here as the base ImportProjectHierarchyAsync method handles it
 
 				return projectResult;
@@ -710,9 +747,9 @@ namespace ItemzApp.API.Services
 
 
 		private async Task<int> ProcessItemzTracesAsync(
-						IEnumerable<ItemzTraceDTO>? traceDtos,
-						Dictionary<Guid, Guid> idMap,
-						List<string> errorList)
+					IEnumerable<ItemzTraceDTO>? traceDtos,
+					Dictionary<Guid, Guid> idMap,
+					List<string> errorList)
 		{
 			int traceCreated = 0;
 
@@ -836,7 +873,7 @@ namespace ItemzApp.API.Services
 					_logger.LogWarning("Could not retrieve parent hierarchy for record {RecordId}.", recordId);
 					return (Guid.Empty, false);
 				}
-					
+
 				// Search through the parent chain to find the Project record
 				// GetAllParentsOfItemzHierarchy returns parents in order from immediate parent up to root
 				var projectRecord = parentsResult.AllRecords
