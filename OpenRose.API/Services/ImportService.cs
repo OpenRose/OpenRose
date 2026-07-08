@@ -916,5 +916,124 @@ namespace ItemzApp.API.Services
 		}
 
 		#endregion
+
+		#region Parking Lot Position Preservation
+
+		/// <summary>
+		/// Repositions the System "Parking Lot" ItemzType to match its position in the imported JSON file.
+		/// 
+		/// EXPLANATION: When a project is imported, a default System Parking Lot is created automatically
+		/// as part of the project creation process. This method ensures that the Parking Lot is moved to
+		/// the position it had in the original export file.
+		/// 
+		/// This method handles three positioning scenarios:
+		/// 1. Top: The Parking Lot should be the first ItemzType (no action needed as it's created first)
+		/// 2. Bottom: The Parking Lot should be moved to the bottom using MoveItemzTypeToAnotherProjectAsync
+		/// 3. Between: The Parking Lot should be moved between two specific ItemzTypes using MoveItemzTypeBetweenTwoHierarchyRecordsAsync
+		/// </summary>
+		/// <param name="projectId">The ID of the newly created Project containing the imported ItemzTypes</param>
+		/// <param name="parkingLotPositionMetadata">Metadata about the Parking Lot's position from the JSON file</param>
+		/// <param name="idMap">Dictionary mapping original JSON IDs to newly created IDs</param>
+		private async Task RepositionParkingLotItemzTypeAsync(
+			Guid projectId,
+			ParkingLotPositionMetadata parkingLotPositionMetadata,
+			Dictionary<Guid, Guid> idMap)
+		{
+			try
+			{
+				// Get the default Parking Lot that was created with the new project
+				var projectItemzTypes = await _projectRepository.GetItemzTypesAsync(projectId);
+
+				// EXPLANATION: Find the System Parking Lot (IsSystem=true AND Name="Parking Lot")
+				// This is the default one created when the project was created
+				var defaultParkingLot = projectItemzTypes?
+					.FirstOrDefault(it =>
+						string.Equals(it.Name, "Parking Lot", StringComparison.OrdinalIgnoreCase) &&
+						it.IsSystem == true);
+
+				if (defaultParkingLot == null)
+				{
+					_logger.LogWarning("Default Parking Lot not found for project {ProjectId} during repositioning.", projectId);
+					return;
+				}
+
+				_logger.LogDebug("Starting repositioning of Parking Lot for project {ProjectId}. Current position: {Position}",
+					projectId, parkingLotPositionMetadata.Position);
+
+				switch (parkingLotPositionMetadata.Position)
+				{
+					case ParkingLotPosition.Top:
+						// EXPLANATION: Parking Lot is at the top in the JSON file
+						// Since the default Parking Lot is created first when the project is created,
+						// it should already be at the top. No action needed.
+						_logger.LogDebug("Parking Lot for project {ProjectId} is correctly positioned at top.", projectId);
+						break;
+
+					case ParkingLotPosition.Bottom:
+						// EXPLANATION: Parking Lot should be at the bottom.
+						// Use MoveItemzTypeToAnotherProjectAsync with atBottomOfChildNodes=true
+						// to move it to the bottom of the ItemzType list.
+						await _itemzTypeRepository.MoveItemzTypeToAnotherProjectAsync(
+							movingItemzTypeId: defaultParkingLot.Id,
+							targetProjectId: projectId,
+							atBottomOfChildNodes: true
+						);
+						await _itemzTypeRepository.SaveAsync();
+						_logger.LogDebug("Successfully repositioned Parking Lot to bottom for project {ProjectId}.", projectId);
+						break;
+
+					case ParkingLotPosition.Between:
+						// EXPLANATION: Parking Lot is positioned between two specific ItemzTypes in the JSON.
+						// We need to map the original IDs from the JSON to the newly created IDs,
+						// then use MoveItemzTypeBetweenTwoHierarchyRecordsAsync to position the Parking Lot between them.
+
+						if (parkingLotPositionMetadata.PreviousItemzTypeId.HasValue && parkingLotPositionMetadata.NextItemzTypeId.HasValue)
+						{
+							// EXPLANATION: Look up the newly created IDs for the adjacent ItemzTypes
+							if (idMap.TryGetValue(parkingLotPositionMetadata.PreviousItemzTypeId.Value, out var newPreviousId) &&
+								idMap.TryGetValue(parkingLotPositionMetadata.NextItemzTypeId.Value, out var newNextId))
+							{
+								await _itemzTypeRepository.MoveItemzTypeBetweenTwoHierarchyRecordsAsync(
+									between1stItemzTypeId: newPreviousId,
+									between2ndItemzTypeId: newNextId,
+									movingItemzTypeId: defaultParkingLot.Id
+								);
+								await _itemzTypeRepository.SaveAsync();
+								_logger.LogDebug(
+									"Successfully repositioned Parking Lot between ItemzTypes {First} and {Second} for project {ProjectId}.",
+									newPreviousId, newNextId, projectId);
+							}
+							else
+							{
+								_logger.LogWarning(
+									"Could not map adjacent ItemzType IDs for Parking Lot repositioning in project {ProjectId}. " +
+									"Expected to map original IDs: {PreviousId} and {NextId}",
+									projectId,
+									parkingLotPositionMetadata.PreviousItemzTypeId,
+									parkingLotPositionMetadata.NextItemzTypeId);
+							}
+						}
+						else
+						{
+							_logger.LogWarning(
+								"Parking Lot was marked as 'Between' but adjacent ItemzType IDs are missing for project {ProjectId}.",
+								projectId);
+						}
+						break;
+				}
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex,
+					"Error repositioning Parking Lot ItemzType for project {ProjectId}. " +
+					"Import was successful but Parking Lot may be in wrong position. " +
+					"Exception: {ExceptionMessage}",
+					projectId, ex.Message);
+				// EXPLANATION: Don't throw - allow import to succeed even if repositioning fails.
+				// The import data is persisted, but the Parking Lot may not be in the exact position from the JSON.
+			}
+		}
+
+		#endregion
 	}
 }
