@@ -150,6 +150,14 @@ namespace ItemzApp.API.Controllers
 			{
 				ImportResult result;
 
+				// TODO :: While importing Project and Baseline detectedType data we have to make sure that 
+				// we place Parking Lot Requirements Itemz Type at the correct location as currently present
+				// in the provided JSON file! Because we import the identified detectedType data into a new 
+				// Project, we by default create a new Parking Lot Requirements Itemz Type and place all the 
+				// Itemz under it. But we do not currently take care of the actual location of the Parking Lot
+				// Requirments Itemz Type and it remains to be at the top of the list of Itemz Types. 
+
+
 				if (string.Equals(detectedType, "Project", StringComparison.OrdinalIgnoreCase))
 				{
 					result = await _importService.ImportProjectHierarchyAsync(repositoryImportDto, placementDto);
