@@ -5,6 +5,7 @@
 *@
 
 @page "/copy"
+@page "/copy/{RecordType}/{RecordId:guid}"
 @using OpenRose.WebUI.Client.SharedModels
 @using OpenRose.WebUI.Client.Services.Itemz
 @using OpenRose.WebUI.Client.Services.ItemzType
@@ -29,17 +30,19 @@
 		<MudStack Row="false" Spacing="2" AlignItems="AlignItems.Center" JustifyContent="Justify.Center">
 			<div>
 				<MudTooltip Text="Step 1 is to select Record Type for the data to be copied">
-					<MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success"> STEP 1 </MudChip>
+					<MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">
+						STEP 1
+					</MudChip>
 				</MudTooltip>
-			</div>
-			<MudStack Row="false" AlignItems="AlignItems.Center" JustifyContent="Justify.Center">
-				<MudText Align="Align.Center">Select Record Type :</MudText> <!-- Center-aligned title -->
-				<MudRadioGroup T="string" Value="@radioRecordType" ValueChanged="OnRadioValueChanged">
-					<MudRadio Value="@("Project")" Color="Color.Primary" Dense="false">Project</MudRadio>
-					<MudRadio Value="@("ItemzType")" Color="Color.Primary" Dense="false">ItemzType</MudRadio>
-					<MudRadio Value="@("Itemz")" Color="Color.Primary" Dense="false">Itemz</MudRadio>
-				</MudRadioGroup>
-			</MudStack>
+				</div>
+				<MudStack Row="false" AlignItems="AlignItems.Center" JustifyContent="Justify.Center">
+					<MudText Align="Align.Center">Select Record Type :</MudText>
+					<MudRadioGroup T="string" Value="@radioRecordType" ValueChanged="OnRadioValueChanged">
+						<MudRadio Value="@("Project")" Color="Color.Primary" Dense="false">Project</MudRadio>
+						<MudRadio Value="@("ItemzType")" Color="Color.Primary" Dense="false">ItemzType</MudRadio>
+						<MudRadio Value="@("Itemz")" Color="Color.Primary" Dense="false">Itemz</MudRadio>
+					</MudRadioGroup>
+				</MudStack>
 		</MudStack>
 		</div>
 	</MudPaper>
@@ -55,9 +58,15 @@
 			<MudTooltip Text="Step 2 is to select Source Record that should be copied">
 				<MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success"> STEP 2 </MudChip>
 			</MudTooltip>
-			<MudButton @onclick="async _ => await SelectSourceRecord()" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Primary">
-				Select @radioRecordType to be copied by ID
-			</MudButton>
+			@if (RecordId == Guid.Empty)
+			{
+				<MudButton @onclick="async _ => await SelectSourceRecord()"
+							Variant="Variant.Filled"
+							Size="Size.Medium"
+							Color="Color.Primary">
+					Select @radioRecordType to be copied by ID
+				</MudButton>
+			}
 		</MudStack>
 		@if (radioRecordType == "Itemz" && copyItemz != null && copyItemz.Id != Guid.Empty)
 		{
@@ -163,6 +172,13 @@
 }
 @code {
 
+	[Parameter] 
+	public string? RecordType { get; set; }
+	[Parameter] 
+	public Guid? RecordId { get; set; }
+
+	[Inject] 
+	public NavigationManager NavManager { get; set; }
 	[Inject]
 	public IItemzService ItemzService { get; set; }
 	[Inject]
@@ -177,6 +193,35 @@
 	public bool copyingOverlay { get; set; } = false;
 
 	public string radioRecordType { get; set; }
+
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (!firstRender)
+			return;
+
+		// Parse query parameters ?recordType=...&recordId=...
+		var uri = NavManager.ToAbsoluteUri(NavManager.Uri);
+		var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+
+		if (RecordType == null && query.TryGetValue("recordType", out var rt))
+			RecordType = rt.ToString();
+
+		if (RecordId == Guid.Empty && query.TryGetValue("recordId", out var rid))
+			if (Guid.TryParse(rid, out var parsed))
+				RecordId = parsed;
+
+		// If both parameters exist → auto-load
+		if (IsValidRecordType(RecordType) &&
+			RecordId != null &&
+			RecordId != Guid.Empty)
+		{
+			radioRecordType = RecordType!.Trim();   // ensure radio button is pre-selected
+			await AutoLoadSourceRecordAsync(radioRecordType, RecordId.Value);
+			StateHasChanged();
+		}
+	}
+
 
 	public async Task SelectSourceRecord()
 	{
@@ -379,6 +424,7 @@
 		copyProject = new();
 		copyItemzType = new();
 		copyingOverlay = false;
+        RecordId = Guid.Empty;
 	}
 
 	private async Task ShowErrorMessage(string message)
@@ -390,5 +436,66 @@
 	{
 		await DialogService.ShowMessageBox("SUCCESS", markupMessage: new MarkupString($"<p style=\"color: blue;\">{message}</p>"), yesText: "OK");
 	}
-  
+
+	private async Task AutoLoadSourceRecordAsync(string recordType, Guid id)
+	{
+		radioRecordType = recordType; // Set Step 1 automatically
+
+		try
+		{
+			switch (recordType.ToLowerInvariant())
+			{
+				case "itemz":
+					var itemz = await ItemzService.__Single_Itemz_By_GUID_ID__Async(id);
+					if (itemz != null)
+					{
+						copyItemz = itemz;
+						return;
+					}
+					break;
+
+				case "itemztype":
+					var itemzType = await ItemzTypeService.__Single_ItemzType_By_GUID_ID__Async(id);
+					if (itemzType != null)
+					{
+						copyItemzType = itemzType;
+						return;
+					}
+					break;
+
+				case "project":
+					var project = await ProjectService.__Single_Project_By_GUID_ID__Async(id);
+					if (project != null)
+					{
+						copyProject = project;
+						return;
+					}
+					break;
+			}
+
+			await DialogService.ShowMessageBox("ERROR",
+				new MarkupString($"<p style='color:red;'>Could not find {recordType} with ID {id}.</p>"),
+				yesText: "OK");
+            await performCleanUpActivity(); // Clear out any partially loaded data
+		}
+		catch (Exception ex)
+		{
+			await DialogService.ShowMessageBox("ERROR",
+				new MarkupString($"<p style='color:red;'>EXCEPTION :: {ex.Message}</p>"),
+				yesText: "OK");
+			await performCleanUpActivity(); // Clear out any partially loaded data
+		}
+	}
+
+	private bool IsValidRecordType(string? recordType)
+	{
+		if (string.IsNullOrWhiteSpace(recordType))
+			return false;
+
+		var rt = recordType.Trim().ToLowerInvariant();
+
+		return rt == "project" || rt == "itemztype" || rt == "itemz";
+	}
+
+
 }
