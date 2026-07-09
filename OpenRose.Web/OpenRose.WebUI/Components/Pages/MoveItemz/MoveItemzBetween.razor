@@ -5,6 +5,7 @@
 *@
 
 @page "/moveitemzbetween"
+@page "/moveitemzbetween/{RecordId:guid}"
 @using OpenRose.WebUI.Client.SharedModels
 @using OpenRose.WebUI.Client.Services.Itemz
 @using OpenRose.WebUI.Client.Services.Hierarchy
@@ -27,9 +28,20 @@
 		<div class="d-flex flex-column align-items-center justify-center w-100 h-100">
 			<MudStack Row="true" Spacing="2">
 				<MudTooltip Text="Step 1 is to select Source Itemz that should be moved">
-					<MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success"> STEP 1 </MudChip>
+					<MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">
+						STEP 1
+					</MudChip>
 				</MudTooltip>
-				<MudButton @onclick="async _ => await selectSourceItemz()" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Primary"> Select Source Itemz </MudButton>
+
+				@if (sourceItemz == null || sourceItemz.Id == Guid.Empty)
+				{
+					<MudButton @onclick="async _ => await selectSourceItemz()"
+							   Variant="Variant.Filled"
+							   Size="Size.Medium"
+							   Color="Color.Primary">
+						Select Source Itemz
+					</MudButton>
+				}
 			</MudStack>
 			@if (sourceItemz != null && sourceItemz.Id != Guid.Empty)
 			{
@@ -132,15 +144,44 @@
 }
 @code {
 
+	[Parameter] 
+	public Guid? RecordId { get; set; }
+
 	[Inject]
 	public IItemzService ItemzService { get; set; }
 	[Inject]
 	public IHierarchyService HierarchyService { get; set; }
+	[Inject]
+	public NavigationManager NavManager { get; set; }
 
 	public GetItemzDTO sourceItemz { get; set; } = new();
 	public GetItemzDTO targetFirstItemz { get; set; } = new();
 	public GetItemzDTO targetSecondItemz { get; set; } = new();
 	public bool movingItemzOverlay { get; set; } = false;
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (!firstRender)
+			return;
+
+		// Parse query parameter ?recordId=...
+		var uri = NavManager.ToAbsoluteUri(NavManager.Uri);
+		var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+
+		if (RecordId == null && query.TryGetValue("recordId", out var idStr))
+		{
+			if (Guid.TryParse(idStr, out var parsed))
+				RecordId = parsed;
+		}
+
+		// Auto-load source Itemz
+		if (RecordId != null && RecordId != Guid.Empty)
+		{
+			await LoadSourceItemzAsync(RecordId.Value);
+			StateHasChanged();
+		}
+	}
+
 
 	public async Task selectSourceItemz()
 	{
@@ -302,5 +343,30 @@
 
 	// 	return (true, checkEligibilityErrorMessage);
 	// }
-  
+
+	private async Task LoadSourceItemzAsync(Guid id)
+	{
+		try
+		{
+			var found = await ItemzService.__Single_Itemz_By_GUID_ID__Async(id);
+
+			if (found != null)
+			{
+				sourceItemz = found;
+			}
+			else
+			{
+				await DialogService.ShowMessageBox("ERROR",
+					new MarkupString($"<p style='color:red;'>Could not find Source Itemz with ID {id}.</p>"),
+					yesText: "OK");
+			}
+		}
+		catch (Exception ex)
+		{
+			await DialogService.ShowMessageBox("ERROR",
+				new MarkupString($"<p style='color:red;'>EXCEPTION :: {ex.Message}</p>"),
+				yesText: "OK");
+		}
+	}
+
 }
