@@ -345,10 +345,8 @@
 							</MudCard>
 						</MudStack>
 
-						<br />
-
 						<!-- ACTIONS HEADER -->
-						<MudPaper Class="pa-3 mb-3" Outlined="false">
+						<MudPaper Class="pa-3 mb-3" style="margin: 16px;" Outlined="false">
 							<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
 
 								<!-- Move Itemz Under -->
@@ -365,7 +363,7 @@
 						</MudPaper>
 
 						<!-- ACTIONS HEADER -->
-						<MudPaper Class="pa-3 mb-3" Outlined="false">
+						<MudPaper Class="pa-3 mb-3" style="margin: 16px;" Outlined="false">
 							<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
 								<MudIcon Icon="@Icons.Material.Filled.Compress" Size="Size.Large" />
 
@@ -380,7 +378,7 @@
 						</MudPaper>
 						
 						<!-- ACTIONS HEADER -->
-						<MudPaper Class="pa-3 mb-3" Outlined="false">
+						<MudPaper Class="pa-3 mb-3" style="margin: 16px;" Outlined="false">
 							<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
 								<MudIcon Icon="@Icons.Material.Filled.AutoAwesomeMotion" Size="Size.Large" />
 
@@ -394,9 +392,24 @@
 							</MudStack>
 						</MudPaper>
 
-						<br />
+						<!-- Export Mermaid FlowChart -->
+						<MudPaper Class="pa-3 mb-3" style="margin: 16px;" Outlined="false">
+							<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
 
-						<MudExpansionPanels Elevation="10" style="margin-left : 15px">
+								<MudIcon Icon="@Icons.Material.Filled.GraphicEq" Size="Size.Large" />
+
+								<MudButton Variant="Variant.Filled"
+										   Color="Color.Primary"
+										   Size="Size.Medium"
+										   Style="gap: 10px;"
+										   OnClick="(() => OpenMermaidExportPage(singleItemz.Id))">
+									<MudText>Export Mermaid FlowChart</MudText>
+								</MudButton>
+
+							</MudStack>
+						</MudPaper>
+
+						<MudExpansionPanels Elevation="10" style="margin: 16px;">
 							<MudExpansionPanel style="background-color : #FABBBB; color : red;"
 											   Text="DANGER ZONE!" MaxHeight="150" Expanded="false">
 								<TitleContent>
@@ -1141,6 +1154,12 @@
 	{
 		var url = $"/copy/Itemz/{id}";
 		await JS.InvokeVoidAsync("open", url, "_blank");
+	}
+
+	private async Task OpenMermaidExportPage(Guid id)
+	{
+		var url = $"/export-mermaid/{id}";
+		await JS.InvokeVoidAsync("openInNewTab", url);
 	}
 
 }
