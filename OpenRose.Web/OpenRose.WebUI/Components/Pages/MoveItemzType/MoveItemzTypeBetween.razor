@@ -5,6 +5,8 @@
 *@
 
 @page "/moveitemztypebetween"
+@page "/moveitemztypebetween/{ParamSourceItemzTypeId:guid}"
+
 @using OpenRose.WebUI.Client.SharedModels
 @using OpenRose.WebUI.Client.Services.ItemzType
 @using OpenRose.WebUI.Client.Services.Hierarchy
@@ -29,7 +31,12 @@
 				<MudTooltip Text="Step 1 : Select Source ItemzType that should be moved">
 					<MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success"> STEP 1 </MudChip>
 				</MudTooltip>
-				<MudButton @onclick="async _ => await selectSourceItemzType()" Variant="Variant.Filled" Size="Size.Medium" Color="Color.Primary"> Select Source ItemzType </MudButton>
+				<MudButton @onclick="async _ => await selectSourceItemzType()"
+						   Variant="Variant.Filled"
+						   Size="Size.Medium"
+						   Color="Color.Primary">
+					Select Source ItemzType
+				</MudButton>
 			</MudStack>
 			@if (sourceItemzType != null && sourceItemzType.Id != Guid.Empty)
 			{
@@ -128,6 +135,8 @@
 	</MudPaper>
 }
 @code {
+	[Parameter]
+	public Guid? ParamSourceItemzTypeId { get; set; }
 
 	[Inject]
 	public IItemzTypeService ItemzTypeService { get; set; }
@@ -138,6 +147,17 @@
 	public GetItemzTypeDTO targetFirstItemzType { get; set; } = new();
 	public GetItemzTypeDTO targetSecondItemzType { get; set; } = new();
 	public bool movingItemzTypeOverlay { get; set; } = false;
+
+	protected override async Task OnParametersSetAsync()
+	{
+		if (ParamSourceItemzTypeId.HasValue && ParamSourceItemzTypeId.Value != Guid.Empty)
+		{
+			await LoadSourceItemzTypeAsync(ParamSourceItemzTypeId.Value);
+
+			StateHasChanged();
+		}
+	}
+
 
 	public async Task selectSourceItemzType()
 	{
@@ -286,6 +306,40 @@
 		targetFirstItemzType = new();
 		targetSecondItemzType = new();
 		movingItemzTypeOverlay = false;
+        ParamSourceItemzTypeId = Guid.Empty;
+	}
+
+	private async Task LoadSourceItemzTypeAsync(Guid id)
+	{
+		try
+		{
+			var found = await ItemzTypeService.__Single_ItemzType_By_GUID_ID__Async(id);
+
+			if (found != null)
+			{
+				sourceItemzType = found;
+
+				// Clear target siblings
+				targetFirstItemzType = new();
+				targetSecondItemzType = new();
+			}
+			else
+			{
+				await DialogService.ShowMessageBox("ERROR",
+					markupMessage: new MarkupString($"<p style='color:red;'>Could not find ItemzType with ID {id}.</p>"),
+					yesText: "OK");
+
+				sourceItemzType = new();
+			}
+		}
+		catch
+		{
+			await DialogService.ShowMessageBox("ERROR",
+				markupMessage: new MarkupString($"<p style='color:red;'>EXCEPTION: Could not load ItemzType with ID {id}.</p>"),
+				yesText: "OK");
+
+			sourceItemzType = new();
+		}
 	}
 
 	// private async Task<(bool isEligible, string checkEligibilityErrorMessage)> CheckTargetEligibility(GetItemzDTO checkTargetItemz)
