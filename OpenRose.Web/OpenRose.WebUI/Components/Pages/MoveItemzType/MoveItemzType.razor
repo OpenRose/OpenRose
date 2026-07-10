@@ -5,7 +5,7 @@
 *@
 
 @page "/moveitemztype"
-@page "/moveitemztype/{SourceItemzTypeId:guid}"
+@page "/moveitemztype/{ParamSourceItemzTypeId:guid}"
 
 @using OpenRose.WebUI.Client.SharedModels
 @using OpenRose.WebUI.Client.Services.Itemz
@@ -135,7 +135,7 @@
 @code {
 
 	[Parameter]
-	public Guid? SourceItemzTypeId { get; set; }
+	public Guid? ParamSourceItemzTypeId { get; set; }
 
 	[Inject]
 	public IItemzService ItemzService { get; set; }
@@ -155,9 +155,9 @@
 
 	protected override async Task OnParametersSetAsync()
 	{
-		if (SourceItemzTypeId.HasValue && SourceItemzTypeId.Value != Guid.Empty)
+		if (ParamSourceItemzTypeId.HasValue && ParamSourceItemzTypeId.Value != Guid.Empty)
 		{
-			await LoadSourceItemzTypeAsync(SourceItemzTypeId.Value);
+			await LoadSourceItemzTypeAsync(ParamSourceItemzTypeId.Value);
 			_yesDisableSelectTargetProject = false;   // allow Step 2
 		}
 	}
@@ -330,7 +330,7 @@
 		_yesDisableSelectTargetProject = false;
 		radioAtBottomOfChildList = true;
 		movingItemzTypeOverlay = false;
-        SourceItemzTypeId = Guid.Empty;
+        ParamSourceItemzTypeId = Guid.Empty;
 	}
 
 	private async Task LoadSourceItemzTypeAsync(Guid id)
