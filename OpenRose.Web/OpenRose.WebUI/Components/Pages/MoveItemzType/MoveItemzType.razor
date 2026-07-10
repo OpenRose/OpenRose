@@ -5,6 +5,8 @@
 *@
 
 @page "/moveitemztype"
+@page "/moveitemztype/{SourceItemzTypeId:guid}"
+
 @using OpenRose.WebUI.Client.SharedModels
 @using OpenRose.WebUI.Client.Services.Itemz
 @using OpenRose.WebUI.Client.Services.ItemzType
@@ -132,6 +134,9 @@
 }
 @code {
 
+	[Parameter]
+	public Guid? SourceItemzTypeId { get; set; }
+
 	[Inject]
 	public IItemzService ItemzService { get; set; }
 	[Inject]
@@ -146,6 +151,16 @@
 	public bool radioAtBottomOfChildList { get; set; } = true;
 	public bool movingItemzTypeOverlay { get; set; } = false;
 	public bool _yesDisableSelectTargetProject { get; set; } = false;
+
+
+	protected override async Task OnParametersSetAsync()
+	{
+		if (SourceItemzTypeId.HasValue && SourceItemzTypeId.Value != Guid.Empty)
+		{
+			await LoadSourceItemzTypeAsync(SourceItemzTypeId.Value);
+			_yesDisableSelectTargetProject = false;   // allow Step 2
+		}
+	}
 
 
 	public async Task selectSourceItemzType()
@@ -315,6 +330,36 @@
 		_yesDisableSelectTargetProject = false;
 		radioAtBottomOfChildList = true;
 		movingItemzTypeOverlay = false;
+        SourceItemzTypeId = Guid.Empty;
+	}
+
+	private async Task LoadSourceItemzTypeAsync(Guid id)
+	{
+		try
+		{
+			var found = await ItemzTypeService.__Single_ItemzType_By_GUID_ID__Async(id);
+
+			if (found != null)
+			{
+				sourceItemzType = found;
+			}
+			else
+			{
+				await DialogService.ShowMessageBox("ERROR",
+					markupMessage: new MarkupString($"<p style='color:red;'>Could not find ItemzType with ID {id}.</p>"),
+					yesText: "OK");
+
+				await performCleanUpActivity();
+			}
+		}
+		catch
+		{
+			await DialogService.ShowMessageBox("ERROR",
+				markupMessage: new MarkupString($"<p style='color:red;'>EXCEPTION: Could not load ItemzType with ID {id}.</p>"),
+				yesText: "OK");
+
+			await performCleanUpActivity();
+		}
 	}
 
 	// private async Task<(bool isEligible, string checkEligibilityErrorMessage)> CheckTargetEligibility(GetItemzDTO checkTargetItemz)
