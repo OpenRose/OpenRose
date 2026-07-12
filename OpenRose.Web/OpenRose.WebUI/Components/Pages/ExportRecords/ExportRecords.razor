@@ -5,6 +5,7 @@
 *@
 
 @page "/export"
+@page "/export/{RecordType}/{RecordId:guid}"
 @using OpenRose.WebUI.Client.SharedModels
 @using OpenRose.WebUI.Client.Services.Project
 @using OpenRose.WebUI.Client.Services.ItemzType
@@ -227,6 +228,15 @@
 }
 
 @code {
+    [Parameter]
+    public string? RecordType { get; set; }
+
+    [Parameter]
+    public Guid? RecordId { get; set; }
+
+    [Inject]
+    public NavigationManager NavManager { get; set; }
+
     public string recordType { get; set; }
     public Guid selectedRecordId { get; set; } = Guid.Empty;
     public bool exportingOverlay { get; set; } = false;
@@ -239,6 +249,35 @@
     public GetBaselineDTO selectedBaseline { get; set; } = new();
     public GetBaselineItemzTypeDTO selectedBaselineItemzType { get; set; } = new();
     public GetBaselineItemzDTO selectedBaselineItemz { get; set; } = new();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        // Parse query parameters ?recordType=...&recordId=...
+        var uri = NavManager.ToAbsoluteUri(NavManager.Uri);
+        var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query);
+
+        if (RecordType == null && query.TryGetValue("recordType", out var rt))
+            RecordType = rt.ToString();
+
+        if ((RecordId == null || RecordId == Guid.Empty) && query.TryGetValue("recordId", out var rid))
+            if (Guid.TryParse(rid, out var parsed))
+                RecordId = parsed;
+
+        // If both parameters exist → auto-load
+        if (IsValidRecordType(RecordType) &&
+            RecordId != null &&
+            RecordId != Guid.Empty)
+        {
+            recordType = RecordType!.Trim();   // Step 1 auto-select
+            selectedRecordId = RecordId.Value; // Step 2 auto-select
+            await AutoLoadSourceRecordAsync(recordType, RecordId.Value);
+            StateHasChanged();
+        }
+    }
+
 
     private async Task OnRecordTypeChanged(string newValue)
     {
@@ -312,6 +351,70 @@
             await ShowErrorMessage($"Could not find {type} with ID {id} in repository.");
             await ResetSelection();
         }
+    }
+
+    private async Task AutoLoadSourceRecordAsync(string recordType, Guid id)
+    {
+        this.recordType = recordType; // Step 1 auto-select
+
+        try
+        {
+            switch (recordType.Trim().ToLowerInvariant())
+            {
+                case "project":
+                    selectedProject = await ProjectService.__Single_Project_By_GUID_ID__Async(id) ?? new();
+                    if (selectedProject.Id != Guid.Empty) return;
+                    break;
+
+                case "itemztype":
+                    selectedItemzType = await ItemzTypeService.__Single_ItemzType_By_GUID_ID__Async(id) ?? new();
+                    if (selectedItemzType.Id != Guid.Empty) return;
+                    break;
+
+                case "itemz":
+                    selectedItemz = await ItemzService.__Single_Itemz_By_GUID_ID__Async(id) ?? new();
+                    if (selectedItemz.Id != Guid.Empty) return;
+                    break;
+
+                case "baseline":
+                    selectedBaseline = await BaselinesService.__Single_Baseline_By_GUID_ID__Async(id) ?? new();
+                    if (selectedBaseline.Id != Guid.Empty) return;
+                    break;
+
+                case "baselineitemztype":
+                    selectedBaselineItemzType = await BaselineItemzTypesService.__Single_BaselineItemzType_By_GUID_ID__Async(id) ?? new();
+                    if (selectedBaselineItemzType.Id != Guid.Empty) return;
+                    break;
+
+                case "baselineitemz":
+                    selectedBaselineItemz = await BaselineItemzService.__Single_BaselineItemz_By_GUID_ID__Async(id) ?? new();
+                    if (selectedBaselineItemz.Id != Guid.Empty) return;
+                    break;
+            }
+
+            await ShowErrorMessage($"Could not find {recordType} with ID {id}.");
+            await ResetSelection();
+        }
+        catch (Exception ex)
+        {
+            await ShowErrorMessage($"EXCEPTION :: {ex.Message}");
+            await ResetSelection();
+        }
+    }
+
+    private bool IsValidRecordType(string? recordType)
+    {
+        if (string.IsNullOrWhiteSpace(recordType))
+            return false;
+
+        var rt = recordType.Trim().ToLowerInvariant();
+
+        return rt == "project"
+            || rt == "itemztype"
+            || rt == "itemz"
+            || rt == "baseline"
+            || rt == "baselineitemztype"
+            || rt == "baselineitemz";
     }
 
     private bool HasSelectedRecord()
