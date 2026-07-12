@@ -249,9 +249,12 @@
 					<ProjectBaselineComponent ProjectId="@ProjectId" />
 				</MudPaper>
 			</MudTabPanel>
-			@if (CalledFrom == nameof(ProjectDetails))
-			{
-			<MudTabPanel @ref="deleteTab" Icon="@Icons.Material.Filled.Cancel" Text="Delete Project">
+
+            <!-- ===================== -->
+            <!-- ACTIONS TAB FOR PROJECT -->
+            <!-- ===================== -->
+
+            <MudTabPanel @ref="deleteTab" Icon="@Icons.Material.Filled.BuildCircle" Text="Actions">
  			<MudItem xs="12" sm="12" md="12" lg="12">
 				<MudStack Row="true" Spacing="2" StretchItems="StretchItems.None" AlignItems="AlignItems.Start" Class="w-100">
 					<MudCard style="margin: 16px;" Class="w-100">
@@ -265,10 +268,39 @@
 						</MudCardContent>
 					</MudCard>
 				</MudStack>
-				<br />
-				<MudExpansionPanels Elevation="10" style="margin-left : 15px">
-					<MudExpansionPanel style="background-color : #FABBBB; color : red;"
-										Text="DANGER ZONE!" MaxHeight="150" Expanded="false">
+
+                <!-- ACTION: Copy Project -->
+                <MudPaper Class="pa-3 mb-3" style="margin: 16px;">
+                    <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                        <MudIcon Icon="@Icons.Material.Filled.AutoAwesomeMotion" Size="Size.Large" />
+                        <MudButton Variant="Variant.Filled"
+                                    Color="Color.Primary"
+                                    Size="Size.Medium"
+                                           OnClick="(() => OpenCopyProjectPage(singleProject.Id))">
+                            Copy Project
+                        </MudButton>
+                    </MudStack>
+                </MudPaper>
+
+                <!-- ACTION: Export Mermaid FlowChart -->
+                <MudPaper Class="pa-3 mb-3" style="margin: 16px;">
+                    <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                        <MudIcon Icon="@Icons.Material.Filled.GraphicEq" Size="Size.Large" />
+                        <MudButton Variant="Variant.Filled"
+                                    Color="Color.Primary"
+                                    Size="Size.Medium"
+                                           OnClick="(() => OpenMermaidExportPage(singleProject.Id))">
+                            Export Mermaid FlowChart
+                        </MudButton>
+                    </MudStack>
+                </MudPaper>
+
+
+                @if (CalledFrom == nameof(ProjectDetails))
+                {
+                <MudExpansionPanels Elevation="10" style="margin : 16px">
+                    <MudExpansionPanel style="background-color : #FABBBB; color : red;"
+							Text="DANGER ZONE!" MaxHeight="150" Expanded="false">
 					<TitleContent>
 						<div class="d-flex">
 							<MudIcon Icon="@Icons.Material.Filled.Cancel" Color="Color.Error" Size="Size.Medium" class="mr-3"></MudIcon>
@@ -283,9 +315,11 @@
 					</ChildContent>
 					</MudExpansionPanel>
 				</MudExpansionPanels>
+                }
 			</MudItem>
-			</MudTabPanel>
-			}
+			</MudTabPanel> 
+
+
 		</MudTabs>
 	</MudContainer>
 	<MudItem xs="12" sm="12">
@@ -1130,4 +1164,34 @@
     }
 
     #endregion
+
+    // ===============================
+    // ACTION TAB METHODS FOR PROJECT
+    // ===============================
+
+    private async Task OpenCopyProjectPage(Guid id)
+    {
+        var url = $"/copy/Project/{id}";
+        await JS.InvokeVoidAsync("openInNewTab", url);
+    }
+
+    private async Task OpenMermaidExportPage(Guid id)
+    {
+        var url = $"/export-mermaid/{id}";
+        await JS.InvokeVoidAsync("openInNewTab", url);
+    }
+
+
+    // private async Task OpenCopyProjectPage()
+    // {
+    //     var url = $"/copyrecords?recordType=Project&recordId={ProjectId}";
+    //     await JS.InvokeVoidAsync("openInNewTab", url);
+    // }
+
+    // private async Task OpenExportMermaidPage()
+    // {
+    //     var url = $"/exportmermaidflowchart/{ProjectId}";
+    //     await JS.InvokeVoidAsync("openInNewTab", url);
+    // }
+
 }
