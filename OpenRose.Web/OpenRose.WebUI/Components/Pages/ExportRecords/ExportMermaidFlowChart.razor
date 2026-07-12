@@ -5,6 +5,7 @@
 *@
 
 @page "/export-mermaid"
+@page "/export-mermaid/{RecordId:guid}"
 
 @using OpenRose.WebUI.Client.Services.Export
 @using OpenRose.WebUI.Components.Dialogs
@@ -50,7 +51,17 @@
                           Immediate="true"
                           OnKeyDown="@(async e => { if (e.Key == "Enter" && IsGuidInputValid()) { await HandleExportMermaidFlowChartAsync(); } })" />
 
-            <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="2" AlignItems="AlignItems.Center" Justify="Justify.FlexStart">
+
+            <MudStack Row="false" Spacing="3" AlignItems="AlignItems.Center" JustifyContent="Justify.Center" Class="w-100">
+                <div>
+                    <MudTooltip Text="Step 2: Select export options">
+                        <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">
+                            STEP 2
+                        </MudChip>
+                    </MudTooltip>
+                </div>
+
+                <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="2" AlignItems="AlignItems.Center" Justify="Justify.FlexStart">
 
                 <MudCheckBox @bind-Value="exportIncludedBaselineItemzOnly"
                              Label="Only export BaselineItemz marked for Inclusion" />
@@ -71,28 +82,37 @@
                              Value="includeTags"
                              ValueChanged="@((bool x) => OnIncludeTagsChanged(x))" />
 
+                </MudStack>
             </MudStack>
 
+            <MudStack Row="false" Spacing="3" AlignItems="AlignItems.Center" JustifyContent="Justify.Center" Class="w-100">
+                <div>
+                    <MudTooltip Text="Step 3: Generate Mermaid FlowChart">
+                        <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">
+                            STEP 3
+                        </MudChip>
+                    </MudTooltip>
+                </div>
+                <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                    <MudButton Variant="Variant.Filled"
+                            Size="Size.Medium"
+                            Color="Color.Primary"
+                            Disabled="!IsGuidInputValid() || loading"
+                            OnClick="async () => await HandleExportMermaidFlowChartAsync()">
+                        @if (loading)
+                        {
+                            <MudProgressCircular Indeterminate="true" Size="Size.Small" />
+                        }
+                        else
+                        {
+                            <span>Export Mermaid FlowChart</span>
+                        }
+                    </MudButton>
 
-            <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
-                <MudButton Variant="Variant.Filled"
-                           Size="Size.Medium"
-                           Color="Color.Primary"
-                           Disabled="!IsGuidInputValid() || loading"
-                           OnClick="async () => await HandleExportMermaidFlowChartAsync()">
-                    @if (loading)
-                    {
-                        <MudProgressCircular Indeterminate="true" Size="Size.Small" />
-                    }
-                    else
-                    {
-                        <span>Export Mermaid FlowChart</span>
-                    }
+                    <MudButton OnClick="Reset" Variant="Variant.Filled" Color="Color.Warning">
+                        Reset
                 </MudButton>
-
-                <MudButton OnClick="Reset" Variant="Variant.Filled" Color="Color.Warning">
-                    Reset
-                </MudButton>
+                </MudStack>
             </MudStack>
         </MudStack>
     </MudPaper>
@@ -160,6 +180,17 @@
 </style>
 
 @code {
+
+    [Parameter]
+    public Guid? RecordId { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (RecordId.HasValue && RecordId.Value != Guid.Empty)
+        {
+            targetGuidText = RecordId.Value.ToString();
+        }
+    }
 
     private string targetGuidText { get; set; } = string.Empty;
     private bool exportIncludedBaselineItemzOnly { get; set; } = false;
@@ -243,6 +274,7 @@
         mermaidText = string.Empty;
         exportIncludedBaselineItemzOnly = false;
         loading = false;
+        RecordId = Guid.Empty;
     }
 
     // This is the method Blazor will call when ValueChanged fires

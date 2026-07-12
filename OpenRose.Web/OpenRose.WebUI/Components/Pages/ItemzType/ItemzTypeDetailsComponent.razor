@@ -218,46 +218,113 @@
 				</MudPaper>
 			</MudTabPanel>
 
-			@if (CalledFrom == nameof(ItemzTypeDetails) && (singleItemzType.IsSystem == false))
-			{
-				<MudTabPanel Icon="@Icons.Material.Filled.Cancel" Text="Delete ItemzType">
- 				<MudItem xs="12" sm="12" md="12" lg="12">
-					<MudStack Row="true" Spacing="2" StretchItems="StretchItems.None" AlignItems="AlignItems.Start" Class="w-100">
-						<MudCard style="margin: 16px;" Class="w-100">
-							<MudCardContent>
-								<MudStack Row="true" Spacing="2">
-									<MudText><strong>ID          : </strong></MudText>
-									<CopyableText TextToCopy="@singleItemzType.Id.ToString()" />
-									<ShowHierarchyTreeButton RecordId="@singleItemzType.Id" />
-								</MudStack>
-								<MudText><strong>Name        : </strong> @singleItemzType.Name </MudText>
-										<MudText><strong>Status      : </strong> @singleItemzType.Status</MudText>
-							</MudCardContent>
-						</MudCard>
-					</MudStack>
-					<br />
-					<MudExpansionPanels Elevation="10" style="margin-left : 15px">
-						<MudExpansionPanel style="background-color : #FABBBB; color : red;"
-											Text="DANGER ZONE!" MaxHeight="150" Expanded="false">
-						<TitleContent>
-							<div class="d-flex">
-								<MudIcon Icon="@Icons.Material.Filled.Cancel" Color="Color.Error" Size="Size.Medium" class="mr-3"></MudIcon>
-								<MudText Color="Color.Error"><strong>DANGER ZONE!</strong></MudText>
-							</div>
-						</TitleContent>
-						<ChildContent>
-							<MudText Typo="Typo.body1" Color="Color.Error">Deleting itemzType means loosing all it's data. This is <STRONG>IRREVERSIBLE</STRONG> operation.</MudText>
-							<MudButton @onclick="OpenDeleteConfirmationDialogAsync" Variant="Variant.Filled"
-								Disabled="@(disableUpdateItemzTypeDetailsButton || FormStateService.IsDirty(ItemzTypeId))"
-								Color="Color.Error" Size="Size.Large" style="align-items: center; margin-top : 10px">
-							Delete ItemzType
-							</MudButton>
-						</ChildContent>
-						</MudExpansionPanel>
-					</MudExpansionPanels>
-				</MudItem>
+				<MudTabPanel Icon="@Icons.Material.Filled.BuildCircle" Text="Actions">
+					<MudItem xs="12" sm="12" md="12" lg="12">
+
+						<!-- DETAILS CARD -->
+						<MudStack Row="true" Spacing="2" Class="w-100">
+							<MudCard style="margin: 16px;" Class="w-100">
+								<MudCardContent Style="padding : 6px">
+									<MudStack Row="true" Spacing="2">
+										<MudText><strong>ID          : </strong></MudText>
+										<CopyableText TextToCopy="@singleItemzType.Id.ToString()" />
+										<ShowHierarchyTreeButton RecordId="@singleItemzType.Id" />
+									</MudStack>
+									<MudText><strong>Name        : </strong> @singleItemzType.Name </MudText>
+									<MudText><strong>Status      : </strong> @singleItemzType.Status</MudText>
+									<MudText><strong>IsSystem    : </strong> @singleItemzType.IsSystem</MudText>
+								</MudCardContent>
+							</MudCard>
+						</MudStack>
+
+						<!-- ACTION: Move ItemzType Under Project -->
+						<MudPaper Class="pa-3 mb-3" style="margin: 16px;">
+							<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+								<MudIcon Icon="@Icons.Material.Filled.AirlineStops" Size="Size.Large" />
+								<MudButton Variant="Variant.Filled"
+										   Color="Color.Primary"
+										   Size="Size.Medium"
+										   OnClick="(() => OpenMoveItemzTypePage(singleItemzType.Id))">
+									Move ItemzType Under Project
+								</MudButton>
+							</MudStack>
+						</MudPaper>
+
+						<!-- ACTION: Move ItemzType Between -->
+						<MudPaper Class="pa-3 mb-3" style="margin: 16px;">
+							<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+								<MudIcon Icon="@Icons.Material.Filled.FormatIndentIncrease" Size="Size.Large" />
+								<MudButton Variant="Variant.Filled"
+										   Color="Color.Primary"
+										   Size="Size.Medium"
+										   OnClick="(() => OpenMoveItemzTypeBetweenPage(singleItemzType.Id))">
+									Move ItemzType Between
+								</MudButton>
+							</MudStack>
+						</MudPaper>
+
+						<!-- ACTION: Copy ItemzType -->
+						<MudPaper Class="pa-3 mb-3" style="margin: 16px;">
+							<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+								<MudIcon Icon="@Icons.Material.Filled.AutoAwesomeMotion" Size="Size.Large" />
+								<MudButton Variant="Variant.Filled"
+										   Color="Color.Primary"
+										   Size="Size.Medium"
+										   OnClick="(() => OpenCopyItemzTypePage(singleItemzType.Id))">
+									Copy ItemzType
+								</MudButton>
+							</MudStack>
+						</MudPaper>
+
+						<!-- ACTION: Export ItemzType as JSON -->
+						<MudPaper Class="pa-3 mb-3" style="margin: 16px;">
+							<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+								<MudIcon Icon="@Icons.Material.Filled.FileDownload" Size="Size.Large" />
+								<MudButton Variant="Variant.Filled"
+										   Color="Color.Primary"
+										   Size="Size.Medium"
+										   OnClick="(() => OpenExportJsonPage(singleItemzType.Id))">
+									Export ItemzType (JSON)
+								</MudButton>
+							</MudStack>
+						</MudPaper>
+
+						<!-- ACTION: Export Mermaid FlowChart -->
+						<MudPaper Class="pa-3 mb-3" style="margin: 16px;">
+							<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+								<MudIcon Icon="@Icons.Material.Filled.GraphicEq" Size="Size.Large" />
+								<MudButton Variant="Variant.Filled"
+										   Color="Color.Primary"
+										   Size="Size.Medium"
+										   OnClick="(() => OpenMermaidExportPage(singleItemzType.Id))">
+									Export Mermaid FlowChart
+								</MudButton>
+							</MudStack>
+						</MudPaper>
+ 						@if (CalledFrom == nameof(ItemzTypeDetails) && (singleItemzType.IsSystem == false))
+						{
+							<MudExpansionPanels Elevation="10" style="margin : 16px">
+								<MudExpansionPanel style="background-color : #FABBBB; color : red;"
+								Text="DANGER ZONE!" MaxHeight="150" Expanded="false">
+									<TitleContent>
+										<div class="d-flex">
+											<MudIcon Icon="@Icons.Material.Filled.Cancel" Color="Color.Error" Size="Size.Medium" class="mr-3"></MudIcon>
+											<MudText Color="Color.Error"><strong>DANGER ZONE!</strong></MudText>
+										</div>
+									</TitleContent>
+									<ChildContent>
+										<MudText Typo="Typo.body1" Color="Color.Error">Deleting itemzType means loosing all it's data. This is <STRONG>IRREVERSIBLE</STRONG> operation.</MudText>
+										<MudButton @onclick="OpenDeleteConfirmationDialogAsync" Variant="Variant.Filled"
+										Disabled="@(disableUpdateItemzTypeDetailsButton || FormStateService.IsDirty(ItemzTypeId))"
+										Color="Color.Error" Size="Size.Large" style="align-items: center; margin-top : 10px">
+											Delete ItemzType
+										</MudButton>
+									</ChildContent>
+								</MudExpansionPanel>
+							</MudExpansionPanels>
+						}
+					</MudItem>
 				</MudTabPanel>
-			}
 		</MudTabs>
 	</MudItem>
 
@@ -745,5 +812,35 @@
 	{
 		TreeNodeItemzSelectionService.ScrollToTreeViewNode(ItemzTypeId);
     }
+
+	private async Task OpenMoveItemzTypePage(Guid id)
+	{
+		var url = $"/moveitemztype/{id}";
+		await JS.InvokeVoidAsync("openInNewTab", url);
+	}
+
+	private async Task OpenMoveItemzTypeBetweenPage(Guid id)
+	{
+		var url = $"/moveitemztypebetween/{id}";
+		await JS.InvokeVoidAsync("openInNewTab", url);
+	}
+
+	private async Task OpenCopyItemzTypePage(Guid id)
+	{
+		var url = $"/copy/ItemzType/{id}";
+		await JS.InvokeVoidAsync("openInNewTab", url);
+	}
+
+	private async Task OpenExportJsonPage(Guid id)
+	{
+		var url = $"/export/ItemzType/{id}";
+		await JS.InvokeVoidAsync("openInNewTab", url);
+	}
+
+	private async Task OpenMermaidExportPage(Guid id)
+	{
+		var url = $"/export-mermaid/{id}";
+		await JS.InvokeVoidAsync("openInNewTab", url);
+	}
 
 }
