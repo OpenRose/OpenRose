@@ -376,7 +376,8 @@
 								</MudButton>
 							</MudStack>
 						</MudPaper>
-						
+						@if (ParentId != Guid.Empty) // Orphaned Itemz will not have ParentId
+						{
 						<!-- ACTIONS HEADER -->
 						<MudPaper Class="pa-3 mb-3" style="margin: 16px;" Outlined="false">
 							<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
@@ -400,7 +401,7 @@
 										   Color="Color.Primary"
 										   Size="Size.Medium"
 										   OnClick="(() => OpenExportJsonPage(singleItemz.Id))">
-									Export ItemzType (JSON)
+									Export Itemz (JSON)
 								</MudButton>
 							</MudStack>
 						</MudPaper>
@@ -421,7 +422,7 @@
 
 							</MudStack>
 						</MudPaper>
-
+						}
 						<MudExpansionPanels Elevation="10" style="margin: 16px;">
 							<MudExpansionPanel style="background-color : #FABBBB; color : red;"
 											   Text="DANGER ZONE!" MaxHeight="150" Expanded="false">
