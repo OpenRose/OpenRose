@@ -25,12 +25,13 @@ namespace OpenRose.WebUI.Client.SharedModels
 		//	get { return Guid.TryParse(IdAsString, out Guid g) ? g : default; }
 		//	set { IdAsString = Convert.ToString(value); }
 		//}
-		
-        
-        /// <summary>
+
+
+		/// <summary>
 		/// Project Name 
 		/// </summary>
-		public string? Name { get; set; }
+		[StringLength(128, ErrorMessage = "Name length can't be more than 128 characters.")] 
+        public string? Name { get; set; }
         /// <summary>
         /// Status of the Project
         /// </summary>
