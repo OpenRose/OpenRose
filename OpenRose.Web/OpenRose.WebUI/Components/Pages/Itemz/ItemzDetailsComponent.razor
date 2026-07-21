@@ -227,6 +227,8 @@
 					|| <EstimationReadOnlyComponent RecordId="@ItemzId" />
 				</MudStack>
 				<br />
+
+				@* Add Verification and warning when Name is longer then supported length. *@
 				<MudTextField T="string" Label="Name" Required="true" RequiredError="Name is required!"
 					@bind-Value="singleItemz.Name"
 					For="@(() => singleItemz.Name)" FullWidth="true" 

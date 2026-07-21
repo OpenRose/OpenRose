@@ -3,6 +3,7 @@
 // See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 
 using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace OpenRose.WebUI.Client.SharedModels
 {
@@ -16,10 +17,11 @@ namespace OpenRose.WebUI.Client.SharedModels
         /// Id of the Baseline representated by a GUID.
         /// </summary>
         public Guid Id { get; set; }
-        /// <summary>
-        /// Baseline Name 
-        /// </summary>
-        public string? Name { get; set; }
+		/// <summary>
+		/// Baseline Name 
+		/// </summary>
+		[StringLength(128, ErrorMessage = "Name length can't be more than 128 characters.")]
+		public string? Name { get; set; }
         /// <summary>
         /// Description of the Baseline
         /// </summary>

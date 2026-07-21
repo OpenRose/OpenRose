@@ -26,7 +26,7 @@
 <MudPaper Class="pa-4 mb-5 align-start d-flex" Style="width: auto" Outlined="false">
 	<MudText Typo="Typo.h6" Align="Align.Left">Baselines</MudText>
 	<MudSpacer />
-	<MudButton @onclick="async _ => await showFormCreateNewProjectBaseline()" 
+	<MudButton @onclick="async _ => await showFormCreateNewProjectBaseline()"
 		Variant="Variant.Filled" 
 		Size="Size.Medium" 
 		Color="Color.Primary"
@@ -66,7 +66,10 @@ else
 	@if (showCreateBaselineByProjectForm)
 	{
 	<MudPaper Class="pa-4 mb-5 align-start d-flex" Width="100%" Outlined="false">
-	<MudForm Style="width: 100%" Model="@singleCreateBaselineByProject" @ref="createByProjectForm" @bind-IsValid="@createBaselineByProjectSuccess" @bind-Errors="@createBaselineByProjectErrors">
+	<MudForm Style="width: 100%" Model="@singleCreateBaselineByProject" @ref="createByProjectForm" 
+			@bind-IsValid="@createBaselineByProjectSuccess" 
+			@bind-Errors="@createBaselineByProjectErrors"
+			FieldChanged="formFieldChangedByProject">
 		<MudCardContent>
 			<MudText Typo="Typo.h6" Align="Align.Left">Create Baseline by Project</MudText>
 			<MudStack Row="true" Spacing="2">
@@ -74,8 +77,9 @@ else
 				<CopyableText TextToCopy="@ProjectId.ToString()" />
 			</MudStack>
 			<MudTextField T="string" Label="Name" Required="true" RequiredError="Name is required!"
-						  @bind-Value="singleCreateBaselineByProject.Name"
-						  For="@(() => singleCreateBaselineByProject.Name)" />
+						@bind-Value="singleCreateBaselineByProject.Name"
+						For="@(() => singleCreateBaselineByProject.Name)" 
+						Immediate=true  />
 @* 			<MudTextField T="string" Label="Description" Required="true" RequiredError="Description is required!"
 						  @bind-Value="singleCreateBaselineByProject.Description"
 						  For="@(() => singleCreateBaselineByProject.Description)" /> *@
@@ -99,6 +103,7 @@ else
 				<MudButton Variant="Variant.Filled" Color="Color.Primary" 
 								Size="Size.Large"
 								style="gap: 10px; margin : 10px"
+								Disabled="@(disableCreateButton)"
 					   OnClick="(() => createNewProjectBaseline(ProjectId))">
 				<MudText>Create</MudText>
 				</MudButton>
@@ -122,7 +127,10 @@ else
 	@if (showCreateBaselineByItemzTypeForm)
 	{
 		<MudPaper Class="pa-4 mb-5 align-start d-flex" Style="width: auto" Outlined="false">
-		<MudForm Style="width: 100%" Model="@singleCreateBaselineByItemzType" @ref="createByItemzTypeForm" @bind-IsValid="@createBaselineByItemzTypeSuccess" @bind-Errors="@createBaselineByItemzTypeErrors">
+		<MudForm Style="width: 100%" Model="@singleCreateBaselineByItemzType" @ref="createByItemzTypeForm" 
+				@bind-IsValid="@createBaselineByItemzTypeSuccess" 
+				@bind-Errors="@createBaselineByItemzTypeErrors"
+				FieldChanged="formFieldChangedByItemzType">
 			<MudCardContent>
 				<MudText Typo="Typo.h6" Align="Align.Left">Create Baseline by ItemzType</MudText>
 				<MudStack Row="true" Spacing="2">
@@ -144,7 +152,8 @@ else
 				</MudSelect>
 				<MudTextField T="string" Label="Name" Required="true" RequiredError="Name is required!"
 							  @bind-Value="singleCreateBaselineByItemzType.Name"
-							  For="@(() => singleCreateBaselineByItemzType.Name)" />
+							  For="@(() => singleCreateBaselineByItemzType.Name)"
+							  Immediate="true" />
 @* 				<MudTextField T="string" Label="Description" Required="true" RequiredError="Description is required!"
 							  @bind-Value="singleCreateBaselineByItemzType.Description"
 							  For="@(() => singleCreateBaselineByItemzType.Description)" /> *@
@@ -168,6 +177,7 @@ else
 				<MudButton Variant="Variant.Filled" Color="Color.Primary"
 						   Size="Size.Large"
 						   style="gap: 10px; margin : 10px"
+							Disabled="@(disableCreateButton)"
 						   OnClick="(() => createNewItemzTypeBaseline(ProjectId))">
 					<MudText>Create</MudText>
 				</MudButton>
@@ -191,7 +201,10 @@ else
 	@if (showCloneBaselineForm)
 	{
 		<MudPaper Class="pa-4 mb-5 align-start d-flex" Style="width: auto" Outlined="false">
-		<MudForm Style="width: 100%" Model="@singleCloneBaseline" @ref="cloneForm" @bind-IsValid="@cloneBaselineSuccess" @bind-Errors="@cloneBaselineErrors">
+		<MudForm Style="width: 100%" Model="@singleCloneBaseline" @ref="cloneForm" 
+				@bind-IsValid="@cloneBaselineSuccess" 
+				@bind-Errors="@cloneBaselineErrors"
+				FieldChanged="formFieldChangedByCloneBaseline">
 			<MudCardContent>
 				<MudText Typo="Typo.h6" Align="Align.Left">Clone Existing Baseline</MudText>
 				<MudStack Row="true" Spacing="2">
@@ -212,7 +225,8 @@ else
 				</MudSelect>
 				<MudTextField T="string" Label="Name" Required="true" RequiredError="Name is required!"
 							  @bind-Value="singleCloneBaseline.Name"
-							  For="@(() => singleCloneBaseline.Name)" />
+							  For="@(() => singleCloneBaseline.Name)"
+							  Immediate="true" />
 @* 				<MudTextField T="string" Label="Description" Required="true" RequiredError="Description is required!"
 							  @bind-Value="singleCloneBaseline.Description"
 							  For="@(() => singleCloneBaseline.Description)" /> *@
@@ -233,9 +247,10 @@ else
 			</MudCardContent>
 			<MudCardActions>
 				<MudButton Variant="Variant.Filled" Color="Color.Primary"
-						   Size="Size.Large"
-						   style="gap: 10px; margin : 10px"
-						   OnClick="(() => cloneNewProjectBaseline())">
+							Size="Size.Large"
+							style="gap: 10px; margin : 10px"
+							Disabled="@(disableCreateButton)"
+							OnClick="(() => cloneNewProjectBaseline())">
 					<MudText>Create</MudText>
 				</MudButton>
 				@* <MudSpacer /> *@
@@ -428,6 +443,7 @@ else
 
 	//MudForm related fields
 	bool createBaselineByProjectSuccess = true;
+	bool disableCreateButton = false;
 	string[] createBaselineByProjectErrors = { };
 	bool createBaselineByItemzTypeSuccess = true;
 	string[] createBaselineByItemzTypeErrors = { };
@@ -709,4 +725,58 @@ else
 			// TODO :: WE COULD DO AN OVERLAY IN MUDBLAZOR WHILE PROJECT IS GETTING DELETED TO GIVE FEEDBACK TO USER.
 		}
 	}
+
+
+	private async Task formFieldChangedByProject()
+	{
+		// FormStateService.SetDirty(ItemzId, true);
+		if (createByProjectForm != null)
+		{
+			await createByProjectForm.Validate();
+			if (createByProjectForm.IsValid)
+			{
+				disableCreateButton = false;
+			}
+			else
+			{
+				disableCreateButton = true;
+			}
+		}
+	}
+
+	private async Task formFieldChangedByItemzType()
+	{
+		// FormStateService.SetDirty(ItemzId, true);
+		if (createByItemzTypeForm != null)
+		{
+			await createByItemzTypeForm.Validate();
+			if (createByItemzTypeForm.IsValid)
+			{
+				disableCreateButton = false;
+			}
+			else
+			{
+				disableCreateButton = true;
+			}
+		}
+	}
+
+	private async Task formFieldChangedByCloneBaseline()
+	{
+		// FormStateService.SetDirty(ItemzId, true);
+		if (cloneForm != null)
+		{
+			await cloneForm.Validate();
+			if (cloneForm.IsValid)
+			{
+				disableCreateButton = false;
+			}
+			else
+			{
+				disableCreateButton = true;
+			}
+		}
+	}
+
+
 }
