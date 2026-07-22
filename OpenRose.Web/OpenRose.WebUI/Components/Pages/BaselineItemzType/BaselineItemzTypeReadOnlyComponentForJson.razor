@@ -69,15 +69,15 @@
                             align-items:flex-start;
                             flex-direction:@(bp >= Breakpoint.Md ? "row" : "column");
                             flex-wrap:@(bp >= Breakpoint.Md ? "nowrap" : "wrap"); ">
-                        <div style="display:flex; align-items:center; gap:6px;">
-                        <strong>ID:</strong>
-                        <CopyableText TextToCopy="@_baselineItemzType.Id.ToString()" DisplayLength="8" />
-                        <MudTooltip Text="Show in Tree View">
-                            <MudIcon Icon="@Icons.Material.Filled.Park" Size="Size.Small" Class="mouse-pointer-icon" @onclick="async () => await findAndShowInTreeViewAsync()" />
-                        </MudTooltip>
-                        </div>
                         @if (ViewSettings.ShowPropertiesInReadOnlyViews)
                         {
+                            <div style="display:flex; align-items:center; gap:6px;">
+                            <strong>ID:</strong>
+                            <CopyableText TextToCopy="@_baselineItemzType.Id.ToString()" DisplayLength="8" />
+                            <MudTooltip Text="Show in Tree View">
+                                <MudIcon Icon="@Icons.Material.Filled.Park" Size="Size.Small" Class="mouse-pointer-icon" @onclick="async () => await findAndShowInTreeViewAsync()" />
+                            </MudTooltip>
+                            </div>
                             <div><strong> @(bp >= Breakpoint.Md ? "||" : "") Status:</strong> @_baselineItemzType.Status</div>
                             <div><strong> @(bp >= Breakpoint.Md ? "||" : "") Is System?  : </strong> @(_baselineItemzType.IsSystem ? "Yes" : "No")</div>
                             @if (!string.IsNullOrEmpty(_baselineItemzType.EstimationUnit))
