@@ -67,6 +67,8 @@
                                 align-items:flex-start;
                                 flex-direction:@(bp >= Breakpoint.Md ? "row" : "column");
                                 flex-wrap:@(bp >= Breakpoint.Md ? "nowrap" : "wrap"); ">
+                            @if (ViewSettings.ShowPropertiesInReadOnlyViews)
+                            {
                             <div style="display:flex; align-items:center; gap:6px;">
                                 <strong>ID : </strong>
                                 <CopyableText TextToCopy="@_project.Id.ToString()" DisplayLength="8" />
@@ -74,8 +76,6 @@
                                     <MudIcon Icon="@Icons.Material.Filled.Park" Size="Size.Small" Class="mouse-pointer-icon" @onclick="async () => await findAndShowInTreeViewAsync()" />
                                 </MudTooltip>
                             </div>
-                        @if (ViewSettings.ShowPropertiesInReadOnlyViews)
-                        {
                             <div><strong> @(bp >= Breakpoint.Md ? "||" : "")  Status      : </strong> @_project.Status</div>
                             @if (!string.IsNullOrEmpty(_project.EstimationUnit))
                             {
