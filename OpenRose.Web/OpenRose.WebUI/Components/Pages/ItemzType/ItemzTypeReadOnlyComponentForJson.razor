@@ -69,6 +69,8 @@
                             align-items:flex-start;
                             flex-direction:@(bp >= Breakpoint.Md ? "row" : "column");
                             flex-wrap:@(bp >= Breakpoint.Md ? "nowrap" : "wrap"); ">
+                    @if (ViewSettings.ShowPropertiesInReadOnlyViews)
+                    {
                         <div style="display:flex; align-items:center; gap:6px;">
                         <strong>ID : </strong>
                         <CopyableText TextToCopy="@_itemzType.Id.ToString()" DisplayLength="8" />
@@ -77,8 +79,6 @@
                         </MudTooltip>
                         </div>
 
-                    @if (ViewSettings.ShowPropertiesInReadOnlyViews)
-                    {
                         <div><strong> @(bp >= Breakpoint.Md ? "||" : "")  Status : </strong> @_itemzType.Status</div>
                         @if (!string.IsNullOrEmpty(_itemzType.EstimationUnit))
                         {
