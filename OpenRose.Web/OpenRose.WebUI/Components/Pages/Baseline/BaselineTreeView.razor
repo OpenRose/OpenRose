@@ -34,10 +34,13 @@
 
 
 <MudExtensions.MudSplitter @bind-Dimension="@_percentage"
+                            Height="@_height"
                             OnDoubleClicked="@OnDoubleClicked"
                             BarStyle="width:9px !important;"
-                            EnableSlide="@_sliderEnabled" EnableMargin="@_marginEnabled" Sensitivity="_sensitivity"
-                            Height="@_height" Bordered="_borderedEnabled">
+                            EnableSlide="true" 
+                            EnableMargin="true" 
+                            Sensitivity="_sensitivity"
+                            Bordered="false">
     <StartContent>
         <MudPaper Elevation="0" Class="full-width">
             @if (showLoadingMessage)
@@ -196,10 +199,7 @@
     string _height = "calc(100vh - 80px)";
     double _sensitivity = 0.3d;
     double _percentage = 27;
-    bool _sliderEnabled = true;
-    bool _marginEnabled = true;
-    bool _borderedEnabled = false;
-    bool _doubleClickEnabled = true;
+
 
     private List<Guid> _linearIds = new();
     private int _currentIndex = -1;
@@ -212,16 +212,13 @@
 
     private Task OnDoubleClicked()
     {
-        if (_doubleClickEnabled)
+        if (_percentage == 27)
         {
-            if (_percentage == 27)
-            {
-                _percentage = 1;
-            }
-            else
-            {
-                _percentage = 27;
-            }
+            _percentage = 1;
+        }
+        else
+        {
+            _percentage = 27;
         }
         return Task.CompletedTask;
     }

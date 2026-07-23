@@ -25,9 +25,11 @@
 
 <MudExtensions.MudSplitter @bind-Dimension="@_percentage"
                             Height="@_height"
+                            OnDoubleClicked="@OnDoubleClicked"
                             BarStyle="width:9px !important;"
                             EnableSlide="true"
                             EnableMargin="true"
+                            Sensitivity="_sensitivity"
                             Bordered="false">
 
     <!-- LEFT: TREE -->
@@ -189,8 +191,9 @@
 
     private List<TreeItemPresenter> _flatList;
 
-    // splitter layout
+    // Variables related to MudSlidder
     string _height = "calc(100vh - 80px)";
+    double _sensitivity = 0.3d;
     double _percentage = 27;
 
     // Kiosk mode variables
@@ -200,6 +203,20 @@
     private const int ClickTimeoutMs = 700;
 
     private bool showEstimation = true; // Toggle to show estimation in end text
+
+
+    private Task OnDoubleClicked()
+    {
+        if (_percentage == 27)
+        {
+            _percentage = 1;
+        }
+        else
+        {
+            _percentage = 27;
+        }
+        return Task.CompletedTask;
+    }
 
     public class TreeItemPresenter : MudBlazor.TreeItemData<Guid>
     {
