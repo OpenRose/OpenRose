@@ -28,12 +28,15 @@
                  Striped="true"
                  FixedHeader="true">
         <Columns>
-            <PropertyColumn Property="x => x.Id" Title="Id">
-                <CellTemplate>
-                    <CopyableText TextToCopy="@context.Item.Id.ToString()" DisplayLength="8" />
-                </CellTemplate>
-            </PropertyColumn>
 
+            @if (ViewSettings.ShowPropertiesInReadOnlyViews)
+            {
+                <PropertyColumn Property="x => x.Id" Title="Id">
+                    <CellTemplate>
+                        <CopyableText TextToCopy="@context.Item.Id.ToString()" DisplayLength="8" />
+                    </CellTemplate>
+                </PropertyColumn>
+            }
             <PropertyColumn Property="x => x.Name" CellStyle="max-width: 100px; white-space: normal;" />
 
             <PropertyColumn Property="x => x.TraceLabel" Title="Trace Label">
@@ -48,10 +51,11 @@
                     }
                 </CellTemplate>
             </PropertyColumn>
-
-            <PropertyColumn Property="x => x.Status" />
-            <PropertyColumn Property="x => x.Priority" />
-
+            @if (ViewSettings.ShowPropertiesInReadOnlyViews)
+            {
+                <PropertyColumn Property="x => x.Status" />
+                <PropertyColumn Property="x => x.Priority" />
+            }
             <TemplateColumn Title="Action">
                 <CellTemplate>
                     <MudButton Size="@Size.Small"
@@ -114,12 +118,14 @@
                  Striped="true"
                  FixedHeader="true">
         <Columns>
-            <PropertyColumn Property="x => x.Id" Title="Id">
-                <CellTemplate>
-                    <CopyableText TextToCopy="@context.Item.Id.ToString()" DisplayLength="8" />
-                </CellTemplate>
-            </PropertyColumn>
-
+            @if (ViewSettings.ShowPropertiesInReadOnlyViews)
+            {
+                <PropertyColumn Property="x => x.Id" Title="Id">
+                    <CellTemplate>
+                        <CopyableText TextToCopy="@context.Item.Id.ToString()" DisplayLength="8" />
+                    </CellTemplate>
+                </PropertyColumn>
+            }
             <PropertyColumn Property="x => x.Name" CellStyle="max-width: 100px; white-space: normal;" />
 
             <PropertyColumn Property="x => x.TraceLabel" Title="Trace Label">
@@ -134,10 +140,11 @@
                     }
                 </CellTemplate>
             </PropertyColumn>
-
-            <PropertyColumn Property="x => x.Status" />
-            <PropertyColumn Property="x => x.Priority" />
-
+            @if (ViewSettings.ShowPropertiesInReadOnlyViews)
+            {
+                <PropertyColumn Property="x => x.Status" />
+                <PropertyColumn Property="x => x.Priority" />
+            }
             <TemplateColumn Title="Action">
                 <CellTemplate>
                     <MudButton Size="@Size.Small"
