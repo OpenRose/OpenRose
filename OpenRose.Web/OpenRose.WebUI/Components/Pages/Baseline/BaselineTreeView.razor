@@ -35,7 +35,7 @@
 
 <MudExtensions.MudSplitter @bind-Dimension="@_percentage"
                             OnDoubleClicked="@OnDoubleClicked"
-                            BarStyle="width:6px !important;"
+                            BarStyle="width:9px !important;"
                             EnableSlide="@_sliderEnabled" EnableMargin="@_marginEnabled" Sensitivity="_sensitivity"
                             Height="@_height" Bordered="_borderedEnabled">
     <StartContent>
@@ -214,7 +214,14 @@
     {
         if (_doubleClickEnabled)
         {
-            _percentage = 27;
+            if (_percentage == 27)
+            {
+                _percentage = 1;
+            }
+            else
+            {
+                _percentage = 27;
+            }
         }
         return Task.CompletedTask;
     }
