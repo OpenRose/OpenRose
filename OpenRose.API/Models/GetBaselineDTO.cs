@@ -3,39 +3,41 @@
 // See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 
 using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace ItemzApp.API.Models
 {
-    /// <summary>
-    /// BaselineDTO is a POCO used for serving requests like GetBaselines or GetBaseline by BaselineID.
-    /// It will carry specified set of data that are exposed when baseline details are requested throgh "ItemzApp.API"
-    /// </summary>
-    public class GetBaselineDTO
-    {
-        /// <summary>
-        /// Id of the Baseline representated by a GUID.
-        /// </summary>
-        public Guid Id { get; set; }
-        /// <summary>
-        /// Baseline Name 
-        /// </summary>
-        public string? Name { get; set; }
-        /// <summary>
-        /// Description of the Baseline
-        /// </summary>
-        public string? Description { get; set; }
-        /// <summary>
-        /// User who created the Baseline
-        /// </summary>
-        public string? CreatedBy { get; set; }
-        /// <summary>
-        /// Date and Time when Baseline was created
-        /// </summary>
-        public DateTimeOffset CreatedDate { get; set; }
+	/// <summary>
+	/// BaselineDTO is a POCO used for serving requests like GetBaselines or GetBaseline by BaselineID.
+	/// It will carry specified set of data that are exposed when baseline details are requested throgh "ItemzApp.API"
+	/// </summary>
+	public class GetBaselineDTO
+	{
+		/// <summary>
+		/// Id of the Baseline representated by a GUID.
+		/// </summary>
+		public Guid Id { get; set; }
+		/// <summary>
+		/// Baseline Name 
+		/// </summary>
+		[StringLength(128, ErrorMessage = "Name length can't be more than 128 characters.")]
+		public string? Name { get; set; }
+		/// <summary>
+		/// Description of the Baseline
+		/// </summary>
+		public string? Description { get; set; }
+		/// <summary>
+		/// User who created the Baseline
+		/// </summary>
+		public string? CreatedBy { get; set; }
+		/// <summary>
+		/// Date and Time when Baseline was created
+		/// </summary>
+		public DateTimeOffset CreatedDate { get; set; }
 
-        /// <summary>
-        /// Baseline is contained within provided ProjectId
-        /// </summary>
+		/// <summary>
+		/// Baseline is contained within provided ProjectId
+		/// </summary>
 		public Guid ProjectId { get; set; }
 	}
 }

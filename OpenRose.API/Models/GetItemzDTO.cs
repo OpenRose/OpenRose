@@ -3,48 +3,50 @@
 // See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 
 using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace ItemzApp.API.Models
 {
-    /// <summary>
-    /// Itemz class containing several properties that represents it.
-    /// This Itemz class is returned by the "ItemzApp.API" in most of the cases when
-    /// user sends request to read an Itemz record.
-    /// </summary>
-    public class GetItemzDTO
-    {
-        /// <summary>
-        /// Id of the Itemz representated by a GUID.
-        /// </summary>
-        public Guid Id { get; set; }
-        /// <summary>
-        /// Name or Title of the Itemz
-        /// </summary>
-        public string? Name { get; set; }
-        /// <summary>
-        /// Status of the itemz
-        /// </summary>
-        public string? Status { get; set; }
-        /// <summary>
-        /// Priority of the Itemz
-        /// </summary>
-        public string? Priority { get; set; }
-        /// <summary>
-        /// Description of the Itemz
-        /// </summary>
-        public string? Description { get; set; }
-        /// <summary>
-        /// User who created the Itemz
-        /// </summary>
-        public string? CreatedBy { get; set; }
-        /// <summary>
-        /// Date and Time when Itemz was created
-        /// </summary>
-        public DateTimeOffset CreatedDate { get; set; }
-        /// <summary>
-        /// Severity of the Itemz
-        /// </summary>
-        public string? Severity { get; set; }
+	/// <summary>
+	/// Itemz class containing several properties that represents it.
+	/// This Itemz class is returned by the "ItemzApp.API" in most of the cases when
+	/// user sends request to read an Itemz record.
+	/// </summary>
+	public class GetItemzDTO
+	{
+		/// <summary>
+		/// Id of the Itemz representated by a GUID.
+		/// </summary>
+		public Guid Id { get; set; }
+		/// <summary>
+		/// Name or Title of the Itemz
+		/// </summary>
+		[StringLength(128, ErrorMessage = "Name length can't be more than 128 characters.")]
+		public string? Name { get; set; }
+		/// <summary>
+		/// Status of the itemz
+		/// </summary>
+		public string? Status { get; set; }
+		/// <summary>
+		/// Priority of the Itemz
+		/// </summary>
+		public string? Priority { get; set; }
+		/// <summary>
+		/// Description of the Itemz
+		/// </summary>
+		public string? Description { get; set; }
+		/// <summary>
+		/// User who created the Itemz
+		/// </summary>
+		public string? CreatedBy { get; set; }
+		/// <summary>
+		/// Date and Time when Itemz was created
+		/// </summary>
+		public DateTimeOffset CreatedDate { get; set; }
+		/// <summary>
+		/// Severity of the Itemz
+		/// </summary>
+		public string? Severity { get; set; }
 
 		/// <summary>
 		/// Tags associated with this Itemz.

@@ -3,42 +3,44 @@
 // See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 
 using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace ItemzApp.API.Models
 {
-    /// <summary>
-    /// ItemzTypeDTO is a POCO used for serving requests like GetItemzTypes or GetItemzType by ItemzTypeID.
-    /// It will carry specified set of data that are exposed when ItemzType details are requested throgh "ItemzApp.API"
-    /// </summary>
-    public class GetItemzTypeDTO
-    {
-        /// <summary>
-        /// Id of the ItemzType representated by a GUID.
-        /// </summary>
-        public Guid Id { get; set; }
-        /// <summary>
-        /// ItemzType Name 
-        /// </summary>
-        public string? Name { get; set; }
-        /// <summary>
-        /// Status of the ItemzType
-        /// </summary>
-        public string? Status { get; set; }
-        /// <summary>
-        /// Description of the ItemzType
-        /// </summary>
-        public string? Description { get; set; }
-        /// <summary>
-        /// User who created the ItemzType
-        /// </summary>
-        public string? CreatedBy { get; set; }
-        /// <summary>
-        /// Date and Time when ItemzType was created
-        /// </summary>
-        public DateTimeOffset CreatedDate { get; set; }
-        /// <summary>
-        /// Returns true if it's system ItemzType otherwise false
-        /// </summary>
-        public bool IsSystem { get; set; }
-    }
+	/// <summary>
+	/// ItemzTypeDTO is a POCO used for serving requests like GetItemzTypes or GetItemzType by ItemzTypeID.
+	/// It will carry specified set of data that are exposed when ItemzType details are requested throgh "ItemzApp.API"
+	/// </summary>
+	public class GetItemzTypeDTO
+	{
+		/// <summary>
+		/// Id of the ItemzType representated by a GUID.
+		/// </summary>
+		public Guid Id { get; set; }
+		/// <summary>
+		/// ItemzType Name 
+		/// </summary>
+		[StringLength(128, ErrorMessage = "Name length can't be more than 128 characters.")]
+		public string? Name { get; set; }
+		/// <summary>
+		/// Status of the ItemzType
+		/// </summary>
+		public string? Status { get; set; }
+		/// <summary>
+		/// Description of the ItemzType
+		/// </summary>
+		public string? Description { get; set; }
+		/// <summary>
+		/// User who created the ItemzType
+		/// </summary>
+		public string? CreatedBy { get; set; }
+		/// <summary>
+		/// Date and Time when ItemzType was created
+		/// </summary>
+		public DateTimeOffset CreatedDate { get; set; }
+		/// <summary>
+		/// Returns true if it's system ItemzType otherwise false
+		/// </summary>
+		public bool IsSystem { get; set; }
+	}
 }
