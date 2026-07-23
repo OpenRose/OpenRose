@@ -34,14 +34,17 @@
 				 FixedHeader="true"
 				 HeaderClass="background-color: red;">
 		<Columns>
-			<PropertyColumn Property="x => x.Id" Title="Id" Filterable="false">
-				<CellTemplate>
-					<div style="display: flex; align-items: center; gap: 6px; white-space: nowrap;">
-					<CopyableText TextToCopy="@context.Item.Id.ToString()" DisplayLength="8" />
-					<ShowHierarchyTreeButton RecordId="@context.Item.Id" />
-					</div>
-				</CellTemplate>
-			</PropertyColumn>
+			@if (ViewSettings.ShowPropertiesInReadOnlyViews)
+			{
+				<PropertyColumn Property="x => x.Id" Title="Id" Filterable="false">
+					<CellTemplate>
+						<div style="display: flex; align-items: center; gap: 6px; white-space: nowrap;">
+						<CopyableText TextToCopy="@context.Item.Id.ToString()" DisplayLength="8" />
+						<ShowHierarchyTreeButton RecordId="@context.Item.Id" />
+						</div>
+					</CellTemplate>
+				</PropertyColumn>
+			}
 			<PropertyColumn Property="x => x.Name" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
 			<PropertyColumn Property="x => x.TraceLabel" Title="Trace Label" Filterable="false">
 				<CellTemplate>
@@ -57,8 +60,11 @@
 					}
 				</CellTemplate>
 			</PropertyColumn>
-			<PropertyColumn Property="x => x.Status" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
-			<PropertyColumn Property="x => x.Priority" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
+			@if (ViewSettings.ShowPropertiesInReadOnlyViews)
+			{
+				<PropertyColumn Property="x => x.Status" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
+				<PropertyColumn Property="x => x.Priority" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
+			}
 			<TemplateColumn Title="Action">
 				<CellTemplate>
 					<div style="display: flex; justify-content: left; align-items: center; gap: 10px;">
@@ -133,14 +139,17 @@
 				 FixedHeader="true"
 				 HeaderClass="background-color: red;">
 		<Columns>
-			<PropertyColumn Property="x => x.Id" Title="Id">
-				<CellTemplate>
-					<div style="display: flex; align-items: center; gap: 6px; white-space: nowrap;">
-					<CopyableText TextToCopy="@context.Item.Id.ToString()" DisplayLength="8" />
-					<ShowHierarchyTreeButton RecordId="@context.Item.Id" />
-					</div>
-				</CellTemplate>
-			</PropertyColumn>
+			@if (ViewSettings.ShowPropertiesInReadOnlyViews)
+			{
+				<PropertyColumn Property="x => x.Id" Title="Id">
+					<CellTemplate>
+						<div style="display: flex; align-items: center; gap: 6px; white-space: nowrap;">
+						<CopyableText TextToCopy="@context.Item.Id.ToString()" DisplayLength="8" />
+						<ShowHierarchyTreeButton RecordId="@context.Item.Id" />
+						</div>
+					</CellTemplate>
+				</PropertyColumn>
+			}
 			<PropertyColumn Property="x => x.Name" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
 			<PropertyColumn Property="x => x.TraceLabel" Title="Trace Label">
 				<CellTemplate>
@@ -156,9 +165,11 @@
 					}
 				</CellTemplate>
 			</PropertyColumn>
-
-			<PropertyColumn Property="x => x.Status" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
-			<PropertyColumn Property="x => x.Priority" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
+			@if (ViewSettings.ShowPropertiesInReadOnlyViews)
+			{
+				<PropertyColumn Property="x => x.Status" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
+				<PropertyColumn Property="x => x.Priority" Filterable="false" CellStyle="max-width: 100px; overflow-x: visible; white-space: normal; " />
+			}
 			<TemplateColumn CellClass="d-flex justify-left">
 				<CellTemplate>
 					<MudButton Size="@Size.Large"
