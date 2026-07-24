@@ -37,6 +37,19 @@
 
 <MudPaper Class="pa-4 mb-5 align-start d-flex" Style="width: auto" Outlined="false">
 	<MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center" Class="w-100">
+        @if (CalledFrom == nameof(ProjectTreeView))
+        {
+            <MudTooltip Text="Toggle Split Bar" Placement="Placement.Top">
+                <MudIconButton Icon="@Icons.Material.Filled.Fullscreen"
+                               Color="Color.Success"
+                               Size="Size.Medium"
+                               IconSize="Size.Large"
+                               Variant="Variant.Filled"
+                               Class="mud-rounded-circle me-2"
+                               @onclick="toggleSplitBar" />
+
+            </MudTooltip>
+        }
 		<MudText Typo="Typo.h6" Align="Align.Left">Project Details</MudText>
 		<MudSpacer />
 		@if (CalledFrom == nameof(ProjectTreeView))
@@ -352,32 +365,35 @@
 </MudGrid>
 @code 
 {
-        [Parameter]
-        public Guid ProjectId { get; set; }
-        [Parameter]
-        [SupplyParameterFromQuery(Name = "showBaselineTab")]
-        public bool ShowBaselineTab { get; set; } = false;
-        [Parameter]
-        [SupplyParameterFromQuery(Name = "calledFrom")]
-        public string CalledFrom { get; set; } = string.Empty;
+    [Parameter]
+    public Guid ProjectId { get; set; }
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "showBaselineTab")]
+    public bool ShowBaselineTab { get; set; } = false;
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "calledFrom")]
+    public string CalledFrom { get; set; } = string.Empty;
 
-        [Parameter]
-        public EventCallback<string> ContentChanged { get; set; }
+    [Parameter]
+    public EventCallback<string> ContentChanged { get; set; }
 
-        [Inject]
-        public IProjectService ProjectService { get; set; }
+    [Inject]
+    public IProjectService ProjectService { get; set; }
 
-        [Inject]
-        public IBaselinesService BaselineService { get; set; }
+    [Inject]
+    public IBaselinesService BaselineService { get; set; }
 
-        [Inject]
-        public IItemzTypeService ItemzTypeService { get; set; }
+    [Inject]
+    public IItemzTypeService ItemzTypeService { get; set; }
 
-        [Inject]
-        public IHierarchyService HierarchyService { get; set; }
+    [Inject]
+    public IHierarchyService HierarchyService { get; set; }
 
-        [Inject]
-        public FormStateService FormStateService { get; set; }
+    [Inject]
+    public FormStateService FormStateService { get; set; }
+
+    [Inject]
+    public SplitBarManagementService SplitBarManagementService { get; set; }
 
 
     // public Guid displayOnlyProjectID = Guid.Empty ;
@@ -1199,6 +1215,10 @@
         await JS.InvokeVoidAsync("openInNewTab", url);
     }
 
+    private void toggleSplitBar()
+    {
+        SplitBarManagementService.ToggleSplitBar();
+    }
 
     // private async Task OpenCopyProjectPage()
     // {
