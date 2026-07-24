@@ -21,6 +21,7 @@
 @inject TreeNodeItemzSelectionServiceForJson ItemzSelectionServiceForJson
 @inject IJSRuntime JS
 @inject ProtectedSessionStorage SessionStorage
+@inject SplitBarManagementService SplitBarManagementService
 @implements IDisposable
 
 
@@ -170,7 +171,7 @@
     {
         if (_percentage == 27)
         {
-            _percentage = 1;
+            _percentage = 0;
         }
         else
         {
@@ -234,6 +235,8 @@
         // Subscribe to state changes
         JsonFileDataSource.OnJsonChanged += HandleStateChangedAsync;
         DataSourceState.OnDataSourceChanged += HandleStateChangedAsync;
+
+        SplitBarManagementService.OnToggleSplitBarRequested += HandleToggleSplitBarRequested;
 
         //  await ReloadTreeAsync();
 
@@ -647,10 +650,26 @@
 
 
 
+
+    private void HandleToggleSplitBarRequested()
+    {
+        if (_percentage == 27)
+        {
+            _percentage = 0;   // collapse left panel
+        }
+        else
+        {
+            _percentage = 27;  // restore default
+        }
+
+        StateHasChanged();
+    }
+
     public void Dispose()
     {
         ItemzSelectionServiceForJson.OnScrollToTreeViewNode -= HandleScrollToTreeViewNode;
         JsonFileDataSource.OnJsonChanged -= HandleStateChangedAsync;
         DataSourceState.OnDataSourceChanged -= HandleStateChangedAsync;
+        SplitBarManagementService.OnToggleSplitBarRequested -= HandleToggleSplitBarRequested;
     }
 }
