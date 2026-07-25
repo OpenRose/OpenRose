@@ -30,6 +30,7 @@
 @inject ILogger<BaselineTreeView> _logger
 @inject ViewSettingsService ViewSettings
 @inject ProtectedSessionStorage SessionStorage
+@inject SplitBarManagementService SplitBarManagementService
 
 
 
@@ -214,7 +215,7 @@
     {
         if (_percentage == 27)
         {
-            _percentage = 1;
+            _percentage = 0;
         }
         else
         {
@@ -524,6 +525,7 @@
         BaselineItemzSelectionService.OnExcludeAllChildrenBaselineItemzTreeNodes += HandleExcludeAllChildrenBaselineItemzTreeNodes;
         BaselineItemzSelectionService.OnRequestNodeWithParent += HandleRequestNodeWithParent;
         BaselineItemzSelectionService.OnScrollToTreeViewNode += HandleScrollToTreeViewNode;
+        SplitBarManagementService.OnToggleSplitBarRequested += HandleToggleSplitBarRequested;
 
     }
 
@@ -1165,6 +1167,20 @@
         return endText;
     }
 
+    private void HandleToggleSplitBarRequested()
+    {
+        if (_percentage == 27)
+        {
+            _percentage = 0;   // collapse left panel
+        }
+        else
+        {
+            _percentage = 27;  // restore default
+        }
+
+        StateHasChanged();
+    }
+
 
     public void Dispose()
     {
@@ -1176,5 +1192,6 @@
         BaselineItemzSelectionService.OnExcludeAllChildrenBaselineItemzTreeNodes -= HandleExcludeAllChildrenBaselineItemzTreeNodes;
         BaselineItemzSelectionService.OnRequestNodeWithParent -= HandleRequestNodeWithParent;
         BaselineItemzSelectionService.OnScrollToTreeViewNode -= HandleScrollToTreeViewNode;
+        SplitBarManagementService.OnToggleSplitBarRequested -= HandleToggleSplitBarRequested;
     }
 }
