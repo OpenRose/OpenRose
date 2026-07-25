@@ -35,7 +35,16 @@
             <MudCard style="background-color:#FABBBB; position:sticky; top:0; z-index:10;">
                 <MudCardContent Style="padding : 6px">
                     <div class="d-flex align-start justify-space-between" style="gap:8px;">
+                        <MudTooltip Text="Toggle Split Bar" Placement="Placement.Top">
+                            <MudIconButton Icon="@Icons.Material.Filled.Fullscreen"
+                                           Color="Color.Success"
+                                           Size="Size.Medium"
+                                           IconSize="Size.Large"
+                                           Variant="Variant.Filled"
+                                           Class="mud-rounded-circle me-2"
+                                           @onclick="toggleSplitBar" />
 
+                        </MudTooltip>
                         <MudText Typo="Typo.inherit"
                                  Class="flex-grow-1 text-responsive-title"
                                  Align="Align.Left"
@@ -69,8 +78,8 @@
 @*             <MudCard Elevation="0" Outlined="false" Style="background-color:transparent; overflow-y:auto; max-height:calc(100vh - 20px);"> *@
             <MudCard Elevation="0" Outlined="false" Style="background-color:transparent;">
                 <MudCardContent Style="padding : 6px">
-                    @if (tagsList is { Count: > 0 })
-                    {
+                        @if (tagsList is { Count: > 0 })
+                        {
                         <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
                             @* <MudText Typo="Typo.subtitle2">Tags :</MudText> *@
                             <MudChipSet T="string"
@@ -83,7 +92,7 @@
                                              Variant="Variant.Outlined" />
                                 }
                             </MudChipSet>
-                        </MudStack>
+                    </MudStack>
                     }
                     @if (!ViewSettings.IsKioskMode)
                     {
@@ -139,6 +148,9 @@
     [Parameter] public EventCallback<Guid> OnNavigatePrevious { get; set; }
     [Parameter] public EventCallback<Guid> OnNavigateNext { get; set; }
     [Parameter] public EventCallback<Guid> OnOpenTraceTarget { get; set; }
+
+    [Inject]
+    public SplitBarManagementService SplitBarManagementService { get; set; }
 
     private bool initializingPage = true;
     private GetItemzExportDTO _itemz = new();
@@ -209,5 +221,10 @@
     private async Task findAndShowInTreeViewAsync()
     {
         await ItemzSelectionServiceForJson.ScrollToTreeViewNodeAsync(ItemzId);
+    }
+
+    private void toggleSplitBar()
+    {
+        SplitBarManagementService.ToggleSplitBar();
     }
 }

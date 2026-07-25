@@ -37,7 +37,16 @@
 			<MudCard style="background-color:#FABBBB; position:sticky; top:0; z-index:10;">
 				<MudCardContent Style="padding:6px">
                     <div class="d-flex align-start justify-space-between" style="gap:8px;">
+						<MudTooltip Text="Toggle Split Bar" Placement="Placement.Top">
+							<MudIconButton Icon="@Icons.Material.Filled.Fullscreen"
+										   Color="Color.Success"
+										   Size="Size.Medium"
+										   IconSize="Size.Large"
+										   Variant="Variant.Filled"
+										   Class="mud-rounded-circle me-2"
+										   @onclick="toggleSplitBar" />
 
+						</MudTooltip>
 						<!-- Left side: Title -->
 						<MudText Typo="Typo.inherit"
 								 Class="flex-grow-1 text-responsive-title"
@@ -137,6 +146,9 @@
 
 	[Inject]
 	public IBaselineItemzTypesService BaselineItemzTypeServices { get; set; }
+
+	[Inject]
+	public SplitBarManagementService SplitBarManagementService { get; set; }
 
 
 	public GetBaselineItemzTypeDTO singleBaselineItemzType { get; set; } = new();
@@ -270,5 +282,10 @@
 	{
 
 		BaselineItemzSelectionService.ScrollToTreeViewNode(BaselineItemzTypeId);
+	}
+
+	private void toggleSplitBar()
+	{
+		SplitBarManagementService.ToggleSplitBar();
 	}
 }

@@ -34,6 +34,7 @@
 @inject ViewSettingsService ViewSettings
 @inject ProtectedSessionStorage SessionStorage
 @inject ProjectDeletionService DeletionService
+@inject SplitBarManagementService SplitBarManagementService
 
 <MudExtensions.MudSplitter @bind-Dimension="@_percentage"
                             Height="@_height"
@@ -220,7 +221,7 @@
     {
         if (_percentage == 27)
         {
-            _percentage = 1;
+            _percentage = 0;
         }
         else
         {
@@ -541,6 +542,9 @@
         {
             await HandleCreatedNewItemzTypeAsync(recordId, itemzType);
         };
+
+        SplitBarManagementService.OnToggleSplitBarRequested += HandleToggleSplitBarRequested;
+
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -1311,6 +1315,21 @@
         // StateHasChanged();
     }
 
+    private void HandleToggleSplitBarRequested()
+    {
+        if (_percentage == 27)
+        {
+            _percentage = 0;   // collapse left panel
+        }
+        else
+        {
+            _percentage = 27;  // restore default
+        }
+
+        StateHasChanged();
+    }
+
+
     public async ValueTask DisposeAsync()
     {
         // Always unsubscribe to avoid memory leaks
@@ -1320,6 +1339,7 @@
         ItemzSelectionService.OnScrollToTreeViewNode -= HandleScrollToTreeViewNode;
         ItemzSelectionService.OnTreeNodeItemzDeleted -= HandleItemzDeleted;
         ItemzSelectionService.OnCreatedNewItemzType -= HandleCreatedNewItemzTypeAsync;
+        SplitBarManagementService.OnToggleSplitBarRequested -= HandleToggleSplitBarRequested;
 
         // Cleanup SignalR connection
         if (hubConnection is not null)
