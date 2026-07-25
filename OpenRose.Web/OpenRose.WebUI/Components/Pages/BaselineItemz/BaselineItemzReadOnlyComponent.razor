@@ -40,6 +40,16 @@
 			<MudCard style="background-color:#FABBBB; position:sticky; top:0; z-index:10;">
 				<MudCardContent Style="padding:6px">
                     <div class="d-flex align-start justify-space-between" style="gap:8px;">
+						<MudTooltip Text="Toggle Split Bar" Placement="Placement.Top">
+							<MudIconButton Icon="@Icons.Material.Filled.Fullscreen"
+										   Color="Color.Success"
+										   Size="Size.Medium"
+										   IconSize="Size.Large"
+										   Variant="Variant.Filled"
+										   Class="mud-rounded-circle me-2"
+										   @onclick="toggleSplitBar" />
+
+						</MudTooltip>
 
 						<!-- Left side: Title -->
 						<MudText Typo="Typo.inherit"
@@ -155,15 +165,18 @@
 @code {
 	[Parameter]
 	public Guid BaselineItemzId { get; set; }
-
-	[Parameter] public EventCallback<Guid> OnNavigatePrevious { get; set; }
-	[Parameter] public EventCallback<Guid> OnNavigateNext { get; set; }
-
+	[Parameter] 
+	public EventCallback<Guid> OnNavigatePrevious { get; set; }
+	[Parameter] 
+	public EventCallback<Guid> OnNavigateNext { get; set; }
 	[Parameter]
 	public bool IsIncluded { get; set; } = true;
 
 	[Inject]
 	public IBaselineItemzService BaselineItemzService { get; set; }
+	[Inject]
+	public SplitBarManagementService SplitBarManagementService { get; set; }
+
 
 	public GetBaselineItemzDTO singleBaselineItemz { get; set; } = new();
 	public bool initializingPage { get; set; } = true;
@@ -309,4 +322,10 @@
 
 		BaselineItemzSelectionService.ScrollToTreeViewNode(BaselineItemzId);
 	}
+
+	private void toggleSplitBar()
+	{
+		SplitBarManagementService.ToggleSplitBar();
+	}
+
 }
