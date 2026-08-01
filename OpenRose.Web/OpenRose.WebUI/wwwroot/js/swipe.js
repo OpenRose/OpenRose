@@ -4,32 +4,30 @@
  * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 */
 
-// wwwroot/js/swipe.js
-// Hybrid element-level start + dynamic move-handler approach.
-// - Prevents browser history swipe for single-finger horizontal swipes by calling preventDefault on move,
-//   but only after detecting a single-finger horizontal gesture in progress.
-// - Preserves pinch/zoom (multi-touch) and normal clicks (no pointer capture).
+// Touch-only swipe detection (single-finger). Does NOT handle mouse/pointer events.
+// - Preserves mouse clicks completely (no mouse handlers attached).
+// - Preserves pinch/zoom (multi-touch ignored).
+// - Dynamically prevents browser history navigation for one-finger horizontal gestures.
 // - Moderate sensitivity: threshold=50px, restraint=120px, allowedTime=600ms.
-// - Set debug = true for console logs during testing.
+// - Set debug = true for logging during testing.
 
 (function () {
     if (window.openRoseSwipeLibLoaded) return;
     window.openRoseSwipeLibLoaded = true;
     window.openRoseHandlers = window.openRoseHandlers || {};
 
-    var debug = true; // set true while testing to get console logs
+    var debug = true; // set to true for device logs
 
     function dlog() {
         if (!debug) return;
-        console.log.apply(console, arguments);
+        try { console.log.apply(console, arguments); } catch (_) { }
     }
 
-    // Sensitivity defaults (tweak if needed)
     var DEFAULT_THRESHOLD = 50;   // px horizontal
     var DEFAULT_RESTRAINT = 120;  // px vertical
     var DEFAULT_ALLOWED_TIME = 600; // ms
+    var EARLY_MOVE_THRESHOLD = 10; // px; start preventing after small horizontal movement
 
-    // Helper: attach and remove with stored refs
     function registerOnElement(el, dotNetRef, elementKey, opts) {
         if (!el) return false;
 
@@ -37,312 +35,238 @@
         var restraint = (opts && opts.restraint) || DEFAULT_RESTRAINT;
         var allowedTime = (opts && opts.allowedTime) || DEFAULT_ALLOWED_TIME;
 
-        // Per-interaction state
-        // For pointer events: keep map from pointerId to meta { startX, startY, startTime, movedHorizontally }
-        var pointerMeta = {};
+        var activeTouch = null; // { id, startX, startY, startTime, prevented }
+        var docTouchMoveHandler = null;
+        var savedOverscroll = null;
+        var savedTouchAction = null;
 
-        // For touch fallback (touch identifiers)
-        // Map touchId -> meta
-        var touchMeta = {};
-
-        // Move handler refs so we can remove them
-        var currentPointerMoveHandler = null;
-        var currentTouchMoveHandler = null;
-
-        // --- ELEMENT-LEVEL START HANDLERS ---
-
-        function onElementPointerDown(ev) {
-            // Only care about primary mouse button or touch
-            if (ev.pointerType === 'mouse' && ev.button !== 0) return;
-
-            // Record start for this pointer
-            pointerMeta[ev.pointerId] = {
-                startX: ev.clientX,
-                startY: ev.clientY,
-                startTime: Date.now(),
-                prevented: false // whether we've prevented default (to block browser gestures)
-            };
-
-            // Install a pointermove handler on document so we can call preventDefault when necessary.
-            // Use passive: false so preventDefault works.
-            currentPointerMoveHandler = function (moveEv) {
-                try {
-                    // Only handle same pointerId
-                    var meta = pointerMeta[ev.pointerId];
-                    if (!meta) return;
-
-                    // If pointer is not touch, don't call preventDefault (mouse dragging should not be blocked)
-                    if (ev.pointerType !== 'touch') return;
-
-                    var dx = moveEv.clientX - meta.startX;
-                    var dy = moveEv.clientY - meta.startY;
-                    var absDx = Math.abs(dx), absDy = Math.abs(dy);
-
-                    // If multi-pointer active (additional pointers), abort preventing (preserve pinch)
-                    // We can detect additional pointers via navigator.maxTouchPoints? Not reliable; check pointer events currently active:
-                    // If any other pointer id exists in pointerMeta besides ev.pointerId, treat as multi-touch and skip.
-                    var multi = false;
-                    for (var pid in pointerMeta) {
-                        if (pid !== String(ev.pointerId)) { multi = true; break; }
-                    }
-                    if (multi) return;
-
-                    // If horizontal dominant and passes small movement threshold (not final swipe threshold)
-                    var earlyThreshold = 10; // small: start preventing only if user moves noticeably horizontally
-                    if (!meta.prevented && absDx > earlyThreshold && absDx > absDy) {
-                        // prevent browser horizontal gestures (history) for this pointer
-                        try {
-                            moveEv.preventDefault();
-                            meta.prevented = true;
-                            dlog("swipe: prevented default on pointermove (element)", elementKey);
-                        } catch (e) {
-                            // Some browsers ignore preventDefault if passive true on some targets.
-                        }
-                    } else if (meta.prevented) {
-                        // already prevented once, keep preventing
-                        try { moveEv.preventDefault(); } catch (e) { }
-                    }
-                } catch (e) { /* ignore */ }
-            };
-
-            // attach to document
-            document.addEventListener('pointermove', currentPointerMoveHandler, { passive: false, capture: true });
-
-            dlog("swipe: pointerdown registered", ev.pointerId, elementKey);
-        }
-
-        function onElementPointerUp(ev) {
-            // compute and clean up
+        function cleanupMoveHandler() {
+            if (docTouchMoveHandler) {
+                try { document.removeEventListener('touchmove', docTouchMoveHandler, { capture: true }); } catch (e) { /* ignore */ }
+                docTouchMoveHandler = null;
+            }
+            // restore overscroll behavior & touch-action
             try {
-                var meta = pointerMeta[ev.pointerId];
-                // remove move handler
-                if (currentPointerMoveHandler) {
-                    document.removeEventListener('pointermove', currentPointerMoveHandler, { capture: true });
-                    currentPointerMoveHandler = null;
+                if (savedOverscroll !== null) {
+                    document.documentElement.style.overscrollBehavior = savedOverscroll;
+                    savedOverscroll = null;
+                } else {
+                    // if there was no saved value, remove explicit style (let CSS decide)
+                    document.documentElement.style.overscrollBehavior = '';
                 }
+            } catch (e) { /* ignore */ }
 
-                if (!meta) return;
-
-                var dx = ev.clientX - meta.startX;
-                var dy = ev.clientY - meta.startY;
-                var dt = Date.now() - meta.startTime;
-
-                dlog("swipe: pointerup", ev.pointerId, "dx", dx, "dy", dy, "dt", dt, "meta.prevented", meta.prevented);
-
-                // cleanup meta
-                delete pointerMeta[ev.pointerId];
-
-                if (dt <= allowedTime && Math.abs(dx) >= threshold && Math.abs(dy) <= restraint) {
-                    if (dx < 0) {
-                        dotNetRef.invokeMethodAsync('OnSwipe', 'left').catch(function () { /* ignore */ });
-                        dlog("swipe: invoke left", elementKey);
-                    } else {
-                        dotNetRef.invokeMethodAsync('OnSwipe', 'right').catch(function () { /* ignore */ });
-                        dlog("swipe: invoke right", elementKey);
-                    }
-                }
-            } catch (e) { dlog("swipe: elementPointerUp error", e); }
-        }
-
-        function onElementPointerCancel(ev) {
             try {
-                if (currentPointerMoveHandler) {
-                    document.removeEventListener('pointermove', currentPointerMoveHandler, { capture: true });
-                    currentPointerMoveHandler = null;
+                if (savedTouchAction !== null) {
+                    el.style.touchAction = savedTouchAction;
+                    savedTouchAction = null;
+                } else {
+                    el.style.touchAction = '';
                 }
-                delete pointerMeta[ev.pointerId];
-                dlog("swipe: pointercancel cleaned", ev.pointerId);
             } catch (e) { /* ignore */ }
         }
 
-        // --- TOUCH fallback ---
-
-        function onElementTouchStart(ev) {
+        function onTouchStart(ev) {
             try {
                 if (!ev || !ev.touches) return;
-                // If a multi-touch begins, ignore swipe tracking for those touches (preserve pinch)
+                // Only one-finger gestures: if more than 1, ignore to preserve pinch
                 if (ev.touches.length !== 1) {
-                    // mark nothing
+                    activeTouch = null;
                     return;
                 }
+
                 var t = ev.touches[0];
-                touchMeta[t.identifier] = {
+                activeTouch = {
+                    id: t.identifier,
                     startX: t.clientX,
                     startY: t.clientY,
                     startTime: Date.now(),
                     prevented: false
                 };
 
-                // install touchmove on document (non-passive) to be able to prevent default if horizontal gesture detected
-                currentTouchMoveHandler = function (moveEv) {
+                dlog("swipe: touchstart registered id", activeTouch.id, "element", elementKey);
+
+                // Save current overscroll & touch-action and set temporary values that help block nav on Chromium
+                try {
+                    // Save and then set overscroll to 'none' to block "swipe to navigate" on Chromium browsers
+                    savedOverscroll = document.documentElement.style.overscrollBehavior || '';
+                    document.documentElement.style.overscrollBehavior = 'none';
+                } catch (e) { savedOverscroll = null; }
+
+                try {
+                    savedTouchAction = el.style.touchAction || '';
+                    // Hint: allow vertical panning but make horizontal available for JS handling
+                    el.style.touchAction = 'pan-y';
+                } catch (e) { savedTouchAction = null; }
+
+                // Install document-level touchmove with passive: false so we can preventDefault when we detect horizontal gesture
+                docTouchMoveHandler = function (moveEv) {
                     try {
-                        if (!moveEv || !moveEv.touches) return;
-                        // find the touch with same identifier if present in touches or changedTouches
+                        if (!activeTouch) return;
+
+                        // find the tracked touch in the current touches
                         var found = null;
                         for (var i = 0; i < moveEv.touches.length; i++) {
-                            if (touchMeta[moveEv.touches[i].identifier]) { found = moveEv.touches[i]; break; }
-                        }
-                        // If multiple touches present => abort preventing
-                        if (moveEv.touches.length > 1) return;
-
-                        // If found our tracked touch
-                        if (!found) {
-                            // maybe it's in changedTouches
-                            for (var j = 0; j < moveEv.changedTouches.length; j++) {
-                                if (touchMeta[moveEv.changedTouches[j].identifier]) { found = moveEv.changedTouches[j]; break; }
+                            if (moveEv.touches[i].identifier === activeTouch.id) {
+                                found = moveEv.touches[i];
+                                break;
                             }
                         }
                         if (!found) return;
-                        var meta = touchMeta[found.identifier];
-                        if (!meta) return;
 
-                        var dx = found.clientX - meta.startX;
-                        var dy = found.clientY - meta.startY;
+                        // If more than one touch currently active, abort preventing (user used another finger)
+                        if (moveEv.touches.length > 1) return;
+
+                        var dx = found.clientX - activeTouch.startX;
+                        var dy = found.clientY - activeTouch.startY;
                         var absDx = Math.abs(dx), absDy = Math.abs(dy);
 
-                        var earlyThreshold = 10;
-                        if (!meta.prevented && absDx > earlyThreshold && absDx > absDy) {
+                        // If horizontal movement is dominant and exceeds early threshold, prevent default to stop browser nav
+                        if (!activeTouch.prevented && absDx > EARLY_MOVE_THRESHOLD && absDx > absDy) {
                             try {
-                                moveEv.preventDefault(); // stops browser back/forward swipe
-                                meta.prevented = true;
+                                moveEv.preventDefault(); // this prevents browser swipe-to-navigate on many browsers
+                                activeTouch.prevented = true;
                                 dlog("swipe: prevented default on touchmove (element)", elementKey);
                             } catch (e) {
-                                // ignore
+                                // some browsers restrict preventDefault if listener is passive (we used non-passive) or other constraints
                             }
-                        } else if (meta.prevented) {
-                            try { moveEv.preventDefault(); } catch (e) { }
+                        } else if (activeTouch.prevented) {
+                            // keep preventing if we've started preventing
+                            try { moveEv.preventDefault(); } catch (e) { /* ignore */ }
                         }
                     } catch (e) { /* ignore */ }
                 };
 
-                document.addEventListener('touchmove', currentTouchMoveHandler, { passive: false, capture: true });
+                document.addEventListener('touchmove', docTouchMoveHandler, { passive: false, capture: true });
 
-                dlog("swipe: touchstart registered id", t.identifier, elementKey);
-            } catch (e) { dlog("swipe: elementTouchStart error", e); }
+            } catch (err) {
+                dlog("swipe: onTouchStart error", err);
+            }
         }
 
-        function onElementTouchEnd(ev) {
+        function onTouchEnd(ev) {
             try {
-                // remove move handler
-                if (currentTouchMoveHandler) {
-                    document.removeEventListener('touchmove', currentTouchMoveHandler, { capture: true });
-                    currentTouchMoveHandler = null;
+                if (!activeTouch) {
+                    cleanupMoveHandler();
+                    return;
                 }
 
-                if (!ev.changedTouches) return;
+                // find changedTouches that match the tracked touch id
+                if (!ev.changedTouches) {
+                    cleanupMoveHandler();
+                    activeTouch = null;
+                    return;
+                }
+
+                var matched = null;
                 for (var i = 0; i < ev.changedTouches.length; i++) {
-                    var ct = ev.changedTouches[i];
-                    var meta = touchMeta[ct.identifier];
-                    if (!meta) continue;
-
-                    var dx = ct.clientX - meta.startX;
-                    var dy = ct.clientY - meta.startY;
-                    var dt = Date.now() - meta.startTime;
-
-                    dlog("swipe: touchend id", ct.identifier, "dx", dx, "dy", dy, "dt", dt, "meta.prevented", meta.prevented);
-
-                    delete touchMeta[ct.identifier];
-
-                    if (dt <= allowedTime && Math.abs(dx) >= threshold && Math.abs(dy) <= restraint) {
-                        if (dx < 0) {
-                            dotNetRef.invokeMethodAsync('OnSwipe', 'left').catch(function () { /* ignore */ });
-                            dlog("swipe: invoke left (touch)", elementKey);
-                        } else {
-                            dotNetRef.invokeMethodAsync('OnSwipe', 'right').catch(function () { /* ignore */ });
-                            dlog("swipe: invoke right (touch)", elementKey);
-                        }
+                    if (ev.changedTouches[i].identifier === activeTouch.id) {
+                        matched = ev.changedTouches[i];
+                        break;
                     }
                 }
-            } catch (e) { dlog("swipe: elementTouchEnd error", e); }
+
+                if (!matched) {
+                    // Might have ended elsewhere; just cleanup
+                    cleanupMoveHandler();
+                    activeTouch = null;
+                    return;
+                }
+
+                var dx = matched.clientX - activeTouch.startX;
+                var dy = matched.clientY - activeTouch.startY;
+                var dt = Date.now() - activeTouch.startTime;
+
+                dlog("swipe: touchend id", activeTouch.id, "dx", dx, "dy", dy, "dt", dt, "prevented", activeTouch.prevented);
+
+                // cleanup move handler and styles
+                cleanupMoveHandler();
+
+                // evaluate threshold
+                if (dt <= allowedTime && Math.abs(dx) >= threshold && Math.abs(dy) <= restraint) {
+                    if (dx < 0) {
+                        dotNetRef.invokeMethodAsync('OnSwipe', 'left').catch(function () { /*ignore*/ });
+                        dlog("swipe: invoked left for", elementKey);
+                    } else {
+                        dotNetRef.invokeMethodAsync('OnSwipe', 'right').catch(function () { /*ignore*/ });
+                        dlog("swipe: invoked right for", elementKey);
+                    }
+                }
+
+                activeTouch = null;
+            } catch (err) {
+                dlog("swipe: onTouchEnd error", err);
+                cleanupMoveHandler();
+                activeTouch = null;
+            }
         }
 
-        function onElementTouchCancel(ev) {
+        function onTouchCancel(ev) {
             try {
-                if (currentTouchMoveHandler) {
-                    document.removeEventListener('touchmove', currentTouchMoveHandler, { capture: true });
-                    currentTouchMoveHandler = null;
-                }
-                if (!ev.changedTouches) return;
-                for (var i = 0; i < ev.changedTouches.length; i++) {
-                    var ct = ev.changedTouches[i];
-                    delete touchMeta[ct.identifier];
-                }
-                dlog("swipe: touchcancel cleaned", elementKey);
+                cleanupMoveHandler();
+                activeTouch = null;
+                dlog("swipe: touchcancel for", elementKey);
             } catch (e) { /* ignore */ }
         }
 
-        // Attach element-level listeners (we want bubble phase so button clicks still get processed)
-        var rec = { el: el, dotNetRef: dotNetRef, handlers: {} };
+        // Attach element-level touch listeners. We don't add pointer or mouse listeners at all.
+        var handlers = {
+            touchstart: onTouchStart,
+            touchend: onTouchEnd,
+            touchcancel: onTouchCancel
+        };
 
-        if (window.PointerEvent) {
-            rec.handlers.pointerdown = onElementPointerDown;
-            rec.handlers.pointerup = onElementPointerUp;
-            rec.handlers.pointercancel = onElementPointerCancel;
-
-            el.addEventListener('pointerdown', rec.handlers.pointerdown, { passive: true });
-            el.addEventListener('pointerup', rec.handlers.pointerup, { passive: true });
-            el.addEventListener('pointercancel', rec.handlers.pointercancel, { passive: true });
-
-            rec.mode = 'pointer';
-            dlog("swipe: element pointer handlers attached", elementKey);
-        } else {
-            rec.handlers.touchstart = onElementTouchStart;
-            rec.handlers.touchend = onElementTouchEnd;
-            rec.handlers.touchcancel = onElementTouchCancel;
-
-            el.addEventListener('touchstart', rec.handlers.touchstart, { passive: false }); // passive:false so we can preventDefault later
-            el.addEventListener('touchend', rec.handlers.touchend, { passive: true });
-            el.addEventListener('touchcancel', rec.handlers.touchcancel, { passive: true });
-
-            // mouse fallback for desktop
-            rec.handlers.mousedown = function (ev) { onElementPointerDown({ pointerId: 'mouse', clientX: ev.clientX, clientY: ev.clientY, pointerType: 'mouse', button: ev.button }); };
-            rec.handlers.mouseup = function (ev) { onElementPointerUp({ pointerId: 'mouse', clientX: ev.clientX, clientY: ev.clientY }); };
-
-            el.addEventListener('mousedown', rec.handlers.mousedown, { passive: true });
-            el.addEventListener('mouseup', rec.handlers.mouseup, { passive: true });
-
-            rec.mode = 'touchmouse';
-            dlog("swipe: element touch handlers attached", elementKey);
+        try {
+            // attach touchstart non-passive? touchstart cannot be passive (spec default is non-passive). But to be safe we attach with passive:false so that preventDefault in move works reliably later.
+            el.addEventListener('touchstart', handlers.touchstart, { passive: false });
+            el.addEventListener('touchend', handlers.touchend, { passive: true });
+            el.addEventListener('touchcancel', handlers.touchcancel, { passive: true });
+            dlog("swipe: attached touch handlers for element", elementKey);
+        } catch (e) {
+            // older browsers fallback
+            el.addEventListener('touchstart', handlers.touchstart);
+            el.addEventListener('touchend', handlers.touchend);
+            el.addEventListener('touchcancel', handlers.touchcancel);
         }
 
-        window.openRoseHandlers[elementKey] = rec;
+        // Store registered handlers so we can unregister later
+        window.openRoseHandlers[elementKey] = {
+            el: el,
+            handlers: handlers,
+            dotNetRef: dotNetRef
+        };
 
+        dlog("swipe: registered touch-only element", elementKey);
         return true;
     }
 
     function unregisterElement(element) {
-        if (!element) return false;
-        var elementKey = element.dataset && element.dataset.openroseId ? element.dataset.openroseId : null;
-        if (!elementKey) return false;
-        var rec = window.openRoseHandlers[elementKey];
-        if (!rec) return false;
-        var el = rec.el;
-        var h = rec.handlers || {};
         try {
-            if (rec.mode === 'pointer') {
-                el.removeEventListener('pointerdown', h.pointerdown);
-                el.removeEventListener('pointerup', h.pointerup);
-                el.removeEventListener('pointercancel', h.pointercancel);
-            } else {
-                el.removeEventListener('touchstart', h.touchstart);
-                el.removeEventListener('touchend', h.touchend);
-                el.removeEventListener('touchcancel', h.touchcancel);
-                el.removeEventListener('mousedown', h.mousedown);
-                el.removeEventListener('mouseup', h.mouseup);
+            if (!element) return false;
+            var elementKey = element.dataset && element.dataset.openroseId ? element.dataset.openroseId : null;
+            if (!elementKey) return false;
+            var rec = window.openRoseHandlers[elementKey];
+            if (!rec) return false;
+            var el = rec.el;
+            var h = rec.handlers || {};
+            try {
+                el.removeEventListener('touchstart', h.touchstart, { passive: false });
+                el.removeEventListener('touchend', h.touchend, { passive: true });
+                el.removeEventListener('touchcancel', h.touchcancel, { passive: true });
+            } catch (e) {
+                try { el.removeEventListener('touchstart', h.touchstart); el.removeEventListener('touchend', h.touchend); el.removeEventListener('touchcancel', h.touchcancel); } catch (_) { }
             }
-        } catch (e) { /* ignore */ }
-
-        // cleanup any active touch/pointer metas referencing this element
-        for (var pid in window.openRoseHandlers) {
-            // nothing per-pointer stored globally here except within element; we used closures, so nothing else to do
+            delete window.openRoseHandlers[elementKey];
+            try { delete element.dataset.openroseId; } catch (_) { }
+            dlog("swipe: unregistered element", elementKey);
+            return true;
+        } catch (err) {
+            dlog("swipe: unregister error", err);
+            return false;
         }
-        delete window.openRoseHandlers[elementKey];
-        try { delete element.dataset.openroseId; } catch (e) { /* ignore */ }
-        dlog("swipe: unregistered", elementKey);
-        return true;
     }
 
-    // Exposed API for Blazor
+    // Exposed API used by Blazor
     window.openRoseRegisterSwipeElement = function (element, dotNetRef, options) {
         try {
             if (!element) return false;
@@ -351,13 +275,18 @@
             var ok = registerOnElement(element, dotNetRef, elementKey, options || {});
             dlog("swipe: register result for", elementKey, ok);
             return ok;
-        } catch (err) { dlog("swipe: register error", err); return false; }
+        } catch (err) {
+            dlog("swipe: register error", err);
+            return false;
+        }
     };
 
     window.openRoseUnregisterSwipeElement = function (element) {
         try {
             return unregisterElement(element);
-        } catch (err) { dlog("swipe: unregister error", err); return false; }
+        } catch (err) {
+            dlog("swipe: unregister error", err);
+            return false;
+        }
     };
-
 })();
