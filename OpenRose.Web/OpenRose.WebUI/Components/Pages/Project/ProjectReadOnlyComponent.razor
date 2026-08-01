@@ -226,12 +226,14 @@
     [JSInvokable("OnSwipe")]
     public async Task OnSwipe(string direction)
     {
-        // Project only supports "next"
-        if (direction == "right")
+        // For Project (root): swipe left => Next (move forward).
+        // Swipe right would normally be Previous, but Project has no previous in this view so we ignore it.
+        if (direction == "left")
         {
             if (OnNavigateNext.HasDelegate)
                 await OnNavigateNext.InvokeAsync(ProjectId);
         }
+        // else: right swipe -> no-op for project root
     }
 
     // IAsyncDisposable: unregister swipe handlers and dispose DotNetObjectReference

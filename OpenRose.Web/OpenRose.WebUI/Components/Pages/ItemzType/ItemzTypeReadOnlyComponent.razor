@@ -306,15 +306,16 @@
 	[JSInvokable("OnSwipe")]
 	public async Task OnSwipe(string direction)
 	{
+		// Page-like behavior: swipe left => Next, swipe right => Previous
 		if (direction == "left")
-		{
-			if (OnNavigatePrevious.HasDelegate)
-				await OnNavigatePrevious.InvokeAsync(ItemzTypeId);
-		}
-		else if (direction == "right")
 		{
 			if (OnNavigateNext.HasDelegate)
 				await OnNavigateNext.InvokeAsync(ItemzTypeId);
+		}
+		else if (direction == "right")
+		{
+			if (OnNavigatePrevious.HasDelegate)
+				await OnNavigatePrevious.InvokeAsync(ItemzTypeId);
 		}
 	}
 
