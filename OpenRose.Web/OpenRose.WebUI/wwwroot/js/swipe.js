@@ -4,7 +4,9 @@
  * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 */
 
-// Production-ready: one-finger swipe detection (medium sensitivity), preserves pinch/zoom and scrolling.
+// wwwroot/js/swipe.js
+// Production: one-finger swipe detection, preserves pinch/zoom and scrolling.
+// Document-level capture listeners, start-inside-element + end-anywhere, pointer+touch fallback.
 (function () {
     if (window.openRoseSwipeLibLoaded) {
         return;
@@ -15,52 +17,49 @@
     function registerOnElement(el, dotNetRef, elementKey) {
         if (!el) return false;
 
-        // Medium sensitivity parameters
-        var threshold = 80;     // min horizontal movement (px) to count as swipe
-        var restraint = 150;    // max vertical movement allowed (px)
-        var allowedTime = 700;  // max ms for the swipe gesture
+        // Sensitivity parameters (moderate -> more lenient than high sensitivity)
+        var threshold = 50;     // px horizontal required to count as swipe
+        var restraint = 120;    // px max vertical movement allowed
+        var allowedTime = 600;  // ms max duration
 
-        // For pointer events tracking
-        var activePointers = {}; // map pointerId => {startX,startY,startTime}
-        var trackedPointerId = null; // pointer we are tracking for this element
+        // Pointer tracking
+        var activePointers = {};   // pointerId -> { startX, startY, startTime }
+        var trackedPointerId = null;
 
         function onPointerDown(ev) {
-            // Only track single-finger touch (pointerType === 'touch') or mouse left button.
-            // If multiple pointers exist, we ignore to preserve multi-finger gestures (pinch).
+            // only start if gesture begins inside element (doc handler ensures this)
+            // For touch pointer types ensure we're not already tracking another pointer (multi-touch)
             if (ev.pointerType === 'touch') {
-                // If there are any active pointers already, don't start a new one (multi-touch)
                 if (Object.keys(activePointers).length > 0) {
-                    activePointers[ev.pointerId] = null; // mark but don't track
+                    // mark presence, but do not track as single-finger
+                    activePointers[ev.pointerId] = null;
                     return;
                 }
             }
 
-            // record start values
             activePointers[ev.pointerId] = {
                 startX: ev.clientX,
                 startY: ev.clientY,
                 startTime: Date.now()
             };
 
-            // If this is the first/only pointer, mark it tracked
             if (trackedPointerId === null) trackedPointerId = ev.pointerId;
         }
 
         function onPointerUp(ev) {
             var meta = activePointers[ev.pointerId];
-            // Clean up the activePointers entry (we'll compute before deleting)
+            // always remove the pointer entry
             delete activePointers[ev.pointerId];
 
-            // Only react if this pointer was the tracked one and we had no other pointers when it started
+            // Only react if this was the tracked single-finger pointer
             if (trackedPointerId !== ev.pointerId) {
-                // if the pointer we tracked isn't this one, ignore
+                // if no pointers remain, reset tracked pointer
                 if (Object.keys(activePointers).length === 0) trackedPointerId = null;
                 return;
             }
+            trackedPointerId = null;
 
-            trackedPointerId = null; // reset tracked pointer
-
-            if (!meta) return; // not a tracked single-finger start
+            if (!meta) return;
 
             var distX = ev.clientX - meta.startX;
             var distY = ev.clientY - meta.startY;
@@ -77,12 +76,16 @@
             }
         }
 
-        // Touch fallback for browsers not using PointerEvent
-        // We will ignore multi-touch (touches.length !== 1) to preserve pinch gestures
+        function onPointerCancel(ev) {
+            // Cleanup
+            delete activePointers[ev.pointerId];
+            if (trackedPointerId === ev.pointerId) trackedPointerId = null;
+        }
+
+        // Touch fallback (for older browsers)
         function onTouchStart(ev) {
             if (!el.contains(ev.target)) return;
             if (ev.touches.length !== 1) {
-                // multi-touch start -> ignore for swipe detection
                 el.__swipeTouchMeta = null;
                 return;
             }
@@ -91,12 +94,12 @@
         }
 
         function onTouchEnd(ev) {
-            if (!el.__swipeTouchMeta) return;
-            var t = (ev.changedTouches && ev.changedTouches[0]) || null;
-            if (!t) { el.__swipeTouchMeta = null; return; }
-
             var meta = el.__swipeTouchMeta;
             el.__swipeTouchMeta = null;
+            if (!meta) return;
+
+            var t = (ev.changedTouches && ev.changedTouches[0]) || null;
+            if (!t) return;
 
             var distX = t.clientX - meta.startX;
             var distY = t.clientY - meta.startY;
@@ -111,8 +114,11 @@
             }
         }
 
-        // Document-level handlers in capture phase, but we still ensure gesture starts inside element.
-        // We use capture so parent/child elements that call stopPropagation in bubble phase won't block us.
+        function onTouchCancel(ev) {
+            el.__swipeTouchMeta = null;
+        }
+
+        // Document-level handlers (capture phase). Start only when start inside element.
         function docPointerDown(ev) {
             try {
                 if (!el.contains(ev.target)) return;
@@ -121,39 +127,52 @@
         }
         function docPointerUp(ev) {
             try {
-                if (!el.contains(ev.target)) return;
+                // Do NOT require ev.target to be inside element; user may lift finger outside.
                 onPointerUp(ev);
             } catch (e) { /* ignore */ }
         }
+        function docPointerCancel(ev) {
+            try {
+                onPointerCancel(ev);
+            } catch (e) { /* ignore */ }
+        }
+
         function docTouchStart(ev) {
             try {
-                // Only care if touchstart happened inside element
                 if (!el.contains(ev.target)) return;
                 onTouchStart(ev);
             } catch (e) { /* ignore */ }
         }
         function docTouchEnd(ev) {
             try {
-                // touchend target may be different; use the stored meta only
                 onTouchEnd(ev);
             } catch (e) { /* ignore */ }
         }
+        function docTouchCancel(ev) {
+            try {
+                onTouchCancel(ev);
+            } catch (e) { /* ignore */ }
+        }
 
-        // Attach handlers
+        // Attach listeners
         if (window.PointerEvent) {
             document.addEventListener('pointerdown', docPointerDown, { passive: true, capture: true });
             document.addEventListener('pointerup', docPointerUp, { passive: true, capture: true });
-            // Store record
+            document.addEventListener('pointercancel', docPointerCancel, { passive: true, capture: true });
+
             window.openRoseHandlers[elementKey] = {
                 el: el,
                 mode: 'pointer',
-                handlers: { docPointerDown: docPointerDown, docPointerUp: docPointerUp },
+                handlers: { docPointerDown: docPointerDown, docPointerUp: docPointerUp, docPointerCancel: docPointerCancel },
                 dotNetRef: dotNetRef
             };
         } else {
             // touch + mouse fallback
             document.addEventListener('touchstart', docTouchStart, { passive: true, capture: true });
             document.addEventListener('touchend', docTouchEnd, { passive: true, capture: true });
+            document.addEventListener('touchcancel', docTouchCancel, { passive: true, capture: true });
+
+            // mouse fallback (desktop)
             document.addEventListener('mousedown', docPointerDown, { passive: true, capture: true });
             document.addEventListener('mouseup', docPointerUp, { passive: true, capture: true });
 
@@ -163,6 +182,7 @@
                 handlers: {
                     docTouchStart: docTouchStart,
                     docTouchEnd: docTouchEnd,
+                    docTouchCancel: docTouchCancel,
                     docPointerDown: docPointerDown,
                     docPointerUp: docPointerUp
                 },
@@ -198,9 +218,11 @@
                 if (mode === 'pointer') {
                     document.removeEventListener('pointerdown', h.docPointerDown, { capture: true });
                     document.removeEventListener('pointerup', h.docPointerUp, { capture: true });
+                    document.removeEventListener('pointercancel', h.docPointerCancel, { capture: true });
                 } else {
                     document.removeEventListener('touchstart', h.docTouchStart, { capture: true });
                     document.removeEventListener('touchend', h.docTouchEnd, { capture: true });
+                    document.removeEventListener('touchcancel', h.docTouchCancel, { capture: true });
                     document.removeEventListener('mousedown', h.docPointerDown, { capture: true });
                     document.removeEventListener('mouseup', h.docPointerUp, { capture: true });
                 }
