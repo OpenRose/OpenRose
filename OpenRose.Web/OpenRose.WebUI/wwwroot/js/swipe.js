@@ -4,359 +4,360 @@
  * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 */
 
-// Hybrid approach: element-level start + global end handlers.
-// - Preserves button clicks (no pointer capture).
-// - Detects single-finger swipes reliably on mobile.
-// - Preserves multi-touch pinch/zoom (we ignore multi-touch).
-// - Default sensitivity: threshold=50px, restraint=120px, allowedTime=600ms.
-// Set debug = true to enable console logging for troubleshooting.
+// wwwroot/js/swipe.js
+// Hybrid element-level start + dynamic move-handler approach.
+// - Prevents browser history swipe for single-finger horizontal swipes by calling preventDefault on move,
+//   but only after detecting a single-finger horizontal gesture in progress.
+// - Preserves pinch/zoom (multi-touch) and normal clicks (no pointer capture).
+// - Moderate sensitivity: threshold=50px, restraint=120px, allowedTime=600ms.
+// - Set debug = true for console logs during testing.
 
 (function () {
-    if (window.openRoseSwipeLibLoaded) {
-        return;
-    }
+    if (window.openRoseSwipeLibLoaded) return;
     window.openRoseSwipeLibLoaded = true;
     window.openRoseHandlers = window.openRoseHandlers || {};
-    window.openRoseActivePointers = window.openRoseActivePointers || {}; // pointerId -> { elementKey, meta }
-    window.openRoseActiveTouches = window.openRoseActiveTouches || {};   // touchId -> { elementKey, meta }
-    window.openRoseGlobalHandlersInstalled = window.openRoseGlobalHandlersInstalled || false;
 
-    var debug = false; // set to true when testing to get console logs
+    var debug = true; // set true while testing to get console logs
 
-    function log() {
+    function dlog() {
         if (!debug) return;
         console.log.apply(console, arguments);
     }
 
-    // Sensitivity default (moderate)
-    var defaultThreshold = 50;    // px horizontal
-    var defaultRestraint = 120;   // px vertical
-    var defaultAllowedTime = 600;  // ms
+    // Sensitivity defaults (tweak if needed)
+    var DEFAULT_THRESHOLD = 50;   // px horizontal
+    var DEFAULT_RESTRAINT = 120;  // px vertical
+    var DEFAULT_ALLOWED_TIME = 600; // ms
 
-    function installGlobalHandlersIfNeeded() {
-        if (window.openRoseGlobalHandlersInstalled) return;
-        // Pointer global handlers (handle pointerup/pointercancel regardless of where pointer moved)
-        if (window.PointerEvent) {
-            document.addEventListener('pointerup', globalPointerUp, { passive: true });
-            document.addEventListener('pointercancel', globalPointerCancel, { passive: true });
-            document.addEventListener('pointerdown', globalPointerDownCapture, { passive: true, capture: true });
-            window.openRoseGlobalHandlersInstalled = true;
-            log("swipe: installed global pointer handlers");
-        } else {
-            // touch fallback
-            document.addEventListener('touchend', globalTouchEnd, { passive: true });
-            document.addEventListener('touchcancel', globalTouchCancel, { passive: true });
-            // Also capture touchstart at document capture phase to ensure we see starts that might not reach elements (rare)
-            document.addEventListener('touchstart', globalTouchStartCapture, { passive: true, capture: true });
-            window.openRoseGlobalHandlersInstalled = true;
-            log("swipe: installed global touch handlers");
-        }
-    }
-
-    // Helper: remove global handlers (rarely needed)
-    function removeGlobalHandlers() {
-        if (!window.openRoseGlobalHandlersInstalled) return;
-        if (window.PointerEvent) {
-            document.removeEventListener('pointerup', globalPointerUp, { passive: true });
-            document.removeEventListener('pointercancel', globalPointerCancel, { passive: true });
-            document.removeEventListener('pointerdown', globalPointerDownCapture, { passive: true, capture: true });
-        } else {
-            document.removeEventListener('touchend', globalTouchEnd, { passive: true });
-            document.removeEventListener('touchcancel', globalTouchCancel, { passive: true });
-            document.removeEventListener('touchstart', globalTouchStartCapture, { passive: true, capture: true });
-        }
-        window.openRoseGlobalHandlersInstalled = false;
-    }
-
-    // Global capture to detect pointerdown that may not bubble (fallback); we don't use it to start gesture processing here.
-    function globalPointerDownCapture(ev) {
-        // noop for now, but installed to ensure pointer events are possible in some environments
-    }
-    function globalTouchStartCapture(ev) {
-        // noop
-    }
-
-    // Global pointer end handlers
-    function globalPointerUp(ev) {
-        try {
-            var pid = ev.pointerId;
-            var rec = window.openRoseActivePointers[pid];
-            if (!rec) return;
-            // rec: { elementKey, startX, startY, startTime, threshold, restraint, allowedTime, dotNetRef }
-            // compute deltas
-            var dx = ev.clientX - rec.startX;
-            var dy = ev.clientY - rec.startY;
-            var dt = Date.now() - rec.startTime;
-
-            log("swipe: globalPointerUp", pid, "dx=", dx, "dy=", dy, "dt=", dt);
-
-            // cleanup
-            delete window.openRoseActivePointers[pid];
-
-            if (dt <= rec.allowedTime && Math.abs(dx) >= rec.threshold && Math.abs(dy) <= rec.restraint) {
-                if (dx < 0) {
-                    rec.dotNetRef.invokeMethodAsync('OnSwipe', 'left').catch(function () { /* ignore */ });
-                    log("swipe: invoked left for element", rec.elementKey);
-                } else {
-                    rec.dotNetRef.invokeMethodAsync('OnSwipe', 'right').catch(function () { /* ignore */ });
-                    log("swipe: invoked right for element", rec.elementKey);
-                }
-            }
-        } catch (e) {
-            // ignore
-            log("swipe: globalPointerUp error", e);
-        }
-    }
-
-    function globalPointerCancel(ev) {
-        try {
-            var pid = ev.pointerId;
-            if (window.openRoseActivePointers[pid]) {
-                delete window.openRoseActivePointers[pid];
-                log("swipe: pointer cancel cleaned", pid);
-            }
-        } catch (e) { /* ignore */ }
-    }
-
-    // Global touch end handlers
-    function globalTouchEnd(ev) {
-        try {
-            if (!ev.changedTouches) return;
-            for (var i = 0; i < ev.changedTouches.length; i++) {
-                var t = ev.changedTouches[i];
-                var touchId = t.identifier;
-                var rec = window.openRoseActiveTouches[touchId];
-                if (!rec) continue;
-                var dx = t.clientX - rec.startX;
-                var dy = t.clientY - rec.startY;
-                var dt = Date.now() - rec.startTime;
-
-                log("swipe: globalTouchEnd id=", touchId, "dx=", dx, "dy=", dy, "dt=", dt);
-
-                delete window.openRoseActiveTouches[touchId];
-
-                if (dt <= rec.allowedTime && Math.abs(dx) >= rec.threshold && Math.abs(dy) <= rec.restraint) {
-                    if (dx < 0) {
-                        rec.dotNetRef.invokeMethodAsync('OnSwipe', 'left').catch(function () { /* ignore */ });
-                        log("swipe: invoked left for element", rec.elementKey);
-                    } else {
-                        rec.dotNetRef.invokeMethodAsync('OnSwipe', 'right').catch(function () { /* ignore */ });
-                        log("swipe: invoked right for element", rec.elementKey);
-                    }
-                }
-            }
-        } catch (e) {
-            log("swipe: globalTouchEnd error", e);
-        }
-    }
-
-    function globalTouchCancel(ev) {
-        try {
-            if (!ev.changedTouches) return;
-            for (var i = 0; i < ev.changedTouches.length; i++) {
-                var t = ev.changedTouches[i];
-                var touchId = t.identifier;
-                if (window.openRoseActiveTouches[touchId]) {
-                    delete window.openRoseActiveTouches[touchId];
-                }
-            }
-            log("swipe: globalTouchCancel cleaned");
-        } catch (e) { /* ignore */ }
-    }
-
-    // Register an element to start tracking gestures when start occurs inside element.
+    // Helper: attach and remove with stored refs
     function registerOnElement(el, dotNetRef, elementKey, opts) {
         if (!el) return false;
 
-        // per-element parameters (use defaults unless overridden)
-        var threshold = (opts && opts.threshold) || defaultThreshold;
-        var restraint = (opts && opts.restraint) || defaultRestraint;
-        var allowedTime = (opts && opts.allowedTime) || defaultAllowedTime;
+        var threshold = (opts && opts.threshold) || DEFAULT_THRESHOLD;
+        var restraint = (opts && opts.restraint) || DEFAULT_RESTRAINT;
+        var allowedTime = (opts && opts.allowedTime) || DEFAULT_ALLOWED_TIME;
 
-        // Pointerstart handler attached to element (bubble phase)
-        function elementPointerDown(ev) {
-            try {
-                // Only consider primary buttons for mouse
-                if (ev.pointerType === 'mouse' && ev.button !== 0) return;
+        // Per-interaction state
+        // For pointer events: keep map from pointerId to meta { startX, startY, startTime, movedHorizontally }
+        var pointerMeta = {};
 
-                // Only start if the gesture begins inside this element (we are on element so OK)
-                // Ignore multi-touch: if there is already a pointer tracked with a different pointerId for this browser,
-                // we still treat each pointer independently but we will only process the first for a given pointerId.
-                var pid = ev.pointerId;
+        // For touch fallback (touch identifiers)
+        // Map touchId -> meta
+        var touchMeta = {};
 
-                // store meta for this pointerId keyed globally
-                window.openRoseActivePointers[pid] = {
-                    elementKey: elementKey,
-                    startX: ev.clientX,
-                    startY: ev.clientY,
-                    startTime: Date.now(),
-                    threshold: threshold,
-                    restraint: restraint,
-                    allowedTime: allowedTime,
-                    dotNetRef: dotNetRef
-                };
+        // Move handler refs so we can remove them
+        var currentPointerMoveHandler = null;
+        var currentTouchMoveHandler = null;
 
-                log("swipe: elementPointerDown registered for pid", pid, "element", elementKey);
-            } catch (e) {
-                log("swipe: elementPointerDown error", e);
-            }
+        // --- ELEMENT-LEVEL START HANDLERS ---
+
+        function onElementPointerDown(ev) {
+            // Only care about primary mouse button or touch
+            if (ev.pointerType === 'mouse' && ev.button !== 0) return;
+
+            // Record start for this pointer
+            pointerMeta[ev.pointerId] = {
+                startX: ev.clientX,
+                startY: ev.clientY,
+                startTime: Date.now(),
+                prevented: false // whether we've prevented default (to block browser gestures)
+            };
+
+            // Install a pointermove handler on document so we can call preventDefault when necessary.
+            // Use passive: false so preventDefault works.
+            currentPointerMoveHandler = function (moveEv) {
+                try {
+                    // Only handle same pointerId
+                    var meta = pointerMeta[ev.pointerId];
+                    if (!meta) return;
+
+                    // If pointer is not touch, don't call preventDefault (mouse dragging should not be blocked)
+                    if (ev.pointerType !== 'touch') return;
+
+                    var dx = moveEv.clientX - meta.startX;
+                    var dy = moveEv.clientY - meta.startY;
+                    var absDx = Math.abs(dx), absDy = Math.abs(dy);
+
+                    // If multi-pointer active (additional pointers), abort preventing (preserve pinch)
+                    // We can detect additional pointers via navigator.maxTouchPoints? Not reliable; check pointer events currently active:
+                    // If any other pointer id exists in pointerMeta besides ev.pointerId, treat as multi-touch and skip.
+                    var multi = false;
+                    for (var pid in pointerMeta) {
+                        if (pid !== String(ev.pointerId)) { multi = true; break; }
+                    }
+                    if (multi) return;
+
+                    // If horizontal dominant and passes small movement threshold (not final swipe threshold)
+                    var earlyThreshold = 10; // small: start preventing only if user moves noticeably horizontally
+                    if (!meta.prevented && absDx > earlyThreshold && absDx > absDy) {
+                        // prevent browser horizontal gestures (history) for this pointer
+                        try {
+                            moveEv.preventDefault();
+                            meta.prevented = true;
+                            dlog("swipe: prevented default on pointermove (element)", elementKey);
+                        } catch (e) {
+                            // Some browsers ignore preventDefault if passive true on some targets.
+                        }
+                    } else if (meta.prevented) {
+                        // already prevented once, keep preventing
+                        try { moveEv.preventDefault(); } catch (e) { }
+                    }
+                } catch (e) { /* ignore */ }
+            };
+
+            // attach to document
+            document.addEventListener('pointermove', currentPointerMoveHandler, { passive: false, capture: true });
+
+            dlog("swipe: pointerdown registered", ev.pointerId, elementKey);
         }
 
-        function elementPointerUp(ev) {
-            // We purposely avoid processing up here, global handler will do it.
-        }
-
-        function elementPointerCancel(ev) {
+        function onElementPointerUp(ev) {
+            // compute and clean up
             try {
-                var pid = ev.pointerId;
-                if (window.openRoseActivePointers[pid]) {
-                    delete window.openRoseActivePointers[pid];
-                    log("swipe: elementPointerCancel cleaned", pid);
+                var meta = pointerMeta[ev.pointerId];
+                // remove move handler
+                if (currentPointerMoveHandler) {
+                    document.removeEventListener('pointermove', currentPointerMoveHandler, { capture: true });
+                    currentPointerMoveHandler = null;
                 }
+
+                if (!meta) return;
+
+                var dx = ev.clientX - meta.startX;
+                var dy = ev.clientY - meta.startY;
+                var dt = Date.now() - meta.startTime;
+
+                dlog("swipe: pointerup", ev.pointerId, "dx", dx, "dy", dy, "dt", dt, "meta.prevented", meta.prevented);
+
+                // cleanup meta
+                delete pointerMeta[ev.pointerId];
+
+                if (dt <= allowedTime && Math.abs(dx) >= threshold && Math.abs(dy) <= restraint) {
+                    if (dx < 0) {
+                        dotNetRef.invokeMethodAsync('OnSwipe', 'left').catch(function () { /* ignore */ });
+                        dlog("swipe: invoke left", elementKey);
+                    } else {
+                        dotNetRef.invokeMethodAsync('OnSwipe', 'right').catch(function () { /* ignore */ });
+                        dlog("swipe: invoke right", elementKey);
+                    }
+                }
+            } catch (e) { dlog("swipe: elementPointerUp error", e); }
+        }
+
+        function onElementPointerCancel(ev) {
+            try {
+                if (currentPointerMoveHandler) {
+                    document.removeEventListener('pointermove', currentPointerMoveHandler, { capture: true });
+                    currentPointerMoveHandler = null;
+                }
+                delete pointerMeta[ev.pointerId];
+                dlog("swipe: pointercancel cleaned", ev.pointerId);
             } catch (e) { /* ignore */ }
         }
 
-        // Touchstart on element -> store touch meta keyed by touch.identifier
-        function elementTouchStart(ev) {
+        // --- TOUCH fallback ---
+
+        function onElementTouchStart(ev) {
             try {
                 if (!ev || !ev.touches) return;
+                // If a multi-touch begins, ignore swipe tracking for those touches (preserve pinch)
                 if (ev.touches.length !== 1) {
-                    // multi-touch start: mark nothing for swipe
+                    // mark nothing
                     return;
                 }
                 var t = ev.touches[0];
-                window.openRoseActiveTouches[t.identifier] = {
-                    elementKey: elementKey,
+                touchMeta[t.identifier] = {
                     startX: t.clientX,
                     startY: t.clientY,
                     startTime: Date.now(),
-                    threshold: threshold,
-                    restraint: restraint,
-                    allowedTime: allowedTime,
-                    dotNetRef: dotNetRef
+                    prevented: false
                 };
-                log("swipe: elementTouchStart registered id", t.identifier, "element", elementKey);
-            } catch (e) { log("swipe: elementTouchStart error", e); }
+
+                // install touchmove on document (non-passive) to be able to prevent default if horizontal gesture detected
+                currentTouchMoveHandler = function (moveEv) {
+                    try {
+                        if (!moveEv || !moveEv.touches) return;
+                        // find the touch with same identifier if present in touches or changedTouches
+                        var found = null;
+                        for (var i = 0; i < moveEv.touches.length; i++) {
+                            if (touchMeta[moveEv.touches[i].identifier]) { found = moveEv.touches[i]; break; }
+                        }
+                        // If multiple touches present => abort preventing
+                        if (moveEv.touches.length > 1) return;
+
+                        // If found our tracked touch
+                        if (!found) {
+                            // maybe it's in changedTouches
+                            for (var j = 0; j < moveEv.changedTouches.length; j++) {
+                                if (touchMeta[moveEv.changedTouches[j].identifier]) { found = moveEv.changedTouches[j]; break; }
+                            }
+                        }
+                        if (!found) return;
+                        var meta = touchMeta[found.identifier];
+                        if (!meta) return;
+
+                        var dx = found.clientX - meta.startX;
+                        var dy = found.clientY - meta.startY;
+                        var absDx = Math.abs(dx), absDy = Math.abs(dy);
+
+                        var earlyThreshold = 10;
+                        if (!meta.prevented && absDx > earlyThreshold && absDx > absDy) {
+                            try {
+                                moveEv.preventDefault(); // stops browser back/forward swipe
+                                meta.prevented = true;
+                                dlog("swipe: prevented default on touchmove (element)", elementKey);
+                            } catch (e) {
+                                // ignore
+                            }
+                        } else if (meta.prevented) {
+                            try { moveEv.preventDefault(); } catch (e) { }
+                        }
+                    } catch (e) { /* ignore */ }
+                };
+
+                document.addEventListener('touchmove', currentTouchMoveHandler, { passive: false, capture: true });
+
+                dlog("swipe: touchstart registered id", t.identifier, elementKey);
+            } catch (e) { dlog("swipe: elementTouchStart error", e); }
         }
 
-        function elementTouchEnd(ev) {
-            // global handler will process
-        }
-
-        function elementTouchCancel(ev) {
+        function onElementTouchEnd(ev) {
             try {
+                // remove move handler
+                if (currentTouchMoveHandler) {
+                    document.removeEventListener('touchmove', currentTouchMoveHandler, { capture: true });
+                    currentTouchMoveHandler = null;
+                }
+
                 if (!ev.changedTouches) return;
                 for (var i = 0; i < ev.changedTouches.length; i++) {
-                    var t = ev.changedTouches[i];
-                    if (window.openRoseActiveTouches[t.identifier]) {
-                        delete window.openRoseActiveTouches[t.identifier];
+                    var ct = ev.changedTouches[i];
+                    var meta = touchMeta[ct.identifier];
+                    if (!meta) continue;
+
+                    var dx = ct.clientX - meta.startX;
+                    var dy = ct.clientY - meta.startY;
+                    var dt = Date.now() - meta.startTime;
+
+                    dlog("swipe: touchend id", ct.identifier, "dx", dx, "dy", dy, "dt", dt, "meta.prevented", meta.prevented);
+
+                    delete touchMeta[ct.identifier];
+
+                    if (dt <= allowedTime && Math.abs(dx) >= threshold && Math.abs(dy) <= restraint) {
+                        if (dx < 0) {
+                            dotNetRef.invokeMethodAsync('OnSwipe', 'left').catch(function () { /* ignore */ });
+                            dlog("swipe: invoke left (touch)", elementKey);
+                        } else {
+                            dotNetRef.invokeMethodAsync('OnSwipe', 'right').catch(function () { /* ignore */ });
+                            dlog("swipe: invoke right (touch)", elementKey);
+                        }
                     }
                 }
+            } catch (e) { dlog("swipe: elementTouchEnd error", e); }
+        }
+
+        function onElementTouchCancel(ev) {
+            try {
+                if (currentTouchMoveHandler) {
+                    document.removeEventListener('touchmove', currentTouchMoveHandler, { capture: true });
+                    currentTouchMoveHandler = null;
+                }
+                if (!ev.changedTouches) return;
+                for (var i = 0; i < ev.changedTouches.length; i++) {
+                    var ct = ev.changedTouches[i];
+                    delete touchMeta[ct.identifier];
+                }
+                dlog("swipe: touchcancel cleaned", elementKey);
             } catch (e) { /* ignore */ }
         }
 
-        // Attach element-level listeners (bubble phase)
-        var handlers = {};
+        // Attach element-level listeners (we want bubble phase so button clicks still get processed)
+        var rec = { el: el, dotNetRef: dotNetRef, handlers: {} };
 
         if (window.PointerEvent) {
-            handlers.pointerdown = elementPointerDown;
-            handlers.pointerup = elementPointerUp;
-            handlers.pointercancel = elementPointerCancel;
+            rec.handlers.pointerdown = onElementPointerDown;
+            rec.handlers.pointerup = onElementPointerUp;
+            rec.handlers.pointercancel = onElementPointerCancel;
 
-            el.addEventListener('pointerdown', handlers.pointerdown, { passive: true });
-            // pointerup on element not required; global will handle actual up event
-            el.addEventListener('pointercancel', handlers.pointercancel, { passive: true });
+            el.addEventListener('pointerdown', rec.handlers.pointerdown, { passive: true });
+            el.addEventListener('pointerup', rec.handlers.pointerup, { passive: true });
+            el.addEventListener('pointercancel', rec.handlers.pointercancel, { passive: true });
 
-            // store handler refs for removal later
-            window.openRoseHandlers[elementKey] = {
-                el: el,
-                mode: 'pointer',
-                handlers: handlers,
-                dotNetRef: dotNetRef
-            };
-
-            log("swipe: registered element-level pointer handlers for", elementKey);
+            rec.mode = 'pointer';
+            dlog("swipe: element pointer handlers attached", elementKey);
         } else {
-            // touch/mouse fallback
-            handlers.touchstart = elementTouchStart;
-            handlers.touchend = elementTouchEnd;
-            handlers.touchcancel = elementTouchCancel;
-            handlers.mousedown = elementPointerDown; // treat mouse down similarly
-            handlers.mouseup = elementPointerUp;
+            rec.handlers.touchstart = onElementTouchStart;
+            rec.handlers.touchend = onElementTouchEnd;
+            rec.handlers.touchcancel = onElementTouchCancel;
 
-            el.addEventListener('touchstart', handlers.touchstart, { passive: true });
-            el.addEventListener('touchcancel', handlers.touchcancel, { passive: true });
-            el.addEventListener('mousedown', handlers.mousedown, { passive: true });
+            el.addEventListener('touchstart', rec.handlers.touchstart, { passive: false }); // passive:false so we can preventDefault later
+            el.addEventListener('touchend', rec.handlers.touchend, { passive: true });
+            el.addEventListener('touchcancel', rec.handlers.touchcancel, { passive: true });
 
-            window.openRoseHandlers[elementKey] = {
-                el: el,
-                mode: 'touchmouse',
-                handlers: handlers,
-                dotNetRef: dotNetRef
-            };
-            log("swipe: registered element-level touch/mouse handlers for", elementKey);
+            // mouse fallback for desktop
+            rec.handlers.mousedown = function (ev) { onElementPointerDown({ pointerId: 'mouse', clientX: ev.clientX, clientY: ev.clientY, pointerType: 'mouse', button: ev.button }); };
+            rec.handlers.mouseup = function (ev) { onElementPointerUp({ pointerId: 'mouse', clientX: ev.clientX, clientY: ev.clientY }); };
+
+            el.addEventListener('mousedown', rec.handlers.mousedown, { passive: true });
+            el.addEventListener('mouseup', rec.handlers.mouseup, { passive: true });
+
+            rec.mode = 'touchmouse';
+            dlog("swipe: element touch handlers attached", elementKey);
         }
 
-        // ensure globals are installed (do once)
-        installGlobalHandlersIfNeeded();
+        window.openRoseHandlers[elementKey] = rec;
 
         return true;
     }
 
-    // Public API: register/unregister functions expected by Blazor
+    function unregisterElement(element) {
+        if (!element) return false;
+        var elementKey = element.dataset && element.dataset.openroseId ? element.dataset.openroseId : null;
+        if (!elementKey) return false;
+        var rec = window.openRoseHandlers[elementKey];
+        if (!rec) return false;
+        var el = rec.el;
+        var h = rec.handlers || {};
+        try {
+            if (rec.mode === 'pointer') {
+                el.removeEventListener('pointerdown', h.pointerdown);
+                el.removeEventListener('pointerup', h.pointerup);
+                el.removeEventListener('pointercancel', h.pointercancel);
+            } else {
+                el.removeEventListener('touchstart', h.touchstart);
+                el.removeEventListener('touchend', h.touchend);
+                el.removeEventListener('touchcancel', h.touchcancel);
+                el.removeEventListener('mousedown', h.mousedown);
+                el.removeEventListener('mouseup', h.mouseup);
+            }
+        } catch (e) { /* ignore */ }
+
+        // cleanup any active touch/pointer metas referencing this element
+        for (var pid in window.openRoseHandlers) {
+            // nothing per-pointer stored globally here except within element; we used closures, so nothing else to do
+        }
+        delete window.openRoseHandlers[elementKey];
+        try { delete element.dataset.openroseId; } catch (e) { /* ignore */ }
+        dlog("swipe: unregistered", elementKey);
+        return true;
+    }
+
+    // Exposed API for Blazor
     window.openRoseRegisterSwipeElement = function (element, dotNetRef, options) {
         try {
             if (!element) return false;
             var elementKey = element.dataset && element.dataset.openroseId ? element.dataset.openroseId : ("el-" + Math.random().toString(36).substr(2, 9));
             try { element.dataset.openroseId = elementKey; } catch (e) { /* ignore */ }
-            return registerOnElement(element, dotNetRef, elementKey, options || {});
-        } catch (err) {
-            log("swipe: openRoseRegisterSwipeElement error", err);
-            return false;
-        }
+            var ok = registerOnElement(element, dotNetRef, elementKey, options || {});
+            dlog("swipe: register result for", elementKey, ok);
+            return ok;
+        } catch (err) { dlog("swipe: register error", err); return false; }
     };
 
     window.openRoseUnregisterSwipeElement = function (element) {
         try {
-            if (!element) return false;
-            var elementKey = element.dataset && element.dataset.openroseId ? element.dataset.openroseId : null;
-            if (!elementKey) return false;
-            var rec = window.openRoseHandlers[elementKey];
-            if (!rec) return false;
-
-            var mode = rec.mode;
-            var h = rec.handlers || {};
-            try {
-                if (mode === 'pointer') {
-                    element.removeEventListener('pointerdown', h.pointerdown);
-                    element.removeEventListener('pointercancel', h.pointercancel);
-                } else {
-                    element.removeEventListener('touchstart', h.touchstart);
-                    element.removeEventListener('touchcancel', h.touchcancel);
-                    element.removeEventListener('mousedown', h.mousedown);
-                }
-            } catch (er) { /* ignore */ }
-
-            // cleanup any active pointers/touches associated with this element
-            for (var pid in window.openRoseActivePointers) {
-                if (window.openRoseActivePointers[pid] && window.openRoseActivePointers[pid].elementKey === elementKey) {
-                    delete window.openRoseActivePointers[pid];
-                }
-            }
-            for (var tid in window.openRoseActiveTouches) {
-                if (window.openRoseActiveTouches[tid] && window.openRoseActiveTouches[tid].elementKey === elementKey) {
-                    delete window.openRoseActiveTouches[tid];
-                }
-            }
-
-            delete window.openRoseHandlers[elementKey];
-            try { delete element.dataset.openroseId; } catch (e) { }
-            try { delete element.__swipeTouchMeta; } catch (e) { }
-            log("swipe: unregistered element", elementKey);
-            return true;
-        } catch (err) {
-            log("swipe: openRoseUnregisterSwipeElement error", err);
-            return false;
-        }
+            return unregisterElement(element);
+        } catch (err) { dlog("swipe: unregister error", err); return false; }
     };
+
 })();
