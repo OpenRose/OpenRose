@@ -3,26 +3,28 @@
     * Licensed under the Apache License, Version 2.0.
  * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 */
-// wwwroot/js/swipe.js
 
-// wwwroot/js/swipe.js (production)
+// Production-ready, robust touch/pointer swipe detection (document-level, capture-phase).
+
+
 (function () {
     if (window.openRoseSwipeLibLoaded) {
         return;
     }
     window.openRoseSwipeLibLoaded = true;
-
     window.openRoseHandlers = window.openRoseHandlers || {};
 
     function registerOnElement(el, dotNetRef, elementKey) {
-        if (!el) {
-            return false;
-        }
+        if (!el) return false;
+
+        // Hint browser how to treat touch gestures:
+        // pan-y allows vertical scrolling while enabling horizontal gestures to be used by JS.
+        try { el.style.touchAction = 'pan-y'; } catch (e) { }
 
         var startX = 0, startY = 0, startTime = 0;
-        var threshold = 50;
-        var restraint = 120;
-        var allowedTime = 600;
+        var threshold = 50; // pixels min for swipe
+        var restraint = 120; // max y delta
+        var allowedTime = 600; // ms
 
         function onStart(e) {
             var p = (e.touches && e.touches[0]) || e;
@@ -46,36 +48,52 @@
             }
         }
 
-        function onPointerDown(e) { onStart(e); }
-        function onPointerUp(e) { onEnd(e); }
-        function onTouchStart(e) { onStart(e); }
-        function onTouchEnd(e) { onEnd(e); }
-        function onMouseDown(e) { onStart(e); }
-        function onMouseUp(e) { onEnd(e); }
+        // Document-level capture handlers that filter by el.contains(target)
+        function makeDocPointerDown() {
+            return function (ev) {
+                // only start if gesture begins inside element
+                try {
+                    if (el.contains(ev.target)) onStart(ev);
+                } catch (e) { /* ignore */ }
+            };
+        }
+        function makeDocPointerUp() {
+            return function (ev) {
+                try {
+                    if (el.contains(ev.target)) onEnd(ev);
+                } catch (e) { /* ignore */ }
+            };
+        }
+
+        var handlers = {
+            pointerDown: makeDocPointerDown(),
+            pointerUp: makeDocPointerUp(),
+            touchStart: makeDocPointerDown(),
+            touchEnd: makeDocPointerUp(),
+            mouseDown: makeDocPointerDown(),
+            mouseUp: makeDocPointerUp()
+        };
 
         var uses = [];
+
+        // Prefer pointer events where available
         if (window.PointerEvent) {
-            el.addEventListener('pointerdown', onPointerDown, { passive: true });
-            el.addEventListener('pointerup', onPointerUp, { passive: true });
+            document.addEventListener('pointerdown', handlers.pointerDown, { passive: true, capture: true });
+            document.addEventListener('pointerup', handlers.pointerUp, { passive: true, capture: true });
             uses.push('pointer');
         } else {
-            if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
-                el.addEventListener('touchstart', onTouchStart, { passive: true });
-                el.addEventListener('touchend', onTouchEnd, { passive: true });
-                uses.push('touch');
-            }
-            el.addEventListener('mousedown', onMouseDown, { passive: true });
-            el.addEventListener('mouseup', onMouseUp, { passive: true });
-            uses.push('mouse');
+            // touch
+            document.addEventListener('touchstart', handlers.touchStart, { passive: true, capture: true });
+            document.addEventListener('touchend', handlers.touchEnd, { passive: true, capture: true });
+            // mouse as fallback
+            document.addEventListener('mousedown', handlers.mouseDown, { passive: true, capture: true });
+            document.addEventListener('mouseup', handlers.mouseUp, { passive: true, capture: true });
+            uses.push('touch', 'mouse');
         }
 
         window.openRoseHandlers[elementKey] = {
             el: el,
-            handlers: {
-                onPointerDown: onPointerDown, onPointerUp: onPointerUp,
-                onTouchStart: onTouchStart, onTouchEnd: onTouchEnd,
-                onMouseDown: onMouseDown, onMouseUp: onMouseUp
-            },
+            handlers: handlers,
             uses: uses,
             dotNetRef: dotNetRef
         };
@@ -102,21 +120,18 @@
             var rec = window.openRoseHandlers[elementKey];
             if (!rec) return false;
 
-            var el = rec.el;
+            var handlers = rec.handlers || {};
             var uses = rec.uses || [];
 
             try {
                 if (uses.indexOf('pointer') >= 0) {
-                    el.removeEventListener('pointerdown', rec.handlers.onPointerDown);
-                    el.removeEventListener('pointerup', rec.handlers.onPointerUp);
-                }
-                if (uses.indexOf('touch') >= 0) {
-                    el.removeEventListener('touchstart', rec.handlers.onTouchStart);
-                    el.removeEventListener('touchend', rec.handlers.onTouchEnd);
-                }
-                if (uses.indexOf('mouse') >= 0) {
-                    el.removeEventListener('mousedown', rec.handlers.onMouseDown);
-                    el.removeEventListener('mouseup', rec.handlers.onMouseUp);
+                    document.removeEventListener('pointerdown', handlers.pointerDown, { capture: true });
+                    document.removeEventListener('pointerup', handlers.pointerUp, { capture: true });
+                } else {
+                    document.removeEventListener('touchstart', handlers.touchStart, { capture: true });
+                    document.removeEventListener('touchend', handlers.touchEnd, { capture: true });
+                    document.removeEventListener('mousedown', handlers.mouseDown, { capture: true });
+                    document.removeEventListener('mouseup', handlers.mouseUp, { capture: true });
                 }
             } catch (er) { /* ignore */ }
 
