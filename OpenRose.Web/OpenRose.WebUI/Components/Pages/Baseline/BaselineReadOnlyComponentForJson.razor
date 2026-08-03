@@ -15,7 +15,11 @@
 @inject BaselineTreeNodeItemzSelectionServiceForJson BaselineItemzSelectionServiceForJson
 @inject IJSRuntime JS
 @inject JsonFileDataSourceService JsonService
+@inject ILogger<BaselineReadOnlyComponentForJson> _logger
+@implements IAsyncDisposable
 
+
+<div style="height:100%;" id="@_elementId" @ref="_swipeElementRef">
 <MudGrid>
     @if (initializingPage)
     {
@@ -108,7 +112,7 @@
         </MudItem>
     }
 </MudGrid>
-
+</div>
 @code {
     [Parameter] 
     public Guid BaselineId { get; set; }
@@ -124,6 +128,12 @@
     private bool _needsRender = false;
 
     private Breakpoint bp;
+
+    // Swipe support (ElementReference-based)
+    private string _elementId => $"openrose-swipe-baselinejson-{BaselineId}";
+    private ElementReference _swipeElementRef;
+    private DotNetObjectReference<BaselineReadOnlyComponentForJson>? _dotNetRef;
+    private bool _swipeRegistered = false;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -147,6 +157,33 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+
+        if (firstRender)
+        {
+
+            // register swipe handlers
+            _dotNetRef = DotNetObjectReference.Create(this);
+            try
+            {
+                _swipeRegistered = await JS.InvokeAsync<bool>("openRoseRegisterSwipeElement", _swipeElementRef, _dotNetRef);
+                if (!_swipeRegistered)
+                {
+                    _logger?.LogWarning("Swipe registration failed for {ElementId}", _elementId);
+                }
+            }
+            catch (JSException jsex)
+            {
+                _logger?.LogWarning(jsex, "JSException while registering swipe for {ElementId}", _elementId);
+                _swipeRegistered = false;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "Unexpected exception while registering swipe for {ElementId}", _elementId);
+                _swipeRegistered = false;
+            }
+
+        }
+
         if (_needsRender)
         {
             _needsRender = false;
@@ -173,6 +210,55 @@
     private void toggleSplitBar()
     {
         SplitBarManagementService.ToggleSplitBar();
+    }
+
+
+    [JSInvokable("OnSwipe")]
+    public async Task OnSwipe(string direction)
+    {
+        // Book-style mapping: swipe left => Next, swipe right => Previous
+        if (direction == "left")
+        {
+            if (OnNavigateNext.HasDelegate)
+                await OnNavigateNext.InvokeAsync(BaselineId);
+        }
+        // else if (direction == "right")
+        // {
+        // 	if (OnNavigatePrevious.HasDelegate)
+        // 		await OnNavigatePrevious.InvokeAsync(BaselineId);
+        // }
+    }
+
+    // IAsyncDisposable: unregister swipe handlers and dispose DotNetObjectReference
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (_swipeRegistered)
+            {
+                await JS.InvokeAsync<bool>("openRoseUnregisterSwipeElement", _swipeElementRef);
+            }
+        }
+        catch (Microsoft.JSInterop.JSDisconnectedException)
+        {
+            // circuit disconnected while disposing - ignore
+        }
+        catch (JSException jsex)
+        {
+            _logger?.LogWarning(jsex, "JSException while unregistering swipe for {ElementId}", _elementId);
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning(ex, "Unexpected exception while unregistering swipe for {ElementId}", _elementId);
+        }
+        finally
+        {
+            if (_dotNetRef != null)
+            {
+                _dotNetRef.Dispose();
+                _dotNetRef = null;
+            }
+        }
     }
 
 }
