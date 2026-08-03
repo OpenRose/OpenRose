@@ -14,7 +14,11 @@
 @inject ViewSettingsService ViewSettings
 @inject IJSRuntime JS
 @inject JsonFileDataSourceService JsonService
+@inject ILogger<ItemzTypeReadOnlyComponentForJson> _logger
+@implements IAsyncDisposable
 
+
+<div style="height:100%;" id="@_elementId" @ref="_swipeElementRef">
 <MudGrid>
     @if (initializingPage)
     {
@@ -32,89 +36,90 @@
             <MudCard style="background-color:#FABBBB; position:sticky; top:0; z-index:10;">
                 <MudCardContent Style="padding:6px">
                     <div class="d-flex align-start justify-space-between" style="gap:8px;">
-                    <MudTooltip Text="Toggle Split Bar" Placement="Placement.Top">
-                        <MudIconButton Icon="@Icons.Material.Filled.Fullscreen"
-                                        Color="Color.Success"
-                                        Size="Size.Medium"
-                                        IconSize="Size.Large"
-                                        Variant="Variant.Filled"
-                                        Class="mud-rounded-circle me-2"
-                                        @onclick="toggleSplitBar" />
+                        <MudTooltip Text="Toggle Split Bar" Placement="Placement.Top">
+                            <MudIconButton Icon="@Icons.Material.Filled.Fullscreen"
+                                            Color="Color.Success"
+                                            Size="Size.Medium"
+                                            IconSize="Size.Large"
+                                            Variant="Variant.Filled"
+                                            Class="mud-rounded-circle me-2"
+                                            @onclick="toggleSplitBar" />
 
-                    </MudTooltip>
-                    <MudText Typo="Typo.inherit"
-                                Class="flex-grow-1 text-responsive-title"
-                                Align="Align.Left"
-                                Style="white-space:normal; overflow-wrap:break-word;">
-                        <strong>@_itemzType.Name</strong>
-                    </MudText>
-                    <div class="d-flex align-top flex-shrink-0">
-                        <MudIconButton Icon="@Icons.Material.Filled.ArrowCircleUp"
-                                        Color="Color.Success"
-                                        Size="Size.Medium"
-                                        IconSize="Size.Large"
-                                        Variant="Variant.Filled"
-                                        Class="mud-rounded-circle me-2"
-                                        OnClick="@(() => { if (OnNavigatePrevious.HasDelegate) OnNavigatePrevious.InvokeAsync(ItemzTypeId); })" />
+                        </MudTooltip>
+                        <MudText Typo="Typo.inherit"
+                                    Class="flex-grow-1 text-responsive-title"
+                                    Align="Align.Left"
+                                    Style="white-space:normal; overflow-wrap:break-word;">
+                            <strong>@_itemzType.Name</strong>
+                        </MudText>
+                        <div class="d-flex align-top flex-shrink-0">
+                            <MudIconButton Icon="@Icons.Material.Filled.ArrowCircleUp"
+                                            Color="Color.Success"
+                                            Size="Size.Medium"
+                                            IconSize="Size.Large"
+                                            Variant="Variant.Filled"
+                                            Class="mud-rounded-circle me-2"
+                                            OnClick="@(() => { if (OnNavigatePrevious.HasDelegate) OnNavigatePrevious.InvokeAsync(ItemzTypeId); })" />
 
-                        <MudIconButton Icon="@Icons.Material.Filled.ArrowCircleDown"
-                                        Color="Color.Success"
-                                        Size="Size.Medium"
-                                        IconSize="Size.Large"
-                                        Variant="Variant.Filled"
-                                        Class="mud-rounded-circle"
-                                        OnClick="@(() => { if (OnNavigateNext.HasDelegate) OnNavigateNext.InvokeAsync(ItemzTypeId); })" />
+                            <MudIconButton Icon="@Icons.Material.Filled.ArrowCircleDown"
+                                            Color="Color.Success"
+                                            Size="Size.Medium"
+                                            IconSize="Size.Large"
+                                            Variant="Variant.Filled"
+                                            Class="mud-rounded-circle"
+                                            OnClick="@(() => { if (OnNavigateNext.HasDelegate) OnNavigateNext.InvokeAsync(ItemzTypeId); })" />
                         </div>
-                    </div>                
-                 </MudCardContent>
+                    </div>
+                </MudCardContent>
             </MudCard>
 
             <MudCard Elevation="0" Outlined="false" Style="background-color:transparent;">
                 <MudCardContent>
-                @if (!ViewSettings.IsKioskMode)
-                {
-                <MudBreakpointProvider OnBreakpointChanged="b => bp = b">
-                    <div style=" display:flex;
-                            gap: @(bp >= Breakpoint.Md ? "10px" : "2px") ;
-                            align-items:flex-start;
-                            flex-direction:@(bp >= Breakpoint.Md ? "row" : "column");
-                            flex-wrap:@(bp >= Breakpoint.Md ? "nowrap" : "wrap"); ">
-                    @if (ViewSettings.ShowPropertiesInReadOnlyViews)
+                    @if (!ViewSettings.IsKioskMode)
                     {
-                        <div style="display:flex; align-items:center; gap:6px;">
-                        <strong>ID : </strong>
-                        <CopyableText TextToCopy="@_itemzType.Id.ToString()" DisplayLength="8" />
-                        <MudTooltip Text="Show in Tree View">
-                            <MudIcon Icon="@Icons.Material.Filled.Park" Size="Size.Small" Class="mouse-pointer-icon" @onclick="async () => await findAndShowInTreeViewAsync()" />
-                        </MudTooltip>
-                        </div>
+                        <MudBreakpointProvider OnBreakpointChanged="b => bp = b">
+                            <div style=" display:flex;
+                                gap: @(bp >= Breakpoint.Md ? "10px" : "2px") ;
+                                align-items:flex-start;
+                                flex-direction:@(bp >= Breakpoint.Md ? "row" : "column");
+                                flex-wrap:@(bp >= Breakpoint.Md ? "nowrap" : "wrap"); ">
+                                @if (ViewSettings.ShowPropertiesInReadOnlyViews)
+                                {
+                                    <div style="display:flex; align-items:center; gap:6px;">
+                                        <strong>ID : </strong>
+                                        <CopyableText TextToCopy="@_itemzType.Id.ToString()" DisplayLength="8" />
+                                        <MudTooltip Text="Show in Tree View">
+                                            <MudIcon Icon="@Icons.Material.Filled.Park" Size="Size.Small" Class="mouse-pointer-icon" @onclick="async () => await findAndShowInTreeViewAsync()" />
+                                        </MudTooltip>
+                                    </div>
 
-                        <div><strong> @(bp >= Breakpoint.Md ? "||" : "")  Status : </strong> @_itemzType.Status</div>
-                        @if (!string.IsNullOrEmpty(_itemzType.EstimationUnit))
-                        {
-                            <div><strong>@(bp >= Breakpoint.Md ? "||" : "") Estimation [@_itemzType.EstimationUnit] : </strong> @_itemzType.OwnEstimation <b>|| Roll-Up</b> :@_itemzType.RolledUpEstimation </div>
-                        }
-                        else
-                        {
-                            <div><strong>@(bp >= Breakpoint.Md ? "||" : "") Estimation : </strong> @_itemzType.OwnEstimation <b>|| Roll-Up</b> :@_itemzType.RolledUpEstimation </div>
-                        }
-                    }
-                    </div>
-                </MudBreakpointProvider>
-                <br />
+                                    <div><strong> @(bp >= Breakpoint.Md ? "||" : "")  Status : </strong> @_itemzType.Status</div>
+                                    @if (!string.IsNullOrEmpty(_itemzType.EstimationUnit))
+                                    {
+                                        <div><strong>@(bp >= Breakpoint.Md ? "||" : "") Estimation [@_itemzType.EstimationUnit] : </strong> @_itemzType.OwnEstimation <b>|| Roll-Up</b> :@_itemzType.RolledUpEstimation </div>
+                                    }
+                                    else
+                                    {
+                                        <div><strong>@(bp >= Breakpoint.Md ? "||" : "") Estimation : </strong> @_itemzType.OwnEstimation <b>|| Roll-Up</b> :@_itemzType.RolledUpEstimation </div>
+                                    }
+                                }
+                            </div>
+                        </MudBreakpointProvider>
+                        <br />
                     }
                     <div class="custom-markdown-editor">
-                    @if (!string.IsNullOrEmpty(_itemzType.Description))
-                    {
-                        <div class="markdown-body">@((MarkupString)_convertedMarkdown)</div>
-                    }
-                </div>
+                        @if (!string.IsNullOrEmpty(_itemzType.Description))
+                        {
+                            <div class="markdown-body">@((MarkupString)_convertedMarkdown)</div>
+                        }
+                    </div>
                 </MudCardContent>
             </MudCard>
         </MudItem>
         <br />
     }
 </MudGrid>
+</div>
 
 @code {
     [Parameter] public Guid ItemzTypeId { get; set; }
@@ -131,6 +136,12 @@
 
     private Breakpoint bp;
 
+    // Swipe support (ElementReference-based)
+    private string _elementId => $"openrose-swipe-itemztypejson-{ItemzTypeId}";
+    private ElementReference _swipeElementRef;
+    private DotNetObjectReference<ItemzTypeReadOnlyComponentForJson>? _dotNetRef;
+    private bool _swipeRegistered = false;
+
     protected override async Task OnParametersSetAsync()
     {
         initializingPage = true;
@@ -142,8 +153,6 @@
             if (!string.IsNullOrEmpty(_itemzType.Description))
             {
                 _needsRender = true;
-                // var html = await JS.InvokeAsync<string>("markdownToHtml", _itemzType.Description);
-                // _convertedMarkdown = (MarkupString)html;
             }
             else
             {
@@ -158,6 +167,30 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (firstRender)
+        {
+            // register swipe handlers
+            _dotNetRef = DotNetObjectReference.Create(this);
+            try
+            {
+                _swipeRegistered = await JS.InvokeAsync<bool>("openRoseRegisterSwipeElement", _swipeElementRef, _dotNetRef);
+                if (!_swipeRegistered)
+                {
+                    _logger?.LogWarning("Swipe registration failed for {ElementId}", _elementId);
+                }
+            }
+            catch (JSException jsex)
+            {
+                _logger?.LogWarning(jsex, "JSException while registering swipe for {ElementId}", _elementId);
+                _swipeRegistered = false;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "Unexpected exception while registering swipe for {ElementId}", _elementId);
+                _swipeRegistered = false;
+            }
+        }
+
         if (_needsRender)
         {
             _needsRender = false;
@@ -186,4 +219,51 @@
         SplitBarManagementService.ToggleSplitBar();
     }
 
+    [JSInvokable("OnSwipe")]
+    public async Task OnSwipe(string direction)
+    {
+        // Book-style mapping: swipe left => Next, swipe right => Previous
+        if (direction == "left")
+        {
+            if (OnNavigateNext.HasDelegate)
+                await OnNavigateNext.InvokeAsync(ItemzTypeId);
+        }
+        else if (direction == "right")
+        {
+            if (OnNavigatePrevious.HasDelegate)
+                await OnNavigatePrevious.InvokeAsync(ItemzTypeId);
+        }
+    }
+
+    // IAsyncDisposable: unregister swipe handlers and dispose DotNetObjectReference
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (_swipeRegistered)
+            {
+                await JS.InvokeAsync<bool>("openRoseUnregisterSwipeElement", _swipeElementRef);
+            }
+        }
+        catch (Microsoft.JSInterop.JSDisconnectedException)
+        {
+            // circuit disconnected while disposing - ignore
+        }
+        catch (JSException jsex)
+        {
+            _logger?.LogWarning(jsex, "JSException while unregistering swipe for {ElementId}", _elementId);
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning(ex, "Unexpected exception while unregistering swipe for {ElementId}", _elementId);
+        }
+        finally
+        {
+            if (_dotNetRef != null)
+            {
+                _dotNetRef.Dispose();
+                _dotNetRef = null;
+            }
+        }
+    }
 }

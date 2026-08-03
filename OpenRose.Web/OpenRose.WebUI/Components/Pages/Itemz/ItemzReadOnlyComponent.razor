@@ -22,7 +22,10 @@
 @inject IDialogService DialogService
 @inject IJSRuntime JS
 @inject ILogger<ItemzReadOnlyComponent> _logger
+@implements IAsyncDisposable
 
+
+<div style="height:100%;" id="@_elementId" @ref="_swipeElementRef">
 <MudGrid>
     @if (initializingPage)
     {
@@ -164,7 +167,7 @@
         <br />
     }
 </MudGrid>
-
+</div>
 @if (_showOverlay)
 {
 	<MudPaper Height="calc(100vh - 100px);" Width="100%">
@@ -205,10 +208,46 @@
 
     private Breakpoint bp;
 
+    // Swipe support
+    private string _elementId => $"openrose-swipe-itemz-{ItemzId}";
+    private ElementReference _swipeElementRef;
+    private DotNetObjectReference<ItemzReadOnlyComponent>? _dotNetRef;
+    private bool _swipeRegistered = false;
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
+
+            // Create dotnet ref for callback
+            _dotNetRef = DotNetObjectReference.Create(this);
+
+            try
+            {
+                // register: returns true/false
+                _swipeRegistered = await JS.InvokeAsync<bool>("openRoseRegisterSwipeElement", _swipeElementRef, _dotNetRef);
+                if (!_swipeRegistered)
+                {
+                    _logger?.LogWarning("Swipe registration failed for {ElementId}", _elementId);
+                }
+            }
+            catch (JSException jsex)
+            {
+                // If JS interop function missing or error, log at warning level
+                _logger?.LogWarning(jsex, "JSException while registering swipe for {ElementId}", _elementId);
+                _swipeRegistered = false;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "Unexpected exception while registering swipe for {ElementId}", _elementId);
+                _swipeRegistered = false;
+            }
+
+
+
+
+
+
             initializingPage = true;
             StateHasChanged();
             await Task.Delay(300);
@@ -324,7 +363,6 @@
 		}
 	}
 
-
     private void findAndShowInTreeView()
     {
         TreeNodeItemzSelectionService.ScrollToTreeViewNode(ItemzId);
@@ -335,6 +373,56 @@
         SplitBarManagementService.ToggleSplitBar();
     }
 
+    [JSInvokable("OnSwipe")]
+    public async Task OnSwipe(string direction)
+    {
+        // Page-like behavior: swipe left => Next, swipe right => Previous
+        if (direction == "left")
+        {
+            if (OnNavigateNext.HasDelegate)
+                await OnNavigateNext.InvokeAsync(ItemzId);
+        }
+        else if (direction == "right")
+        {
+            if (OnNavigatePrevious.HasDelegate)
+                await OnNavigatePrevious.InvokeAsync(ItemzId);
+        }
+    }
+
+    // IAsyncDisposable implementation — swallow JSDisconnectedException
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (_swipeRegistered)
+            {
+                // Try to unregister; if JS is disconnected this will throw JSDisconnectedException
+                await JS.InvokeAsync<bool>("openRoseUnregisterSwipeElement", _swipeElementRef);
+            }
+        }
+        catch (Microsoft.JSInterop.JSDisconnectedException)
+        {
+            // Circuit disconnected while disposing — this is expected sometimes in Blazor Server.
+            // Silently ignore.
+        }
+        catch (JSException jsex)
+        {
+            // Other JS interop issues — log as Warning but continue disposing
+            _logger?.LogWarning(jsex, "JSException while unregistering swipe for {ElementId}", _elementId);
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning(ex, "Unexpected exception while unregistering swipe for {ElementId}", _elementId);
+        }
+        finally
+        {
+            if (_dotNetRef != null)
+            {
+                _dotNetRef.Dispose();
+                _dotNetRef = null;
+            }
+        }
+    }
     // private async Task ScrollUp()
     // {
     //     await JS.InvokeVoidAsync("window.scrollBy", 0, -200); // scroll up by 200px
