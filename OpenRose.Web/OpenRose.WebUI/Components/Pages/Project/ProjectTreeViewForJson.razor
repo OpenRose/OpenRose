@@ -651,7 +651,9 @@
 
     private void HandleToggleSplitBarRequested()
     {
-        if (_percentage != 0)
+        // Query the service to determine the correct UI state.
+        // This ensures consistent behavior across all components.
+        if (SplitBarManagementService.IsCollapsed)
         {
             _percentage = 0;   // collapse left panel
         }
