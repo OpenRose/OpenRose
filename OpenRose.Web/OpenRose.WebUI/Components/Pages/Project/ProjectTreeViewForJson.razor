@@ -254,26 +254,27 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // if (firstRender)
-        // {
-        //     // ------------------------------------------------------------
-        //     // Auto-collapse logic for small devices.
-        //     // This runs only once because firstRender is true only once.
-        //     // We check the breakpoint AFTER MudBreakpointProvider has set it,
-        //     // ensuring responsive layout continues to work correctly.
-        //     // ------------------------------------------------------------
-        //     if (bp < Breakpoint.Md)
-        //     {
-        //         // _percentage = 0;
-                
-        //         // await InvokeAsync(StateHasChanged);
-        //         // Only collapse if not already collapsed.
-        //         if (!SplitBarManagementService.IsCollapsed)
-        //         {
-        //             SplitBarManagementService.ToggleSplitBar();
-        //         }
-        //     }
-        // }
+        if (firstRender)
+        {
+            // ------------------------------------------------------------
+            // Auto-collapse logic for small devices.
+            // This runs only once because firstRender is true only once.
+            // We check the breakpoint AFTER MudBreakpointProvider has set it,
+            // ensuring responsive layout continues to work correctly.
+            // ------------------------------------------------------------
+            if (bp < Breakpoint.Md)
+            {
+                // _percentage = 0;
+
+                // await InvokeAsync(StateHasChanged);
+                // Only collapse if not already collapsed.
+                // if (!SplitBarManagementService.IsCollapsed)
+                // {
+                //     SplitBarManagementService.ToggleSplitBar();
+                // }
+                SplitBarManagementService.CollapseSplitBar(); // Collapse left panel for small devices
+            }
+        }
 
         // Load view settings for ShowPropertiesInReadOnlyViews
         var resultShowProperties = await SessionStorage.GetAsync<bool>("SHOWPROPERTIESINREADONLYVIEWS");
@@ -424,17 +425,17 @@
             _ => Icons.Material.Filled.Cancel
         };
 
-            return new TreeItemPresenter(
-            value: dto.RecordId,
-            text: dto.Name ?? "(no name)",
-            icon: icon,
-            recordType: (dto.RecordType ?? "Unknown").ToLower(),
-            level: dto.Level ?? 0,
-            expandable: dto.Children != null && dto.Children.Count > 0,
-            hierarchyId: dto.HierarchyId,
-            estimationUnit: dto.EstimationUnit,
-            rolledUpEstimation: dto.RolledUpEstimation
-        );
+        return new TreeItemPresenter(
+        value: dto.RecordId,
+        text: dto.Name ?? "(no name)",
+        icon: icon,
+        recordType: (dto.RecordType ?? "Unknown").ToLower(),
+        level: dto.Level ?? 0,
+        expandable: dto.Children != null && dto.Children.Count > 0,
+        hierarchyId: dto.HierarchyId,
+        estimationUnit: dto.EstimationUnit,
+        rolledUpEstimation: dto.RolledUpEstimation
+    );
     }
 
     private async Task OnItemClick(TreeItemPresenter presenter)
@@ -483,13 +484,13 @@
         {
             return string.Empty;
         }
-        
+
         // If ShowPropertiesInReadOnlyViews is false, we skip showing estimation info
         if (ViewSettings.ShowPropertiesInReadOnlyViews == false)
         {
             return string.Empty;
         }
-        
+
         // NEW: Show estimation in read-only view if available
         if (showEstimation )
         {
@@ -722,12 +723,12 @@
         }
     }
 
-
     public void Dispose()
     {
         ItemzSelectionServiceForJson.OnScrollToTreeViewNode -= HandleScrollToTreeViewNode;
         JsonFileDataSource.OnJsonChanged -= HandleStateChangedAsync;
         DataSourceState.OnDataSourceChanged -= HandleStateChangedAsync;
         SplitBarManagementService.OnToggleSplitBarRequested -= HandleToggleSplitBarRequested;
+        _initialAutoCollapseDone = false;
     }
 }
