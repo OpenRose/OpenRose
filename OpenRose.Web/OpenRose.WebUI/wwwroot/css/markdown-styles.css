@@ -487,3 +487,57 @@
             text-decoration: underline;
         }
 }
+
+
+/* ============================================================
+    START - FORCING lighter background on a DARK browser theme 
+    for Table outputs
+============================================================ */
+
+    /* Header cells */
+    .markdown-body table th,
+    .custom-markdown-editor table th {
+        color: inherit;
+        background-color: var(--or-bg-lighter);
+    }
+
+    /* Remove the fixed background from all data cells */
+    .markdown-body table td,
+    .custom-markdown-editor table td {
+        background-color: transparent; /* key change */
+        color: inherit;
+    }
+
+    /* Striped body rows */
+    .markdown-body table tbody tr:nth-child(odd) td,
+    .custom-markdown-editor table tbody tr:nth-child(odd) td {
+        background-color: var(--or-bg-light); /* white */
+    }
+
+    .markdown-body table tbody tr:nth-child(even) td,
+    .custom-markdown-editor table tbody tr:nth-child(even) td {
+        background-color: var(--or-bg-lighter); /* light gray */
+    }
+
+    .markdown-body table tbody tr:hover td,
+    .custom-markdown-editor table tbody tr:hover td {
+        background-color: #cccccc; /* or whatever "moderately dark gray" you want */
+        color: inherit;
+    }
+
+    .markdown-body table code,
+    .custom-markdown-editor table code {
+        background-color: transparent;
+        color: inherit;
+    }
+
+    .markdown-body table pre,
+    .custom-markdown-editor table pre {
+        background-color: var(--or-bg-lighter);
+        color: inherit;
+    }
+
+/* ============================================================
+    END - FORCING lighter background on a DARK browser theme 
+    for Table outputs
+============================================================ */
