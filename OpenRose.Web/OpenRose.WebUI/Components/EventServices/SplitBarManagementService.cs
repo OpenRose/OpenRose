@@ -40,5 +40,20 @@ namespace OpenRose.WebUI.Components.EventServices
 		{
 			return IsCollapsed;
 		}
+
+		/// <summary>
+		/// Enables components to request the split bar to collapse to position ZERO.
+		/// </summary>
+		public void CollapseSplitBar()
+		{
+			// Only collapse if not already collapsed.
+			if (!IsCollapsed)
+			{
+				// Toggle the state before notifying listeners.
+				IsCollapsed = true;
+
+				OnToggleSplitBarRequested?.Invoke();
+			}
+		}
 	}
 }
