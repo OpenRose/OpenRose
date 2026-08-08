@@ -358,27 +358,27 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
-        {
-            // ------------------------------------------------------------
-            // Auto-collapse logic for small devices.
-            // This runs only once because firstRender is true only once.
-            // We check the breakpoint AFTER MudBreakpointProvider has set it,
-            // ensuring responsive layout continues to work correctly.
-            // ------------------------------------------------------------
-            if (bp < Breakpoint.Md)
-            {
-                // _percentage = 0;
+        // if (firstRender)
+        // {
+        //     // ------------------------------------------------------------
+        //     // Auto-collapse logic for small devices.
+        //     // This runs only once because firstRender is true only once.
+        //     // We check the breakpoint AFTER MudBreakpointProvider has set it,
+        //     // ensuring responsive layout continues to work correctly.
+        //     // ------------------------------------------------------------
+        //     if (bp < Breakpoint.Md)
+        //     {
+        //         // _percentage = 0;
 
-                // await InvokeAsync(StateHasChanged);
-                // Only collapse if not already collapsed.
-                // if (!SplitBarManagementService.IsCollapsed)
-                // {
-                //     SplitBarManagementService.ToggleSplitBar();
-                // }
-                SplitBarManagementService.CollapseSplitBar(); // Collapse left panel for small devices
-            }
-        }
+        //         // await InvokeAsync(StateHasChanged);
+        //         // Only collapse if not already collapsed.
+        //         // if (!SplitBarManagementService.IsCollapsed)
+        //         // {
+        //         //     SplitBarManagementService.ToggleSplitBar();
+        //         // }
+        //         SplitBarManagementService.CollapseSplitBar(); // Collapse left panel for small devices
+        //     }
+        // }
 
         // Load view settings for ShowPropertiesInReadOnlyViews
         var resultShowProperties = await SessionStorage.GetAsync<bool>("SHOWPROPERTIESINREADONLYVIEWS");
@@ -827,7 +827,7 @@
         else
         {
             if (SplitBarManagementService.IsCollapsed)
-                SplitBarManagementService.ToggleSplitBar();
+                SplitBarManagementService.CollapseSplitBar();
         }
     }
 
