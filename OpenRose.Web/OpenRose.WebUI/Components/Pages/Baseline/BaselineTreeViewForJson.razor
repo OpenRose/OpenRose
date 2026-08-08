@@ -358,6 +358,18 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+
+        if (firstRender)
+        {
+            if (SplitBarManagementService.IsCollapsed)
+            {
+                _percentage = 0;  // restore default
+            }
+            else
+            {
+                _percentage = 27;   // collapse left panel
+            }
+        }
         // if (firstRender)
         // {
         //     // ------------------------------------------------------------
