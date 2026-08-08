@@ -47,13 +47,13 @@ namespace OpenRose.WebUI.Components.EventServices
 		public void CollapseSplitBar()
 		{
 			// Only collapse if not already collapsed.
-			if (!IsCollapsed)
-			{
+			//if (!IsCollapsed)
+			//{
 				// Toggle the state before notifying listeners.
 				IsCollapsed = true;
 
 				OnToggleSplitBarRequested?.Invoke();
-			}
+			//}
 		}
 	}
 }
