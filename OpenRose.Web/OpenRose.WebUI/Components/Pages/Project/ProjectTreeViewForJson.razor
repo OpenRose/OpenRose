@@ -24,7 +24,7 @@
 @inject SplitBarManagementService SplitBarManagementService
 @implements IDisposable
 
-
+<MudBreakpointProvider OnBreakpointChanged="HandleBreakpointChanged">
 <MudExtensions.MudSplitter @bind-Dimension="@_percentage"
                             Height="@_height"
                             OnDoubleClicked="@OnDoubleClicked"
@@ -135,7 +135,7 @@
     </EndContent>
 
 </MudExtensions.MudSplitter>
-
+</MudBreakpointProvider>
 @code {
     [Parameter] public Guid RootId { get; set; }
 
@@ -168,6 +168,8 @@
     private bool showEstimation = true; // Toggle to show estimation in end text
 
     private Breakpoint bp;
+
+    private bool _initialAutoCollapseDone = false;
 
     private Task OnDoubleClicked()
     {
@@ -252,24 +254,21 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+
         if (firstRender)
         {
-            // ------------------------------------------------------------
-            // Auto-collapse logic for small devices.
-            // This runs only once because firstRender is true only once.
-            // We check the breakpoint AFTER MudBreakpointProvider has set it,
-            // ensuring responsive layout continues to work correctly.
-            // ------------------------------------------------------------
-            if (bp < Breakpoint.Md)
+            // EXPLANATION : This is required to be in place because during OnAfterRenderAsync, we experienced that
+            // 'private Breakpoint bp' is set to default of 'Xs' and so any logic that we apply
+            // to set the Splitbar location for full screen or default screen would not work well
+            // when we fully rely on 'bp' variable to be valid!
+
+            if (SplitBarManagementService.IsCollapsed)
             {
-                // _percentage = 0;
-                
-                // await InvokeAsync(StateHasChanged);
-                // Only collapse if not already collapsed.
-                if (!SplitBarManagementService.IsCollapsed)
-                {
-                    SplitBarManagementService.ToggleSplitBar();
-                }
+                _percentage = 0;  // restore default
+            }
+            else
+            {
+                _percentage = 27;   // collapse left panel
             }
         }
 
@@ -422,17 +421,17 @@
             _ => Icons.Material.Filled.Cancel
         };
 
-            return new TreeItemPresenter(
-            value: dto.RecordId,
-            text: dto.Name ?? "(no name)",
-            icon: icon,
-            recordType: (dto.RecordType ?? "Unknown").ToLower(),
-            level: dto.Level ?? 0,
-            expandable: dto.Children != null && dto.Children.Count > 0,
-            hierarchyId: dto.HierarchyId,
-            estimationUnit: dto.EstimationUnit,
-            rolledUpEstimation: dto.RolledUpEstimation
-        );
+        return new TreeItemPresenter(
+        value: dto.RecordId,
+        text: dto.Name ?? "(no name)",
+        icon: icon,
+        recordType: (dto.RecordType ?? "Unknown").ToLower(),
+        level: dto.Level ?? 0,
+        expandable: dto.Children != null && dto.Children.Count > 0,
+        hierarchyId: dto.HierarchyId,
+        estimationUnit: dto.EstimationUnit,
+        rolledUpEstimation: dto.RolledUpEstimation
+    );
     }
 
     private async Task OnItemClick(TreeItemPresenter presenter)
@@ -481,13 +480,13 @@
         {
             return string.Empty;
         }
-        
+
         // If ShowPropertiesInReadOnlyViews is false, we skip showing estimation info
         if (ViewSettings.ShowPropertiesInReadOnlyViews == false)
         {
             return string.Empty;
         }
-        
+
         // NEW: Show estimation in read-only view if available
         if (showEstimation )
         {
@@ -688,11 +687,44 @@
         StateHasChanged();
     }
 
+    private void HandleBreakpointChanged(Breakpoint newBreakpoint)
+    {
+        bp = newBreakpoint;
+
+        // ------------------------------------------------------------
+        // Auto-collapse logic for small devices.
+        // Runs ONLY ONCE per JSON file load.
+        // Does NOT run when navigating inside the tree.
+        // Does NOT run when clicking nodes.
+        // Does NOT run when using Next/Previous.
+        // Does NOT run when user manually expands.
+        // ------------------------------------------------------------
+        if (_initialAutoCollapseDone)
+            return;
+
+        _initialAutoCollapseDone = true;
+
+        bool shouldCollapse = bp < Breakpoint.Md;
+
+        // Use the service so the icon stays correct.
+        if (shouldCollapse)
+        {
+            if (!SplitBarManagementService.IsCollapsed)
+                SplitBarManagementService.ToggleSplitBar();
+        }
+        else
+        {
+            if (SplitBarManagementService.IsCollapsed)
+                SplitBarManagementService.CollapseSplitBar();
+        }
+    }
+
     public void Dispose()
     {
         ItemzSelectionServiceForJson.OnScrollToTreeViewNode -= HandleScrollToTreeViewNode;
         JsonFileDataSource.OnJsonChanged -= HandleStateChangedAsync;
         DataSourceState.OnDataSourceChanged -= HandleStateChangedAsync;
         SplitBarManagementService.OnToggleSplitBarRequested -= HandleToggleSplitBarRequested;
+        _initialAutoCollapseDone = false;
     }
 }
