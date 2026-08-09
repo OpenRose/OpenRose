@@ -254,8 +254,14 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+
         if (firstRender)
         {
+            // EXPLANATION : This is required to be in place because during OnAfterRenderAsync, we experienced that
+            // 'private Breakpoint bp' is set to default of 'Xs' and so any logic that we apply
+            // to set the Splitbar location for full screen or default screen would not work well
+            // when we fully rely on 'bp' variable to be valid!
+
             if (SplitBarManagementService.IsCollapsed)
             {
                 _percentage = 0;  // restore default
@@ -265,32 +271,6 @@
                 _percentage = 27;   // collapse left panel
             }
         }
-        // if (firstRender)
-        // {
-        //     // ------------------------------------------------------------
-        //     // Auto-collapse logic for small devices.
-        //     // This runs only once because firstRender is true only once.
-        //     // We check the breakpoint AFTER MudBreakpointProvider has set it,
-        //     // ensuring responsive layout continues to work correctly.
-        //     // ------------------------------------------------------------
-
-        //     await Task.Delay(30); // allow MudBlazor to measure viewport
-
-        //     if (bp < Breakpoint.Md)
-        //     {
-        //         // _percentage = 0;
-
-        //         // await InvokeAsync(StateHasChanged);
-        //         // Only collapse if not already collapsed.
-        //         // if (!SplitBarManagementService.IsCollapsed)
-        //         // {
-        //         //     SplitBarManagementService.ToggleSplitBar();
-        //         // }
-        //         SplitBarManagementService.CollapseSplitBar(); // Collapse left panel for small devices
-
-        //         await InvokeAsync(StateHasChanged);
-        //     }
-        // }
 
         // Load view settings for ShowPropertiesInReadOnlyViews
         var resultShowProperties = await SessionStorage.GetAsync<bool>("SHOWPROPERTIESINREADONLYVIEWS");
