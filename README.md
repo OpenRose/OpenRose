@@ -54,14 +54,14 @@ Latest release [version 0.2.0-808](https://github.com/OpenRose/OpenRose/releases
 - Enable Environment Variable based overrides for Empty String configuration settings
 
 **version v0.2.0-744**
-- Introduced setting for show properties toggle button for Read Only views
-- Introducing Global Style for Two Columns in Description 
+- Introduced setting for show properties toggle button for Read Only views[Demo](https://www.youtube.com/watch?v=V59vpq0AhzU)
+- Introducing Global Style for Two Columns in Description [Demo](https://www.youtube.com/watch?v=0ls1LUxdmE4)
 
 **version v0.2.0-707**
 - External Static File Support via custom user defined folders
-- Enhance Logging for Server Offline Data files and User Files
+- Enhance Logging for Server Offline Data files and User Files [Demo](https://www.youtube.com/watch?v=2NT9CXG4am8)
 - Support for Hosted Server Side JSON Data in Cloud Deployment Scenarios
-- Improved UI for Server Data Files view to support Mobile Users
+- Improved UI for Server Data Files view to support Mobile Users [Demo](https://www.youtube.com/watch?v=pFLfj5cHuJI)
 
 **version v0.2.0-647**
 - Estimation Roll Ups for Requirements [Demo](https://www.youtube.com/watch?v=LW6lS7eWq28)
