@@ -9,6 +9,7 @@
 @inject JsonFileDataSourceService JsonDataSource
 @inject DataSourceStateService DataSourceStateService
 @inject ViewSettingsService ViewSettingsService
+@inject RefreshRecoveryService RefreshRecovery
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
 
@@ -160,6 +161,8 @@
                 LoadedAt = DateTime.Now,
                 IsServerSide = true
             });
+
+            await RefreshRecovery.SaveJsonFileNameAsync(result.fileName);
 
             ViewSettingsService.IsOperatingInJsonFileDataSourceMode = true;
 
