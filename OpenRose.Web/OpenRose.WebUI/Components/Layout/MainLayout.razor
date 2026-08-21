@@ -21,6 +21,8 @@
 @* @inject IServiceProvider ServiceProviderForDependencyInjection *@
 @inject NavigationManager NavManager
 @inject StartupCapabilitiesService StartupCapabilities
+@inject RefreshRecoveryService RefreshRecovery
+@inject IHttpClientFactory ClientFactory
 
 <MudThemeProvider />
 <MudPopoverProvider />
@@ -321,6 +323,9 @@
 	bool drawerOpen = false;
 	public string CurrentPageTitle = "OpenRose";
 
+	private bool _restoreAttempted = false;
+
+
 	public void SetTitle(string value)
 	{
 		CurrentPageTitle = value;
@@ -344,6 +349,38 @@
 		// DataSourceStateServiceForDataSourceTracking.OnDataSourceChanged += OnDataSourceStateChangedCallback;
 
 		ViewSettingsServiceForUiState.OnKioskModeChanged += HandleKioskModeChanged;
+		
+		base.OnInitialized();
+	}
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (!firstRender)
+			return; // Only run restore/clear logic once per page load
+
+		// CASE A — Clear state (navigation, mode switch, tab close)
+		if (RefreshRecovery.ShouldClear)
+		{
+			await RefreshRecovery.ClearAllAsync();
+			return; // IMPORTANT: Do NOT attempt restore after clearing
+		}
+
+		// CASE B — Restore state (browser refresh)
+		if (!_restoreAttempted)
+		{
+			_restoreAttempted = true;
+
+			var savedFile = await RefreshRecovery.LoadJsonFileNameAsync();
+
+			if (!string.IsNullOrWhiteSpace(savedFile) &&
+				DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState.IsServerJsonMode)
+			{
+				await RestoreServerJsonFileAsync(savedFile);
+
+				// Navigate AFTER restore
+				NavManager.NavigateTo("/jsonviewer", replace: true);
+			}
+		}
 	}
 
 	private void HandleKioskModeChanged()
@@ -632,6 +669,9 @@
 		bool canProceed = await FormStateService.ConfirmDiscardAllChangesAsync();
 		if (!canProceed)
 			return;
+
+		await RefreshRecovery.ClearAllAsync();
+		_restoreAttempted = true;
         NavManager.NavigateTo("/serverdatafiles", true);
 		//await ShowDataSourceSwitchDialogForSelectingServerJsonFileAsync();
 	}
@@ -660,6 +700,47 @@
 			dialogOptions
 		);
     }
+
+	private async Task RestoreServerJsonFileAsync(string fileName)
+	{
+		var httpClient = ClientFactory.CreateClient("WebUIInternal");
+		httpClient.BaseAddress = new Uri(NavManager.BaseUri);
+
+		// Ask server to activate the file
+		var response = await httpClient.PostAsJsonAsync("offline/select", new { fileName });
+
+		if (!response.IsSuccessStatusCode)
+			return;
+
+		var result = await response.Content.ReadFromJsonAsync<ServerSelectResponse>();
+		if (result is null || !result.success)
+			return;
+
+		// Load JSON content into memory
+		await JsonDataSource.LoadJsonFileDataFromStringAsync(result.jsonContent);
+
+		// Update data source state
+		DataSourceStateServiceForDataSourceTracking.SwitchToServerSideJsonFile(result.fileName);
+
+		// Update metadata
+		JsonDataSource.SetJsonViewerMetadata(new JsonViewerMetadata
+		{
+			FileName = result.fileName,
+			FileSizeBytes = result.jsonContent.Length,
+			LoadedAt = DateTime.Now,
+			IsServerSide = true
+		});
+
+		// Update UI mode
+		ViewSettingsServiceForUiState.IsOperatingInJsonFileDataSourceMode = true;
+	}
+
+	private class ServerSelectResponse
+	{
+		public bool success { get; set; }
+		public string fileName { get; set; }
+		public string jsonContent { get; set; }
+	}
 
 	public void Dispose()
 	{
