@@ -61,7 +61,6 @@
     [Inject] private StartupCapabilitiesService StartupCapabilities { get; set; } = default!;
     [Inject] private DataSourceStateService DataSourceStateService { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
-    [Inject] private RefreshRecoveryService RefreshRecovery { get; set; } = default!;
 
     //[Inject] private IServiceProvider Services { get; set; } = default!;
 
@@ -80,23 +79,12 @@
 
     private static bool _redirectedOnce = false;
 
-    // protected override async Task OnInitializedAsync()
-    
     protected override void OnInitialized()
     {
 
         // Redirect ONLY when the application starts in Server JSON mode
         if (DataSourceStateService.CurrentDataSourceState.IsServerJsonMode)
         {
-
-            // var savedFile = await RefreshRecovery.LoadJsonFileNameAsync();
-            // if (!string.IsNullOrWhiteSpace(savedFile))
-            // {
-            //     Navigation.NavigateTo("/jsonviewer");
-            //     //Navigation.NavigateTo("/serverdatafiles", replace: true);
-            //     return; // Prevent further initialization
-            // }
-
             Navigation.NavigateTo("/serverdatafiles", replace: true);
             return; // Prevent further initialization
         }
