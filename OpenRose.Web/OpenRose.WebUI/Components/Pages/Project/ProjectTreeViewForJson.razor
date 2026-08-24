@@ -799,6 +799,15 @@
         }
     }
 
+    // EXPLANATION:
+    // This method is invoked from JavaScript whenever the browser triggers a
+    // 'beforeunload' event (refresh, tab close, external navigation). Blazor
+    // cannot detect these events natively because internal navigation does not
+    // unload the page. The [JSInvokable] attribute exposes this .NET method to
+    // JavaScript so the Navigation API can report the actual browser navigation
+    // type. If the event is anything other than a page reload, we mark the
+    // refresh‑recovery state for clearing so stale JSON viewer data does not
+    // persist across navigation.
     [JSInvokable]
     public async Task OnBrowserNavigation(string navType)
     {
