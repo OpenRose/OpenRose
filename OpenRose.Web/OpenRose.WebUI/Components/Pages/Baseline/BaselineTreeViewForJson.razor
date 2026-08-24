@@ -22,6 +22,8 @@
 @inject IJSRuntime JS
 @inject ProtectedSessionStorage SessionStorage
 @inject SplitBarManagementService SplitBarManagementService
+@inject RefreshRecoveryService RefreshRecovery
+@inject NavigationManager NavManager
 @implements IDisposable
 
 <MudBreakpointProvider OnBreakpointChanged="HandleBreakpointChanged">
@@ -118,20 +120,20 @@
                 {
                     case "baseline":
                         <BaselineReadOnlyComponentForJson BaselineId="@selectedItem.Value"
-                                                          OnNavigateNext="NavigateNext" />
+                                                          OnNavigateNext="NavigateNextAsync" />
                         break;
 
                     case "baselineitemztype": 
                         <BaselineItemzTypeReadOnlyComponentForJson BaselineItemzTypeId="@selectedItem.Value"
-                                                                   OnNavigatePrevious="NavigatePrevious"
-                                                                   OnNavigateNext="NavigateNext" />
+                                                                   OnNavigatePrevious="NavigatePreviousAsync"
+                                                                   OnNavigateNext="NavigateNextAsync" />
                         break;
 
                     case "baselineitemz":
                         <BaselineItemzReadOnlyComponentForJson BaselineItemzId="@selectedItem.Value"
                                                                IsIncluded="@selectedItem.IsIncluded"
-                                                               OnNavigatePrevious="NavigatePrevious"
-                                                               OnNavigateNext="NavigateNext"
+                                                               OnNavigatePrevious="NavigatePreviousAsync"
+                                                               OnNavigateNext="NavigateNextAsync"
                                                                OnOpenTraceTarget="NavigateToTraceTarget" />
                         break;
 
@@ -276,6 +278,10 @@
         }
     }
 
+    private bool _shouldRestoreSelection = true;
+
+    private DotNetObjectReference<BaselineTreeViewForJson>? _dotNetRef;
+
     // protected override async Task OnInitializedAsync()
     // {
     //     BaselineItemzSelectionServiceForJson.OnScrollToTreeViewNode += async (recordId) =>
@@ -343,24 +349,28 @@
 
         // Subscribe to JSON + DataSource changes
         JsonFileDataSource.OnJsonChanged += HandleStateChangedAsync;
-        DataSourceState.OnDataSourceChanged += HandleStateChangedAsync;
+        DataSourceState.OnDataSourceChanged += HandleDataSourceChangedAsync;
+        NavManager.LocationChanged += HandleLocationChanged;
 
         SplitBarManagementService.OnToggleSplitBarRequested += HandleToggleSplitBarRequested;
 
 
-        // await ReloadTreeAsync();
-    }
-
-    protected override async Task OnParametersSetAsync()
-    {
         await ReloadTreeAsync();
     }
+
+    // protected override async Task OnParametersSetAsync()
+    // {
+    //     await ReloadTreeAsync();
+    // }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
 
         if (firstRender)
         {
+            _dotNetRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("OpenRoseNavigation.registerNavigationHandler", _dotNetRef);
+
             // EXPLANATION : This is required to be in place because during OnAfterRenderAsync, we experienced that
             // 'private Breakpoint bp' is set to default of 'Xs' and so any logic that we apply
             // to set the Splitbar location for full screen or default screen would not work well
@@ -373,6 +383,24 @@
             else
             {
                 _percentage = 27;   // collapse left panel
+            }
+
+            if (RefreshRecovery.ShouldClear == false)
+            {
+                if (_shouldRestoreSelection)
+                {
+                    _shouldRestoreSelection = false;
+
+                    var savedSelected = await RefreshRecovery.LoadSelectedIdAsync();
+                    if (savedSelected.HasValue)
+                    {
+                        await SelectNodeById(savedSelected.Value);
+
+                        // Console.WriteLine($"[DEBUG] SelectNodeByID performed in OnAfterRenderAsync within ProjectTreeViewForJSON");
+
+                        StateHasChanged();
+                    }
+                }
             }
         }
 
@@ -397,9 +425,63 @@
         selectedItem = null;
         _selectedValue = Guid.Empty;
 
+        // Rebuild the tree
         await ReloadTreeAsync();
+        
+        // Instead of restoring immediately, mark for restore AFTER render
+        _shouldRestoreSelection = true;
+
         await InvokeAsync(StateHasChanged);
+
+        // Console.WriteLine("[DEBUG] HandleStateChangedAsync triggered.");
     }
+
+
+    private async Task HandleDataSourceChangedAsync()
+    {
+        // If we are leaving Server JSON mode, clear refresh recovery
+        if (!DataSourceState.CurrentDataSourceState.IsServerJsonMode)
+        {
+            // await RefreshRecovery.ClearAllAsync();
+            RefreshRecovery.MarkForClear();
+
+            // Console.WriteLine("[DEBUG] performed ClearAllAsync() from HandleDataSourceChangedAsync triggered.");
+        }
+
+        await HandleStateChangedAsync();
+    }
+
+
+    private async void HandleLocationChanged(object? sender, LocationChangedEventArgs args)
+    {
+        // Console.WriteLine($"[DEBUG] Current location: {args.Location}");
+        // Console.WriteLine($"[DEBUG] Sender: {sender?.ToString()}");
+        // Console.WriteLine($"[DEBUG] IsNavigationIntercepted: {args.IsNavigationIntercepted}");
+
+        // EXPLANATION :
+        // Location can change due to several reasons including but not limited to ...
+        // 1. User clicking on a folder in Application Bar that unloads current component and loads a different one
+        // 2. User clicks on hyperlink that takes user to another location
+        // 3. User clicks on a button that takes user to anothe page / view
+        // 4. User clicks on the Navigation Bar and chooses another option to move away into that specific section.
+
+        // If user navigates AWAY from /jsonviewer, clear refresh recovery
+        if (args.Location.Contains("/jsonviewer", StringComparison.OrdinalIgnoreCase) ||
+            args.Location.Contains("/settings", StringComparison.OrdinalIgnoreCase))
+        {
+            RefreshRecovery.DontMarkForClear();
+        }
+        else
+        {
+            RefreshRecovery.MarkForClear();
+            // Instead of restoring immediately, mark for restore AFTER render
+            // because we have necessary logic implemented in OnAfterRenderAsync override
+            _shouldRestoreSelection = true;
+            // Console.WriteLine("[DEBUG] Setting RefreshRecovery.MarkForClear() to true from HandleLocationChanged triggered.");
+        }
+    }
+
+
 
     private async Task ReloadTreeAsync()
     {
@@ -565,6 +647,7 @@
             return;
 
         _selectedValue = presenter.Value;
+        await RefreshRecovery.SaveSelectedIdAsync(presenter.Value);
         presenter.IsSelected = true;
         baselineMudTreeView.SelectedValue = presenter.Value;
 
@@ -632,7 +715,7 @@
     private void NavigateToTraceTarget(Guid id)
         => SelectNodeById(id);
 
-    private async void SelectNodeById(Guid id)
+    private async Task SelectNodeById(Guid id)
     {
         if (!_nodeLookup.TryGetValue(id, out var node))
             return;
@@ -672,18 +755,24 @@
         return null;
     }
 
-    private void NavigatePrevious(Guid id)
+    private async Task NavigatePreviousAsync(Guid id)
     {
         var prev = GetPrevious(id);
         if (prev.HasValue)
-            SelectNodeById(prev.Value);
+        {
+            await RefreshRecovery.SaveSelectedIdAsync(prev.Value);
+            await SelectNodeById(prev.Value);
+        }
     }
 
-    private void NavigateNext(Guid id)
+    private async Task NavigateNextAsync(Guid id)
     {
         var next = GetNext(id);
         if (next.HasValue)
-            SelectNodeById(next.Value);
+        {
+            await RefreshRecovery.SaveSelectedIdAsync(next.Value);
+            await SelectNodeById(next.Value);
+        }
     }
 
 
@@ -827,14 +916,38 @@
         }
     }
 
+    // EXPLANATION:
+    // This method is invoked from JavaScript whenever the browser triggers a
+    // 'beforeunload' event (refresh, tab close, external navigation). Blazor
+    // cannot detect these events natively because internal navigation does not
+    // unload the page. The [JSInvokable] attribute exposes this .NET method to
+    // JavaScript so the Navigation API can report the actual browser navigation
+    // type. If the event is anything other than a page reload, we mark the
+    // refresh‑recovery state for clearing so stale JSON viewer data does not
+    // persist across navigation.
+
+    [JSInvokable]
+    public async Task OnBrowserNavigation(string navType)
+    {
+        // Console.WriteLine($"[DEBUG] Browser navigation type: {navType}");
+
+        // Only clear when NOT a refresh
+        if (!string.Equals(navType, "reload", StringComparison.OrdinalIgnoreCase))
+        {
+            // Console.WriteLine("[DEBUG] performing ClearAllAsync() from OnBrowserNavigation getting triggered.");
+            RefreshRecovery.MarkForClear();
+        }
+    }
 
     public void Dispose()
     {
         BaselineItemzSelectionServiceForJson.OnScrollToTreeViewNode -= HandleScrollToTreeViewNode;
         JsonFileDataSource.OnJsonChanged -= HandleStateChangedAsync;
-        DataSourceState.OnDataSourceChanged -= HandleStateChangedAsync;
+        DataSourceState.OnDataSourceChanged -= HandleDataSourceChangedAsync;
+        NavManager.LocationChanged -= HandleLocationChanged;
         SplitBarManagementService.OnToggleSplitBarRequested -= HandleToggleSplitBarRequested;
         _initialAutoCollapseDone = false;
+        _dotNetRef?.Dispose();
     }
 
 }

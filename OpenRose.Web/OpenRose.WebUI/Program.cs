@@ -303,6 +303,7 @@ builder.Services.AddScoped<JsonFileDataSourceService>(); // This service provide
 builder.Services.AddScoped<BaselineTreeNodeItemzSelectionServiceForJson>(); // Register the service
 builder.Services.AddScoped<TreeNodeItemzSelectionServiceForJson>(); // Register the service
 builder.Services.AddScoped<SplitBarManagementService>(); // Register the service
+builder.Services.AddScoped<RefreshRecoveryService>(); // Register the service
 
 
 
