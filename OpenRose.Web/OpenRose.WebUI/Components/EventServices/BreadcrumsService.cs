@@ -14,8 +14,8 @@ namespace OpenRose.WebUI.Components.EventServices
         // Method to request for Orphan status
         public bool RequestIsOrphanStatus() 
         {
-			return OnRequestIsOrphanStatus.Invoke(); 
-        }
+			return OnRequestIsOrphanStatus?.Invoke() ?? false;
+		}
     }
 }
 
