@@ -45,7 +45,14 @@ BUT primarily, **Itemz** is nothing but Requirements / Needs / Wants / Notes / F
 
 ## Overview of Current State
 
-Latest release [version 0.2.0-808](https://github.com/OpenRose/OpenRose/releases/tag/v0.2.0-808)
+Latest release [version 0.2.0-900](https://github.com/OpenRose/OpenRose/releases/tag/v0.2.0-900)
+
+**version v0.2.0-900**
+- Mermaid diagrams supports option to include Requirement Tags
+- Parking Lot ItemzType position preservation during Project and Baseline Import 
+- Introducing Action tab in all Record Types
+- Implemented Traceability properties toggle support for ReadOnly Views
+- Ability to have button in tree view to toggle between full screen modes 
 
 **version v0.2.0-808**
 - Mermaid Export GoTo url with optional TreeView parameter.
