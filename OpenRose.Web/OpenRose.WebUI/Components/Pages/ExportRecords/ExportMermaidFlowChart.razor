@@ -9,6 +9,7 @@
 
 @using OpenRose.WebUI.Client.Services.Export
 @using OpenRose.WebUI.Components.Dialogs
+@using MudBlazor.Utilities
 @inject IExportService ExportService
 @inject IDialogService DialogService
 @inject NavigationManager NavigationManager
@@ -91,11 +92,34 @@
                 colors for mermaid charts.
             *@
 
+
             <MudStack Row="false" Spacing="3" AlignItems="AlignItems.Center" JustifyContent="Justify.Center" Class="w-100">
                 <div>
-                    <MudTooltip Text="Step 3: Generate Mermaid FlowChart">
+                    <MudTooltip Text="Step 3: Pick colors">
                         <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">
                             STEP 3
+                        </MudChip>
+                    </MudTooltip>
+                </div>
+
+                <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="2" AlignItems="AlignItems.Center" Justify="Justify.FlexStart">
+
+                    <MudCheckBox @bind-Value="keepDefaultColors"
+                                 Label="Keep Default Colors" />
+
+                    <MudColorPicker Disabled="@(keepDefaultColors)" Label="Background Color Picker" @bind-Text="_backgroundColor" Style="@($"color: {_backgroundColor};")" Placeholder="Select Background Color" />
+
+                    <MudColorPicker Disabled="@(keepDefaultColors)" Label="Text Color Picker" @bind-Text="_textColor" Style="@($"color: {_textColor};")" Placeholder="Select Text Color" />
+
+                </MudStack>
+            </MudStack>
+
+
+            <MudStack Row="false" Spacing="3" AlignItems="AlignItems.Center" JustifyContent="Justify.Center" Class="w-100">
+                <div>
+                    <MudTooltip Text="Step 4: Generate Mermaid FlowChart">
+                        <MudChip T="string" Icon="@Icons.Material.Filled.Numbers" Size="Size.Small" Color="Color.Success">
+                            STEP 4
                         </MudChip>
                     </MudTooltip>
                 </div>
@@ -206,13 +230,16 @@
     private bool includeTags { get; set; } = false;
     private string mermaidText { get; set; } = string.Empty;
     private bool loading { get; set; } = false;
-
+    private bool keepDefaultColors { get; set; } = true;
 
     private bool IsGuidInputValid() => Guid.TryParse(targetGuidText, out _);
 
 
     private string copyButtonLabel = "Copy";
     private Color copyButtonColor = Color.Primary; // default blue
+
+    private string _backgroundColor = "#9f95f9ff"; // default light blue
+    private string _textColor = "#000000ff"; // default black
 
     private async Task HandleExportMermaidFlowChartAsync()
     {
