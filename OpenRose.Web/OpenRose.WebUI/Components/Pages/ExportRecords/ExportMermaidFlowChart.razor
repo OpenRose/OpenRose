@@ -107,9 +107,9 @@
                     <MudCheckBox @bind-Value="keepDefaultColors"
                                  Label="Keep Default Colors" />
 
-                    <MudColorPicker Disabled="@(keepDefaultColors)" Label="Background Color Picker" @bind-Text="_backgroundColor" Style="@($"color: {_backgroundColor};")" Placeholder="Select Background Color" />
+                    <MudColorPicker Disabled="@(keepDefaultColors)" Label="Background Color Picker" @bind-Text="_backgroundColor" Style="@($"color: {_backgroundColor};")" ShowToolbar="true" Placeholder="Select Background Color" />
 
-                    <MudColorPicker Disabled="@(keepDefaultColors)" Label="Text Color Picker" @bind-Text="_textColor" Style="@($"color: {_textColor};")" Placeholder="Select Text Color" />
+                    <MudColorPicker Disabled="@(keepDefaultColors)" Label="Text Color Picker" @bind-Text="_textColor" Style="@($"color: {_textColor};")" ShowToolbar="true" Placeholder="Select Text Color" />
 
                 </MudStack>
             </MudStack>
