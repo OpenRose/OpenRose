@@ -104,12 +104,26 @@
 
                 <MudStack Row="true" Wrap="Wrap.Wrap" Spacing="5" AlignItems="AlignItems.Center" Justify="Justify.FlexStart">
 
-                    <MudCheckBox @bind-Value="keepDefaultColors"
-                                 Label="Keep Default Colors" />
+                    <MudCheckBox Label="Keep Default Colors"
+                                 Value="keepDefaultColors"
+                                 ValueChanged="@((bool x) => OnKeepDefaultColorsChanged(x))" />
 
-                    <MudColorPicker Disabled="@(keepDefaultColors)" Label="Background Color Picker" @bind-Text="_backgroundColor" Style="@($"color: {_backgroundColor};")" ShowToolbar="true" Placeholder="Select Background Color" />
+                    <MudColorPicker Disabled="@(keepDefaultColors)" Label="Background Color Picker" 
+                        @bind-Text="_backgroundColor" 
+                        Style="@($"color: {_backgroundColor};")" 
+                        ShowToolbar="true" 
+                        Placeholder="Select Background Color"
+                        ColorPickerMode="ColorPickerMode.HEX"
+                        ValueChanged="@((MudColor x) => OnBackgroundColorChanged(x))" />
 
-                    <MudColorPicker Disabled="@(keepDefaultColors)" Label="Text Color Picker" @bind-Text="_textColor" Style="@($"color: {_textColor};")" ShowToolbar="true" Placeholder="Select Text Color" />
+                    <MudColorPicker Disabled="@(keepDefaultColors)" Label="Text Color Picker" 
+                        @bind-Text="_textColor" 
+                        Style="@($"color: {_textColor};")" 
+                        ShowToolbar="true" 
+                        Placeholder="Select Text Color"
+                        ColorPickerMode="ColorPickerMode.HEX"
+                        ValueChanged="@((MudColor x) => OnTextColorChanged(x))" />
+                        />
 
                 </MudStack>
             </MudStack>
@@ -266,6 +280,11 @@
                                                 baseUrl: clientBaseUrl,
                                                 view: generateTreeViewLinks ? "treeView" : null);
 
+            if (!keepDefaultColors)
+            {
+                mermaidText = mermaidText + $"\nclassDef default fill:{_backgroundColor},color:{_textColor}";
+            }
+
             loading = false;
 
             if (string.IsNullOrWhiteSpace(mermaidText))
@@ -339,6 +358,24 @@
     private void OnIncludeTagsChanged(bool newValue)
     {
         includeTags = newValue;
+        mermaidText = string.Empty;  // clear old flowchart text
+    }
+
+    private void OnKeepDefaultColorsChanged(bool newValue)
+    {
+        keepDefaultColors = newValue;
+        mermaidText = string.Empty;  // clear old flowchart text
+    }
+
+    private void OnBackgroundColorChanged(MudColor newValue)
+    {
+        // _backgroundColor = newValue.Value;
+        mermaidText = string.Empty;  // clear old flowchart text
+    }
+
+    private void OnTextColorChanged(MudColor newValue)
+    {
+        // _textColor = newValue.Value;
         mermaidText = string.Empty;  // clear old flowchart text
     }
 
