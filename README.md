@@ -58,7 +58,7 @@ Latest release [version 0.2.0-900](https://github.com/OpenRose/OpenRose/releases
 - Mermaid Export GoTo url with optional TreeView parameter.
 - Page title section UI improvement to support better view for Mobile Users 
 - Better handling of deleted data notification and informing connected users 
-- Enable Environment Variable based overrides for Empty String configuration settings
+- Enable Environment Variable based overrides for Empty String configuration settings [Demo](https://www.youtube.com/watch?v=TDtwCJSBAC8)
 
 **version v0.2.0-744**
 - Introduced setting for show properties toggle button for Read Only views[Demo](https://www.youtube.com/watch?v=V59vpq0AhzU)
