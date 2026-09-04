@@ -273,6 +273,15 @@
                                                 baseUrl: clientBaseUrl,
                                                 view: generateTreeViewLinks ? "treeView" : null);
 
+            // System shall ahndle updating the mermaidText without enabling entire round trip to the server for obtaining
+            // all the data again. When user changes color via color picker for background or text then there is no need to
+            // force the server round trip for the data to be refetched. 
+
+            // We need to enahnce our current process of allowing changes to the color so that final text has new updated 
+            // style applied for the custom colors that user have chosen. Perhaps there is no need to do a round trip 
+            // back and forth between the API server and the WebUI client. 
+
+
             if (!keepDefaultColors)
             {
                 mermaidText = mermaidText + $"\nclassDef default fill:{_backgroundColor},color:{_textColor}";
