@@ -247,6 +247,12 @@
     private string _backgroundColor = "#9f95f9ff"; // default light blue
     private string _textColor = "#000000ff"; // default black
 
+    // Holds the server-generated Mermaid text (expensive to compute)
+    private string mermaidBaseText = string.Empty;
+
+    // Holds only the color styling line (cheap to compute)
+    private string mermaidStyleLine = string.Empty;
+
     private async Task HandleExportMermaidFlowChartAsync()
     {
         //if (selectedRecordId == Guid.Empty)
