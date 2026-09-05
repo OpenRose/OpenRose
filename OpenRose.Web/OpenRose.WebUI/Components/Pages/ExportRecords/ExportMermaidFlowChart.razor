@@ -408,4 +408,16 @@
         await DialogService.ShowMessageBox("SUCCESS",
             markupMessage: new MarkupString($"<p style=\"color: blue;\">{message}</p>"), yesText: "OK");
     }
+
+    private void BuildMermaidStyleLine()
+    {
+        if (keepDefaultColors)
+        {
+            mermaidStyleLine = string.Empty;
+            return;
+        }
+
+        mermaidStyleLine = $"\nclassDef default fill:{_backgroundColor},color:{_textColor}";
+    }
+
 }
