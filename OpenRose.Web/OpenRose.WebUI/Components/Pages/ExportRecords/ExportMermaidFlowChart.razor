@@ -116,7 +116,6 @@
                         Placeholder="Select Text Color"
                         ColorPickerMode="ColorPickerMode.HEX"
                         ValueChanged="@((MudColor x) => OnTextColorChanged(x))" />
-                        />
 
                 </MudStack>
             </MudStack>
@@ -155,7 +154,7 @@
     </MudPaper>
 </MudItem>
 
-@if (!string.IsNullOrWhiteSpace(mermaidText))
+@if (!string.IsNullOrWhiteSpace(mermaidBaseText))
 {
     <MudItem xs="12" Class="d-flex align-items-center justify-center mud-width-full mud-height-full py-3">
         <MudPaper Class="w-100" Style="padding: 16px;">
@@ -248,9 +247,14 @@
     private string _backgroundColor = "#9f95f9ff"; // default light blue
     private string _textColor = "#000000ff"; // default black
 
+    // Holds the server-generated Mermaid text (expensive to compute)
+    private string mermaidBaseText = string.Empty;
+
+    // Holds only the color styling line (cheap to compute)
+    private string mermaidStyleLine = string.Empty;
+
     private async Task HandleExportMermaidFlowChartAsync()
     {
-        //if (selectedRecordId == Guid.Empty)
         if (string.IsNullOrEmpty(targetGuidText))
         {
             await ShowErrorMessage("Please select a valid Record ID.");
@@ -264,23 +268,25 @@
 
             var clientBaseUrl = NavigationManager.BaseUri.TrimEnd('/');
 
-            mermaidText = await ExportService.__GET_MermaidFlowChart_By_GUID_ID__Async(
-                                                exportRecordId: guid,
-                                                exportIncludedBaselineItemzOnly: exportIncludedBaselineItemzOnly,
-                                                showTraceabilityOnly: showTraceabilityOnly,
-                                                includeEstimations: includeEstimations,
-                                                includeTags: includeTags,
-                                                baseUrl: clientBaseUrl,
-                                                view: generateTreeViewLinks ? "treeView" : null);
+            // Fetch server-generated text only once
+            mermaidBaseText = await ExportService.__GET_MermaidFlowChart_By_GUID_ID__Async(
+                                                    exportRecordId: guid,
+                                                    exportIncludedBaselineItemzOnly: exportIncludedBaselineItemzOnly,
+                                                    showTraceabilityOnly: showTraceabilityOnly,
+                                                    includeEstimations: includeEstimations,
+                                                    includeTags: includeTags,
+                                                    baseUrl: clientBaseUrl,
+                                                    view: generateTreeViewLinks ? "treeView" : null);
 
-            if (!keepDefaultColors)
-            {
-                mermaidText = mermaidText + $"\nclassDef default fill:{_backgroundColor},color:{_textColor}";
-            }
+            // Build style line
+            BuildMermaidStyleLine();
+
+            // Combine final text
+            mermaidText = mermaidBaseText + mermaidStyleLine;
 
             loading = false;
 
-            if (string.IsNullOrWhiteSpace(mermaidText))
+            if (string.IsNullOrWhiteSpace(mermaidBaseText))
             {
                 await ShowErrorMessage("No Mermaid text returned from server.");
             }
@@ -288,10 +294,12 @@
         catch (Exception ex)
         {
             loading = false;
+            mermaidBaseText = string.Empty;
             mermaidText = string.Empty;
             await ShowErrorMessage($"Error exporting Mermaid FlowChart: {ex.Message}");
         }
     }
+
 
     private async Task CopyMermaidText()
     {
@@ -315,7 +323,8 @@
     private void Reset()
     {
         targetGuidText = string.Empty;
-        // selectedRecordId = Guid.Empty;
+        mermaidBaseText = string.Empty;
+        mermaidStyleLine = string.Empty;
         mermaidText = string.Empty;
         exportIncludedBaselineItemzOnly = false;
         loading = false;
@@ -323,54 +332,70 @@
         keepDefaultColors = true;
     }
 
+
     // This is the method Blazor will call when ValueChanged fires
     private void OnGuidChanged(string newValue)
     {
-        targetGuidText = newValue;   // keep the field in sync
-        mermaidText = string.Empty;  // clear old flowchart text
+        targetGuidText = newValue;
+        mermaidBaseText = string.Empty;
+        mermaidText = string.Empty;
     }
 
     private void OnTraceabilityOnlyChanged(bool newValue)
     {
         showTraceabilityOnly = newValue;
-        mermaidText = string.Empty;  // clear old flowchart text
+        mermaidBaseText = string.Empty;
+        mermaidText = string.Empty;
     }
 
     private void OnIncludeEstimationsChanged(bool newValue)
     {
         includeEstimations = newValue;
-        mermaidText = string.Empty;  // clear old flowchart text
+        mermaidBaseText = string.Empty;
+        mermaidText = string.Empty;
     }
 
     private void OnGenerateTreeViewLinksChanged(bool newValue)
     {
         generateTreeViewLinks = newValue;
-        mermaidText = string.Empty;  // clear old flowchart text
+        mermaidBaseText = string.Empty;
+        mermaidText = string.Empty;
     }
 
     private void OnIncludeTagsChanged(bool newValue)
     {
         includeTags = newValue;
-        mermaidText = string.Empty;  // clear old flowchart text
+        mermaidBaseText = string.Empty;
+        mermaidText = string.Empty;
     }
 
     private void OnKeepDefaultColorsChanged(bool newValue)
     {
         keepDefaultColors = newValue;
-        mermaidText = string.Empty;  // clear old flowchart text
+
+        // Rebuild only style line
+        BuildMermaidStyleLine();
+
+        // Recombine
+        mermaidText = mermaidBaseText + mermaidStyleLine;
     }
 
     private void OnBackgroundColorChanged(MudColor newValue)
     {
-        // _backgroundColor = newValue.Value;
-        mermaidText = string.Empty;  // clear old flowchart text
+        _backgroundColor = newValue.Value;
+
+        BuildMermaidStyleLine();
+        mermaidText = mermaidBaseText + mermaidStyleLine;
     }
 
     private void OnTextColorChanged(MudColor newValue)
     {
-        // _textColor = newValue.Value;
-        mermaidText = string.Empty;  // clear old flowchart text
+        _textColor = newValue.Value;
+
+        BuildMermaidStyleLine();
+        mermaidText = mermaidBaseText + mermaidStyleLine;
     }
+
 
     private async Task ShowErrorMessage(string message)
     {
@@ -394,4 +419,16 @@
         await DialogService.ShowMessageBox("SUCCESS",
             markupMessage: new MarkupString($"<p style=\"color: blue;\">{message}</p>"), yesText: "OK");
     }
+
+    private void BuildMermaidStyleLine()
+    {
+        if (keepDefaultColors)
+        {
+            mermaidStyleLine = string.Empty;
+            return;
+        }
+
+        mermaidStyleLine = $"\nclassDef default fill:{_backgroundColor},color:{_textColor}";
+    }
+
 }
