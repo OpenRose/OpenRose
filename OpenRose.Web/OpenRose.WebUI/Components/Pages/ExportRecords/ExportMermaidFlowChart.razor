@@ -117,6 +117,13 @@
                         ColorPickerMode="ColorPickerMode.HEX"
                         ValueChanged="@((MudColor x) => OnTextColorChanged(x))" />
 
+                    <MudPaper Elevation="3"
+                              Style="@($"display: flex; align-items: center; justify-content: center; width: 120px; height: 40px; background-color: {(keepDefaultColors ? "#FFFFFF" : _backgroundColor)}; color: {(keepDefaultColors ? "#000000" : _textColor)}; border-radius: 6px;")">
+                        <MudText Typo="Typo.body2">
+                            Preview
+                        </MudText>
+                    </MudPaper>
+
                 </MudStack>
             </MudStack>
 
