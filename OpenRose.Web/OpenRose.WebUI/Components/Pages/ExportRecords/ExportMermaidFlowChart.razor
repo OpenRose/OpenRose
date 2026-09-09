@@ -103,15 +103,13 @@
 
                     <MudColorPicker Disabled="@(keepDefaultColors)" Label="Background Color Picker" 
                         @bind-Text="_backgroundColor" 
-                        Style="@($"color: {_backgroundColor};")" 
                         ShowToolbar="true" 
                         Placeholder="Select Background Color"
                         ColorPickerMode="ColorPickerMode.HEX"
                         ValueChanged="@((MudColor x) => OnBackgroundColorChanged(x))" />
 
                     <MudColorPicker Disabled="@(keepDefaultColors)" Label="Text Color Picker" 
-                        @bind-Text="_textColor" 
-                        Style="@($"color: {_textColor};")" 
+                        @bind-Text="_textColor"
                         ShowToolbar="true" 
                         Placeholder="Select Text Color"
                         ColorPickerMode="ColorPickerMode.HEX"
