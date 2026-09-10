@@ -103,19 +103,24 @@
 
                     <MudColorPicker Disabled="@(keepDefaultColors)" Label="Background Color Picker" 
                         @bind-Text="_backgroundColor" 
-                        Style="@($"color: {_backgroundColor};")" 
                         ShowToolbar="true" 
                         Placeholder="Select Background Color"
                         ColorPickerMode="ColorPickerMode.HEX"
                         ValueChanged="@((MudColor x) => OnBackgroundColorChanged(x))" />
 
                     <MudColorPicker Disabled="@(keepDefaultColors)" Label="Text Color Picker" 
-                        @bind-Text="_textColor" 
-                        Style="@($"color: {_textColor};")" 
+                        @bind-Text="_textColor"
                         ShowToolbar="true" 
                         Placeholder="Select Text Color"
                         ColorPickerMode="ColorPickerMode.HEX"
                         ValueChanged="@((MudColor x) => OnTextColorChanged(x))" />
+
+                    <MudPaper Elevation="3"
+                              Style="@($"display: flex; align-items: center; justify-content: center; width: 120px; height: 40px; background-color: {(keepDefaultColors ? "#FFFFFF" : _backgroundColor)}; color: {(keepDefaultColors ? "#000000" : _textColor)}; border-radius: 6px;")">
+                        <MudText Typo="Typo.body2">
+                            Preview
+                        </MudText>
+                    </MudPaper>
 
                 </MudStack>
             </MudStack>
