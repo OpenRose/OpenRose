@@ -45,7 +45,13 @@ BUT primarily, **Itemz** is nothing but Requirements / Needs / Wants / Notes / F
 
 ## Overview of Current State
 
-Latest release [version 0.2.0-900](https://github.com/OpenRose/OpenRose/releases/tag/v0.2.0-900)
+Latest release [version 0.2.0-990](https://github.com/OpenRose/OpenRose/releases/tag/v0.2.0-990)
+
+**version v0.2.0-990**
+- Add swipe gesture navigation (left/right) for different record types within read only TreeView
+- Support full screen and restore as two UI icons based on users UI state	
+- Refresh and Reload implementation for Server Data File Mode
+- Add custom color in mermaid diagrams 
 
 **version v0.2.0-900**
 - Mermaid diagrams supports option to include Requirement Tags
