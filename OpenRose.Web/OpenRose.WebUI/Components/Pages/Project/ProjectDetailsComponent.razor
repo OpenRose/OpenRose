@@ -27,6 +27,8 @@
 @inject IDialogService DialogService
 @inject TreeNodeItemzSelectionService TreeNodeItemzSelectionService
 @inject IJSRuntime JS
+@implements IAsyncDisposable
+
 
 
 @if (FormStateService.IsDirty(ProjectId))
