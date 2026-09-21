@@ -22,6 +22,7 @@
 @inject IJSRuntime JS
 @inject ILogger<Project> _logger
 @inject ProjectDeletionService DeletionService
+@implements IAsyncDisposable
 
 <MudPaper Class="pa-3 mb-3 align-start d-flex" Style="width: auto " Outlined="false">
     <MudStack Row="true" Spacing="3">
