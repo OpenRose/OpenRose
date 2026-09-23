@@ -61,7 +61,7 @@ Latest release [version 0.2.0-990](https://github.com/OpenRose/OpenRose/releases
 - Ability to have button in tree view to toggle between full screen modes 
 
 **version v0.2.0-808**
-- Mermaid Export GoTo url with optional TreeView parameter.
+- Mermaid Export GoTo url with optional TreeView parameter. [Demo](https://www.youtube.com/watch?v=CcY-6rS_7YY)
 - Page title section UI improvement to support better view for Mobile Users 
 - Better handling of deleted data notification and informing connected users 
 - Enable Environment Variable based overrides for Empty String configuration settings [Demo](https://www.youtube.com/watch?v=TDtwCJSBAC8)
