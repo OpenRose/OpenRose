@@ -58,7 +58,7 @@ Latest release [version 0.2.0-990](https://github.com/OpenRose/OpenRose/releases
 - Parking Lot ItemzType position preservation during Project and Baseline Import 
 - Introducing Action tab in all Record Types
 - Implemented Traceability properties toggle support for ReadOnly Views
-- Ability to have button in tree view to toggle between full screen modes 
+- Ability to have button in tree view to toggle between full screen modes [Demo](https://www.youtube.com/watch?v=q7-QzfiH51U)
 
 **version v0.2.0-808**
 - Mermaid Export GoTo url with optional TreeView parameter. [Demo](https://www.youtube.com/watch?v=CcY-6rS_7YY)
