@@ -3,6 +3,8 @@
 public class OpenRoseOptions
 {
 	public UserFilesStorageOptions UserFilesStorage { get; set; } = new();
+
+	public string? WelcomeToMessage { get; set; } = null;
 }
 
 public class UserFilesStorageOptions
