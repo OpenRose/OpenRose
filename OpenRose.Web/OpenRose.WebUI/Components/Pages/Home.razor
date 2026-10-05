@@ -88,10 +88,19 @@ We shall only allow upto 16 characters for the name of the organization to be di
 
     private static bool _redirectedOnce = false;
 
-    private string WelcomeToMessage =>
-    string.IsNullOrWhiteSpace(OpenRoseOptions.Value.WelcomeToMessage)
-        ? "OpenRose"
-        : OpenRoseOptions.Value.WelcomeToMessage.Trim();
+    private string WelcomeToMessage
+    {
+        get
+        {
+            var welcomeMessageFromOptions = string.IsNullOrWhiteSpace(OpenRoseOptions.Value.WelcomeToMessage)
+                ? "OpenRose"
+                : OpenRoseOptions.Value.WelcomeToMessage.Trim();
+
+            return welcomeMessageFromOptions.Length > 16
+                ? welcomeMessageFromOptions[..16]  // Get the first 16 characters
+                : welcomeMessageFromOptions;
+        }
+    }
 
     protected override void OnInitialized()
     {
