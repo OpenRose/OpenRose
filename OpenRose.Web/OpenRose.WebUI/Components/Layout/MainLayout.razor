@@ -108,6 +108,7 @@
 	<MudAppBar Elevation="1"
 			   Bottom="false"
 			   Dense="true"
+               Fixed="true"
 			   Class="@(DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState.CurrentDataSourceType switch
 						{
 							DataSourceStateService.DataSourceType.JsonFileServerSide => "app-bar-json-file-mode",
@@ -231,7 +232,8 @@
 		<MudAppBar Elevation="1"
 					Bottom="false"
 					Dense="true"
-					Class="@(DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState.CurrentDataSourceType switch
+				    Fixed="true"
+				   Class="@(DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState.CurrentDataSourceType switch
 			{
 				DataSourceStateService.DataSourceType.JsonFileServerSide => "app-bar-json-file-mode",
 				DataSourceStateService.DataSourceType.JsonFileClientSide => "app-bar-json-file-mode",
@@ -260,7 +262,7 @@
 	}
 
 
-	<MudDrawer @bind-Open="@drawerOpen" Elevation="1" Anchor="Anchor.Left" ClipMode="DrawerClipMode.Always" Variant="@DrawerVariant.Temporary">
+	<MudDrawer @bind-Open="@drawerOpen" Elevation="1" Fixed="true" Anchor="Anchor.Left" ClipMode="DrawerClipMode.Always" Variant="@DrawerVariant.Temporary">
 		<MudNavMenu Color="Color.Secondary" Bordered="true">
 
 			@if (DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState.IsApiMode)
