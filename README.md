@@ -57,7 +57,7 @@ Latest release [version 0.2.0-990](https://github.com/OpenRose/OpenRose/releases
 - Mermaid diagrams supports option to include Requirement Tags
 - Parking Lot ItemzType position preservation during Project and Baseline Import 
 - Introducing Action tab in all Record Types
-- Implemented Traceability properties toggle support for ReadOnly Views
+- Implemented Traceability properties toggle support for ReadOnly Views [Demo](https://www.youtube.com/watch?v=xPiOs54IoTY)
 - Ability to have button in tree view to toggle between full screen modes [Demo](https://www.youtube.com/watch?v=q7-QzfiH51U)
 
 **version v0.2.0-808**
