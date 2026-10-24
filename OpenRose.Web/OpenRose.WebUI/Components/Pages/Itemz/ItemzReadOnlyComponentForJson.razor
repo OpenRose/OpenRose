@@ -242,6 +242,13 @@
             {
                 var _html = await JS.InvokeAsync<string>("markdownToHtml", _itemz.Description);
                 _convertedMarkdown = (MarkupString)_html;
+
+
+                // Process _convertedMarkdown further so that we can support
+                // tagging via specialized and custom formats. 
+                // First we try here and if it works then we could 
+                // make it more standardized and reusable in the future.
+
                 await InvokeAsync(StateHasChanged);
             }
         }
