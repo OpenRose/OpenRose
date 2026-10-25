@@ -249,6 +249,11 @@
                 // First we try here and if it works then we could 
                 // make it more standardized and reusable in the future.
 
+                // Identify which is the most efficient transformation option
+                // for the text that we will have in the description field to 
+                // support TAG transormation. Shall we do it centrally in the 
+                // JavaScript side or in the C# side? For now we will do it in the C# side.
+
                 await InvokeAsync(StateHasChanged);
             }
         }
