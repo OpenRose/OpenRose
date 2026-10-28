@@ -165,7 +165,8 @@ window.markdownToHtml = function (markdown) {
 
 
 
-
+/// NOTES : ABOVE entire block replaced following code snippet.
+/// With this changes in place we now support Custom TAGS in descriptions and markdown content.
 
 
 //window.markdownToHtml = function (markdown) {
