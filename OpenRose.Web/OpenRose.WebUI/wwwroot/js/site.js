@@ -84,13 +84,99 @@ function openInNewTab(url) {
     window.open(url, '_blank');
 }
 
-// Which marked function to use based on marked library version
+// START - Description markdown and TAG processing
 
+
+window.escapeHtml = function (value) {
+    if (value === null || value === undefined) {
+        return '';
+    }
+
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+};
+
+window.renderMudTagChip = function (tag) {
+    const cleanTag = String(tag ?? '').trim();
+    if (!cleanTag) {
+        return '';
+    }
+
+    return `
+        <div class="mud-chip-container" aria-label="Tag: ${window.escapeHtml(cleanTag)}">
+            <button tabindex="0" type="button"
+                    class="mud-chip mud-chip-outlined mud-chip-size-medium mud-chip-color-success mud-clickable mud-ripple">
+                <span class="mud-chip-content">${window.escapeHtml(cleanTag)}</span>
+            </button>
+        </div>
+    `;
+};
+
+window.replaceTagTokensInGeneratedHtml = function (html) {
+    if (!html || typeof html !== 'string') {
+        return html ?? '';
+    }
+
+    return html.replace(/<p>\s*TAGS:::(.*?)\s*<\/p>/gi, function (_, rawTagList) {
+        const tags = String(rawTagList)
+            .split('|')
+            .map(tag => tag.trim())
+            .filter(tag => tag.length > 0);
+
+        if (tags.length === 0) {
+            return '';
+        }
+
+        return tags.map(tag => window.renderMudTagChip(tag)).join('');
+    }).replace(/(^|<br\s*\/?>)\s*TAGS:::(.*?)(?=<br\s*\/?>|<\/p>|$)/gi, function (match, prefix, rawTagList) {
+        const tags = String(rawTagList)
+            .split('|')
+            .map(tag => tag.trim())
+            .filter(tag => tag.length > 0);
+
+        if (tags.length === 0) {
+            return prefix || '';
+        }
+
+        return (prefix || '') + tags.map(tag => window.renderMudTagChip(tag)).join('');
+    });
+};
+
+// Keep the normal marked behavior intact
 window.markdownToHtml = function (markdown) {
-    // Check if 'marked' is a default export
+    if (!markdown || typeof markdown !== 'string') {
+        return '';
+    }
+
     const markedFunction = typeof marked === 'function' ? marked : marked.parse;
-    return markedFunction(markdown);
-}
+
+    const renderedHtml = markedFunction(markdown);
+
+    if (typeof renderedHtml !== 'string') {
+        return '';
+    }
+
+    return window.replaceTagTokensInGeneratedHtml(renderedHtml);
+};
+
+
+
+
+
+
+//window.markdownToHtml = function (markdown) {
+//    // Check if 'marked' is a default export
+//    const markedFunction = typeof marked === 'function' ? marked : marked.parse;
+//    return markedFunction(markdown);
+//}
+
+// END - Description markdown and TAG processing
+
+
 
 
 // Disable changing Page Title on every page that is getting loaded
