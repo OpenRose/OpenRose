@@ -241,23 +241,11 @@
             if (_itemz?.Description != null)
             {
                 var _html = await JS.InvokeAsync<string>("markdownToHtml", _itemz.Description);
+
+                // EXPLANATION ::
+                // Process _convertedMarkdown now supports
+                // tagging via specialized and custom formats e.g. TAGS:::.
                 _convertedMarkdown = (MarkupString)_html;
-
-                // Process _convertedMarkdown further so that we can support
-                // tagging via specialized and custom formats. 
-                // First we try here and if it works then we could 
-                // make it more standardized and reusable in the future.
-
-                // Identify which is the most efficient transformation option
-                // for the text that we will have in the description field to 
-                // support TAG transormation. Shall we do it centrally in the 
-                // JavaScript side or in the C# side? For now we will do it in the C# side.
-
-                // Another important aspect to consider is all the different previews and outputs that we produce
-                // in HTML format shall also support this custom Tags as we may have to perform text transformation
-                // for all those situations. We could also come up with option to implement style that shall be
-                // exported to and used in the preview and HTML outputs.
-
 
                 await InvokeAsync(StateHasChanged);
             }
