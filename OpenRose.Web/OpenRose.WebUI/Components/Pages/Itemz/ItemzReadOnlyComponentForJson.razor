@@ -241,7 +241,12 @@
             if (_itemz?.Description != null)
             {
                 var _html = await JS.InvokeAsync<string>("markdownToHtml", _itemz.Description);
+
+                // EXPLANATION ::
+                // Process _convertedMarkdown now supports
+                // tagging via specialized and custom formats e.g. TAGS:::.
                 _convertedMarkdown = (MarkupString)_html;
+
                 await InvokeAsync(StateHasChanged);
             }
         }
