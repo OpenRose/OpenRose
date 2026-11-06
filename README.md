@@ -54,7 +54,7 @@ Latest release [version 0.2.0-990](https://github.com/OpenRose/OpenRose/releases
 - Add custom color in mermaid diagrams 
 
 **version v0.2.0-900**
-- Mermaid diagrams supports option to include Requirement Tags
+- Mermaid diagrams supports option to include Requirement Tags [Demo](https://www.youtube.com/watch?v=5hGKSr1mwRI)
 - Parking Lot ItemzType position preservation during Project and Baseline Import [Demo](https://www.youtube.com/watch?v=NGWMNfDLzbA)
 - Introducing Action tab in all Record Types [Demo](https://www.youtube.com/watch?v=odEnbUbX9WI)
 - Implemented Traceability properties toggle support for ReadOnly Views [Demo](https://www.youtube.com/watch?v=xPiOs54IoTY)
