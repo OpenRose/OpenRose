@@ -325,6 +325,13 @@
 	// ========================================================================
 
 	bool drawerOpen = false;
+
+	// We have to make sure that we allow users to pass in custom value CurrentPageTitle
+	// via custom configuration. We have already implemented variable 'WelcomeToMessage'
+	// in the Home.razor page where we obtain value for it from the configuration. 
+	// We need to implement the same for here in the MainLayout in both the scenarios 
+	// where by user might be using a normal mode or Kiosk mode.
+
 	public string CurrentPageTitle = "OpenRose";
 
 	private bool _restoreAttempted = false;
