@@ -336,6 +336,19 @@
 	// where by user might be using a normal mode or Kiosk mode.
 
 	public string CurrentPageTitle = "OpenRose";
+	private string CurrentPageTitle
+	{
+		get
+		{
+			var welcomeMessageFromOptions = string.IsNullOrWhiteSpace(OpenRoseOptions.Value.WelcomeToMessage)
+				? "OpenRose"
+				: OpenRoseOptions.Value.WelcomeToMessage.Trim();
+
+			return welcomeMessageFromOptions.Length > 16
+				? welcomeMessageFromOptions[..16]  // Get the first 16 characters
+				: welcomeMessageFromOptions;
+		}
+	}
 
 	private bool _restoreAttempted = false;
 
