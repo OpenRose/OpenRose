@@ -335,7 +335,8 @@
 	// We need to implement the same for here in the MainLayout in both the scenarios 
 	// where by user might be using a normal mode or Kiosk mode.
 
-	public string CurrentPageTitle = "OpenRose";
+	// public string CurrentPageTitle = "OpenRose";
+
 	private string CurrentPageTitle
 	{
 		get
@@ -349,6 +350,7 @@
 				: welcomeMessageFromOptions;
 		}
 	}
+
 
 	private bool _restoreAttempted = false;
 
