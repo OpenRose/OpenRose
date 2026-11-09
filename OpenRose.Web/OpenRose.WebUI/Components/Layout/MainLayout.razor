@@ -5,10 +5,12 @@
 *@
 
 @inherits LayoutComponentBase
+@using Microsoft.Extensions.Options
 @using OpenRose.WebUI.Client.SharedModels.ClientSideUIOnlyModel
 @using OpenRose.WebUI.Components.Dialogs
 @using OpenRose.WebUI.Components.EventServices
 @using OpenRose.WebUI.Components.Pages.Common
+@using OpenRose.WebUI.Configuration
 @using OpenRose.WebUI.Services
 @using OpenRose.WebUI.Client.Services.JsonFile
 
@@ -23,6 +25,7 @@
 @inject StartupCapabilitiesService StartupCapabilities
 @inject RefreshRecoveryService RefreshRecovery
 @inject IHttpClientFactory ClientFactory
+@inject IOptions<OpenRoseOptions> OpenRoseOptions
 
 @implements IDisposable
 
