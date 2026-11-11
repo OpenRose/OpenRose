@@ -26,12 +26,23 @@
                 </MudText>
             </MudItem>
 
-            <!-- Download link -->
-            <MudItem xs="12" class="d-flex justify-center">
-                <MudText Align="Align.Center" Color="Color.Primary">
-                    || Just search for <b> OpenRose </b> online ||
-                </MudText>
-            </MudItem>
+            <!-- Download link: Display only when WelcomeToMessage is OpenRose -->
+            @if (string.Equals(WelcomeToMessage, "OpenRose", StringComparison.OrdinalIgnoreCase))
+            {
+                <MudItem xs="12" class="d-flex justify-center">
+                    <MudText Align="Align.Center" Color="Color.Primary">
+                        || Just search for <b> OpenRose </b> online ||
+                    </MudText>
+                </MudItem>
+            }
+            else
+            {
+                <MudItem xs="12" class="d-flex justify-center">
+                    <MudText Align="Align.Center" Color="Color.Primary">
+                        || Powered By <b> OpenRose </b> FREE and open source application ||
+                    </MudText>
+                </MudItem>
+            }
 
         </MudGrid>
 
