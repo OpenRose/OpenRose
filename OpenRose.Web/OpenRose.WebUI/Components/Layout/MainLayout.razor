@@ -5,10 +5,12 @@
 *@
 
 @inherits LayoutComponentBase
+@using Microsoft.Extensions.Options
 @using OpenRose.WebUI.Client.SharedModels.ClientSideUIOnlyModel
 @using OpenRose.WebUI.Components.Dialogs
 @using OpenRose.WebUI.Components.EventServices
 @using OpenRose.WebUI.Components.Pages.Common
+@using OpenRose.WebUI.Configuration
 @using OpenRose.WebUI.Services
 @using OpenRose.WebUI.Client.Services.JsonFile
 
@@ -23,6 +25,7 @@
 @inject StartupCapabilitiesService StartupCapabilities
 @inject RefreshRecoveryService RefreshRecovery
 @inject IHttpClientFactory ClientFactory
+@inject IOptions<OpenRoseOptions> OpenRoseOptions
 
 @implements IDisposable
 
@@ -325,16 +328,30 @@
 	// ========================================================================
 
 	bool drawerOpen = false;
-	public string CurrentPageTitle = "OpenRose";
+
+	private string CurrentPageTitle
+	{
+		get
+		{
+			var welcomeMessageFromOptions = string.IsNullOrWhiteSpace(OpenRoseOptions.Value.WelcomeToMessage)
+				? "OpenRose"
+				: OpenRoseOptions.Value.WelcomeToMessage.Trim();
+
+			return welcomeMessageFromOptions.Length > 16
+				? welcomeMessageFromOptions[..16]  // Get the first 16 characters
+				: welcomeMessageFromOptions;
+		}
+	}
+
 
 	private bool _restoreAttempted = false;
 
 
-	public void SetTitle(string value)
-	{
-		CurrentPageTitle = value;
-		StateHasChanged();
-	}
+	// public void SetTitle(string value)
+	// {
+	// 	CurrentPageTitle = value;
+	// 	StateHasChanged();
+	// }
 
 	void ToggleDrawer()
 	{

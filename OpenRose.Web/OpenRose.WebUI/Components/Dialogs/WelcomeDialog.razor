@@ -4,6 +4,11 @@
  * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 *@
 
+@using Microsoft.Extensions.Options
+@using OpenRose.WebUI.Configuration
+
+@inject IOptions<OpenRoseOptions> OpenRoseOptions
+
 <MudDialog>
 
     <DialogContent>
@@ -17,16 +22,27 @@
             <!-- Title -->
             <MudItem xs="12" sm="9" class="d-flex justify-center">
                 <MudText Typo="Typo.h2" Align="Align.Center">
-                    Welcome to <b>OpenRose</b>
+                    Welcome to <b>@WelcomeToMessage</b>
                 </MudText>
             </MudItem>
 
-            <!-- Download link -->
-            <MudItem xs="12" class="d-flex justify-center">
-                <MudText Align="Align.Center" Color="Color.Primary">
-                    || Just search for <b> OpenRose </b> online ||
-                </MudText>
-            </MudItem>
+            <!-- Download link: Display only when WelcomeToMessage is OpenRose -->
+            @if (string.Equals(WelcomeToMessage, "OpenRose", StringComparison.OrdinalIgnoreCase))
+            {
+                <MudItem xs="12" class="d-flex justify-center">
+                    <MudText Align="Align.Center" Color="Color.Primary">
+                        || Just search for <b> OpenRose </b> online ||
+                    </MudText>
+                </MudItem>
+            }
+            else
+            {
+                <MudItem xs="12" class="d-flex justify-center">
+                    <MudText Align="Align.Center" Color="Color.Primary">
+                        || Powered By <b> OpenRose </b> FREE and open source application ||
+                    </MudText>
+                </MudItem>
+            }
 
         </MudGrid>
 
@@ -45,5 +61,19 @@
     private void HandleKeyDown(KeyboardEventArgs args)
     {
         if (args.Key == "Enter") Submit();
+    }
+
+    private string WelcomeToMessage
+    {
+        get
+        {
+            var welcomeMessageFromOptions = string.IsNullOrWhiteSpace(OpenRoseOptions.Value.WelcomeToMessage)
+                ? "OpenRose"
+                : OpenRoseOptions.Value.WelcomeToMessage.Trim();
+
+            return welcomeMessageFromOptions.Length > 16
+                ? welcomeMessageFromOptions[..16]  // Get the first 16 characters
+                : welcomeMessageFromOptions;
+        }
     }
  }
