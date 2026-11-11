@@ -52,5 +52,17 @@
         if (args.Key == "Enter") Submit();
     }
 
+    private string WelcomeToMessage
+    {
+        get
+        {
+            var welcomeMessageFromOptions = string.IsNullOrWhiteSpace(OpenRoseOptions.Value.WelcomeToMessage)
+                ? "OpenRose"
+                : OpenRoseOptions.Value.WelcomeToMessage.Trim();
 
+            return welcomeMessageFromOptions.Length > 16
+                ? welcomeMessageFromOptions[..16]  // Get the first 16 characters
+                : welcomeMessageFromOptions;
+        }
+    }
  }
