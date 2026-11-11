@@ -4,6 +4,11 @@
  * See the LICENSE file or visit https://github.com/OpenRose/OpenRose for more details.
 *@
 
+@using Microsoft.Extensions.Options
+@using OpenRose.WebUI.Configuration
+
+@inject IOptions<OpenRoseOptions> OpenRoseOptions
+
 <MudDialog>
 
     <DialogContent>
@@ -46,4 +51,6 @@
     {
         if (args.Key == "Enter") Submit();
     }
+
+
  }
