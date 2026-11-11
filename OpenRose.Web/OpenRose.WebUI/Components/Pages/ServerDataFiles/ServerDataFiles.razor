@@ -1,8 +1,10 @@
 ﻿@page "/serverdatafiles"
 
+@using Microsoft.Extensions.Options
 @using OpenRose.WebUI.Client.Services.JsonFile
 @using OpenRose.WebUI.Client.SharedModels.ClientSideUIOnlyModel
 @using OpenRose.WebUI.Components.EventServices
+@using OpenRose.WebUI.Configuration
 @using OpenRose.WebUI.Services
 @inject IHttpClientFactory ClientFactory
 @inject NavigationManager NavManager
@@ -10,6 +12,7 @@
 @inject DataSourceStateService DataSourceStateService
 @inject ViewSettingsService ViewSettingsService
 @inject RefreshRecoveryService RefreshRecovery
+@inject IOptions<OpenRoseOptions> OpenRoseOptions
 
 <MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
 
