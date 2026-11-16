@@ -51,7 +51,7 @@ Latest release [version 0.2.0-990](https://github.com/OpenRose/OpenRose/releases
 - Add swipe gesture navigation (left/right) for different record types within read only TreeView
 - Support full screen and restore as two UI icons based on users UI state	
 - Refresh and Reload implementation for Server Data File Mode
-- Add custom color in mermaid diagrams 
+- Add custom color in mermaid diagrams [Demo](https://www.youtube.com/watch?v=6nVZvmDWS5c)
 
 **version v0.2.0-900**
 - Mermaid diagrams supports option to include Requirement Tags [Demo](https://www.youtube.com/watch?v=5hGKSr1mwRI)
