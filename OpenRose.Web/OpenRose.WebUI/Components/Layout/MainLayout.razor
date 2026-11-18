@@ -123,18 +123,18 @@
 
 		<MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@ToggleDrawer" />
 
-		<MudTooltip Text="@(tempCustomDataSourceState.CurrentDataSourceType switch
+@* 		<MudTooltip Text="@(tempCustomDataSourceState.CurrentDataSourceType switch
 			  {
 				  DataSourceStateService.DataSourceType.ApiServer => "Connected to API Server",
 				  DataSourceStateService.DataSourceType.JsonFileServerSide => "Using Server‑Side JSON File",
 				  DataSourceStateService.DataSourceType.JsonFileClientSide => "Using Client‑Side JSON File",
 				  DataSourceStateService.DataSourceType.None => "No data source selected",
 				  _ => "OpenRose"
-			  })">
+			  })"> *@
 			<MudLink Href="/" Class="product-title-link">
 				@CurrentPageTitle
 			</MudLink>
-		</MudTooltip>
+@* 		</MudTooltip> *@
 
 @* 		@if (DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState.IsAnyJsonMode)
 		{
