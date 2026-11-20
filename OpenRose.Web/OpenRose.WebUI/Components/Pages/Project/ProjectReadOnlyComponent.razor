@@ -40,7 +40,7 @@
                     <MudCard style="background-color:#FABBBB; position:sticky; top:0; z-index:10;">
                         <MudCardContent Style="padding:6px">
                             <div class="d-flex align-start justify-space-between" style="gap:8px;">
-                                <MudTooltip Text="Toggle Split Bar" Placement="Placement.Top">
+                                @* <MudTooltip Text="Toggle Split Bar" Placement="Placement.Top"> *@
                                     <MudIconButton Icon="@(SplitBarManagementService.GetIsCollapsed()
                                                             ? Icons.Material.Filled.FullscreenExit
                                                             : Icons.Material.Filled.Fullscreen)"
@@ -51,7 +51,7 @@
                                                    Class="mud-rounded-circle me-2"
                                                    @onclick="toggleSplitBar" />
 
-                                </MudTooltip>
+                                @* </MudTooltip> *@
                                 <!-- Left side: Title -->
                                 <MudText Typo="Typo.inherit"
                                          Class="flex-grow-1 text-responsive-title"
