@@ -23,7 +23,7 @@
 @inject ILogger<BaselineItemzTypeTreeViewComponent> _logger
 
 <MudPaper Class="pa-4 mb-3 ml-1 align-start d-flex" Style="width: auto" Outlined="false">
-	<MudTooltip Text="Toggle Split Bar" Placement="Placement.Top">
+	@* <MudTooltip Text="Toggle Split Bar" Placement="Placement.Top"> *@
 		<MudIconButton Icon="@(SplitBarManagementService.GetIsCollapsed()
 									? Icons.Material.Filled.FullscreenExit
 									: Icons.Material.Filled.Fullscreen)"
@@ -34,7 +34,7 @@
 					   Class="mud-rounded-circle me-2"
 					   @onclick="toggleSplitBar" />
 
-	</MudTooltip>
+	@* </MudTooltip> *@
 	<MudText Typo="Typo.h6" Align="Align.Left">Baseline ItemzType</MudText>
 </MudPaper>
 

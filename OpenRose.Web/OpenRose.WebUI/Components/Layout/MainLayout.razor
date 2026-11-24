@@ -123,18 +123,18 @@
 
 		<MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@ToggleDrawer" />
 
-		<MudTooltip Text="@(tempCustomDataSourceState.CurrentDataSourceType switch
+@* 		<MudTooltip Text="@(tempCustomDataSourceState.CurrentDataSourceType switch
 			  {
 				  DataSourceStateService.DataSourceType.ApiServer => "Connected to API Server",
 				  DataSourceStateService.DataSourceType.JsonFileServerSide => "Using Server‑Side JSON File",
 				  DataSourceStateService.DataSourceType.JsonFileClientSide => "Using Client‑Side JSON File",
 				  DataSourceStateService.DataSourceType.None => "No data source selected",
 				  _ => "OpenRose"
-			  })">
+			  })"> *@
 			<MudLink Href="/" Class="product-title-link">
 				@CurrentPageTitle
 			</MudLink>
-		</MudTooltip>
+@* 		</MudTooltip> *@
 
 @* 		@if (DataSourceStateServiceForDataSourceTracking.CurrentDataSourceState.IsAnyJsonMode)
 		{
@@ -244,14 +244,14 @@
 				_ => "app-bar-api-mode"
 			})">
 
-		<MudTooltip Text="@(tempCustomDataSourceState.CurrentDataSourceType switch
+@* 		<MudTooltip Text="@(tempCustomDataSourceState.CurrentDataSourceType switch
 			  {
 				  DataSourceStateService.DataSourceType.ApiServer => "Connected to API Server",
 				  DataSourceStateService.DataSourceType.JsonFileServerSide => "Using Server‑Side JSON File",
 				  DataSourceStateService.DataSourceType.JsonFileClientSide => "Using Client‑Side JSON File",
 				  DataSourceStateService.DataSourceType.None => "No data source selected",
 				  _ => "OpenRose"
-			  })">
+			  })"> *@
 			<MudButton Variant="Variant.Text"
 					   Color="Color.Inherit"
 					   Style="cursor:pointer; text-decoration:underline"
@@ -259,7 +259,7 @@
 				<MudText Typo="Typo.subtitle1"><b>@CurrentPageTitle</b></MudText>
 			</MudButton>
 
-		</MudTooltip>
+@* 		</MudTooltip> *@
 	</MudAppBar>
 
 	}
