@@ -62,9 +62,7 @@ jobs:
         dotnet-version: '9.x' # Adjust to the version of .NET you are using
 
     - name: Install GitVersion
-      run: |
-        dotnet tool install --global GitVersion.Tool --version 6.8.2
-        dotnet-gitversion --version
+      run: dotnet tool install --global GitVersion.Tool --version 6.8.2
 
     - name: Add GitVersion to PATH
       run: echo "/home/runner/.dotnet/tools" >> $GITHUB_PATH
