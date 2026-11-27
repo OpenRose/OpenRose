@@ -370,7 +370,7 @@
 		// DataSourceStateServiceForDataSourceTracking.OnDataSourceChanged += OnDataSourceStateChangedCallback;
 
 		ViewSettingsServiceForUiState.OnKioskModeChanged += HandleKioskModeChanged;
-		
+
 		base.OnInitialized();
 	}
 
@@ -555,11 +555,15 @@
 			// Step 4: Update view settings to reflect JSON file mode
 			ViewSettingsServiceForUiState.IsOperatingInJsonFileDataSourceMode = true;
 
-			// Step 5: Navigate immediately BEFORE loading JSON
+			// Step 5 : Clear any Server-side JSON file state since we are now in client-side mode
+			// We can safely call upon following to clear any server-side state since we are now in client-side mode.
+			await RefreshRecovery.ClearAllAsync();
+
+			// Step 6: Navigate immediately BEFORE loading JSON
 			// This prevents the JSON viewer from rendering twice in the same circuit.
 			// NavManager.NavigateTo("/jsonviewer", forceLoad: true);
 			NavManager.NavigateTo("/jsonviewer");
-			// Step 6: Load JSON data into memory (parse and build lookup dictionary)
+			// Step 7: Load JSON data into memory (parse and build lookup dictionary)
 			// var jsonDataSourceServiceFromDependencyInjection =
 			// 	ServiceProviderForDependencyInjection.GetRequiredService<JsonFileDataSourceService>();
 
