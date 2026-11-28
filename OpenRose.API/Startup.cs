@@ -217,18 +217,18 @@ namespace ItemzApp.API
             services.AddSwaggerGen(setupAction =>
             {
                 setupAction.SwaggerDoc("ItemzApp.OpenAPI.Specification",
-                    new Microsoft.OpenApi.Models.OpenApiInfo()
+                    new Microsoft.OpenApi.OpenApiInfo()
                     {
                         Title = "ItemzApp OpenAPI",
                         Version = "0.1",
                         Description = "TODO describe my API",
-                        Contact = new Microsoft.OpenApi.Models.OpenApiContact()
+                        Contact = new Microsoft.OpenApi.OpenApiContact()
                         {
                             Email = "TODO type in correct email address",
                             Name = "TODO type in name of the company owning this software",
                             Url = new Uri("https://TODO-COMPANY-WEBSITE-URL")
                         },
-                        License = new Microsoft.OpenApi.Models.OpenApiLicense()
+                        License = new Microsoft.OpenApi.OpenApiLicense()
                         {
                             Name = "TODO decide on license type",
                             Url = new Uri("https://TODO-PROVIDE-LICENSE-URL/")
